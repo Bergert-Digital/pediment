@@ -45,14 +45,21 @@ final class Bootstrap {
 				return;
 			}
 			$asset = include $asset_path;
-			// Drop any deps WP doesn't register on this install; otherwise WP silently skips our script.
-			$deps = array_values( array_filter( $asset['dependencies'] ?? [], static function ( $handle ) {
-				return wp_script_is( $handle, 'registered' );
-			} ) );
+			// Older WP installs don't register react-jsx-runtime; bundles built by @wordpress/scripts depend on it.
+			// Register our own shim so the dep resolves and the bundle's JSX runtime gets a working global.
+			if ( in_array( 'react-jsx-runtime', $asset['dependencies'] ?? [], true ) && ! wp_script_is( 'react-jsx-runtime', 'registered' ) ) {
+				wp_register_script(
+					'react-jsx-runtime',
+					STARTER_AI_PLUGIN_URL . 'assets/react-jsx-runtime-shim.js',
+					[ 'react' ],
+					STARTER_AI_VERSION,
+					true
+				);
+			}
 			wp_enqueue_script(
 				'starter-ai-editor',
 				STARTER_AI_PLUGIN_URL . 'build/index.js',
-				$deps,
+				$asset['dependencies'] ?? [],
 				$asset['version'] ?? STARTER_AI_VERSION,
 				true
 			);
