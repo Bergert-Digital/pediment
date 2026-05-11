@@ -37,14 +37,14 @@ function starter_seed_run(): void {
 		'home'    => array(
 			'title'   => 'Home',
 			'content' =>
-				'<!-- wp:starter/hero {"variant":"centered","headline":"Welcome","subheadline":"A short benefit-led promise.","ctaText":"Get started","ctaUrl":"/contact"} /-->' .
-				'<!-- wp:starter/cta {"title":"Ready to start?","body":"Tell us about your project.","primaryText":"Contact us","primaryUrl":"/contact"} /-->' .
-				'<!-- wp:starter/blog-index {"count":3} /-->',
+				'<!-- wp:starter/hero {"variant":"centered","headline":"Welcome","subheadline":"A short benefit-led promise.","ctaText":"Get started","ctaUrl":"/contact","align":"wide"} /-->' .
+				'<!-- wp:starter/cta {"title":"Ready to start?","body":"Tell us about your project.","primaryText":"Contact us","primaryUrl":"/contact","align":"wide"} /-->' .
+				'<!-- wp:starter/blog-index {"count":3,"align":"wide"} /-->',
 		),
 		'about'   => array(
 			'title'   => 'About',
 			'content' =>
-				'<!-- wp:starter/hero {"variant":"default","headline":"About us","subheadline":"Who we are and what we do."} /-->' .
+				'<!-- wp:starter/hero {"variant":"default","headline":"About us","subheadline":"Who we are and what we do.","align":"wide"} /-->' .
 				'<!-- wp:starter/prose -->' .
 					'<!-- wp:paragraph --><p>Tell your story here. Keep it human and specific.</p><!-- /wp:paragraph -->' .
 				'<!-- /wp:starter/prose -->',
@@ -52,12 +52,12 @@ function starter_seed_run(): void {
 		'contact' => array(
 			'title'   => 'Contact',
 			'content' =>
-				'<!-- wp:starter/hero {"variant":"centered","headline":"Contact","subheadline":"Tell us about your project."} /-->' .
+				'<!-- wp:starter/hero {"variant":"centered","headline":"Contact","subheadline":"Tell us about your project.","align":"wide"} /-->' .
 				'<!-- wp:starter/contact-form {"includePhone":true} /-->',
 		),
 		'blog'    => array(
 			'title'   => 'Blog',
-			'content' => '<!-- wp:starter/blog-index {"count":10} /-->',
+			'content' => '<!-- wp:starter/blog-index {"count":10,"align":"wide"} /-->',
 		),
 	);
 
