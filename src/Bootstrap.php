@@ -28,6 +28,13 @@ final class Bootstrap {
 			return $args;
 		} );
 
+		add_filter( 'starter_ai_provider', static function ( $default ) {
+			if ( defined( 'STARTER_AI_MOCK' ) && STARTER_AI_MOCK ) {
+				return new \StarterAi\Mock\MockProvider( __DIR__ . '/Mock/fixtures' );
+			}
+			return $default;
+		} );
+
 		add_action(
 			'rest_api_init',
 			static function () {
