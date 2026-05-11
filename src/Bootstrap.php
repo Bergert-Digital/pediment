@@ -33,6 +33,7 @@ final class Bootstrap {
 			static function () {
 				( new \StarterAi\Rest\ComposeController() )->register();
 				( new \StarterAi\Rest\EditController() )->register();
+				( new \StarterAi\Rest\RefineController() )->register();
 			}
 		);
 
