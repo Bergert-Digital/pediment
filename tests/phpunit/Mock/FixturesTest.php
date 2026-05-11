@@ -9,7 +9,7 @@ class FixturesTest extends \WP_UnitTestCase {
 	];
 
 	public function test_all_required_fixtures_exist_and_parse(): void {
-		$dir = dirname( __DIR__, 2 ) . '/src/Mock/fixtures';
+		$dir = dirname( __DIR__, 3 ) . '/src/Mock/fixtures';
 		foreach ( self::REQUIRED as $name ) {
 			$path = "{$dir}/{$name}.json";
 			$this->assertFileExists( $path, "Missing fixture: {$name}" );
