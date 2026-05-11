@@ -5,7 +5,7 @@
  * @var array $attributes
  */
 
-$count    = isset( $attributes['count'] )        ? max( 1, (int) $attributes['count'] ) : 6;
+$count    = isset( $attributes['count'] ) ? max( 1, (int) $attributes['count'] ) : 6;
 $cat_slug = isset( $attributes['categorySlug'] ) ? (string) $attributes['categorySlug'] : '';
 
 $query_args = array(

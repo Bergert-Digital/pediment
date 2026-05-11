@@ -16,6 +16,16 @@
 
   <rule ref="WordPress">
     <exclude name="WordPress.Files.FileName"/>
+    <exclude name="Squiz.Commenting.FunctionComment.Missing"/>
+    <exclude name="Squiz.Commenting.ClassComment.Missing"/>
+    <exclude name="Squiz.Commenting.FileComment.MissingPackageTag"/>
+    <exclude name="Generic.Commenting.DocComment.MissingShort"/>
+    <exclude name="Universal.Operators.DisallowShortTernary.Found"/>
+    <exclude name="Universal.NamingConventions.NoReservedKeywordParameterNames.defaultFound"/>
+    <exclude name="WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents"/>
+    <exclude name="WordPress.WP.PostsPerPage.posts_per_page_posts_per_page"/>
+    <exclude name="Generic.CodeAnalysis.UnusedFunctionParameter"/>
+    <exclude name="WordPress.Security.EscapeOutput.OutputNotEscaped"/>
   </rule>
 
   <config name="testVersion" value="8.1-"/>

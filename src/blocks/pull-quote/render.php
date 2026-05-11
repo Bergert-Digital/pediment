@@ -5,7 +5,7 @@
  * @var array $attributes
  */
 
-$quote    = isset( $attributes['quote'] )    ? (string) $attributes['quote']    : '';
+$quote    = isset( $attributes['quote'] ) ? (string) $attributes['quote'] : '';
 $citation = isset( $attributes['citation'] ) ? (string) $attributes['citation'] : '';
 
 if ( '' === $quote ) {

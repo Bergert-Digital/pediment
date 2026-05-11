@@ -21,7 +21,7 @@ test('contact form submission shows success and creates a submission row', async
 
   await login(page);
   await page.goto('/wp-admin/edit.php?post_type=contact_submission');
-  await expect(page.locator('text=alice-e2e@example.com')).toBeVisible();
+  await expect(page.locator('text=alice-e2e@example.com').first()).toBeVisible();
 
   deletePageBySlug(CONTACT_SLUG);
 });

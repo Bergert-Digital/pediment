@@ -6,7 +6,7 @@
  */
 
 $question = isset( $attributes['question'] ) ? (string) $attributes['question'] : '';
-$answer   = isset( $attributes['answer'] )   ? (string) $attributes['answer']   : '';
+$answer   = isset( $attributes['answer'] ) ? (string) $attributes['answer'] : '';
 
 if ( '' === $question && '' === $answer ) {
 	return '';

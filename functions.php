@@ -42,4 +42,4 @@ add_action(
 );
 
 add_action( 'after_switch_theme', 'starter_contact_schedule_cleanup' );
-add_action( 'switch_theme',       'starter_contact_unschedule_cleanup' );
+add_action( 'switch_theme', 'starter_contact_unschedule_cleanup' );

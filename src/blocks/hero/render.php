@@ -5,12 +5,12 @@
  * @var array $attributes
  */
 
-$variant     = isset( $attributes['variant'] )     ? (string) $attributes['variant']     : 'default';
-$headline    = isset( $attributes['headline'] )    ? (string) $attributes['headline']    : '';
+$variant     = isset( $attributes['variant'] ) ? (string) $attributes['variant'] : 'default';
+$headline    = isset( $attributes['headline'] ) ? (string) $attributes['headline'] : '';
 $subheadline = isset( $attributes['subheadline'] ) ? (string) $attributes['subheadline'] : '';
-$cta_text    = isset( $attributes['ctaText'] )     ? (string) $attributes['ctaText']     : '';
-$cta_url     = isset( $attributes['ctaUrl'] )      ? (string) $attributes['ctaUrl']      : '';
-$media_id    = isset( $attributes['mediaId'] )     ? (int) $attributes['mediaId']        : 0;
+$cta_text    = isset( $attributes['ctaText'] ) ? (string) $attributes['ctaText'] : '';
+$cta_url     = isset( $attributes['ctaUrl'] ) ? (string) $attributes['ctaUrl'] : '';
+$media_id    = isset( $attributes['mediaId'] ) ? (int) $attributes['mediaId'] : 0;
 
 $wrapper_attributes = get_block_wrapper_attributes(
 	array(

@@ -39,22 +39,32 @@ add_action(
 		);
 
 		add_settings_section( 'identity', __( 'Identity', 'starter' ), '__return_false', STARTER_BRAND_PAGE );
-		add_settings_section( 'contact',  __( 'Contact', 'starter' ),  '__return_false', STARTER_BRAND_PAGE );
-		add_settings_section( 'social',   __( 'Social', 'starter' ),   '__return_false', STARTER_BRAND_PAGE );
-		add_settings_section( 'og',       __( 'OG / SEO', 'starter' ), '__return_false', STARTER_BRAND_PAGE );
+		add_settings_section( 'contact', __( 'Contact', 'starter' ), '__return_false', STARTER_BRAND_PAGE );
+		add_settings_section( 'social', __( 'Social', 'starter' ), '__return_false', STARTER_BRAND_PAGE );
+		add_settings_section( 'og', __( 'OG / SEO', 'starter' ), '__return_false', STARTER_BRAND_PAGE );
 
-		add_settings_field( 'brand_name',    __( 'Brand name', 'starter' ),    'starter_brand_field_text',     STARTER_BRAND_PAGE, 'identity', array( 'key' => 'brand_name' ) );
-		add_settings_field( 'brand_tagline', __( 'Tagline', 'starter' ),       'starter_brand_field_text',     STARTER_BRAND_PAGE, 'identity', array( 'key' => 'brand_tagline' ) );
-		add_settings_field( 'voice_tone',    __( 'Voice / tone', 'starter' ),  'starter_brand_field_textarea', STARTER_BRAND_PAGE, 'identity', array( 'key' => 'voice_tone' ) );
-		add_settings_field( 'logo_id',       __( 'Logo', 'starter' ),          'starter_brand_field_image',    STARTER_BRAND_PAGE, 'identity', array( 'key' => 'logo_id' ) );
+		add_settings_field( 'brand_name', __( 'Brand name', 'starter' ), 'starter_brand_field_text', STARTER_BRAND_PAGE, 'identity', array( 'key' => 'brand_name' ) );
+		add_settings_field( 'brand_tagline', __( 'Tagline', 'starter' ), 'starter_brand_field_text', STARTER_BRAND_PAGE, 'identity', array( 'key' => 'brand_tagline' ) );
+		add_settings_field( 'voice_tone', __( 'Voice / tone', 'starter' ), 'starter_brand_field_textarea', STARTER_BRAND_PAGE, 'identity', array( 'key' => 'voice_tone' ) );
+		add_settings_field( 'logo_id', __( 'Logo', 'starter' ), 'starter_brand_field_image', STARTER_BRAND_PAGE, 'identity', array( 'key' => 'logo_id' ) );
 
-		add_settings_field( 'contact_email', __( 'Contact email', 'starter' ), 'starter_brand_field_text',     STARTER_BRAND_PAGE, 'contact',  array( 'key' => 'contact_email', 'type' => 'email' ) );
-		add_settings_field( 'phone',         __( 'Phone', 'starter' ),         'starter_brand_field_text',     STARTER_BRAND_PAGE, 'contact',  array( 'key' => 'phone' ) );
-		add_settings_field( 'address',       __( 'Address', 'starter' ),       'starter_brand_field_textarea', STARTER_BRAND_PAGE, 'contact',  array( 'key' => 'address' ) );
+		add_settings_field(
+			'contact_email',
+			__( 'Contact email', 'starter' ),
+			'starter_brand_field_text',
+			STARTER_BRAND_PAGE,
+			'contact',
+			array(
+				'key'  => 'contact_email',
+				'type' => 'email',
+			)
+		);
+		add_settings_field( 'phone', __( 'Phone', 'starter' ), 'starter_brand_field_text', STARTER_BRAND_PAGE, 'contact', array( 'key' => 'phone' ) );
+		add_settings_field( 'address', __( 'Address', 'starter' ), 'starter_brand_field_textarea', STARTER_BRAND_PAGE, 'contact', array( 'key' => 'address' ) );
 
-		add_settings_field( 'social_links',  __( 'Social links', 'starter' ),  'starter_brand_field_social',   STARTER_BRAND_PAGE, 'social',   array( 'key' => 'social_links' ) );
+		add_settings_field( 'social_links', __( 'Social links', 'starter' ), 'starter_brand_field_social', STARTER_BRAND_PAGE, 'social', array( 'key' => 'social_links' ) );
 
-		add_settings_field( 'og_image_id',   __( 'Default OG image', 'starter' ), 'starter_brand_field_image', STARTER_BRAND_PAGE, 'og',       array( 'key' => 'og_image_id' ) );
+		add_settings_field( 'og_image_id', __( 'Default OG image', 'starter' ), 'starter_brand_field_image', STARTER_BRAND_PAGE, 'og', array( 'key' => 'og_image_id' ) );
 	}
 );
 
@@ -162,7 +172,7 @@ function starter_brand_sanitize( $input ): array {
 		$clean['contact_email'] = '';
 	}
 
-	$clean['logo_id']     = isset( $input['logo_id'] )     ? (int) $input['logo_id']     : 0;
+	$clean['logo_id']     = isset( $input['logo_id'] ) ? (int) $input['logo_id'] : 0;
 	$clean['og_image_id'] = isset( $input['og_image_id'] ) ? (int) $input['og_image_id'] : 0;
 
 	$clean['social_links'] = array();
@@ -176,7 +186,10 @@ function starter_brand_sanitize( $input ): array {
 			$url       = $raw_url ? esc_url_raw( $raw_url ) : '';
 			$valid_url = $url && wp_http_validate_url( $url );
 			if ( '' !== $platform && $valid_url ) {
-				$clean['social_links'][] = array( 'platform' => $platform, 'url' => $url );
+				$clean['social_links'][] = array(
+					'platform' => $platform,
+					'url'      => $url,
+				);
 			}
 		}
 	}

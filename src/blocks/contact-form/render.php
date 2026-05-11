@@ -7,7 +7,7 @@
 
 $include_phone   = ! empty( $attributes['includePhone'] );
 $recipient       = isset( $attributes['recipientOverride'] ) ? (string) $attributes['recipientOverride'] : '';
-$success_message = isset( $attributes['successMessage'] )    ? (string) $attributes['successMessage']    : '';
+$success_message = isset( $attributes['successMessage'] ) ? (string) $attributes['successMessage'] : '';
 
 $wrapper = get_block_wrapper_attributes(
 	array(

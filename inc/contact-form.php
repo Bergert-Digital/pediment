@@ -61,7 +61,14 @@ function starter_contact_handle_submission( WP_REST_Request $request ) {
 	}
 
 	if ( ! empty( $errors ) ) {
-		return new WP_Error( 'starter_validation', __( 'Validation failed.', 'starter' ), array( 'status' => 400, 'errors' => $errors ) );
+		return new WP_Error(
+			'starter_validation',
+			__( 'Validation failed.', 'starter' ),
+			array(
+				'status' => 400,
+				'errors' => $errors,
+			)
+		);
 	}
 
 	do_action(
@@ -116,9 +123,9 @@ add_action(
 add_action( 'starter_contact_submitted', 'starter_contact_persist_submission', 10, 2 );
 
 function starter_contact_persist_submission( array $payload, $request ): void {
-	$name    = (string) ( $payload['name']    ?? '' );
-	$email   = (string) ( $payload['email']   ?? '' );
-	$phone   = (string) ( $payload['phone']   ?? '' );
+	$name    = (string) ( $payload['name'] ?? '' );
+	$email   = (string) ( $payload['email'] ?? '' );
+	$phone   = (string) ( $payload['phone'] ?? '' );
 	$message = (string) ( $payload['message'] ?? '' );
 
 	$post_id = wp_insert_post(
@@ -184,9 +191,9 @@ function starter_contact_send_notification( array $payload, $request ): void {
 		return;
 	}
 
-	$name    = (string) ( $payload['name']    ?? '' );
-	$email   = (string) ( $payload['email']   ?? '' );
-	$phone   = (string) ( $payload['phone']   ?? '' );
+	$name    = (string) ( $payload['name'] ?? '' );
+	$email   = (string) ( $payload['email'] ?? '' );
+	$phone   = (string) ( $payload['phone'] ?? '' );
 	$message = (string) ( $payload['message'] ?? '' );
 
 	$subject = sprintf(

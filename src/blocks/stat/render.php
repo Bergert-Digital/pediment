@@ -5,8 +5,8 @@
  * @var array $attributes
  */
 
-$value   = isset( $attributes['value'] )   ? (string) $attributes['value']   : '';
-$label   = isset( $attributes['label'] )   ? (string) $attributes['label']   : '';
+$value   = isset( $attributes['value'] ) ? (string) $attributes['value'] : '';
+$label   = isset( $attributes['label'] ) ? (string) $attributes['label'] : '';
 $context = isset( $attributes['context'] ) ? (string) $attributes['context'] : '';
 
 if ( '' === $value && '' === $label ) {
