@@ -1,0 +1,11 @@
+.starter-stat {
+  display: flex;
+  flex-direction: column;
+  gap: var(--wp--preset--spacing--10);
+  text-align: center;
+  padding: var(--wp--preset--spacing--30);
+
+  &__value   { font-size: var(--wp--preset--font-size--4xl); line-height: 1; color: var(--wp--preset--color--accent); font-weight: 700; }
+  &__label   { font-size: var(--wp--preset--font-size--base); color: var(--wp--preset--color--text); }
+  &__context { font-size: var(--wp--preset--font-size--sm); color: var(--wp--preset--color--text-muted); }
+}

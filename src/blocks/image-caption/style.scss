@@ -1,0 +1,6 @@
+.starter-image-caption {
+  margin: var(--wp--preset--spacing--40) 0;
+
+  &__img       { display: block; width: 100%; height: auto; border-radius: 0.5rem; }
+  &__caption   { margin-top: var(--wp--preset--spacing--10); font-size: var(--wp--preset--font-size--sm); color: var(--wp--preset--color--text-muted); text-align: center; }
+}

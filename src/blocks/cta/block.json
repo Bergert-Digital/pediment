@@ -1,0 +1,21 @@
+{
+  "$schema": "https://schemas.wp.org/trunk/block.json",
+  "apiVersion": 3,
+  "name": "starter/cta",
+  "title": "Call to Action",
+  "category": "starter",
+  "description": "Inline call-to-action with title, body, and one or two buttons.",
+  "textdomain": "starter",
+  "supports": { "html": false, "align": ["wide"] },
+  "attributes": {
+    "title":         { "type": "string", "default": "" },
+    "body":          { "type": "string", "default": "" },
+    "primaryText":   { "type": "string", "default": "" },
+    "primaryUrl":    { "type": "string", "default": "" },
+    "secondaryText": { "type": "string", "default": "" },
+    "secondaryUrl":  { "type": "string", "default": "" }
+  },
+  "editorScript": "file:./index.js",
+  "style":        "file:./style-index.css",
+  "render":       "file:./render.php"
+}
