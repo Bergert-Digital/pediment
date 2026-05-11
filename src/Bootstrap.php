@@ -46,6 +46,20 @@ final class Bootstrap {
 		);
 
 		add_action(
+			'starter_ai_job_completed',
+			static function ( int $job_id, array $response, string $kind ) {
+				$job = ( new \StarterAi\Jobs\JobStore() )->getById( $job_id );
+				if ( ! $job ) {
+					return;
+				}
+				$fetched = count( $job['result']['urls_fetched'] ?? [] );
+				( new \StarterAi\Usage\Tracker() )->record( $job['user_id'], $kind, $response, $fetched );
+			},
+			10,
+			3
+		);
+
+		add_action(
 			'starter_ai_job_run',
 			static function ( int $job_id ) {
 				$store    = new \StarterAi\Jobs\JobStore();
