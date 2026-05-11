@@ -22,9 +22,7 @@ require_once __DIR__ . '/inc/brand-settings.php';
 require_once __DIR__ . '/inc/contact-form.php';
 require_once __DIR__ . '/inc/patterns.php';
 
-if ( defined( 'WP_CLI' ) && WP_CLI ) {
-	require_once __DIR__ . '/inc/seed.php';
-}
+require_once __DIR__ . '/inc/seed.php';
 
 add_action(
 	'wp_enqueue_scripts',
