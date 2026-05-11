@@ -27,5 +27,21 @@ final class Bootstrap {
 			\StarterAi\Anthropic\SchemaBuilder::invalidate();
 			return $args;
 		} );
+
+		add_action(
+			'starter_ai_job_run',
+			static function ( int $job_id ) {
+				$store    = new \StarterAi\Jobs\JobStore();
+				$provider = apply_filters(
+					'starter_ai_provider',
+					new \StarterAi\Anthropic\Client(
+						(string) ( defined( 'ANTHROPIC_API_KEY' ) ? ANTHROPIC_API_KEY : get_option( 'starter_ai_api_key', '' ) )
+					)
+				);
+				( new \StarterAi\Jobs\ComposeJob( $store, $provider ) )->run( $job_id );
+			},
+			10,
+			1
+		);
 	}
 }

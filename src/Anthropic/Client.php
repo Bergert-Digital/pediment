@@ -16,7 +16,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * Thin wrapper around wp_remote_post against the Anthropic Messages API.
  */
-final class Client {
+final class Client implements ProviderInterface {
 	private const API_VERSION    = '2023-06-01';
 	private const DEFAULT_TIMEOUT = 90;
 
