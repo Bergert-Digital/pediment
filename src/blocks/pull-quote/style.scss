@@ -1,0 +1,9 @@
+.starter-pull-quote {
+  border-left: 4px solid var(--wp--preset--color--accent);
+  padding: var(--wp--preset--spacing--30) var(--wp--preset--spacing--40);
+  margin-block: var(--wp--preset--spacing--40);
+  background: var(--wp--preset--color--surface-elevated);
+
+  &__quote    { font-size: var(--wp--preset--font-size--xl); line-height: 1.4; margin: 0; font-style: italic; }
+  &__citation { display: block; margin-top: var(--wp--preset--spacing--20); font-size: var(--wp--preset--font-size--sm); color: var(--wp--preset--color--text-muted); font-style: normal; }
+}

@@ -1,0 +1,13 @@
+.starter-cta {
+  padding: var(--wp--preset--spacing--40) var(--wp--preset--spacing--30);
+  background: var(--wp--preset--color--surface-elevated);
+  border: 1px solid var(--wp--preset--color--border);
+  border-radius: 0.75rem;
+
+  &__title   { font-size: var(--wp--preset--font-size--2xl); margin: 0 0 var(--wp--preset--spacing--20); }
+  &__body    { color: var(--wp--preset--color--text-muted); margin: 0 0 var(--wp--preset--spacing--30); }
+  &__actions { display: flex; gap: var(--wp--preset--spacing--20); flex-wrap: wrap; }
+  &__btn     { display: inline-block; padding: var(--wp--preset--spacing--20) var(--wp--preset--spacing--30); border-radius: 0.5rem; text-decoration: none; }
+  &__btn--primary   { background: var(--wp--preset--color--accent); color: var(--wp--preset--color--surface); }
+  &__btn--secondary { background: transparent; color: var(--wp--preset--color--accent); border: 1px solid var(--wp--preset--color--accent); }
+}

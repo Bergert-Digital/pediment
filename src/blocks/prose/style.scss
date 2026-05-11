@@ -1,0 +1,11 @@
+.starter-prose {
+  max-width: var(--wp--style--global--content-size);
+  margin-inline: auto;
+  font-size: var(--wp--preset--font-size--base);
+  line-height: 1.7;
+
+  > h2 { font-size: var(--wp--preset--font-size--2xl); margin-top: var(--wp--preset--spacing--40); }
+  > h3 { font-size: var(--wp--preset--font-size--xl);  margin-top: var(--wp--preset--spacing--30); }
+  > p  { margin-block: var(--wp--preset--spacing--20); }
+  > ul, > ol { padding-inline-start: var(--wp--preset--spacing--30); }
+}
