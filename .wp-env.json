@@ -1,0 +1,17 @@
+{
+  "core": "WordPress/WordPress#6.5",
+  "phpVersion": "8.1",
+  "plugins": ["."],
+  "themes": ["../wp-starter-theme"],
+  "port": 8898,
+  "testsPort": 8899,
+  "config": {
+    "WP_DEBUG": true,
+    "WP_DEBUG_LOG": true,
+    "SCRIPT_DEBUG": true,
+    "STARTER_AI_MOCK": true
+  },
+  "mappings": {
+    "wp-content/mu-plugins/activate-starter-theme.php": "./tests/fixtures/mu-activate-theme.php"
+  }
+}
