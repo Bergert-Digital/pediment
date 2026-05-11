@@ -17,7 +17,8 @@
   },
   "autoload": {
     "psr-4": {
-      "StarterAi\\": "src/"
+      "StarterAi\\": "src/",
+      "StarterAi\\Cli\\": "wp-cli/"
     }
   },
   "autoload-dev": {

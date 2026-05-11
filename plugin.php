@@ -40,6 +40,11 @@ add_action(
 	5
 );
 
+if ( defined( 'WP_CLI' ) && WP_CLI ) {
+	require_once __DIR__ . '/wp-cli/DumpSchemaCommand.php';
+	\WP_CLI::add_command( 'starter-ai dump-schema', \StarterAi\Cli\DumpSchemaCommand::class );
+}
+
 add_action(
 	'plugins_loaded',
 	static function () {
