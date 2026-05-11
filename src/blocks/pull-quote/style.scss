@@ -1,9 +1,42 @@
 .starter-pull-quote {
   border-left: 4px solid var(--wp--preset--color--accent);
-  padding: var(--wp--preset--spacing--30) var(--wp--preset--spacing--40);
-  margin-block: var(--wp--preset--spacing--40);
+  padding: var(--wp--preset--spacing--40) var(--wp--preset--spacing--50);
+  margin-block: var(--wp--preset--spacing--50);
   background: var(--wp--preset--color--surface-elevated);
+  border-radius: 0 0.5rem 0.5rem 0;
+  position: relative;
 
-  &__quote    { font-size: var(--wp--preset--font-size--xl); line-height: 1.4; margin: 0; font-style: italic; }
-  &__citation { display: block; margin-top: var(--wp--preset--spacing--20); font-size: var(--wp--preset--font-size--sm); color: var(--wp--preset--color--text-muted); font-style: normal; }
+  &::before {
+    content: "“";
+    position: absolute;
+    top: -0.25rem;
+    left: var(--wp--preset--spacing--40);
+    font-size: 4rem;
+    line-height: 1;
+    color: var(--wp--preset--color--accent);
+    opacity: 0.25;
+    pointer-events: none;
+    font-family: Georgia, serif;
+  }
+
+  &__quote {
+    font-size: var(--wp--preset--font-size--xl);
+    line-height: 1.4;
+    margin: 0;
+    font-style: italic;
+    color: var(--wp--preset--color--text);
+    position: relative;
+  }
+
+  &__citation {
+    display: block;
+    margin-top: var(--wp--preset--spacing--30);
+    font-size: var(--wp--preset--font-size--sm);
+    color: var(--wp--preset--color--text-muted);
+    font-style: normal;
+
+    &::before {
+      content: "— ";
+    }
+  }
 }

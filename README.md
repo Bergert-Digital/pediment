@@ -13,18 +13,39 @@ A forkable WordPress block theme for client websites. Sibling to the Payload Sta
 
 Requires Docker + Node 20+ + Composer.
 
+### First-time setup
+
 ```bash
 git clone <repo>
 cd wp-starter-theme
 composer install
 npm install
 npm run build
-npm run env:start        # spins up WP at http://localhost:8888 (admin/password)
 ```
 
-Open http://localhost:8888/wp-admin. The theme should already be active.
+### Running the dev server
 
-Useful commands:
+Two commands in two terminals:
+
+```bash
+npm run env:start   # boots WordPress at http://localhost:8888 via Docker (wp-env)
+npm run start       # watches src/blocks/ and rebuilds on save
+```
+
+Open http://localhost:8888 for the front-end, or http://localhost:8888/wp-admin (admin / `password`).
+
+If this is the very first boot of wp-env, run these once to make the theme usable:
+
+```bash
+npx wp-env run cli wp theme activate wp-starter-theme
+npx wp-env run cli wp rewrite structure "/%postname%/"
+npx wp-env run cli wp rewrite flush --hard
+npx wp-env run cli wp starter-theme seed   # optional: 4 sample pages + Brand defaults
+```
+
+Stop with `npm run env:stop`.
+
+### Useful commands
 
 | Command                                          | What it does                                     |
 |--------------------------------------------------|--------------------------------------------------|
