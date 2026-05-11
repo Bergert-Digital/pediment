@@ -29,6 +29,13 @@ final class Bootstrap {
 		} );
 
 		add_action(
+			'rest_api_init',
+			static function () {
+				( new \StarterAi\Rest\ComposeController() )->register();
+			}
+		);
+
+		add_action(
 			'starter_ai_job_run',
 			static function ( int $job_id ) {
 				$store    = new \StarterAi\Jobs\JobStore();
