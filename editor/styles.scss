@@ -1,0 +1,7 @@
+.starter-ai {
+  &__panel    { /* container */ }
+  &__pills    { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+  &__pill     { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; background: #f0f0f1; border-radius: 12px; font-size: 11px; color: #1d2327; }
+  &__progress { display: flex; align-items: center; gap: 8px; padding: 12px 0; }
+  &__error    { color: #b32d2e; margin-top: 8px; }
+}

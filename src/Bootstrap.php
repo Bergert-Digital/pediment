@@ -39,6 +39,29 @@ final class Bootstrap {
 
 		( new \StarterAi\Settings\Page() )->register();
 
+		add_action( 'enqueue_block_editor_assets', static function () {
+			$asset_path = STARTER_AI_PLUGIN_DIR . '/build/index.asset.php';
+			if ( ! file_exists( $asset_path ) ) {
+				return;
+			}
+			$asset = include $asset_path;
+			wp_enqueue_script(
+				'starter-ai-editor',
+				STARTER_AI_PLUGIN_URL . 'build/index.js',
+				$asset['dependencies'] ?? [],
+				$asset['version'] ?? STARTER_AI_VERSION,
+				true
+			);
+			if ( file_exists( STARTER_AI_PLUGIN_DIR . '/build/index.css' ) ) {
+				wp_enqueue_style(
+					'starter-ai-editor',
+					STARTER_AI_PLUGIN_URL . 'build/index.css',
+					[],
+					$asset['version'] ?? STARTER_AI_VERSION
+				);
+			}
+		} );
+
 		add_filter( 'starter_ai_model_compose', static function ( $default ) {
 			$val = ( new \StarterAi\Settings\OptionsStore() )->get( 'model_compose', '' );
 			return '' !== $val ? $val : $default;
