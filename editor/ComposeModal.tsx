@@ -1,7 +1,7 @@
 import { Modal, Button, TextareaControl, SelectControl, RadioControl, Spinner } from '@wordpress/components';
 import { useState, useEffect, useRef } from '@wordpress/element';
 import { dispatch } from '@wordpress/data';
-import { parse } from '@wordpress/blocks';
+import { createBlock } from '@wordpress/blocks';
 import { __ } from '@wordpress/i18n';
 import { postCompose } from './hooks/useApiClient';
 import useJobPolling from './hooks/useJobPolling';
@@ -21,11 +21,11 @@ export default function ComposeModal({ onClose }: { onClose: () => void }) {
   useEffect(() => {
     if (!result || appliedRef.current) return;
     appliedRef.current = true;
-    const parsed = parse(serializeTree(result.blocks));
+    const created = treeToBlocks(result.blocks);
     if (target === 'replace') {
-      (dispatch('core/block-editor') as any).resetBlocks(parsed);
+      (dispatch('core/block-editor') as any).resetBlocks(created);
     } else {
-      (dispatch('core/block-editor') as any).insertBlocks(parsed);
+      (dispatch('core/block-editor') as any).insertBlocks(created);
     }
     onClose();
   }, [result, target, onClose]);
@@ -99,14 +99,10 @@ export default function ComposeModal({ onClose }: { onClose: () => void }) {
   );
 }
 
-function serializeTree(tree: any[]): string {
-  return tree.map(serializeOne).join('\n\n');
-}
-function serializeOne(node: any): string {
-  const attrs = Object.keys(node.attributes || {}).length ? ' ' + JSON.stringify(node.attributes) : '';
-  const inner = (node.innerBlocks || []).map(serializeOne).join('\n');
-  if (!inner) {
-    return `<!-- wp:${node.name}${attrs} /-->`;
-  }
-  return `<!-- wp:${node.name}${attrs} -->\n${inner}\n<!-- /wp:${node.name} -->`;
+// Build a block tree directly via createBlock(). Skips the serialize→parse roundtrip,
+// which mis-handles core blocks (heading, list-item, image) whose `content`/`url`/`alt`
+// attributes are HTML-sourced — the parser ignores their JSON values and re-derives
+// them from inner HTML, producing "invalid block" warnings when no inner HTML is present.
+function treeToBlocks(tree: any[]): any[] {
+  return tree.map((node: any) => createBlock(node.name, node.attributes ?? {}, treeToBlocks(node.innerBlocks ?? [])));
 }

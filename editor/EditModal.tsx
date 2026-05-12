@@ -1,7 +1,7 @@
 import { Modal, Button, TextareaControl, Spinner, Notice } from '@wordpress/components';
 import { useState, useEffect, useRef } from '@wordpress/element';
 import { select, dispatch } from '@wordpress/data';
-import { parse } from '@wordpress/blocks';
+import { createBlock } from '@wordpress/blocks';
 import { __ } from '@wordpress/i18n';
 import { postEdit } from './hooks/useApiClient';
 import useJobPolling from './hooks/useJobPolling';
@@ -18,7 +18,7 @@ export default function EditModal({ onClose }: { onClose: () => void }) {
   useEffect(() => {
     if (!result || appliedRef.current) return;
     appliedRef.current = true;
-    (dispatch('core/block-editor') as any).resetBlocks(parse(serializeTree(result.blocks)));
+    (dispatch('core/block-editor') as any).resetBlocks(treeToBlocks(result.blocks));
     onClose();
   }, [result, onClose]);
 
@@ -74,12 +74,7 @@ function blocksToTree(blocks: any[]): any[] {
     innerBlocks: blocksToTree(b.innerBlocks ?? []),
   }));
 }
-function serializeTree(tree: any[]): string {
-  return tree.map(serializeOne).join('\n\n');
-}
-function serializeOne(node: any): string {
-  const attrs = Object.keys(node.attributes || {}).length ? ' ' + JSON.stringify(node.attributes) : '';
-  const inner = (node.innerBlocks || []).map(serializeOne).join('\n');
-  if (!inner) { return `<!-- wp:${node.name}${attrs} /-->`; }
-  return `<!-- wp:${node.name}${attrs} -->\n${inner}\n<!-- /wp:${node.name} -->`;
+// Build a block tree directly via createBlock() — see ComposeModal for rationale.
+function treeToBlocks(tree: any[]): any[] {
+  return tree.map((node: any) => createBlock(node.name, node.attributes ?? {}, treeToBlocks(node.innerBlocks ?? [])));
 }
