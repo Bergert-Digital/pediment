@@ -1,0 +1,24 @@
+import { test, expect } from '@playwright/test';
+import { login, openNewPage } from './utils';
+
+test('chat sidebar inserts a paragraph from mock fixture', async ({ page }) => {
+  await login(page);
+  await openNewPage(page, 'Chat E2E');
+
+  // Open the AI chat sidebar via the document-panel launcher.
+  await page.getByRole('button', { name: /open ai chat/i }).click();
+
+  // Wait for the sidebar to render.
+  const sidebar = page.locator('.starter-ai-chat');
+  await sidebar.waitFor({ state: 'visible', timeout: 10_000 });
+
+  // Send a message that triggers the insert-paragraph fixture.
+  await sidebar.locator('textarea').fill('Add a paragraph that says hi');
+  await sidebar.getByRole('button', { name: /^send$/i }).click();
+
+  // The text bubble should appear with the mock's assistant prose.
+  await expect(sidebar.getByText(/adding a paragraph/i)).toBeVisible({ timeout: 15_000 });
+
+  // The canvas should receive the inserted paragraph.
+  await expect(page.locator('p.wp-block-paragraph', { hasText: 'Hello from mock.' })).toBeVisible({ timeout: 10_000 });
+});
