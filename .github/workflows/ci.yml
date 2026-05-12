@@ -50,11 +50,16 @@ jobs:
       - uses: actions/checkout@v4
         with:
           path: wp-starter-theme
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.1'
+          tools: composer
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
           cache: npm
           cache-dependency-path: wp-starter-theme/package-lock.json
+      - run: composer install --prefer-dist --no-progress
       - run: npm ci
       - run: npm run env:start
       - run: npm run build
