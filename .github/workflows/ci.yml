@@ -63,7 +63,7 @@ jobs:
       - run: npm ci
       - run: npm run env:start
       - run: npm run build
-      - run: npx wp-env run tests-wordpress --env-cwd=wp-content/themes/wp-starter-theme phpunit
+      - run: npx wp-env run tests-wordpress --env-cwd=wp-content/themes/wp-starter-theme vendor/bin/phpunit
       - if: always()
         run: npm run env:stop
 
