@@ -12,6 +12,9 @@ class StubProvider implements ProviderInterface {
 		$this->sentArgs = $args;
 		return $this->response;
 	}
+	public function stream_messages( array $args ) {
+		return new \WP_Error( 'starter_ai_stub_not_implemented', 'stream_messages not implemented in stub' );
+	}
 }
 
 class ComposeJobTest extends \WP_UnitTestCase {
@@ -71,6 +74,7 @@ class ComposeJobTest extends \WP_UnitTestCase {
 		$store    = new JobStore();
 		$provider = new class implements ProviderInterface {
 			public function messages( array $args ) { return new \WP_Error( 'down', 'API down' ); }
+			public function stream_messages( array $args ) { return new \WP_Error( 'starter_ai_stub_not_implemented', 'stream_messages not implemented in stub' ); }
 		};
 
 		$id = $store->create( 1, 'compose', [ 'prompt' => 'x' ] );

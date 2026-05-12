@@ -25,6 +25,9 @@ class RefineControllerTest extends \WP_UnitTestCase {
 						'model' => 'claude-haiku-4-5',
 					];
 				}
+				public function stream_messages( array $args ) {
+					return new \WP_Error( 'starter_ai_stub_not_implemented', 'stream_messages not implemented in stub' );
+				}
 			};
 		} );
 

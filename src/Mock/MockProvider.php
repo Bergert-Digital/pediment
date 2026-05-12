@@ -73,6 +73,16 @@ final class MockProvider implements ProviderInterface {
 		return 'compose-landing';
 	}
 
+	/**
+	 * Stub — replaced by the real implementation in Task 8.
+	 *
+	 * @param array<string,mixed> $args
+	 * @return \WP_Error
+	 */
+	public function stream_messages( array $args ) {
+		return new \WP_Error( 'starter_ai_mock_not_implemented', 'stream_messages not implemented in stub' );
+	}
+
 	private function resolveRefineFixture( string $text ): string {
 		if ( preg_match( '/starter\/([a-z\-]+)/i', $text, $m ) ) {
 			$candidate = 'refine-' . strtolower( $m[1] );
