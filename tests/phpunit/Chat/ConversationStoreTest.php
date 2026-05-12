@@ -34,4 +34,17 @@ class ConversationStoreTest extends \WP_UnitTestCase {
 		$b = $this->store->getOrCreate( 42, 8 );
 		$this->assertNotSame( $a['id'], $b['id'] );
 	}
+
+	public function test_find_by_id_returns_conversation_when_present(): void {
+		$created = $this->store->getOrCreate( 10, 5 );
+		$found   = $this->store->findById( $created['id'] );
+		$this->assertNotNull( $found );
+		$this->assertSame( $created['id'], $found['id'] );
+		$this->assertSame( 10, $found['post_id'] );
+		$this->assertSame( 5,  $found['user_id'] );
+	}
+
+	public function test_find_by_id_returns_null_for_unknown_id(): void {
+		$this->assertNull( $this->store->findById( 999_999 ) );
+	}
 }

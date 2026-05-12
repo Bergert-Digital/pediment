@@ -24,59 +24,63 @@ final class ConversationStore {
 	}
 
 	/**
+	 * Get the conversation for a (post, user) pair, creating one if absent.
+	 *
+	 * Note: not race-safe. Two concurrent calls with the same arguments can both
+	 * miss the SELECT and produce duplicate rows. The race is benign in the chat
+	 * use case (a single user is unlikely to open two editor sessions on the same
+	 * post in the same instant), but a future migration could add a UNIQUE
+	 * constraint on (post_id, user_id) and switch to INSERT IGNORE if it bites.
+	 *
 	 * @return array{id:int, post_id:int, user_id:int, messages:array<int,array<string,mixed>>}
 	 */
 	public function getOrCreate( int $post_id, int $user_id ): array {
 		global $wpdb;
-		$row = $wpdb->get_row(
+		$header = $wpdb->get_row(
 			$wpdb->prepare(
-				"SELECT id FROM {$this->conversations} WHERE post_id = %d AND user_id = %d LIMIT 1",
+				"SELECT id, post_id, user_id, created_at, updated_at FROM {$this->conversations} WHERE post_id = %d AND user_id = %d LIMIT 1",
 				$post_id,
 				$user_id
 			),
 			ARRAY_A
 		);
-		if ( $row ) {
-			return $this->load( (int) $row['id'] );
+		if ( ! $header ) {
+			$now = current_time( 'mysql', true );
+			$wpdb->insert(
+				$this->conversations,
+				[ 'post_id' => $post_id, 'user_id' => $user_id, 'created_at' => $now, 'updated_at' => $now ]
+			);
+			$header = $this->loadHeader( (int) $wpdb->insert_id );
 		}
-		$now = current_time( 'mysql', true );
-		$wpdb->insert(
-			$this->conversations,
-			[ 'post_id' => $post_id, 'user_id' => $user_id, 'created_at' => $now, 'updated_at' => $now ]
-		);
-		return $this->load( (int) $wpdb->insert_id );
+		return $this->buildResult( $header );
 	}
 
 	/**
 	 * @return array{id:int, post_id:int, user_id:int, messages:array<int,array<string,mixed>>}|null
 	 */
 	public function findById( int $id ): ?array {
-		$row = $this->loadHeader( $id );
-		return $row ? $this->load( $id ) : null;
+		$header = $this->loadHeader( $id );
+		return $header ? $this->buildResult( $header ) : null;
 	}
 
 	/**
+	 * @param array<string,string> $header
 	 * @return array{id:int, post_id:int, user_id:int, messages:array<int,array<string,mixed>>}
 	 */
-	private function load( int $id ): array {
-		$header = $this->loadHeader( $id );
-		if ( ! $header ) {
-			return [ 'id' => 0, 'post_id' => 0, 'user_id' => 0, 'messages' => [] ];
-		}
+	private function buildResult( array $header ): array {
 		global $wpdb;
 		$rows = $wpdb->get_results(
 			$wpdb->prepare(
-				"SELECT * FROM {$this->messages} WHERE conversation_id = %d ORDER BY id ASC LIMIT 200",
-				$id
+				"SELECT id, role, status, content, tool_calls, error, created_at FROM {$this->messages} WHERE conversation_id = %d ORDER BY id ASC LIMIT 200",
+				(int) $header['id']
 			),
 			ARRAY_A
 		);
-		$messages = array_map( [ $this, 'hydrate' ], $rows ?: [] );
 		return [
 			'id'       => (int) $header['id'],
 			'post_id'  => (int) $header['post_id'],
 			'user_id'  => (int) $header['user_id'],
-			'messages' => $messages,
+			'messages' => array_map( [ $this, 'hydrate' ], $rows ?: [] ),
 		];
 	}
 
@@ -86,7 +90,7 @@ final class ConversationStore {
 	private function loadHeader( int $id ): ?array {
 		global $wpdb;
 		$row = $wpdb->get_row(
-			$wpdb->prepare( "SELECT * FROM {$this->conversations} WHERE id = %d", $id ),
+			$wpdb->prepare( "SELECT id, post_id, user_id, created_at, updated_at FROM {$this->conversations} WHERE id = %d", $id ),
 			ARRAY_A
 		);
 		return $row ?: null;
