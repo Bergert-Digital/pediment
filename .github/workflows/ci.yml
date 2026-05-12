@@ -34,6 +34,10 @@ jobs:
           node-version: '20'
           cache: npm
           cache-dependency-path: wp-starter-ai/package-lock.json
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.1'
+          tools: composer
       - name: Build starter theme blocks
         run: |
           cd wp-starter-theme
@@ -42,6 +46,7 @@ jobs:
       - name: Install plugin deps
         run: |
           cd wp-starter-ai
+          composer install --prefer-dist --no-progress
           npm ci
       - name: Start wp-env (mounts both)
         run: cd wp-starter-ai && npm run env:start
@@ -67,8 +72,12 @@ jobs:
           node-version: '20'
           cache: npm
           cache-dependency-path: wp-starter-ai/package-lock.json
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.1'
+          tools: composer
       - run: cd wp-starter-theme && npm ci && npm run build
-      - run: cd wp-starter-ai && npm ci
+      - run: cd wp-starter-ai && composer install --prefer-dist --no-progress && npm ci
       - run: cd wp-starter-ai && npx playwright install --with-deps chromium
       - run: cd wp-starter-ai && npm run env:start
       - run: cd wp-starter-ai && npm run build
