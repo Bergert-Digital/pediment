@@ -1,0 +1,14 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "starter/faq",
+	"title": "FAQ",
+	"category": "starter",
+	"description": "A list of frequently asked questions. Contains FAQ Item child blocks.",
+	"textdomain": "starter",
+	"supports": { "html": false, "align": [ "wide" ] },
+	"attributes": {},
+	"editorScript": "file:./index.js",
+	"style": "file:./style-index.css",
+	"render": "file:./render.php"
+}

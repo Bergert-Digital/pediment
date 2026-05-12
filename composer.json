@@ -1,0 +1,28 @@
+{
+  "name": "bergert/wp-starter-theme",
+  "description": "Starter WordPress block theme",
+  "type": "wordpress-theme",
+  "license": "GPL-2.0-or-later",
+  "require": {
+    "php": ">=8.1"
+  },
+  "require-dev": {
+    "dealerdirect/phpcodesniffer-composer-installer": "^1.0",
+    "wp-coding-standards/wpcs": "^3.1",
+    "phpcompatibility/phpcompatibility-wp": "^2.1",
+    "yoast/phpunit-polyfills": "^3.0",
+    "phpunit/phpunit": "^9.6",
+    "doctrine/instantiator": "^1.5"
+  },
+  "config": {
+    "allow-plugins": {
+      "dealerdirect/phpcodesniffer-composer-installer": true,
+      "composer/installers": true
+    }
+  },
+  "scripts": {
+    "lint": "phpcs",
+    "lint:fix": "phpcbf",
+    "test": "phpunit"
+  }
+}

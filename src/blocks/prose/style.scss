@@ -1,0 +1,43 @@
+.starter-prose {
+  max-width: var(--wp--style--global--content-size);
+  margin-inline: auto;
+  font-size: var(--wp--preset--font-size--base);
+  line-height: 1.75;
+  color: var(--wp--preset--color--text);
+
+  > h2 {
+    font-size: var(--wp--preset--font-size--2xl);
+    margin-top: var(--wp--preset--spacing--50);
+    margin-bottom: var(--wp--preset--spacing--20);
+    letter-spacing: -0.015em;
+  }
+
+  > h3 {
+    font-size: var(--wp--preset--font-size--xl);
+    margin-top: var(--wp--preset--spacing--40);
+    margin-bottom: var(--wp--preset--spacing--20);
+    letter-spacing: -0.01em;
+  }
+
+  > p {
+    margin-block: var(--wp--preset--spacing--20);
+  }
+
+  > ul, > ol {
+    padding-inline-start: var(--wp--preset--spacing--40);
+    line-height: 1.7;
+  }
+
+  > ul li, > ol li {
+    margin-block: var(--wp--preset--spacing--10);
+  }
+
+  a {
+    text-decoration: underline;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 0.2em;
+    transition: color 150ms ease;
+
+    &:hover { color: var(--wp--preset--color--accent-hover); }
+  }
+}

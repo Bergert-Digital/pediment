@@ -1,0 +1,25 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "starter/hero",
+	"title": "Hero",
+	"category": "starter",
+	"description": "A page-opening hero with headline, subheadline, and primary CTA. Variants: default, split, centered, media-bg.",
+	"textdomain": "starter",
+	"supports": { "html": false, "align": [ "wide", "full" ] },
+	"attributes": {
+		"variant": {
+			"type": "string",
+			"default": "default",
+			"enum": [ "default", "split", "centered", "media-bg" ]
+		},
+		"headline": { "type": "string", "default": "" },
+		"subheadline": { "type": "string", "default": "" },
+		"ctaText": { "type": "string", "default": "" },
+		"ctaUrl": { "type": "string", "default": "" },
+		"mediaId": { "type": "number", "default": 0 }
+	},
+	"editorScript": "file:./index.js",
+	"style": "file:./style-index.css",
+	"render": "file:./render.php"
+}

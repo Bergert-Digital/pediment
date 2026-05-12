@@ -1,0 +1,21 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "starter/prose",
+	"title": "Prose",
+	"category": "starter",
+	"description": "Long-form prose with constrained content width and typographic defaults. Contains paragraphs, headings, and lists.",
+	"textdomain": "starter",
+	"supports": {
+		"html": false,
+		"align": [ "wide" ],
+		"layout": {
+			"allowEditing": false,
+			"default": { "type": "constrained" }
+		}
+	},
+	"attributes": {},
+	"editorScript": "file:./index.js",
+	"style": "file:./style-index.css",
+	"render": "file:./render.php"
+}

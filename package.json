@@ -1,0 +1,24 @@
+{
+  "name": "wp-starter-theme",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "start": "wp-scripts start --webpack-src-dir=src/blocks --output-path=build/blocks",
+    "build": "wp-scripts build --webpack-src-dir=src/blocks --output-path=build/blocks",
+    "lint:js": "wp-scripts lint-js src/",
+    "lint:blocks": "node tools/lint-blocks.mjs",
+    "lint:colors": "node tools/lint-colors.mjs",
+    "format": "wp-scripts format src/",
+    "test:js": "wp-scripts test-unit-js",
+    "e2e": "playwright test",
+    "env:start": "wp-env start",
+    "env:stop": "wp-env stop"
+  },
+  "devDependencies": {
+    "@babel/runtime": "^7.29.2",
+    "@playwright/test": "^1.45.0",
+    "@wordpress/env": "^10.0.0",
+    "@wordpress/scripts": "^28.0.0",
+    "typescript": "^5.4.0"
+  }
+}
