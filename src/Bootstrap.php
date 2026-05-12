@@ -39,6 +39,8 @@ final class Bootstrap {
 
 		( new \StarterAi\Settings\Page() )->register();
 
+		add_action( 'admin_notices', [ new \StarterAi\Activation\StreamingCheck(), 'renderNotice' ] );
+
 		add_action( 'enqueue_block_editor_assets', static function () {
 			$asset_path = STARTER_AI_PLUGIN_DIR . '/build/index.asset.php';
 			if ( ! file_exists( $asset_path ) ) {
