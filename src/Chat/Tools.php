@@ -180,6 +180,9 @@ final class Tools {
 	 */
 	private function applyDelete( VirtualTree $tree, array $input ): array {
 		$cid = (string) ( $input['client_id'] ?? '' );
+		if ( '' === $cid ) {
+			return [ 'content' => "Block not found: {$cid}", 'is_error' => true ];
+		}
 		return $tree->delete( $cid )
 			? [ 'content' => [ 'ok' => true ] ]
 			: [ 'content' => "Block not found: {$cid}", 'is_error' => true ];
@@ -190,12 +193,15 @@ final class Tools {
 	 * @return array{content:mixed, is_error?:bool}
 	 */
 	private function applyMove( VirtualTree $tree, array $input ): array {
-		$ok = $tree->move(
-			(string) ( $input['client_id']        ?? '' ),
-			(string) ( $input['target_client_id'] ?? '' ),
-			(string) ( $input['position']         ?? 'after' )
-		);
-		return $ok ? [ 'content' => [ 'ok' => true ] ] : [ 'content' => 'Move failed (block not found)', 'is_error' => true ];
+		$cid    = (string) ( $input['client_id']        ?? '' );
+		$target = (string) ( $input['target_client_id'] ?? '' );
+		if ( '' === $cid || '' === $target ) {
+			return [ 'content' => "Block not found: {$cid}", 'is_error' => true ];
+		}
+		$ok = $tree->move( $cid, $target, (string) ( $input['position'] ?? 'after' ) );
+		return $ok
+			? [ 'content' => [ 'ok' => true ] ]
+			: [ 'content' => "Block not found: {$cid}", 'is_error' => true ];
 	}
 
 	/**

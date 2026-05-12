@@ -76,4 +76,30 @@ class ToolsTest extends \WP_UnitTestCase {
 		$result = $this->tools()->apply( $tree, 'do_unspeakable_things', [] );
 		$this->assertTrue( $result['is_error'] );
 	}
+
+	public function test_apply_delete_block_removes_node(): void {
+		$tree = new VirtualTree( [
+			[ 'clientId' => 'a', 'name' => 'core/paragraph', 'attributes' => [], 'innerBlocks' => [] ],
+			[ 'clientId' => 'b', 'name' => 'core/paragraph', 'attributes' => [], 'innerBlocks' => [] ],
+		] );
+		$result = $this->tools()->apply( $tree, 'delete_block', [ 'client_id' => 'a' ] );
+		$this->assertFalse( $result['is_error'] ?? false );
+		$this->assertNull( $tree->find( 'a' ) );
+		$this->assertNotNull( $tree->find( 'b' ) );
+	}
+
+	public function test_apply_move_block_repositions_node(): void {
+		$tree = new VirtualTree( [
+			[ 'clientId' => 'a', 'name' => 'core/paragraph', 'attributes' => [], 'innerBlocks' => [] ],
+			[ 'clientId' => 'b', 'name' => 'core/paragraph', 'attributes' => [], 'innerBlocks' => [] ],
+			[ 'clientId' => 'c', 'name' => 'core/paragraph', 'attributes' => [], 'innerBlocks' => [] ],
+		] );
+		$result = $this->tools()->apply( $tree, 'move_block', [
+			'client_id'        => 'c',
+			'target_client_id' => 'a',
+			'position'         => 'before',
+		] );
+		$this->assertFalse( $result['is_error'] ?? false );
+		$this->assertSame( [ 'c', 'a', 'b' ], array_column( $tree->toArray(), 'clientId' ) );
+	}
 }
