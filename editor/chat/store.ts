@@ -20,38 +20,44 @@ export type Conversation = {
 type ChatState = {
   conversation: Conversation | null;
   streaming: ChatMessage | null;
+  pendingUserMessage: ChatMessage | null;
   error: string | null;
 };
 
-const initialState: ChatState = { conversation: null, streaming: null, error: null };
+const initialState: ChatState = { conversation: null, streaming: null, pendingUserMessage: null, error: null };
 
 type Action =
   | { type: 'SET_CONVERSATION'; conversation: Conversation | null }
   | { type: 'SET_STREAMING'; streaming: ChatMessage | null }
   | { type: 'CLEAR_STREAMING' }
+  | { type: 'SET_PENDING_USER_MESSAGE'; pendingUserMessage: ChatMessage | null }
   | { type: 'SET_ERROR'; error: string | null };
 
 const reducer = (state: ChatState = initialState, action: Action): ChatState => {
   switch (action.type) {
-    case 'SET_CONVERSATION': return { ...state, conversation: action.conversation };
-    case 'SET_STREAMING':    return { ...state, streaming: action.streaming };
-    case 'CLEAR_STREAMING':  return { ...state, streaming: null };
-    case 'SET_ERROR':        return { ...state, error: action.error };
-    default:                 return state;
+    // The refreshed conversation contains the real persisted user message, so drop the optimistic one.
+    case 'SET_CONVERSATION':         return { ...state, conversation: action.conversation, pendingUserMessage: null };
+    case 'SET_STREAMING':            return { ...state, streaming: action.streaming };
+    case 'CLEAR_STREAMING':          return { ...state, streaming: null };
+    case 'SET_PENDING_USER_MESSAGE': return { ...state, pendingUserMessage: action.pendingUserMessage };
+    case 'SET_ERROR':                return { ...state, error: action.error };
+    default:                         return state;
   }
 };
 
 const actions = {
-  setConversation: (conversation: Conversation | null): Action => ({ type: 'SET_CONVERSATION', conversation }),
-  setStreaming:    (streaming: ChatMessage | null): Action    => ({ type: 'SET_STREAMING', streaming }),
-  clearStreaming:  (): Action                                 => ({ type: 'CLEAR_STREAMING' }),
-  setError:        (error: string | null): Action             => ({ type: 'SET_ERROR', error }),
+  setConversation:       (conversation: Conversation | null): Action  => ({ type: 'SET_CONVERSATION', conversation }),
+  setStreaming:          (streaming: ChatMessage | null): Action      => ({ type: 'SET_STREAMING', streaming }),
+  clearStreaming:        (): Action                                   => ({ type: 'CLEAR_STREAMING' }),
+  setPendingUserMessage: (pendingUserMessage: ChatMessage | null): Action => ({ type: 'SET_PENDING_USER_MESSAGE', pendingUserMessage }),
+  setError:              (error: string | null): Action               => ({ type: 'SET_ERROR', error }),
 };
 
 const selectors = {
-  getConversation: (state: ChatState) => state.conversation,
-  getStreaming:    (state: ChatState) => state.streaming,
-  getError:        (state: ChatState) => state.error,
+  getConversation:       (state: ChatState) => state.conversation,
+  getStreaming:          (state: ChatState) => state.streaming,
+  getPendingUserMessage: (state: ChatState) => state.pendingUserMessage,
+  getError:              (state: ChatState) => state.error,
 };
 
 export const STORE_NAME = 'starter-ai/chat';

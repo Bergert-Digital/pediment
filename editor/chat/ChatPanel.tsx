@@ -8,6 +8,7 @@ import MessageList from './MessageList';
 import Composer from './Composer';
 import SelectionChip from './SelectionChip';
 import QuickActions from './QuickActions';
+import { STORE_NAME, type ChatMessage } from './store';
 
 type Props = {
   /** When mounted from the Block inspector, the selected block is implicit; suppress the chip. */
@@ -18,7 +19,12 @@ export default function ChatPanel({ hideSelectionChip = false }: Props) {
   const postId = useSelect((s) => (s('core/editor') as any).getCurrentPostId(), []) as number | null;
   const { conv, clear } = useConversation(postId);
   const { streaming, error, start, stop } = useChatTurn();
+  const pendingUserMessage = useSelect((s) => (s(STORE_NAME) as any).getPendingUserMessage() as ChatMessage | null, []);
   const selected = useSelectedBlockContext();
+
+  const messages = pendingUserMessage
+    ? [...(conv?.messages ?? []), pendingUserMessage]
+    : conv?.messages ?? [];
 
   const send = (text: string) => {
     if (!conv || !postId) return;
@@ -36,7 +42,7 @@ export default function ChatPanel({ hideSelectionChip = false }: Props) {
         <span className="starter-ai-chat__title">{__('AI Chat', 'starter-ai')}</span>
         <Button variant="tertiary" size="small" onClick={clear}>{__('Clear', 'starter-ai')}</Button>
       </div>
-      <MessageList messages={conv?.messages ?? []} streaming={streaming} />
+      <MessageList messages={messages} streaming={streaming} />
       {error && <div className="starter-ai-chat__error">{error}</div>}
       {selected && !hideSelectionChip && <SelectionChip block={selected} />}
       {selected && <QuickActions block={selected} onAction={send} busy={!!streaming} />}
