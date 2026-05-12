@@ -19,7 +19,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'STARTER_AI_VERSION', '0.1.0' );
+define( 'STARTER_AI_VERSION', '0.2.0' );
 define( 'STARTER_AI_PLUGIN_FILE', __FILE__ );
 define( 'STARTER_AI_PLUGIN_DIR', __DIR__ );
 define( 'STARTER_AI_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
