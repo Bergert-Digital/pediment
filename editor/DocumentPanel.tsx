@@ -1,35 +1,24 @@
 import { PluginDocumentSettingPanel as PluginDocumentSettingPanelFromEditor } from '@wordpress/editor';
 import { PluginDocumentSettingPanel as PluginDocumentSettingPanelFromEditPost } from '@wordpress/edit-post';
 import { Button } from '@wordpress/components';
-import { useState } from '@wordpress/element';
+import { dispatch } from '@wordpress/data';
 import { __ } from '@wordpress/i18n';
-import ComposeModal from './ComposeModal';
-import EditModal from './EditModal';
 
-// WP <6.6 only exposes PluginDocumentSettingPanel on @wordpress/edit-post;
-// WP 6.6+ moved it to @wordpress/editor and deprecated the edit-post export.
-// ?? short-circuits so the deprecated path is only read when the new one is absent.
 const PluginDocumentSettingPanel =
   PluginDocumentSettingPanelFromEditor ?? PluginDocumentSettingPanelFromEditPost;
 
-type Mode = 'idle' | 'compose' | 'edit';
-
 export default function DocumentPanel() {
-  const [mode, setMode] = useState<Mode>('idle');
-
+  const open = () => {
+    const d = dispatch('core/editor') as any;
+    if (typeof d.openGeneralSidebar === 'function') {
+      d.openGeneralSidebar('starter-ai/chat');
+    } else {
+      (dispatch('core/edit-post') as any).openGeneralSidebar('starter-ai/chat');
+    }
+  };
   return (
-    <>
-      <PluginDocumentSettingPanel name="starter-ai" title="AI" className="starter-ai__panel">
-        <Button variant="primary"   onClick={() => setMode('compose')} style={{ marginRight: 8 }}>
-          {__('Compose with AI', 'starter-ai')}
-        </Button>
-        <Button variant="secondary" onClick={() => setMode('edit')}>
-          {__('Edit with AI', 'starter-ai')}
-        </Button>
-      </PluginDocumentSettingPanel>
-
-      {mode === 'compose' && <ComposeModal onClose={() => setMode('idle')} />}
-      {mode === 'edit'    && <EditModal    onClose={() => setMode('idle')} />}
-    </>
+    <PluginDocumentSettingPanel name="starter-ai" title="AI" className="starter-ai__panel">
+      <Button variant="primary" onClick={open}>{__('Open AI Chat', 'starter-ai')}</Button>
+    </PluginDocumentSettingPanel>
   );
 }
