@@ -1,0 +1,17 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "starter/faq-item",
+	"title": "FAQ Item",
+	"category": "starter",
+	"description": "A single question and answer in an FAQ list.",
+	"parent": [ "starter/faq" ],
+	"textdomain": "starter",
+	"supports": { "html": false, "inserter": false },
+	"attributes": {
+		"question": { "type": "string", "default": "" },
+		"answer": { "type": "string", "default": "" }
+	},
+	"editorScript": "file:./index.js",
+	"render": "file:./render.php"
+}

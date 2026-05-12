@@ -1,0 +1,13 @@
+node_modules/
+vendor/
+build/
+.env
+.env.local
+.phpunit.result.cache
+playwright-report/
+test-results/
+.DS_Store
+.worktrees/
+.claude/
+tests/fixtures/uploads/*
+!tests/fixtures/uploads/.gitkeep

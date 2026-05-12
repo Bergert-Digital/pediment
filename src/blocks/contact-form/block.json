@@ -1,0 +1,21 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "starter/contact-form",
+	"title": "Contact Form",
+	"category": "starter",
+	"description": "A contact form with name, email, message (and optional phone). Submissions are stored privately and emailed to the configured recipient.",
+	"textdomain": "starter",
+	"supports": { "html": false, "align": [ "wide" ] },
+	"attributes": {
+		"includePhone": { "type": "boolean", "default": false },
+		"recipientOverride": { "type": "string", "default": "" },
+		"successMessage": {
+			"type": "string",
+			"default": "Thanks — we'll be in touch shortly."
+		}
+	},
+	"editorScript": "file:./index.js",
+	"style": "file:./style-index.css",
+	"render": "file:./render.php"
+}
