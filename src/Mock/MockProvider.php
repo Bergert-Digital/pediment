@@ -74,13 +74,32 @@ final class MockProvider implements ProviderInterface {
 	}
 
 	/**
-	 * Stub — replaced by the real implementation in Task 8.
-	 *
 	 * @param array<string,mixed> $args
-	 * @return \WP_Error
+	 * @return \Generator<int,array<string,mixed>>|\WP_Error
 	 */
 	public function stream_messages( array $args ) {
-		return new \WP_Error( 'starter_ai_mock_not_implemented', 'stream_messages not implemented in stub' );
+		$text    = $this->concatenateUserText( $args );
+		$fixture = $this->resolveChatFixture( $text );
+		$path    = $this->fixturesDir . '/chat/' . $fixture . '.json';
+		if ( ! file_exists( $path ) ) {
+			return new \WP_Error( 'starter_ai_mock_missing', "Missing chat fixture: {$fixture}" );
+		}
+		$events = json_decode( (string) file_get_contents( $path ), true );
+		if ( ! is_array( $events ) ) {
+			return new \WP_Error( 'starter_ai_mock_invalid', "Invalid chat fixture: {$fixture}" );
+		}
+		return ( static function () use ( $events ) {
+			foreach ( $events as $e ) {
+				yield $e;
+			}
+		} )();
+	}
+
+	private function resolveChatFixture( string $text ): string {
+		if ( false !== stripos( $text, 'selected_block.clientId' ) || false !== stripos( $text, 'selected paragraph' ) ) {
+			return 'update-selected';
+		}
+		return 'insert-paragraph';
 	}
 
 	private function resolveRefineFixture( string $text ): string {
