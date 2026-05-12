@@ -5,8 +5,11 @@ import { Button } from '@wordpress/components';
 import { __ } from '@wordpress/i18n';
 import useConversation from './hooks/useConversation';
 import useChatTurn from './hooks/useChatTurn';
+import useSelectedBlockContext from './hooks/useSelectedBlockContext';
 import MessageList from './chat/MessageList';
 import Composer from './chat/Composer';
+import SelectionChip from './chat/SelectionChip';
+import QuickActions from './chat/QuickActions';
 
 const PluginSidebar = PluginSidebarFromEditor ?? PluginSidebarFromEditPost;
 
@@ -16,14 +19,15 @@ export default function ChatSidebar() {
   const postId = useSelect((s) => (s('core/editor') as any).getCurrentPostId(), []) as number | null;
   const { conv, error: convError, reload, clear } = useConversation(postId);
   const { streaming, error: turnError, start, stop } = useChatTurn();
+  const selected = useSelectedBlockContext();
 
-  const send = (text: string) => {
+  const sendWithSelection = (text: string) => {
     if (!conv || !postId) return;
     start({
       conversationId: conv.id,
       postId,
       message: text,
-      selectedBlock: null,
+      selectedBlock: selected,
       onComplete: () => reload(),
     });
   };
@@ -36,7 +40,13 @@ export default function ChatSidebar() {
       </div>
       <MessageList messages={conv?.messages ?? []} streaming={streaming} />
       {(convError || turnError) && <div className="starter-ai-chat__error">{convError ?? turnError}</div>}
-      <Composer onSubmit={send} onStop={stop} busy={!!streaming} />
+      {selected && (
+        <>
+          <SelectionChip block={selected} />
+          <QuickActions block={selected} onAction={sendWithSelection} busy={!!streaming} />
+        </>
+      )}
+      <Composer onSubmit={sendWithSelection} onStop={stop} busy={!!streaming} />
     </PluginSidebar>
   );
 }

@@ -24,5 +24,9 @@
   &__composer { border-top: 1px solid #ddd; padding: 8px; display: flex; flex-direction: column; gap: 6px; }
   &__composer textarea { width: 100%; resize: vertical; }
   &__composer-actions { display: flex; justify-content: flex-end; }
+  &__chip    { display: flex; align-items: center; gap: 8px; padding: 6px 12px; background: #fffbe6; border-top: 1px solid #f1d889; font-size: 12px; }
+  &__chip-type    { font-weight: 600; }
+  &__chip-preview { color: #555; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  &__quick   { display: flex; flex-wrap: wrap; gap: 6px; padding: 6px 12px 0; }
 }
 @keyframes starter-ai-blink { 50% { opacity: 0; } }
