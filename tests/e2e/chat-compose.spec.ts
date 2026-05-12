@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { login, openNewPage } from './utils';
+import { login, openNewPage, canvas } from './utils';
 
 test('chat sidebar inserts a paragraph from mock fixture', async ({ page }) => {
   await login(page);
@@ -20,5 +20,6 @@ test('chat sidebar inserts a paragraph from mock fixture', async ({ page }) => {
   await expect(sidebar.getByText(/adding a paragraph/i)).toBeVisible({ timeout: 15_000 });
 
   // The canvas should receive the inserted paragraph.
-  await expect(page.locator('p.wp-block-paragraph', { hasText: 'Hello from mock.' })).toBeVisible({ timeout: 10_000 });
+  const editor = await canvas(page);
+  await expect(editor.locator('p.wp-block-paragraph', { hasText: 'Hello from mock.' })).toBeVisible({ timeout: 10_000 });
 });

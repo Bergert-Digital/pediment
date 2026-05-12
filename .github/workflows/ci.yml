@@ -51,7 +51,7 @@ jobs:
       - name: Start wp-env (mounts both)
         run: cd wp-starter-ai && npm run env:start
       - name: Run PHPUnit
-        run: cd wp-starter-ai && npx wp-env run tests-wordpress --env-cwd=wp-content/plugins/wp-starter-ai phpunit
+        run: cd wp-starter-ai && npx wp-env run tests-wordpress --env-cwd=wp-content/plugins/wp-starter-ai ./vendor/bin/phpunit
       - if: always()
         run: cd wp-starter-ai && npm run env:stop
 
