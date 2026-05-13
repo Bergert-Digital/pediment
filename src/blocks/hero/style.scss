@@ -4,18 +4,6 @@
 
   &.is-variant-centered { text-align: center; }
 
-  &.is-variant-split {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: var(--wp--preset--spacing--40);
-    align-items: center;
-
-    @media (min-width: 768px) {
-      grid-template-columns: 1.1fr 1fr;
-      gap: var(--wp--preset--spacing--50);
-    }
-  }
-
   &.is-variant-media-bg {
     background-size: cover;
     background-position: center;

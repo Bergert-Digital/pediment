@@ -4,14 +4,14 @@
 	"name": "starter/hero",
 	"title": "Hero",
 	"category": "starter",
-	"description": "A page-opening hero with headline, subheadline, and primary CTA. Variants: default, split, centered, media-bg.",
+	"description": "A page-opening hero with headline, subheadline, and primary CTA. Variants: default, centered, media-bg.",
 	"textdomain": "starter",
 	"supports": { "html": false, "align": [ "wide", "full" ] },
 	"attributes": {
 		"variant": {
 			"type": "string",
 			"default": "default",
-			"enum": [ "default", "split", "centered", "media-bg" ]
+			"enum": [ "default", "centered", "media-bg" ]
 		},
 		"headline": { "type": "string", "default": "" },
 		"subheadline": { "type": "string", "default": "" },
