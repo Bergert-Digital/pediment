@@ -54,18 +54,26 @@ export default function Edit( {
 					onChange={ ( v ) => setAttributes( { body: v } ) }
 					placeholder={ __( 'Body…', 'starter' ) }
 				/>
-				<RichText
-					tagName="span"
-					value={ attributes.primaryText }
-					onChange={ ( v ) => setAttributes( { primaryText: v } ) }
-					placeholder={ __( 'Primary CTA…', 'starter' ) }
-				/>
-				<RichText
-					tagName="span"
-					value={ attributes.secondaryText }
-					onChange={ ( v ) => setAttributes( { secondaryText: v } ) }
-					placeholder={ __( 'Secondary CTA (optional)…', 'starter' ) }
-				/>
+				<div className="starter-cta__actions">
+					<RichText
+						tagName="div"
+						className="starter-cta__btn starter-cta__btn--primary"
+						value={ attributes.primaryText }
+						onChange={ ( v ) =>
+							setAttributes( { primaryText: v } )
+						}
+						placeholder={ __( 'Primary CTA…', 'starter' ) }
+					/>
+					<RichText
+						tagName="div"
+						className="starter-cta__btn starter-cta__btn--secondary"
+						value={ attributes.secondaryText }
+						onChange={ ( v ) =>
+							setAttributes( { secondaryText: v } )
+						}
+						placeholder={ __( 'Secondary CTA (optional)…', 'starter' ) }
+					/>
+				</div>
 			</div>
 		</>
 	);
