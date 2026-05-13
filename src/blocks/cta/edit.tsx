@@ -71,7 +71,10 @@ export default function Edit( {
 						onChange={ ( v ) =>
 							setAttributes( { secondaryText: v } )
 						}
-						placeholder={ __( 'Secondary CTA (optional)…', 'starter' ) }
+						placeholder={ __(
+							'Secondary CTA (optional)…',
+							'starter'
+						) }
 					/>
 				</div>
 			</div>
