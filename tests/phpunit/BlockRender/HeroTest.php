@@ -54,6 +54,7 @@ class HeroTest extends WP_UnitTestCase {
 
 	public function test_block_json_description_does_not_mention_split() {
 		$path = dirname( __DIR__, 3 ) . '/src/blocks/hero/block.json';
+		$this->assertFileIsReadable( $path );
 		$data = json_decode( file_get_contents( $path ), true );
 		$this->assertIsArray( $data );
 		$this->assertStringNotContainsStringIgnoringCase( 'split', $data['description'] );
