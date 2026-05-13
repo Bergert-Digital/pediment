@@ -9,5 +9,6 @@ test-results/
 .DS_Store
 .worktrees/
 .claude/
+.wp-env.override.json
 tests/fixtures/uploads/*
 !tests/fixtures/uploads/.gitkeep
