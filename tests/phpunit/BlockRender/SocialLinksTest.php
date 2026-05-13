@@ -29,6 +29,8 @@ class SocialLinksTest extends WP_UnitTestCase {
 		$html = $this->render();
 		// Two <a> elements, one per configured link.
 		$this->assertSame( 2, substr_count( $html, '<a ' ) );
+		$this->assertStringContainsString( 'href="https://twitter.com/x"', $html );
+		$this->assertStringContainsString( 'href="https://github.com/x"', $html );
 	}
 
 	public function test_known_platform_renders_inline_svg_icon() {

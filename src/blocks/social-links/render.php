@@ -16,9 +16,13 @@
  */
 if ( ! function_exists( 'starter_social_links_icons' ) ) :
 function starter_social_links_icons(): array {
+	// The <title> inside each SVG is for source-code readability only —
+	// the SVG is marked aria-hidden so neither role nor title reaches
+	// assistive tech. The link's accessible name comes from the parent
+	// <a aria-label="…">.
 	$svg = static function ( string $title, string $path ): string {
 		return sprintf(
-			'<svg role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><title>%s</title><path d="%s"/></svg>',
+			'<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><title>%s</title><path d="%s"/></svg>',
 			esc_html( $title ),
 			esc_attr( $path )
 		);
@@ -89,7 +93,7 @@ ob_start();
 		$label = $labels[ $platform ] ?? ucfirst( $platform );
 		?>
 		<li class="starter-social-links__item">
-			<a href="<?php echo esc_url( $url ); ?>" aria-label="<?php echo esc_attr( $label ); ?>" rel="noopener noreferrer">
+			<a href="<?php echo esc_url( $url ); ?>" aria-label="<?php echo esc_attr( $label ); ?>" rel="noopener noreferrer" target="_blank">
 				<?php if ( '' !== $icon ) : ?>
 					<span class="starter-social-links__icon" aria-hidden="true"><?php echo $icon; // phpcs:ignore WordPress.Security.EscapeOutput ?></span>
 				<?php else : ?>
