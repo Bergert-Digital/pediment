@@ -1,0 +1,14 @@
+{
+  "$schema": "https://schemas.wp.org/trunk/block.json",
+  "apiVersion": 3,
+  "name": "starter/social-links",
+  "title": "Social Links",
+  "category": "starter",
+  "description": "Renders the social links configured in Settings → Brand Settings. Hides itself when none are configured.",
+  "textdomain": "starter",
+  "supports": { "html": false, "align": [ "wide" ] },
+  "attributes": {},
+  "editorScript": "file:./index.js",
+  "style": "file:./style-index.css",
+  "render": "file:./render.php"
+}
