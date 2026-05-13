@@ -15,12 +15,14 @@ export default function Edit( {
 		<blockquote { ...blockProps }>
 			<RichText
 				tagName="p"
+				className="starter-pull-quote__quote"
 				value={ attributes.quote }
 				onChange={ ( v ) => setAttributes( { quote: v } ) }
 				placeholder={ __( 'Quote…', 'starter' ) }
 			/>
 			<RichText
 				tagName="cite"
+				className="starter-pull-quote__citation"
 				value={ attributes.citation }
 				onChange={ ( v ) => setAttributes( { citation: v } ) }
 				placeholder={ __( 'Citation (optional)…', 'starter' ) }

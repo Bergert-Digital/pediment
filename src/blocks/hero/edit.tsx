@@ -76,18 +76,21 @@ export default function Edit( {
 			<div { ...blockProps }>
 				<RichText
 					tagName="h1"
+					className="starter-hero__headline"
 					value={ attributes.headline }
 					onChange={ ( v ) => setAttributes( { headline: v } ) }
 					placeholder={ __( 'Headline…', 'starter' ) }
 				/>
 				<RichText
 					tagName="p"
+					className="starter-hero__subheadline"
 					value={ attributes.subheadline }
 					onChange={ ( v ) => setAttributes( { subheadline: v } ) }
 					placeholder={ __( 'Subheadline…', 'starter' ) }
 				/>
 				<RichText
 					tagName="span"
+					className="starter-hero__cta"
 					value={ attributes.ctaText }
 					onChange={ ( v ) => setAttributes( { ctaText: v } ) }
 					placeholder={ __( 'CTA text…', 'starter' ) }

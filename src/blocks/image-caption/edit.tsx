@@ -60,6 +60,7 @@ export default function Edit( {
 								aria-label={ __( 'Replace image', 'starter' ) }
 							>
 								<img
+									className="starter-image-caption__img"
 									src={ ( media as any ).source_url }
 									alt={
 										attributes.altOverride ||
@@ -77,6 +78,7 @@ export default function Edit( {
 				/>
 				<RichText
 					tagName="figcaption"
+					className="starter-image-caption__caption"
 					value={ attributes.caption }
 					onChange={ ( v ) => setAttributes( { caption: v } ) }
 					placeholder={ __( 'Caption (optional)…', 'starter' ) }

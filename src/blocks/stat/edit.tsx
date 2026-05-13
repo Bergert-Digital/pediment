@@ -14,19 +14,22 @@ export default function Edit( {
 	return (
 		<div { ...blockProps }>
 			<RichText
-				tagName="span"
+				tagName="strong"
+				className="starter-stat__value"
 				value={ attributes.value }
 				onChange={ ( v ) => setAttributes( { value: v } ) }
 				placeholder={ __( '99%', 'starter' ) }
 			/>
 			<RichText
 				tagName="span"
+				className="starter-stat__label"
 				value={ attributes.label }
 				onChange={ ( v ) => setAttributes( { label: v } ) }
 				placeholder={ __( 'Uptime', 'starter' ) }
 			/>
 			<RichText
 				tagName="span"
+				className="starter-stat__context"
 				value={ attributes.context }
 				onChange={ ( v ) => setAttributes( { context: v } ) }
 				placeholder={ __( 'Context (optional)', 'starter' ) }
