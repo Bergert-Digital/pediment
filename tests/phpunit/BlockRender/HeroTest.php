@@ -39,4 +39,23 @@ class HeroTest extends WP_UnitTestCase {
 		);
 		$this->assertStringNotContainsString( '<a', $html );
 	}
+
+	public function test_block_json_variant_enum_excludes_split() {
+		$path = dirname( __DIR__, 3 ) . '/src/blocks/hero/block.json';
+		$this->assertFileIsReadable( $path );
+		$data = json_decode( file_get_contents( $path ), true );
+		$this->assertIsArray( $data );
+		$this->assertSame(
+			array( 'default', 'centered', 'media-bg' ),
+			$data['attributes']['variant']['enum'],
+			'block.json variant enum should not include "split" — UI advertised a variant the renderer never produced'
+		);
+	}
+
+	public function test_block_json_description_does_not_mention_split() {
+		$path = dirname( __DIR__, 3 ) . '/src/blocks/hero/block.json';
+		$data = json_decode( file_get_contents( $path ), true );
+		$this->assertIsArray( $data );
+		$this->assertStringNotContainsStringIgnoringCase( 'split', $data['description'] );
+	}
 }

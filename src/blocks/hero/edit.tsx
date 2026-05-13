@@ -13,7 +13,7 @@ import {
 } from '@wordpress/components';
 
 type Attrs = {
-	variant: 'default' | 'split' | 'centered' | 'media-bg';
+	variant: 'default' | 'centered' | 'media-bg';
 	headline: string;
 	subheadline: string;
 	ctaText: string;
@@ -41,7 +41,6 @@ export default function Edit( {
 						value={ attributes.variant }
 						options={ [
 							{ label: 'Default', value: 'default' },
-							{ label: 'Split', value: 'split' },
 							{ label: 'Centered', value: 'centered' },
 							{ label: 'Media BG', value: 'media-bg' },
 						] }
