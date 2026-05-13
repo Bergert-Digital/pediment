@@ -1,1 +1,47 @@
-// Styles land in Task 3.
+.starter-social-links {
+	display: flex;
+	gap: var(--wp--preset--spacing--20);
+	list-style: none;
+	padding: 0;
+	margin: 0;
+	justify-content: center;
+
+	&__item {
+		display: inline-block;
+	}
+
+	a {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		width: 2rem;
+		height: 2rem;
+		color: var(--wp--preset--color--text-muted);
+		border-radius: 9999px;
+		text-decoration: none;
+		transition: color 0.15s ease;
+
+		&:hover,
+		&:focus-visible {
+			color: var(--wp--preset--color--accent);
+		}
+
+		&:focus-visible {
+			outline: 2px solid var(--wp--preset--color--accent);
+			outline-offset: 2px;
+		}
+	}
+
+	&__icon svg {
+		width: 1.125rem;
+		height: 1.125rem;
+		display: block;
+		fill: currentColor;
+	}
+
+	&__label {
+		font-size: var(--wp--preset--font-size--xs);
+		padding: 0 var(--wp--preset--spacing--10);
+		color: var(--wp--preset--color--text-muted);
+	}
+}
