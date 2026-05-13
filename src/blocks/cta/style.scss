@@ -47,6 +47,7 @@
 
     &:hover {
       background: var(--wp--preset--color--accent-hover);
+      color: var(--wp--preset--color--surface);
       transform: translateY(-1px);
       box-shadow: var(--wp--preset--shadow--medium);
     }
