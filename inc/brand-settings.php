@@ -38,33 +38,39 @@ add_action(
 			)
 		);
 
-		add_settings_section( 'identity', __( 'Identity', 'starter' ), '__return_false', STARTER_BRAND_PAGE );
-		add_settings_section( 'contact', __( 'Contact', 'starter' ), '__return_false', STARTER_BRAND_PAGE );
-		add_settings_section( 'social', __( 'Social', 'starter' ), '__return_false', STARTER_BRAND_PAGE );
-		add_settings_section( 'og', __( 'OG / SEO', 'starter' ), '__return_false', STARTER_BRAND_PAGE );
+		foreach ( \Starter\BrandRegistry::sections() as $slug => $section ) {
+			add_settings_section( $slug, $section['title'], '__return_false', STARTER_BRAND_PAGE );
+		}
 
-		add_settings_field( 'brand_name', __( 'Brand name', 'starter' ), 'starter_brand_field_text', STARTER_BRAND_PAGE, 'identity', array( 'key' => 'brand_name' ) );
-		add_settings_field( 'brand_tagline', __( 'Tagline', 'starter' ), 'starter_brand_field_text', STARTER_BRAND_PAGE, 'identity', array( 'key' => 'brand_tagline' ) );
-		add_settings_field( 'voice_tone', __( 'Voice / tone', 'starter' ), 'starter_brand_field_textarea', STARTER_BRAND_PAGE, 'identity', array( 'key' => 'voice_tone' ) );
-		add_settings_field( 'logo_id', __( 'Logo', 'starter' ), 'starter_brand_field_image', STARTER_BRAND_PAGE, 'identity', array( 'key' => 'logo_id' ) );
-
-		add_settings_field(
-			'contact_email',
-			__( 'Contact email', 'starter' ),
-			'starter_brand_field_text',
-			STARTER_BRAND_PAGE,
-			'contact',
-			array(
-				'key'  => 'contact_email',
-				'type' => 'email',
-			)
+		$renderers = array(
+			'text'     => 'starter_brand_field_text',
+			'textarea' => 'starter_brand_field_textarea',
+			'email'    => 'starter_brand_field_text',
+			'image'    => 'starter_brand_field_image',
+			'social'   => 'starter_brand_field_social',
+			'integer'  => 'starter_brand_field_text',
 		);
-		add_settings_field( 'phone', __( 'Phone', 'starter' ), 'starter_brand_field_text', STARTER_BRAND_PAGE, 'contact', array( 'key' => 'phone' ) );
-		add_settings_field( 'address', __( 'Address', 'starter' ), 'starter_brand_field_textarea', STARTER_BRAND_PAGE, 'contact', array( 'key' => 'address' ) );
 
-		add_settings_field( 'social_links', __( 'Social links', 'starter' ), 'starter_brand_field_social', STARTER_BRAND_PAGE, 'social', array( 'key' => 'social_links' ) );
+		foreach ( \Starter\BrandRegistry::fields() as $key => $field ) {
+			$type     = $field['type'];
+			$renderer = $field['renderer'] ?? $renderers[ $type ] ?? 'starter_brand_field_text';
 
-		add_settings_field( 'og_image_id', __( 'Default OG image', 'starter' ), 'starter_brand_field_image', STARTER_BRAND_PAGE, 'og', array( 'key' => 'og_image_id' ) );
+			$args = array( 'key' => $key );
+			if ( 'email' === $type ) {
+				$args['type'] = 'email';
+			} elseif ( 'integer' === $type ) {
+				$args['type'] = 'number';
+			}
+
+			add_settings_field(
+				$key,
+				$field['label'],
+				$renderer,
+				STARTER_BRAND_PAGE,
+				$field['section'],
+				$args
+			);
+		}
 	}
 );
 

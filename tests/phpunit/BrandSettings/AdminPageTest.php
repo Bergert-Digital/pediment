@@ -45,4 +45,32 @@ class AdminPageTest extends WP_UnitTestCase {
 		$this->assertCount( 1, $sanitized['social_links'] );
 		$this->assertSame( 'twitter', $sanitized['social_links'][0]['platform'] );
 	}
+
+	public function test_filter_added_field_registers_a_settings_field() {
+		$cb = static function ( $fields ) {
+			$fields['newsletter_form_id'] = array(
+				'label'    => 'Newsletter form ID',
+				'section'  => 'contact',
+				'type'     => 'integer',
+				'default'  => 0,
+				'sanitize' => 'absint',
+			);
+			return $fields;
+		};
+		add_filter( 'starter_brand_fields', $cb );
+
+		$this->setExpectedIncorrectUsage( 'wp_add_privacy_policy_content' );
+		ob_start();
+		@do_action( 'admin_init' );
+		ob_end_clean();
+
+		global $wp_settings_fields;
+		$this->assertArrayHasKey(
+			'newsletter_form_id',
+			$wp_settings_fields[ STARTER_BRAND_PAGE ]['contact'] ?? array(),
+			'Filter-added field should appear in $wp_settings_fields under its section.'
+		);
+
+		remove_filter( 'starter_brand_fields', $cb );
+	}
 }
