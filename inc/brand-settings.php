@@ -170,33 +170,60 @@ function starter_brand_sanitize( $input ): array {
 	}
 	$clean = array();
 
-	foreach ( array( 'brand_name', 'brand_tagline', 'voice_tone', 'contact_email', 'phone', 'address' ) as $k ) {
-		$clean[ $k ] = isset( $input[ $k ] ) ? sanitize_text_field( wp_unslash( (string) $input[ $k ] ) ) : '';
-	}
-	if ( '' !== $clean['contact_email'] && ! is_email( $clean['contact_email'] ) ) {
-		add_settings_error( \Starter\Brand::OPTION, 'invalid_email', __( 'Contact email is invalid.', 'starter' ) );
-		$clean['contact_email'] = '';
-	}
+	$type_sanitizers = array(
+		'text'     => 'sanitize_text_field',
+		'textarea' => 'sanitize_textarea_field',
+		'integer'  => 'absint',
+		'image'    => 'absint',
+	);
 
-	$clean['logo_id']     = isset( $input['logo_id'] ) ? (int) $input['logo_id'] : 0;
-	$clean['og_image_id'] = isset( $input['og_image_id'] ) ? (int) $input['og_image_id'] : 0;
+	foreach ( \Starter\BrandRegistry::fields() as $key => $field ) {
+		$type   = $field['type'];
+		$custom = $field['sanitize'] ?? null;
+		$raw    = $input[ $key ] ?? null;
 
-	$clean['social_links'] = array();
-	if ( isset( $input['social_links'] ) && is_array( $input['social_links'] ) ) {
-		foreach ( $input['social_links'] as $row ) {
-			if ( ! is_array( $row ) ) {
-				continue;
+		if ( is_callable( $custom ) ) {
+			$clean[ $key ] = call_user_func( $custom, $raw );
+			continue;
+		}
+
+		if ( 'email' === $type ) {
+			$value = isset( $raw ) ? sanitize_text_field( wp_unslash( (string) $raw ) ) : '';
+			if ( '' !== $value && ! is_email( $value ) ) {
+				add_settings_error( \Starter\Brand::OPTION, 'invalid_' . $key, sprintf( __( '%s is invalid.', 'starter' ), $field['label'] ) );
+				$value = '';
 			}
-			$platform  = isset( $row['platform'] ) ? sanitize_key( $row['platform'] ) : '';
-			$raw_url   = isset( $row['url'] ) ? (string) $row['url'] : '';
-			$url       = $raw_url ? esc_url_raw( $raw_url ) : '';
-			$valid_url = $url && wp_http_validate_url( $url );
-			if ( '' !== $platform && $valid_url ) {
-				$clean['social_links'][] = array(
-					'platform' => $platform,
-					'url'      => $url,
-				);
+			$clean[ $key ] = $value;
+			continue;
+		}
+
+		if ( 'social' === $type ) {
+			$clean[ $key ] = array();
+			if ( is_array( $raw ) ) {
+				foreach ( $raw as $row ) {
+					if ( ! is_array( $row ) ) {
+						continue;
+					}
+					$platform  = isset( $row['platform'] ) ? sanitize_key( $row['platform'] ) : '';
+					$raw_url   = isset( $row['url'] ) ? (string) $row['url'] : '';
+					$url       = $raw_url ? esc_url_raw( $raw_url ) : '';
+					$valid_url = $url && wp_http_validate_url( $url );
+					if ( '' !== $platform && $valid_url ) {
+						$clean[ $key ][] = array(
+							'platform' => $platform,
+							'url'      => $url,
+						);
+					}
+				}
 			}
+			continue;
+		}
+
+		$sanitizer = $type_sanitizers[ $type ] ?? 'sanitize_text_field';
+		if ( 'absint' === $sanitizer ) {
+			$clean[ $key ] = isset( $raw ) ? absint( $raw ) : 0;
+		} else {
+			$clean[ $key ] = isset( $raw ) ? call_user_func( $sanitizer, wp_unslash( (string) $raw ) ) : '';
 		}
 	}
 
