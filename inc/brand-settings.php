@@ -183,6 +183,7 @@ function starter_brand_sanitize( $input ): array {
 		$raw    = $input[ $key ] ?? null;
 
 		if ( is_callable( $custom ) ) {
+			// Callable receives the raw value or null if the field is absent from $input.
 			$clean[ $key ] = call_user_func( $custom, $raw );
 			continue;
 		}
