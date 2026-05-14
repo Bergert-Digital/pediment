@@ -53,4 +53,46 @@ class SchemaBuilderTest extends \WP_UnitTestCase {
 		SchemaBuilder::invalidate();
 		$this->assertFalse( get_transient( 'starter_ai_schema' ) );
 	}
+
+	public function test_block_namespaces_filter_extends_allowlist() {
+		\StarterAi\Anthropic\SchemaBuilder::invalidate();
+
+		register_block_type(
+			'acme/promo-banner',
+			array(
+				'description' => 'A promotional banner.',
+				'attributes'  => array( 'text' => array( 'type' => 'string' ) ),
+			)
+		);
+
+		add_filter( 'starter_ai_block_namespaces', function ( $namespaces ) {
+			$namespaces[] = 'acme';
+			return $namespaces;
+		} );
+
+		$schema = ( new \StarterAi\Anthropic\SchemaBuilder() )->build( true );
+
+		$this->assertArrayHasKey( 'acme/promo-banner', $schema['blocks'] );
+		$this->assertSame( 'A promotional banner.', $schema['blocks']['acme/promo-banner']['description'] );
+
+		unregister_block_type( 'acme/promo-banner' );
+	}
+
+	public function test_block_namespaces_default_excludes_unknown_namespaces() {
+		\StarterAi\Anthropic\SchemaBuilder::invalidate();
+
+		register_block_type(
+			'thirdparty/widget',
+			array(
+				'description' => 'Should be ignored by default.',
+				'attributes'  => array(),
+			)
+		);
+
+		$schema = ( new \StarterAi\Anthropic\SchemaBuilder() )->build( true );
+
+		$this->assertArrayNotHasKey( 'thirdparty/widget', $schema['blocks'] );
+
+		unregister_block_type( 'thirdparty/widget' );
+	}
 }
