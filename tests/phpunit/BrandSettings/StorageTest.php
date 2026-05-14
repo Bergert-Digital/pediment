@@ -38,4 +38,23 @@ class StorageTest extends WP_UnitTestCase {
 		$this->assertCount( 1, $links );
 		$this->assertSame( 'twitter', $links[0]['platform'] );
 	}
+
+	public function test_all_includes_filter_added_defaults() {
+		$cb = static function ( $fields ) {
+			$fields['legal_page_id'] = array(
+				'label'   => 'Legal page',
+				'section' => 'identity',
+				'type'    => 'integer',
+				'default' => 42,
+			);
+			return $fields;
+		};
+		add_filter( 'starter_brand_fields', $cb );
+
+		$all = \Starter\Brand::all();
+		$this->assertArrayHasKey( 'legal_page_id', $all );
+		$this->assertSame( 42, $all['legal_page_id'] );
+
+		remove_filter( 'starter_brand_fields', $cb );
+	}
 }
