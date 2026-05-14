@@ -77,9 +77,20 @@ final class SchemaBuilder {
 
 		$blocks = self::CORE_ALLOWLIST;
 
+		/**
+		 * Filter the block namespaces that the AI plugin discovers.
+		 *
+		 * Evaluated only on cache misses. Call SchemaBuilder::invalidate() after
+		 * registering this filter at runtime to force re-discovery.
+		 *
+		 * @param array<int,string> $namespaces Namespace prefixes (without trailing slash).
+		 */
+		$namespaces = (array) apply_filters( 'starter_ai_block_namespaces', array( 'starter', 'client' ) );
+		$pattern    = '#^(' . implode( '|', array_map( 'preg_quote', $namespaces ) ) . ')/#';
+
 		$registry = \WP_Block_Type_Registry::get_instance();
 		foreach ( $registry->get_all_registered() as $name => $type ) {
-			if ( ! preg_match( '#^(starter|client)/#', (string) $name ) ) {
+			if ( ! preg_match( $pattern, (string) $name ) ) {
 				continue;
 			}
 

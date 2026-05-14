@@ -50,4 +50,26 @@ class PromptBuilderTest extends \WP_UnitTestCase {
 		$this->assertSame( 'first prompt',  $sliced[0]['content'][0]['text'] );
 		$this->assertSame( 'second prompt', $sliced[1]['content'][0]['text'] );
 	}
+
+	public function test_system_prompt_is_filterable(): void {
+		$cb = static function ( $prompt, $schema ) {
+			return $prompt . "\n\nAcme brand voice: confident and concise.";
+		};
+		add_filter( 'starter_ai_system_prompt', $cb, 10, 2 );
+
+		$builder = new PromptBuilder( [
+			'starter/hero' => [
+				'description'       => 'A hero block.',
+				'attributes'        => [],
+				'allowsInnerBlocks' => false,
+			],
+		] );
+
+		$prompt = $builder->systemPrompt();
+
+		$this->assertStringContainsString( 'Acme brand voice: confident and concise.', $prompt );
+		$this->assertStringContainsString( 'starter/hero', $prompt, 'Original prompt content must still be present.' );
+
+		remove_filter( 'starter_ai_system_prompt', $cb, 10 );
+	}
 }
