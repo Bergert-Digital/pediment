@@ -49,4 +49,4 @@ add_filter( 'starter_ai_model_compose', function ( $model ) {
 } );
 ```
 
-The filters `starter_ai_model_edit` and `starter_ai_model_refine` follow the same signature and will gate edit and refine flows as those are wired up in future releases. All three are already hooked internally to respect the model settings configured in the admin Settings page, so child-theme overrides will take precedence only when the admin fields are left blank.
+The filters `starter_ai_model_edit` and `starter_ai_model_refine` follow the same signature and are declared for future use — they will gate edit and refine flows once those endpoints are wired up. **They are not invoked today; a hook on either will have no effect until then.** `starter_ai_model_compose` is already hooked internally to respect the model setting configured on the admin Settings page, so child-theme overrides take precedence only when the admin field is left blank.
