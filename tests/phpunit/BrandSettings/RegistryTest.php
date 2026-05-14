@@ -70,4 +70,19 @@ class RegistryTest extends WP_UnitTestCase {
 
         remove_filter( 'starter_brand_fields', $cb );
     }
+
+    public function test_starter_brand_sections_filter_adds_sections() {
+        $cb = static function ( $sections ) {
+            $sections['legal'] = array( 'title' => 'Legal' );
+            return $sections;
+        };
+        add_filter( 'starter_brand_sections', $cb );
+
+        $sections = \Starter\BrandRegistry::sections();
+
+        $this->assertArrayHasKey( 'legal', $sections );
+        $this->assertSame( 'Legal', $sections['legal']['title'] );
+
+        remove_filter( 'starter_brand_sections', $cb );
+    }
 }
