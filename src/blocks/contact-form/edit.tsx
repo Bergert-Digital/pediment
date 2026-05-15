@@ -1,10 +1,11 @@
 import { __ } from '@wordpress/i18n';
+import { useBlockProps, InspectorControls } from '@wordpress/block-editor';
 import {
-	useBlockProps,
-	RichText,
-	InspectorControls,
-} from '@wordpress/block-editor';
-import { PanelBody, ToggleControl, TextControl } from '@wordpress/components';
+	PanelBody,
+	ToggleControl,
+	TextControl,
+	TextareaControl,
+} from '@wordpress/components';
 
 type Attrs = {
 	includePhone: boolean;
@@ -41,54 +42,50 @@ export default function Edit( {
 							setAttributes( { recipientOverride: v } )
 						}
 					/>
+					<TextareaControl
+						label={ __( 'Success message', 'starter' ) }
+						help={ __(
+							'Shown to visitors after the form is submitted.',
+							'starter'
+						) }
+						value={ attributes.successMessage }
+						onChange={ ( v ) =>
+							setAttributes( { successMessage: v } )
+						}
+					/>
 				</PanelBody>
 			</InspectorControls>
 			<form { ...blockProps } onSubmit={ ( e ) => e.preventDefault() }>
-				<label htmlFor="starter-contact-name">
-					{ __( 'Name', 'starter' ) }{ ' ' }
-					<input
-						id="starter-contact-name"
-						type="text"
-						disabled
-						placeholder={ __( 'Name', 'starter' ) }
-					/>
+				<label className="starter-contact-form__field">
+					<span>{ __( 'Name', 'starter' ) }</span>
+					<input type="text" name="name" readOnly />
 				</label>
-				<label htmlFor="starter-contact-email">
-					{ __( 'Email', 'starter' ) }{ ' ' }
-					<input
-						id="starter-contact-email"
-						type="email"
-						disabled
-						placeholder={ __( 'Email', 'starter' ) }
-					/>
+				<label className="starter-contact-form__field">
+					<span>{ __( 'Email', 'starter' ) }</span>
+					<input type="email" name="email" readOnly />
 				</label>
 				{ attributes.includePhone && (
-					<label htmlFor="starter-contact-phone">
-						{ __( 'Phone', 'starter' ) }{ ' ' }
-						<input
-							id="starter-contact-phone"
-							type="tel"
-							disabled
-							placeholder={ __( 'Phone', 'starter' ) }
-						/>
+					<label className="starter-contact-form__field">
+						<span>{ __( 'Phone', 'starter' ) }</span>
+						<input type="tel" name="phone" readOnly />
 					</label>
 				) }
-				<label htmlFor="starter-contact-message">
-					{ __( 'Message', 'starter' ) }{ ' ' }
-					<textarea
-						id="starter-contact-message"
-						disabled
-						placeholder={ __( 'Message', 'starter' ) }
-					/>
+				<label className="starter-contact-form__field">
+					<span>{ __( 'Message', 'starter' ) }</span>
+					<textarea name="message" rows={ 5 } readOnly />
 				</label>
-				<button type="button" disabled>
+
+				<button
+					type="button"
+					className="starter-contact-form__submit"
+				>
 					{ __( 'Send', 'starter' ) }
 				</button>
-				<RichText
-					tagName="p"
-					value={ attributes.successMessage }
-					onChange={ ( v ) => setAttributes( { successMessage: v } ) }
-					placeholder={ __( 'Success message…', 'starter' ) }
+
+				<p
+					className="starter-contact-form__status"
+					role="status"
+					hidden
 				/>
 			</form>
 		</>
