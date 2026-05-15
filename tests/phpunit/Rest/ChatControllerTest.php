@@ -50,9 +50,9 @@ class ChatControllerTest extends \WP_UnitTestCase {
 		$this->assertGreaterThan( 0, $res->get_data()['turn_id'] );
 
 		$loaded = ( new ConversationStore() )->findById( $conv['id'] );
-		// In test mode the turn runs inline before the response returns, so the assistant
-		// row may be 'complete' already. The user message is the first row, the assistant
-		// row is the second.
+		// startTurn dispatches the turn via non-blocking loopback (auto mode) and returns
+		// immediately; the assistant row is created in 'streaming' status. We assert the
+		// row exists and has the correct role — not that it completed.
 		$this->assertGreaterThanOrEqual( 2, count( $loaded['messages'] ) );
 		$this->assertSame( 'user',      $loaded['messages'][0]['role'] );
 		$this->assertSame( 'assistant', $loaded['messages'][1]['role'] );
@@ -75,8 +75,8 @@ class ChatControllerTest extends \WP_UnitTestCase {
 
 	public function test_delete_turn_marks_aborted(): void {
 		$conv = ( new ConversationStore() )->getOrCreate( $this->post_id, get_current_user_id() );
-		// Start the turn inline; in test mode it runs to completion. We need a turn that
-		// hasn't run, so we'll manually create one and abort it.
+		// Manually create a streaming assistant turn and abort it immediately, without
+		// going through startTurn — this tests the abort path independent of dispatch mode.
 		$store   = new ConversationStore();
 		$store->appendUserMessage( $conv['id'], 'x' );
 		$turn_id = $store->startAssistantTurn( $conv['id'] );

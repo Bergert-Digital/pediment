@@ -123,9 +123,8 @@ final class ChatController {
 		$store->appendUserMessage( $conversation_id, $message );
 		$turn_id = $store->startAssistantTurn( $conversation_id );
 
-		// Build context for TurnRunner.
+		// Normalise the block_tree param once; reused in both dispatch branches.
 		$tree_source = is_array( $r->get_param( 'block_tree' ) ) ? $r->get_param( 'block_tree' ) : [];
-		$tree        = new VirtualTree( $tree_source );
 
 		$dispatcher = new \StarterAi\Chat\TurnDispatcher();
 		/**
@@ -138,7 +137,7 @@ final class ChatController {
 		$mode = (string) apply_filters( 'starter_ai_dispatch_mode', 'auto' );
 
 		if ( 'inline' === $mode ) {
-			$this->processTurn( $turn_id, $conversation_id, $tree, $selected, $message );
+			$this->processTurn( $turn_id, $conversation_id, new VirtualTree( $tree_source ), $selected, $message );
 			return new \WP_REST_Response( [ 'turn_id' => $turn_id ], 202 );
 		}
 
@@ -146,7 +145,7 @@ final class ChatController {
 			'conversation_id' => $conversation_id,
 			'message'         => $message,
 			'selected_block'  => $selected,
-			'block_tree'      => is_array( $r->get_param( 'block_tree' ) ) ? $r->get_param( 'block_tree' ) : [],
+			'block_tree'      => $tree_source,
 		] );
 		$dispatcher->dispatch( $turn_id, $dispatcher->mintToken( $turn_id ) );
 
