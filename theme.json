@@ -72,7 +72,7 @@
     }
   },
   "styles": {
-    "css": ".wp-site-blocks{display:flex;flex-direction:column;min-height:100vh;min-height:100dvh}.wp-site-blocks > main{flex:1 0 auto}",
+    "css": ".wp-site-blocks{display:flex;flex-direction:column;min-height:100vh;min-height:100dvh}.wp-site-blocks > main{flex:1 0 auto}.wp-block-separator{border:0!important;background:transparent!important;height:0!important;margin-block:clamp(3.25rem, 2rem + 6vw, 6rem)!important}",
     "color": {
       "background": "var(--wp--preset--color--surface)",
       "text": "var(--wp--preset--color--text)"
