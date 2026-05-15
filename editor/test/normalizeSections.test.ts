@@ -68,8 +68,8 @@ describe('normalizeSections applier', () => {
     expect(ids).toEqual(['h', 's', 'g', 'p']);
     expect(blocks).toHaveLength(2);
     expect(blocks[0]).toMatchObject({ name: 'core/group', attributes: { tagName: 'section', className: 'starter-section' } });
-    expect(blocks[0].innerBlocks.map((x: any) => x.clientId)).toEqual(['h']);
-    expect(blocks[1].innerBlocks.map((x: any) => x.clientId)).toEqual(['g', 'p']);
+    expect(blocks[0].innerBlocks.map((x: any) => x.name)).toEqual(['starter/hero']);
+    expect(blocks[1].innerBlocks.map((x: any) => x.name)).toEqual(['core/heading', 'core/paragraph']);
   });
 
   it('is a no-op-shaped result when already all sections (keeps same blocks)', () => {
@@ -80,6 +80,29 @@ describe('normalizeSections applier', () => {
     const replaceBlocks = jest.fn();
     normalizeSections({ getBlocks: () => root, replaceBlocks }, (n, a, i) => ({ name: n, attributes: a, innerBlocks: i }));
     const [, blocks] = replaceBlocks.mock.calls[0];
-    expect(blocks).toEqual(root);
+    expect(blocks).toHaveLength(root.length);
+    blocks.forEach((blk: any, idx: number) => {
+      expect(blk.name).toEqual(root[idx].name);
+      expect(blk.attributes).toEqual(root[idx].attributes);
+    });
+  });
+
+  it('clones wrapped children so no new block reuses an original (removed) clientId', () => {
+    const root = [
+      { clientId: 'h', name: 'starter/hero', attributes: {}, innerBlocks: [] },
+      { clientId: 's', name: 'core/separator', attributes: {}, innerBlocks: [] },
+      { clientId: 'g', name: 'core/heading', attributes: {}, innerBlocks: [] },
+    ];
+    const replaceBlocks = jest.fn();
+    let n = 0;
+    normalizeSections(
+      { getBlocks: () => root, replaceBlocks },
+      (name, attrs, inner) => ({ name, attributes: attrs, innerBlocks: inner, clientId: 'fresh-' + n++ }),
+    );
+    const [removedIds, next] = replaceBlocks.mock.calls[0];
+    const collect = (b: any): string[] => [b.clientId, ...(b.innerBlocks ?? []).flatMap(collect)];
+    const newIds = next.flatMap(collect);
+    // No clientId in the new tree may collide with a removed top-level id.
+    for (const id of newIds) expect(removedIds).not.toContain(id);
   });
 });

@@ -54,6 +54,16 @@ export type NormalizeDeps = {
 export type CreateBlock = (name: string, attributes: any, innerBlocks: any[]) => any;
 
 /**
+ * Recursively rebuild a block via `create` so every node (and child) gets a
+ * FRESH clientId. Reusing live block objects keeps their original clientIds,
+ * which are also in replaceBlocks' removal list — producing a cyclic
+ * parent/order map and an infinite-recursion editor crash.
+ */
+function cloneBlock(b: RootBlock, create: CreateBlock): any {
+  return create(b.name, { ...b.attributes }, (b.innerBlocks ?? []).map((c) => cloneBlock(c, create)));
+}
+
+/**
  * Deterministically rewrite the editor root into section groups.
  * Idempotent: already-correct section groups are reused unchanged.
  */
@@ -65,11 +75,11 @@ export function normalizeSections(deps: NormalizeDeps, create: CreateBlock): voi
 
   const next = plan.map((p) =>
     p.kind === 'keep'
-      ? root[p.index]
+      ? cloneBlock(root[p.index], create)
       : create(
           'core/group',
           { tagName: 'section', className: SECTION_CLASS, layout: { type: 'default' } },
-          p.indices.map((i) => root[i])
+          p.indices.map((i) => cloneBlock(root[i], create))
         )
   );
 
