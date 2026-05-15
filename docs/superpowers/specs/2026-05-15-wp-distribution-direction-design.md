@@ -125,21 +125,39 @@ reference only.
 
 ## Workstream D — Zip pipeline (all three repos)
 
-One GitHub Actions workflow per repo, triggered on `v*` tag push, producing a
-GitHub Release with an installable/forkable zip attached.
+**Reality correction (2026-05-15):** `wp-starter-ai` already has a
+`release.yml`. It is **`workflow_dispatch`-triggered** (typed `version` input,
+`ref` input), patches version metadata, creates a release commit that
+force-adds `vendor` + `build`, pushes a `v$VERSION` tag, and runs `gh release
+create --generate-notes`. It attaches **no installable zip** — the artifact is
+a tagged commit, a developer-consumption model. `wp-starter-theme` has **no**
+release workflow (only `ci.yml`). No repo has a `.distignore`.
 
-### Common workflow shape
+Decision: **keep the existing `workflow_dispatch` + version-input +
+release-commit shape** (it works and validates versions). The only gap to
+close is the missing installable artifact: add a zip-assembly step and attach
+the zip to the GitHub Release. Replicate the same workflow shape for
+`wp-starter-theme` and `wp-starter-child-theme` (neither has one today).
+
+### Common workflow shape (extends wp-starter-ai's existing release.yml)
 
 ```
-on: push: tags: ['v*']
+on: workflow_dispatch: inputs: { version, ref }
 job:
-  - checkout
-  - setup-node, setup-php
+  - validate version input (regex), ensure tag absent
+  - checkout (ref), setup-php, setup-node
+  - composer install --no-dev --optimize-autoloader   # plugin only
   - npm ci && npm run build
-  - (wp-starter-ai only) composer install --no-dev --optimize-autoloader
-  - assemble clean zip honoring a committed .distignore
-  - softprops/action-gh-release with the zip asset
+  - patch version metadata (style.css / plugin.php / package.json)
+  - create release commit (force-add build [+ vendor for plugin]), tag, push
+  - assemble clean zip honoring committed .distignore  # NEW step
+  - gh release create "v$VERSION" --generate-notes <zip>  # zip now attached
 ```
+
+The parent + child theme workflows patch `Version:` in `style.css` (and the
+`STARTER_THEME_VERSION` / child equivalent define) instead of `plugin.php`, and
+skip the `composer install --no-dev` step (themes have no runtime composer
+deps).
 
 ### Per-repo zip contents
 
@@ -178,10 +196,14 @@ remote-affecting call**. No silent remote mutations.
 ## Testing / verification
 
 - Child theme: `composer lint`, phpunit, and a build (`npm run build`) must
-  pass in the new repo before first push.
-- Zip pipeline: validate by pushing a throwaway pre-release tag (e.g.
-  `v0.0.0-test`) on one repo, confirming the Release zip installs cleanly into
-  a fresh WP via Appearance/Plugins → Add New → Upload, then deleting the test
-  release/tag. Repeat per repo.
+  pass in the new repo before first push. The child theme's `ci.yml` phpunit/e2e
+  jobs require the parent theme present, so they use a cross-repo checkout of
+  `Bergert-Digital/WP-Starter` with `secrets.STARTER_THEME_PAT` — mirroring the
+  pattern already in `wp-starter-ai/.github/workflows/ci.yml`.
+- Zip pipeline: validate by running the `workflow_dispatch` Release workflow
+  with a throwaway pre-release version (e.g. `0.0.0-rc.test`) on one repo,
+  confirming the attached zip installs cleanly into a fresh WP via
+  Appearance/Plugins → Add New → Upload, then deleting the test release/tag.
+  Repeat per repo.
 - Retirement: confirm the archived `wp-client-template` README banner renders
   and links resolve before archiving (archive is reversible if not).
