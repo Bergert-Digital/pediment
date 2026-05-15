@@ -50,3 +50,20 @@ add_filter( 'starter_ai_model_compose', function ( $model ) {
 ```
 
 The filters `starter_ai_model_edit` and `starter_ai_model_refine` follow the same signature and are declared for future use — they will gate edit and refine flows once those endpoints are wired up. **They are not invoked today; a hook on either will have no effect until then.** `starter_ai_model_compose` is already hooked internally to respect the model setting configured on the admin Settings page, so child-theme overrides take precedence only when the admin field is left blank.
+
+## Agentic budget per chat turn
+
+One chat turn is an iterative tool-use loop: each round-trip lets the model emit a batch of block mutations, sees the results, and continues until it has nothing left to do. Two limits bound that loop, both filterable:
+
+```php
+// Max model output tokens per round-trip. Too low truncates a batched set of
+// block mutations mid-turn and wastes iterations. Default 16384. Keep within
+// the configured model's output ceiling (e.g. Sonnet 4.6 supports 64K).
+add_filter( 'starter_ai_max_tokens', fn() => 32768 );
+
+// Max tool-use round-trips before the turn fails with `iteration_limit`.
+// Raise it for very large multi-section page builds. Default 20.
+add_filter( 'starter_ai_max_iterations', fn() => 30 );
+```
+
+If a "create a full landing page"-class request reports *Reached maximum tool-use iterations*, the turn ran out of one of these budgets before finishing — raise `starter_ai_max_tokens` first (so each round-trip carries a larger batch), then `starter_ai_max_iterations` for headroom.
