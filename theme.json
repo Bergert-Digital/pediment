@@ -72,7 +72,7 @@
     }
   },
   "styles": {
-    "css": ".wp-site-blocks{display:flex;flex-direction:column;min-height:100vh;min-height:100dvh}.wp-site-blocks > main{flex:1 0 auto}.entry-content.wp-block-post-content > :where([class*=\"wp-block-starter-\"], .wp-block-separator):not(:first-child),.entry-content.wp-block-post-content > :where([class*=\"wp-block-starter-\"], .wp-block-separator) + *{margin-block-start:clamp(3.25rem, 2rem + 6vw, 6rem)}.wp-block-separator{border:0!important;background:transparent!important;height:0!important;margin:0!important}",
+    "css": ".wp-site-blocks{display:flex;flex-direction:column;min-height:100vh;min-height:100dvh}.wp-site-blocks > main{flex:1 0 auto}",
     "color": {
       "background": "var(--wp--preset--color--surface)",
       "text": "var(--wp--preset--color--text)"
