@@ -3,6 +3,7 @@ import { useCallback } from '@wordpress/element';
 import { select as wpSelect, useSelect, useDispatch } from '@wordpress/data';
 import { STORE_NAME, ensureChatStoreRegistered, type ChatMessage, type Conversation } from '../chat/store';
 import applyToolCalls from '../applyToolCalls';
+import { startPolling } from './pollTurn';
 
 ensureChatStoreRegistered();
 
@@ -85,36 +86,29 @@ export default function useChatTurn() {
       return;
     }
 
-    const tick = async () => {
-      try {
-        const t = await apiFetch<ChatMessage>({ path: `/starter-ai/v1/chat/turns/${turnId}`, method: 'GET' });
-        if (aborted) return;
-        setStreaming({ ...t, id: turnId });
-        if (t.status !== 'streaming') {
-          if (pollTimer !== null) { window.clearInterval(pollTimer); pollTimer = null; }
-          clearStreaming();
-          if (t.status === 'complete' && Array.isArray(t.tool_calls)) {
-            applyToolCalls(t.tool_calls);
-          }
-          // Re-fetch the conversation so persisted messages show up in MessageList.
-          try {
-            const conv = await apiFetch<Conversation>({
-              path: `/starter-ai/v1/chat/conversations?post_id=${args.postId}`,
-              method: 'GET',
-            });
-            setConversation(conv);
-          } catch {
-            // best-effort; the next mount will reload
-          }
-        }
-      } catch (e: any) {
-        if (pollTimer !== null) { window.clearInterval(pollTimer); pollTimer = null; }
+    startPolling(turnId, {
+      apiFetch: (a) => apiFetch(a as any),
+      applyToolCalls,
+      onUpdate: (t) => setStreaming({ ...t, id: turnId }),
+      onError: (msg) => { clearStreaming(); setError(msg); },
+      onTerminal: async () => {
         clearStreaming();
-        setError(e?.message ?? 'Polling failed');
-      }
-    };
-    await tick();
-    pollTimer = window.setInterval(tick, POLL_MS);
+        // Re-fetch the conversation so persisted messages show up in MessageList.
+        try {
+          const conv = await apiFetch<Conversation>({
+            path: `/starter-ai/v1/chat/conversations?post_id=${args.postId}`,
+            method: 'GET',
+          });
+          setConversation(conv);
+        } catch {
+          // best-effort; the next mount will reload
+        }
+      },
+      isAborted: () => aborted,
+      intervalMs: POLL_MS,
+      schedule: (fn, ms) => { pollTimer = window.setInterval(fn, ms); return pollTimer; },
+      cancel: (h) => { window.clearInterval(h); if (h === pollTimer) pollTimer = null; },
+    });
   }, [setStreaming, clearStreaming, setPendingUserMessage, setError, setConversation]);
 
   return { streaming, error, start, stop };
