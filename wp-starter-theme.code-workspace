@@ -1,0 +1,14 @@
+{
+	"folders": [
+		{
+			"path": "."
+		},
+		{
+			"path": "../wp-starter-ai"
+		},
+		{
+			"path": "../wp-starter-child-theme"
+		}
+	],
+	"settings": {}
+}
