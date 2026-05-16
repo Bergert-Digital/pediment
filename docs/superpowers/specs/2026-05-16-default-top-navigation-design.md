@@ -52,6 +52,46 @@ active-page indicator silently does nothing (the menu still works). Root install
 the documented target and the test environment — are unaffected. Hardening (strip the
 `home_url()` path from both sides) is a deferred, optional follow-up.
 
+## Revision: Approach 2 supersedes Approach 1 (post-merge)
+
+**Why:** After merge, the Site Editor → Navigation screen still showed the old
+page-list, not the curated menu. Root cause: that screen (and core's nav resolution)
+operates on `wp_navigation` *entities*, not template-part inner blocks. WordPress has
+no file-based mechanism for a specific default menu — navigation content is
+database-only (`wp_navigation` CPT). Baked inner blocks render on the front end but
+diverge permanently from the editor-managed entity; that divergence is structural to
+core, not a fixable defect. To have curated items (incl. the Contact CTA) that are also
+the editor-managed, consistent menu, the menu must exist as a `wp_navigation` entity —
+i.e. Approach 2 (previously "out of scope"). User chose Approach 2 done natively.
+
+**Approach 2 design (authoritative; overrides "Design" §1 and the Decisions row
+"Default menu source"):**
+
+1. `parts/header.html` — **bare** `<!-- wp:navigation {"overlayMenu":"mobile",…} /-->`
+   (inner blocks removed), `site-header` group class retained. Matches the core-theme
+   pattern; the block resolves to a `wp_navigation` entity.
+2. `inc/nav-seed.php` (new) — idempotent seeder on `after_switch_theme` (fires on
+   child-theme activation too, as the parent `functions.php` always loads) and reused
+   by `wp starter-theme seed`. Menu content = three `wp:navigation-link` blocks
+   (About `/about`, Blog `/blog`, Contact `/contact` + `nav-cta`).
+   - **Adopt, don't proliferate:** if a `wp_navigation` post is a pristine fallback
+     (content exactly `<!-- wp:page-list /-->`) or carries our `_starter_seeded_nav`
+     meta marker, rewrite its content to our links and stamp the marker; otherwise
+     create a new post (title "Header Navigation", slug `starter-header`, marker set).
+   - **Overwrite protection:** never modify a `wp_navigation` post that is neither a
+     pristine page-list fallback nor our own marked post (protects user edits).
+3. `inc/nav-seed.php` — `render_block_data` filter for `core/navigation`: if the block
+   has no `ref`, inject `ref` = the seeded post ID. Deterministic resolution on front
+   end + REST render; not reliant on the fragile "newest entity" heuristic.
+4. `inc/nav-active.php`, all `theme.json` CSS, and the e2e/PHPUnit specs are retained.
+   A PHPUnit test covers the seeder's adopt / create / protect branches. The e2e
+   assertions are unchanged (items now sourced from the entity).
+5. On the shared :8890 env, stale entity #4 is exactly `<!-- wp:page-list /-->`, so the
+   seeder *adopts* it — no duplicate; editor and front end converge.
+
+This uses the proper `wp_navigation` CPT and core's own resolution path: standards-
+compliant at the data layer, with the minimal PHP core structurally requires.
+
 ## Design
 
 ### 1. Header part markup — `parts/header.html`
@@ -126,13 +166,13 @@ active-treatment assertion above.
 - `parts/header.html` — class + navigation inner blocks
 - `theme.json` — `styles.css` additions (sticky, active, focus, CTA, submenu, overlay)
 - `inc/nav-active.php` — `render_block_core/navigation-link` active-state filter (new)
-- `functions.php` — `require_once` the new filter
-- `tests/e2e/navigation.spec.ts` — new Playwright e2e spec for the navigation
-- `tests/phpunit/` — unit test for the active-state path-matching helper
+- `inc/nav-seed.php` — `wp_navigation` entity seeder + `core/navigation` ref filter (new, Approach 2)
+- `functions.php` — `require_once` the new filters
+- `tests/e2e/navigation.spec.ts` — Playwright e2e spec for the navigation
+- `tests/phpunit/` — unit tests for the active-state helper and the nav-entity seeder
 
 ## Out of scope (YAGNI)
 
 - Scroll-shrink / hide-on-scroll header behavior
 - Custom JS mobile menu
-- PHP-seeded `wp_navigation` post on activation
 - Mega-menu / multi-column submenus
