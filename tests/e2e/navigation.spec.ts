@@ -15,4 +15,14 @@ test.describe('top navigation', () => {
     await expect(header).toHaveCSS('position', 'sticky');
     await expect(header).toHaveCSS('top', '0px');
   });
+
+  test('Contact item is styled as a filled CTA button', async ({ page }) => {
+    await page.goto('/');
+    const cta = page.locator('header .wp-block-navigation-item.nav-cta a').first();
+    await expect(cta).toBeVisible();
+    // Filled accent background (#4F46E5) and a non-zero border radius.
+    await expect(cta).toHaveCSS('background-color', 'rgb(79, 70, 229)');
+    const radius = await cta.evaluate((el) => getComputedStyle(el).borderTopLeftRadius);
+    expect(parseFloat(radius)).toBeGreaterThan(0);
+  });
 });
