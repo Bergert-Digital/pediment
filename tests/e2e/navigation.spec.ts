@@ -25,4 +25,17 @@ test.describe('top navigation', () => {
     const radius = await cta.evaluate((el) => getComputedStyle(el).borderTopLeftRadius);
     expect(parseFloat(radius)).toBeGreaterThan(0);
   });
+
+  test('mobile overlay opens and closes', async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 800 });
+    await page.goto('/');
+    const openBtn = page.locator('header .wp-block-navigation__responsive-container-open').first();
+    await expect(openBtn).toBeVisible();
+    await openBtn.click();
+    const overlay = page.locator('header .wp-block-navigation__responsive-container.is-menu-open').first();
+    await expect(overlay).toBeVisible();
+    await expect(overlay).toHaveCSS('background-color', 'rgb(255, 255, 255)');
+    await page.locator('header .wp-block-navigation__responsive-container-close').first().click();
+    await expect(overlay).toBeHidden();
+  });
 });
