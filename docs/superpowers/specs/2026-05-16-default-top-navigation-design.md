@@ -46,6 +46,12 @@ on `render_block_core/navigation-link` that sets `aria-current="page"` when the 
 URL path equals the current request path. This is the minimal deviation from the
 zero-PHP pillar and keeps links install-independent.
 
+Known limitation: the filter compares request and link *paths* without stripping a
+`home_url()` subdirectory prefix, so on a subdirectory WordPress install the
+active-page indicator silently does nothing (the menu still works). Root installs —
+the documented target and the test environment — are unaffected. Hardening (strip the
+`home_url()` path from both sides) is a deferred, optional follow-up.
+
 ## Design
 
 ### 1. Header part markup — `parts/header.html`
