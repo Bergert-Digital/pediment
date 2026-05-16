@@ -25,6 +25,7 @@ require_once __DIR__ . '/inc/patterns.php';
 
 require_once __DIR__ . '/inc/seed.php';
 require_once __DIR__ . '/inc/nav-active.php';
+require_once __DIR__ . '/inc/nav-seed.php';
 
 add_action(
 	'wp_enqueue_scripts',

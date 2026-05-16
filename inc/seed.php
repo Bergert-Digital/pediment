@@ -90,4 +90,8 @@ function starter_seed_run(): void {
 	if ( isset( $page_ids['blog'] ) ) {
 		update_option( 'page_for_posts', $page_ids['blog'] );
 	}
+
+	if ( function_exists( 'starter_nav_seed_entity' ) ) {
+		starter_nav_seed_entity();
+	}
 }
