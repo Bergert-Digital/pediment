@@ -28,11 +28,23 @@ keeps global CSS in `styles.css`. The theme seeds Home/About/Contact/Blog pages 
 A static template part cannot bake a dynamic `wp_navigation` post ID, so PHP-seeding a
 Navigation post on activation gains nothing practical (links must be relative URLs anyway,
 since seeded pages don't exist at activation time) while adding fragile reference logic.
-Inner blocks render immediately on a freshly activated theme with zero PHP, and WordPress
-auto-promotes them to an editable `wp_navigation` entity the first time the Site Editor
-loads/saves the template part. This is the standard FSE pattern (Twenty Twenty-Four /
-Twenty Twenty-Five). Trade-off: links are relative URLs (`/about`) rather than DB-bound
-page references — robust, but not "linked" in the database sense.
+Inner blocks render immediately on a freshly activated theme with near-zero PHP, and
+WordPress auto-promotes them to an editable `wp_navigation` entity the first time the
+Site Editor loads/saves the template part. This is the standard FSE pattern (Twenty
+Twenty-Four / Twenty Twenty-Five). Trade-off: links are relative URLs (`/about`) rather
+than DB-bound page references — robust, but not "linked" in the database sense.
+
+### Active-state addendum (discovered during implementation review)
+
+Core's `core/navigation-link` only emits `current-menu-item` / `aria-current="page"`
+when the link carries a non-empty `id` matching the queried object
+(`wp-includes/blocks/navigation-link.php`). `kind:"custom"` relative-URL links never
+get it, so the active-page indicator cannot work from markup/CSS alone. Baking page
+`id`s into a static template part is fragile (auto-increment IDs differ per install).
+**Resolution:** keep the relative-URL inner blocks and add one small, focused PHP filter
+on `render_block_core/navigation-link` that sets `aria-current="page"` when the link's
+URL path equals the current request path. This is the minimal deviation from the
+zero-PHP pillar and keeps links install-independent.
 
 ## Design
 
@@ -74,6 +86,8 @@ Extends the existing `styles.blocks.core/navigation` rules; raw CSS appended to
 
 - **Active page:** `.wp-block-navigation .current-menu-item > a`,
   `.wp-block-navigation a[aria-current="page"]` → accent color + underline indicator.
+  The `aria-current="page"` attribute is supplied by the PHP filter in
+  [inc/nav-active.php](../../../inc/nav-active.php) (see Active-state addendum).
 - **Focus-visible:** keyboard focus ring using the existing `--wp--preset--shadow--focus`
   token.
 - **CTA item (`.nav-cta`):** filled `accent` background, `surface` text, `0.5rem` radius,
@@ -97,13 +111,18 @@ A new Playwright e2e spec asserts:
 - the overlay toggles below the mobile breakpoint,
 - the current page receives the active treatment.
 
-No PHP is added, so no PHPUnit changes.
+One small PHP filter is added (`inc/nav-active.php`), so a PHPUnit test covers its
+pure path-matching helper. The filter's end-to-end wiring is exercised by the Playwright
+active-treatment assertion above.
 
 ## Files touched
 
 - `parts/header.html` — class + navigation inner blocks
 - `theme.json` — `styles.css` additions (sticky, active, focus, CTA, submenu, overlay)
-- `tests/` — new Playwright e2e spec for the navigation
+- `inc/nav-active.php` — `render_block_core/navigation-link` active-state filter (new)
+- `functions.php` — `require_once` the new filter
+- `tests/e2e/navigation.spec.ts` — new Playwright e2e spec for the navigation
+- `tests/phpunit/` — unit test for the active-state path-matching helper
 
 ## Out of scope (YAGNI)
 
