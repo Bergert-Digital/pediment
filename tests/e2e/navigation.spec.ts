@@ -38,4 +38,16 @@ test.describe('top navigation', () => {
     await page.locator('header .wp-block-navigation__responsive-container-close').first().click();
     await expect(overlay).toBeHidden();
   });
+
+  test('current page nav item gets the active indicator', async ({ page }) => {
+    const resp = await page.goto('/about/');
+    expect(resp?.status(), 'About page must exist (run `wp starter-theme seed`)').toBe(200);
+    const active = page.locator(
+      'header .wp-block-navigation a[aria-current="page"], header .wp-block-navigation .current-menu-item > a'
+    ).first();
+    await expect(active).toBeVisible();
+    await expect(active).toHaveText('About');
+    // Active links use the accent color (#4F46E5).
+    await expect(active).toHaveCSS('color', 'rgb(79, 70, 229)');
+  });
 });
