@@ -44,4 +44,22 @@ test.describe( 'mega menu', () => {
 		await trigger.click();
 		await expect( panel ).toBeVisible();
 	} );
+
+	test( 'desktop panel is an absolutely-positioned dropdown; mobile is inline', async ( {
+		page,
+	} ) => {
+		await page.goto( '/mega-demo/' );
+		const panel = page.locator( '.starter-mega-menu__panel' ).first();
+		await page.getByRole( 'button', { name: 'Products' } ).hover();
+		await expect( panel ).toHaveCSS( 'position', 'absolute' );
+
+		await page.setViewportSize( { width: 375, height: 800 } );
+		await page.goto( '/mega-demo/' );
+		await page
+			.locator( '.wp-block-navigation__responsive-container-open' )
+			.first()
+			.click();
+		await page.getByRole( 'button', { name: 'Products' } ).click();
+		await expect( panel ).toHaveCSS( 'position', 'static' );
+	} );
 } );

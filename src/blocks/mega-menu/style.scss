@@ -28,3 +28,26 @@
     &[hidden] { display: none; }
   }
 }
+
+.starter-mega-menu__panel {
+  transition: opacity 160ms ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .starter-mega-menu__panel {
+    transition: none;
+  }
+}
+
+/* Inside the core hamburger overlay: accordion, not a floating dropdown. */
+.wp-block-navigation__responsive-container.is-menu-open {
+  .starter-mega-menu__panel {
+    position: static;
+    min-width: 0;
+    grid-template-columns: 1fr;
+    box-shadow: none;
+    border: 0;
+    padding-inline: var(--wp--preset--spacing--20);
+    padding-block: var(--wp--preset--spacing--20);
+  }
+}
