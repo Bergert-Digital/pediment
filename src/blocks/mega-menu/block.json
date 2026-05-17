@@ -1,0 +1,19 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "starter/mega-menu",
+	"title": "Mega Menu",
+	"category": "starter",
+	"description": "A mega-menu dropdown for the navigation: columns of icon links.",
+	"parent": [ "core/navigation" ],
+	"textdomain": "starter",
+	"supports": { "html": false, "reusable": false },
+	"attributes": {
+		"label": { "type": "string", "default": "" }
+	},
+	"editorScript": "file:./index.js",
+	"editorStyle": "file:./style-index.css",
+	"style": "file:./style-index.css",
+	"viewScriptModule": "file:./view.js",
+	"render": "file:./render.php"
+}
