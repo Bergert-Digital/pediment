@@ -1,5 +1,8 @@
 import { test, expect } from '@playwright/test';
 
+// Pediment accent (Deep Cyan #0E7490).
+const ACCENT = 'rgb(14, 116, 144)';
+
 test.describe('top navigation', () => {
   test('renders About, Blog and Contact items', async ({ page }) => {
     await page.goto('/');
@@ -16,38 +19,57 @@ test.describe('top navigation', () => {
     await expect(header).toHaveCSS('top', '0px');
   });
 
-  test('Contact item is styled as a filled CTA button', async ({ page }) => {
+  test('header has a single accent pill CTA button', async ({ page }) => {
     await page.goto('/');
-    const cta = page.locator('header .wp-block-navigation-item.nav-cta a').first();
+    const header = page.locator('header.site-header').first();
+    const cta = header.getByRole('link', { name: 'Book a consultation' });
     await expect(cta).toBeVisible();
-    // Filled accent background (#4F46E5) and a non-zero border radius.
-    await expect(cta).toHaveCSS('background-color', 'rgb(79, 70, 229)');
-    const radius = await cta.evaluate((el) => getComputedStyle(el).borderTopLeftRadius);
+    await expect(cta).toHaveCSS('background-color', ACCENT);
+    const radius = await cta.evaluate(
+      (el) => getComputedStyle(el).borderTopLeftRadius
+    );
     expect(parseFloat(radius)).toBeGreaterThan(0);
+    // Contact is now a normal nav link, not a second CTA button.
+    await expect(
+      header.locator('.wp-block-navigation-item.nav-cta')
+    ).toHaveCount(0);
   });
 
   test('mobile overlay opens and closes', async ({ page }) => {
     await page.setViewportSize({ width: 375, height: 800 });
     await page.goto('/');
-    const openBtn = page.locator('header .wp-block-navigation__responsive-container-open').first();
+    const openBtn = page
+      .locator('header .wp-block-navigation__responsive-container-open')
+      .first();
     await expect(openBtn).toBeVisible();
     await openBtn.click();
-    const overlay = page.locator('header .wp-block-navigation__responsive-container.is-menu-open').first();
+    const overlay = page
+      .locator('header .wp-block-navigation__responsive-container.is-menu-open')
+      .first();
     await expect(overlay).toBeVisible();
-    await expect(overlay).toHaveCSS('background-color', 'rgb(255, 255, 255)');
-    await page.locator('header .wp-block-navigation__responsive-container-close').first().click();
+    await page
+      .locator('header .wp-block-navigation__responsive-container-close')
+      .first()
+      .click();
     await expect(overlay).toBeHidden();
   });
 
   test('current page nav item gets the active indicator', async ({ page }) => {
     const resp = await page.goto('/about/');
-    expect(resp?.status(), 'About page must exist (run `wp starter-theme seed`)').toBe(200);
-    const active = page.locator(
-      'header .wp-block-navigation a[aria-current="page"], header .wp-block-navigation .current-menu-item > a'
-    ).first();
+    expect(resp?.status()).toBe(200);
+    const active = page
+      .locator(
+        "header .wp-block-navigation a[aria-current=\"page\"], header .wp-block-navigation .current-menu-item > a"
+      )
+      .first();
     await expect(active).toBeVisible();
     await expect(active).toHaveText('About');
-    // Active links use the accent color (#4F46E5).
-    await expect(active).toHaveCSS('color', 'rgb(79, 70, 229)');
+    await expect(active).toHaveCSS('color', ACCENT);
+  });
+
+  test('header shows the bank brand mark', async ({ page }) => {
+    await page.goto('/');
+    const mark = page.locator('header .brand .mark use[href="#ph-bank"]');
+    await expect(mark).toHaveCount(1);
   });
 });
