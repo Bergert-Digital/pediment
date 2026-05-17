@@ -41,4 +41,10 @@ class ThemeJsonTest extends WP_UnitTestCase {
 		$this->assertStringContainsString( 'Plus Jakarta Sans', $fam['body'] );
 		$this->assertStringContainsString( 'Plus Jakarta Sans', $fam['heading'] );
 	}
+
+	public function test_global_assets_enqueue() {
+		do_action( 'wp_enqueue_scripts' );
+		$this->assertTrue( wp_style_is( 'starter-theme', 'enqueued' ) );
+		$this->assertTrue( wp_script_is( 'starter-reveal', 'enqueued' ) );
+	}
 }

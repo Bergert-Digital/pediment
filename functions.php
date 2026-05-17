@@ -45,5 +45,35 @@ add_action(
 	}
 );
 
+add_action(
+	'wp_enqueue_scripts',
+	function () {
+		$css = 'assets/css/theme.css';
+		wp_enqueue_style(
+			'starter-theme',
+			get_theme_file_uri( $css ),
+			array(),
+			(string) filemtime( get_theme_file_path( $css ) )
+		);
+		$js = 'assets/js/reveal.js';
+		wp_enqueue_script(
+			'starter-reveal',
+			get_theme_file_uri( $js ),
+			array(),
+			(string) filemtime( get_theme_file_path( $js ) ),
+			true
+		);
+	}
+);
+
+// No-FOUC: add the .anim class before first paint.
+add_action(
+	'wp_head',
+	function () {
+		echo "<script>document.documentElement.classList.add('anim')</script>\n";
+	},
+	0
+);
+
 add_action( 'after_switch_theme', 'starter_contact_schedule_cleanup' );
 add_action( 'switch_theme', 'starter_contact_unschedule_cleanup' );
