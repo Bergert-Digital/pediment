@@ -1,6 +1,12 @@
 <?php
 
 class IconsTest extends WP_UnitTestCase {
+	public function set_up() {
+		parent::set_up();
+		remove_action( 'wp_body_open', 'starter_print_icon_sprite', 1 );
+		add_action( 'wp_body_open', 'starter_print_icon_sprite', 1 );
+	}
+
 	public function test_starter_icon_returns_use_reference() {
 		$html = starter_icon( 'arrow-right' );
 		$this->assertSame(
