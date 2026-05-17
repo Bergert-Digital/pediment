@@ -1,0 +1,18 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "starter/mega-column",
+	"title": "Mega Column",
+	"category": "starter",
+	"description": "A column of links inside a mega menu.",
+	"parent": [ "starter/mega-menu" ],
+	"textdomain": "starter",
+	"supports": { "html": false, "inserter": false },
+	"attributes": {
+		"heading": { "type": "string", "default": "" }
+	},
+	"editorScript": "file:./index.js",
+	"editorStyle": "file:./style-index.css",
+	"style": "file:./style-index.css",
+	"render": "file:./render.php"
+}

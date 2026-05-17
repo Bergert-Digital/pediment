@@ -1,0 +1,16 @@
+.starter-mega-column {
+  display: flex;
+  flex-direction: column;
+  gap: var(--wp--preset--spacing--10);
+
+  &__heading {
+    margin: 0 0 var(--wp--preset--spacing--10);
+    font-size: var(--wp--preset--font-size--sm);
+    font-weight: 700;
+    color: var(--wp--preset--color--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  &__links { display: flex; flex-direction: column; }
+}
