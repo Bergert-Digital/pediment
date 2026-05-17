@@ -85,7 +85,7 @@
         { "slug": "subtle", "name": "Subtle",  "shadow": "0 8px 24px -16px rgba(11,27,51,.25)" },
         { "slug": "medium", "name": "Medium",  "shadow": "0 24px 50px -28px rgba(11,27,51,.30)" },
         { "slug": "lifted", "name": "Lifted",  "shadow": "0 12px 24px -8px rgba(15, 23, 42, 0.12), 0 4px 8px -2px rgba(15, 23, 42, 0.06)" },
-        { "slug": "focus",  "name": "Focus",   "shadow": "0 0 0 3px rgba(79, 70, 229, 0.18)" }
+        { "slug": "focus",  "name": "Focus",   "shadow": "0 0 0 3px rgba(14,116,144,0.35)" }
       ]
     },
     "blocks": {

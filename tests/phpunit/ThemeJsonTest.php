@@ -47,4 +47,16 @@ class ThemeJsonTest extends WP_UnitTestCase {
 		$this->assertTrue( wp_style_is( 'starter-theme', 'enqueued' ) );
 		$this->assertTrue( wp_script_is( 'starter-reveal', 'enqueued' ) );
 	}
+
+	public function test_focus_shadow_uses_accent() {
+		$tj = $this->theme_json();
+		$focus = '';
+		foreach ( $tj['settings']['shadow']['presets'] as $p ) {
+			if ( 'focus' === $p['slug'] ) {
+				$focus = $p['shadow'];
+			}
+		}
+		$this->assertStringContainsString( '14,116,144', $focus );
+		$this->assertStringNotContainsString( '79,70,229', $focus );
+	}
 }
