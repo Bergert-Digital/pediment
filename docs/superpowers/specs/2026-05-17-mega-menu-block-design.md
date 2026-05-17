@@ -47,10 +47,17 @@ Three nested blocks under `src/blocks/`, auto-registered by the existing loader,
 | `starter/mega-column` | `starter/mega-menu` | no | `heading` (string, optional) | `starter/mega-link` |
 | `starter/mega-link` | `starter/mega-column` | no | `label`, `url`, `description`, `icon` (all string) | — |
 
-- **Nav allow-list:** new `inc/mega-menu.php` (required from `functions.php` next to
-  `inc/nav-active.php` / `inc/nav-seed.php`) adds `starter/mega-menu` via the
-  `block_core_navigation_allowed_blocks` filter. `starter/mega-menu` also declares
-  `"parent": ["core/navigation"]` so the inserter only offers it inside a nav.
+- **Nav integration (verified against WP 6.5 core):**
+  - *Editor insertion:* `starter/mega-menu` declares `"parent": ["core/navigation"]`;
+    the block editor honors this for `canInsertBlockType`, so it is offered only, and
+    automatically, inside a Navigation block. (No non-existent
+    `block_core_navigation_allowed_blocks` filter — that API does not exist.)
+  - *Render wrapping:* new `inc/mega-menu.php` (required from `functions.php` next to
+    `inc/nav-active.php` / `inc/nav-seed.php`) adds `starter/mega-menu` to the
+    `block_core_navigation_listable_blocks` filter (core, since WP 6.5.0) so core wraps
+    the rendered block in `<li class="wp-block-navigation-item">` like other nav items.
+  - An editor verification step on :8890 empirically confirms the block is insertable
+    inside a Navigation block and renders wrapped as a nav item.
 - **Editor:** `mega-menu` and `mega-column` use `useInnerBlocksProps` with
   `allowedBlocks` + a `TEMPLATE` (3 columns × 4 links). `mega-column`/`mega-link` are
   `"inserter": false`, `supports.html:false`. `mega-link` edits `label` and
@@ -119,8 +126,9 @@ submenu directives so markup/behavior conventions match core.
 
 ## Testing
 
-- **PHPUnit** (`tests/phpunit/MegaMenu/`): the allowed-blocks filter adds
-  `starter/mega-menu`; each `render.php` — trigger `<button>` with
+- **PHPUnit** (`tests/phpunit/MegaMenu/`): `block_core_navigation_listable_blocks`
+  includes `starter/mega-menu` (so it renders as a wrapped nav `<li>`); each
+  `render.php` — trigger `<button>` with
   `aria-expanded="false"` + `aria-controls`, panel id linkage, column heading, link with
   `starter_icon()` + label + description + href; safe degradation (no icon → no `<svg>`,
   no description → omitted, no columns → no panel container).
@@ -137,7 +145,7 @@ submenu directives so markup/behavior conventions match core.
   render.php, style.scss, view (interactivity) module
 - `src/blocks/mega-column/` — block.json, edit.tsx, index.tsx, render.php, style.scss
 - `src/blocks/mega-link/` — block.json, edit.tsx, index.tsx, render.php, style.scss
-- `inc/mega-menu.php` — `block_core_navigation_allowed_blocks` filter (new)
+- `inc/mega-menu.php` — `block_core_navigation_listable_blocks` filter (new)
 - `functions.php` — `require_once __DIR__ . '/inc/mega-menu.php';`
 - `inc/patterns.php` — sample mega-menu header pattern (test/demo fixture)
 - `tests/phpunit/MegaMenu/` — render + filter tests
