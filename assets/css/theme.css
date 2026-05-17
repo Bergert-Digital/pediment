@@ -55,3 +55,15 @@
 .i{ width:1em; height:1em; display:inline-block; vertical-align:-0.14em;
     fill:currentColor; flex:none; }
 .btn .i{ width:18px; height:18px; vertical-align:0; }
+
+/* Entry animations — gated behind .anim (set pre-paint), reduced-motion safe */
+.anim [data-reveal]{
+  opacity:0; transform:translateY(22px);
+  transition:opacity .7s cubic-bezier(.16,1,.3,1),
+             transform .7s cubic-bezier(.16,1,.3,1);
+  will-change:opacity, transform;
+}
+.anim [data-reveal].is-in{ opacity:1; transform:none; }
+@media (prefers-reduced-motion: reduce){
+  .anim [data-reveal]{ opacity:1 !important; transform:none !important; transition:none; }
+}
