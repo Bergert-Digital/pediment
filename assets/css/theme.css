@@ -82,3 +82,12 @@ header.site-header{
   backdrop-filter:blur(10px);
   -webkit-backdrop-filter:blur(10px);
 }
+/* Active nav link = accent. WP 6.7 core ships a doubled-class
+   `.wp-block-navigation .wp-block-navigation-item__content.wp-block-navigation-item__content{color:inherit}`
+   (specificity 0,3,0) that defeats theme.json's `a[aria-current="page"]`
+   (0,2,1). Re-assert the accent with a selector that out-specifies it
+   (0,3,1) — no !important needed. */
+.wp-block-navigation a[aria-current="page"].wp-block-navigation-item__content,
+.wp-block-navigation .current-menu-item > a.wp-block-navigation-item__content{
+  color:var(--wp--preset--color--accent);
+}
