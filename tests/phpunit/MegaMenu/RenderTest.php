@@ -64,5 +64,18 @@ class RenderTest extends WP_UnitTestCase {
 		$html = do_blocks( '<!-- wp:starter/mega-menu {"label":"Empty"} --><!-- /wp:starter/mega-menu -->' );
 		$this->assertStringContainsString( 'Empty', $html );
 		$this->assertStringNotContainsString( 'starter-mega-menu__panel', $html );
+		$this->assertStringNotContainsString( 'aria-controls', $html );
+	}
+
+	public function test_mega_menu_empty_label_gets_accessible_name() {
+		$html = do_blocks(
+			'<!-- wp:starter/mega-menu -->' .
+			'<!-- wp:starter/mega-column {"heading":"Product"} -->' .
+			'<!-- wp:starter/mega-link {"label":"Pricing","url":"/pricing"} /-->' .
+			'<!-- /wp:starter/mega-column -->' .
+			'<!-- /wp:starter/mega-menu -->'
+		);
+		$this->assertStringContainsString( 'aria-label="Menu"', $html );
+		$this->assertStringContainsString( 'aria-controls=', $html );
 	}
 }
