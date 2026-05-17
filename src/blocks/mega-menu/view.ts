@@ -54,6 +54,12 @@ const { actions } = store( 'starter/mega-menu', {
 				ctx.suppressFocus = false;
 				return;
 			}
+			// On non-hover (touch) devices the tap also fires click ->
+			// toggle(); let that own open/close so focus+click don't
+			// cancel out. Hover/keyboard devices open on focus here.
+			if ( ! hoverCapable() ) {
+				return;
+			}
 			actions.open();
 		},
 		onPointerEnter() {
@@ -105,13 +111,18 @@ const { actions } = store( 'starter/mega-menu', {
 			const onDocKeydown = ( e: KeyboardEvent ) => {
 				if ( e.key === 'Escape' && ctx.isOpen ) {
 					ctx.isOpen = false;
-					// The refocus below must not re-open the panel.
-					ctx.suppressFocus = true;
-					ref
-						?.querySelector< HTMLButtonElement >(
-							'.starter-mega-menu__trigger'
-						)
-						?.focus();
+					const trig = ref?.querySelector< HTMLButtonElement >(
+						'.starter-mega-menu__trigger'
+					);
+					// Only arm the one-shot guard when the refocus will
+					// actually fire a focus event. If the trigger already
+					// holds focus, .focus() is a no-op and would leave
+					// suppressFocus stuck true, swallowing the next genuine
+					// focus-open.
+					if ( trig && document.activeElement !== trig ) {
+						ctx.suppressFocus = true;
+					}
+					trig?.focus();
 				}
 			};
 
