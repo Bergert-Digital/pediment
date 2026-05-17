@@ -5,6 +5,10 @@
  * @package Starter
  */
 
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
+
 /**
  * Return an inline SVG that references a sprite symbol.
  *
