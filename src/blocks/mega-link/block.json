@@ -1,0 +1,21 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "starter/mega-link",
+	"title": "Mega Link",
+	"category": "starter",
+	"description": "A single icon + label + description link inside a mega-menu column.",
+	"parent": [ "starter/mega-column" ],
+	"textdomain": "starter",
+	"supports": { "html": false, "inserter": false },
+	"attributes": {
+		"label": { "type": "string", "default": "" },
+		"url": { "type": "string", "default": "" },
+		"description": { "type": "string", "default": "" },
+		"icon": { "type": "string", "default": "" }
+	},
+	"editorScript": "file:./index.js",
+	"editorStyle": "file:./style-index.css",
+	"style": "file:./style-index.css",
+	"render": "file:./render.php"
+}
