@@ -30,7 +30,8 @@ ob_start();
 		type="button"
 		class="starter-mega-menu__trigger"
 		aria-expanded="false"
-		aria-controls="<?php echo esc_attr( $panel_id ); ?>"
+		<?php if ( $has_panel ) : ?>aria-controls="<?php echo esc_attr( $panel_id ); ?>"<?php endif; ?>
+		<?php if ( '' === $label ) : ?>aria-label="<?php echo esc_attr__( 'Menu', 'starter' ); ?>"<?php endif; ?>
 		data-wp-bind--aria-expanded="context.isOpen"
 		data-wp-on--click="actions.toggle"
 	><?php echo wp_kses_post( $label ); ?></button>
