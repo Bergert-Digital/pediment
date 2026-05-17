@@ -1,7 +1,7 @@
 <?php
 
 class IconsTest extends WP_UnitTestCase {
-	public function set_up() {
+	public function set_up(): void {
 		parent::set_up();
 		remove_action( 'wp_body_open', 'starter_print_icon_sprite', 1 );
 		add_action( 'wp_body_open', 'starter_print_icon_sprite', 1 );
