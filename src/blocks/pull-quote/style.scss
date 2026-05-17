@@ -1,42 +1,31 @@
 .starter-pull-quote {
-  border-left: 4px solid var(--wp--preset--color--accent);
-  padding: var(--wp--preset--spacing--40) var(--wp--preset--spacing--50);
-  margin-block: var(--wp--preset--spacing--50);
-  background: var(--wp--preset--color--surface-elevated);
-  border-radius: 0 0.5rem 0.5rem 0;
-  position: relative;
-
-  &::before {
-    content: "“";
-    position: absolute;
-    top: -0.25rem;
-    left: var(--wp--preset--spacing--40);
-    font-size: 4rem;
-    line-height: 1;
-    color: var(--wp--preset--color--accent);
-    opacity: 0.25;
-    pointer-events: none;
-    font-family: Georgia, serif;
-  }
+  max-width: 880px;
+  margin-inline: auto;
+  text-align: center;
+  padding-block: var(--wp--preset--spacing--40);
+  border: 0;
+  background: none;
 
   &__quote {
-    font-size: var(--wp--preset--font-size--xl);
-    line-height: 1.4;
-    margin: 0;
-    font-style: italic;
+    font-size: clamp(1.5rem, 2.6vw, 2.1rem);
+    font-weight: 700;
+    line-height: 1.35;
+    letter-spacing: -0.02em;
     color: var(--wp--preset--color--text);
-    position: relative;
+    margin: 0;
   }
 
   &__citation {
     display: block;
     margin-top: var(--wp--preset--spacing--30);
-    font-size: var(--wp--preset--font-size--sm);
-    color: var(--wp--preset--color--text-muted);
     font-style: normal;
-
-    &::before {
-      content: "— ";
-    }
+    font-weight: 600;
+    color: var(--wp--preset--color--text-muted);
+    font-size: var(--wp--preset--font-size--sm);
   }
+}
+
+.is-style-band-navy .starter-pull-quote {
+  &__quote { color: #fff; }
+  &__citation { color: #9DB6E6; }
 }
