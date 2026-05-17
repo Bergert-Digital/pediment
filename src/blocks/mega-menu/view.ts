@@ -67,22 +67,6 @@ const { actions } = store( 'starter/mega-menu', {
 				}, 150 )
 			);
 		},
-		onKeydown( event: KeyboardEvent ) {
-			if ( event.key !== 'Escape' ) {
-				return;
-			}
-			const ctx = getContext< Ctx >();
-			if ( ! ctx.isOpen ) {
-				return;
-			}
-			ctx.isOpen = false;
-			const { ref } = getElement();
-			ref
-				?.querySelector< HTMLButtonElement >(
-					'.starter-mega-menu__trigger'
-				)
-				?.focus();
-		},
 		onFocusOut( event: FocusEvent ) {
 			const { ref } = getElement();
 			const next = event.relatedTarget as Node | null;
@@ -104,13 +88,28 @@ const { actions } = store( 'starter/mega-menu', {
 					ctx.isOpen = false;
 				}
 			};
+			// Escape closes regardless of where focus is (e.g. hover-opened
+			// with focus still outside the menu) and returns focus to the
+			// trigger. Document-scoped so it is not gated on focus location.
+			const onDocKeydown = ( e: KeyboardEvent ) => {
+				if ( e.key === 'Escape' && ctx.isOpen ) {
+					ctx.isOpen = false;
+					ref
+						?.querySelector< HTMLButtonElement >(
+							'.starter-mega-menu__trigger'
+						)
+						?.focus();
+				}
+			};
 
 			ref?.addEventListener( 'starter-mega-close', onClose );
 			document.addEventListener( 'pointerdown', onDocPointer );
+			document.addEventListener( 'keydown', onDocKeydown );
 
 			return () => {
 				ref?.removeEventListener( 'starter-mega-close', onClose );
 				document.removeEventListener( 'pointerdown', onDocPointer );
+				document.removeEventListener( 'keydown', onDocKeydown );
 				if ( ref ) {
 					clearTimeout( timers.get( ref ) );
 				}

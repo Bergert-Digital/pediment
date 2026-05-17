@@ -16,7 +16,6 @@ $wrapper = get_block_wrapper_attributes(
 		'data-wp-interactive'    => 'starter/mega-menu',
 		'data-wp-context'        => '{ "isOpen": false }',
 		'data-wp-init'           => 'callbacks.init',
-		'data-wp-on--keydown'    => 'actions.onKeydown',
 		'data-wp-on--focusin'    => 'actions.open',
 		'data-wp-on--focusout'   => 'actions.onFocusOut',
 		'data-wp-on--mouseenter' => 'actions.onPointerEnter',
@@ -39,6 +38,7 @@ ob_start();
 		<div
 			id="<?php echo esc_attr( $panel_id ); ?>"
 			class="starter-mega-menu__panel"
+			hidden
 			data-wp-bind--hidden="!context.isOpen"
 			data-wp-class--is-open="context.isOpen"
 		>

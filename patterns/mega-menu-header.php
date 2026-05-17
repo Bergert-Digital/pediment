@@ -6,8 +6,8 @@
  * Inserter: true
  */
 ?>
-<!-- wp:group {"tagName":"header","className":"site-header","layout":{"type":"constrained"}} -->
-<header class="wp-block-group site-header">
+<!-- wp:group {"className":"mega-demo","layout":{"type":"constrained"}} -->
+<div class="wp-block-group mega-demo">
 	<!-- wp:navigation {"overlayMenu":"mobile","layout":{"type":"flex","orientation":"horizontal"}} -->
 	<!-- wp:starter/mega-menu {"label":"Products"} -->
 	<!-- wp:starter/mega-column {"heading":"Product"} -->
@@ -17,5 +17,5 @@
 	<!-- /wp:starter/mega-menu -->
 	<!-- wp:navigation-link {"label":"About","url":"/about","kind":"custom"} /-->
 	<!-- /wp:navigation -->
-</header>
+</div>
 <!-- /wp:group -->
