@@ -3,8 +3,8 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "start": "wp-scripts start --webpack-src-dir=src/blocks --output-path=build/blocks",
-    "build": "wp-scripts build --webpack-src-dir=src/blocks --output-path=build/blocks",
+    "start": "WP_EXPERIMENTAL_MODULES=true wp-scripts start --webpack-src-dir=src/blocks --output-path=build/blocks",
+    "build": "WP_EXPERIMENTAL_MODULES=true wp-scripts build --webpack-src-dir=src/blocks --output-path=build/blocks",
     "lint:js": "wp-scripts lint-js src/",
     "lint:blocks": "node tools/lint-blocks.mjs",
     "lint:colors": "node tools/lint-colors.mjs",
