@@ -23,4 +23,25 @@ class RenderTest extends WP_UnitTestCase {
 		$html = do_blocks( '<!-- wp:starter/mega-link /-->' );
 		$this->assertStringNotContainsString( 'starter-mega-link', $html );
 	}
+
+	public function test_mega_column_renders_heading_and_inner_links() {
+		$html = do_blocks(
+			'<!-- wp:starter/mega-column {"heading":"Product"} -->' .
+			'<!-- wp:starter/mega-link {"label":"Pricing","url":"/pricing"} /-->' .
+			'<!-- /wp:starter/mega-column -->'
+		);
+		$this->assertStringContainsString( 'starter-mega-column', $html );
+		$this->assertStringContainsString( 'Product', $html );
+		$this->assertStringContainsString( 'href="/pricing"', $html );
+	}
+
+	public function test_mega_column_omits_empty_heading() {
+		$html = do_blocks(
+			'<!-- wp:starter/mega-column -->' .
+			'<!-- wp:starter/mega-link {"label":"Docs","url":"/docs"} /-->' .
+			'<!-- /wp:starter/mega-column -->'
+		);
+		$this->assertStringNotContainsString( 'starter-mega-column__heading', $html );
+		$this->assertStringContainsString( 'href="/docs"', $html );
+	}
 }
