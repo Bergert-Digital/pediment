@@ -7,7 +7,7 @@ class SeedNavTest extends WP_UnitTestCase {
 		$this->assertStringContainsString( '"label":"About"', $blocks );
 		$this->assertStringContainsString( '"label":"Blog"', $blocks );
 		$this->assertStringContainsString( '"label":"Contact"', $blocks );
-		$this->assertStringContainsString( '"className":"nav-cta"', $blocks );
+		$this->assertStringNotContainsString( 'nav-cta', $blocks );
 		$this->assertSame( 3, substr_count( $blocks, 'wp:navigation-link' ) );
 	}
 
