@@ -1,0 +1,53 @@
+.starter-mega-menu {
+  position: relative;
+
+  &__trigger {
+    background: none;
+    border: 0;
+    padding: 0;
+    font: inherit;
+    color: inherit;
+    cursor: pointer;
+  }
+
+  &__panel {
+    position: absolute;
+    left: 0;
+    top: 100%;
+    z-index: 60;
+    min-width: min(48rem, 90vw);
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+    gap: var(--wp--preset--spacing--30);
+    padding: var(--wp--preset--spacing--40);
+    background: var(--wp--preset--color--surface);
+    border: 1px solid var(--wp--preset--color--border);
+    border-radius: 0.5rem;
+    box-shadow: var(--wp--preset--shadow--lifted);
+
+    &[hidden] { display: none; }
+  }
+}
+
+.starter-mega-menu__panel {
+  transition: opacity 160ms ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .starter-mega-menu__panel {
+    transition: none;
+  }
+}
+
+/* Inside the core hamburger overlay: accordion, not a floating dropdown. */
+.wp-block-navigation__responsive-container.is-menu-open {
+  .starter-mega-menu__panel {
+    position: static;
+    min-width: 0;
+    grid-template-columns: 1fr;
+    box-shadow: none;
+    border: 0;
+    padding-inline: var(--wp--preset--spacing--20);
+    padding-block: var(--wp--preset--spacing--20);
+  }
+}

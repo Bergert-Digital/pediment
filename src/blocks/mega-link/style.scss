@@ -1,0 +1,16 @@
+.starter-mega-link {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  column-gap: var(--wp--preset--spacing--20);
+  align-items: start;
+  padding: var(--wp--preset--spacing--20);
+  border-radius: 0.5rem;
+  text-decoration: none;
+  color: var(--wp--preset--color--text);
+
+  &:hover { background: var(--wp--preset--color--surface-elevated); color: var(--wp--preset--color--accent); }
+
+  &__icon { grid-row: 1 / span 2; width: 1.25rem; height: 1.25rem; color: var(--wp--preset--color--accent); }
+  &__label { grid-column: 2; font-weight: 600; }
+  &__desc { grid-column: 2; color: var(--wp--preset--color--text-muted); font-size: var(--wp--preset--font-size--sm); }
+}
