@@ -1,6 +1,6 @@
 import { store, getContext, getElement } from '@wordpress/interactivity';
 
-type Ctx = { isOpen: boolean };
+type Ctx = { isOpen: boolean; suppressFocus?: boolean };
 
 // Per-instance hover-close timers, keyed by the block root element.
 const timers = new WeakMap< Element, ReturnType< typeof setTimeout > >();
@@ -44,6 +44,17 @@ const { actions } = store( 'starter/mega-menu', {
 			} else {
 				actions.open();
 			}
+		},
+		onTriggerFocus() {
+			// Open when the trigger is focused (keyboard tab). Skip the
+			// programmatic refocus that Escape performs, so closing does
+			// not immediately reopen.
+			const ctx = getContext< Ctx >();
+			if ( ctx.suppressFocus ) {
+				ctx.suppressFocus = false;
+				return;
+			}
+			actions.open();
 		},
 		onPointerEnter() {
 			if ( hoverCapable() ) {
@@ -94,6 +105,8 @@ const { actions } = store( 'starter/mega-menu', {
 			const onDocKeydown = ( e: KeyboardEvent ) => {
 				if ( e.key === 'Escape' && ctx.isOpen ) {
 					ctx.isOpen = false;
+					// The refocus below must not re-open the panel.
+					ctx.suppressFocus = true;
 					ref
 						?.querySelector< HTMLButtonElement >(
 							'.starter-mega-menu__trigger'
