@@ -1,0 +1,15 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "starter/steps",
+	"title": "Steps",
+	"category": "starter",
+	"description": "An ordered list of numbered steps. Contains Step child blocks.",
+	"textdomain": "starter",
+	"supports": { "html": false, "align": [ "wide" ] },
+	"attributes": {},
+	"editorScript": "file:./index.js",
+	"editorStyle": "file:./style-index.css",
+	"style": "file:./style-index.css",
+	"render": "file:./render.php"
+}

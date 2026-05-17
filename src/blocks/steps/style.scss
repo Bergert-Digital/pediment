@@ -1,0 +1,44 @@
+.starter-steps {
+  counter-reset: starter-step;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+
+.starter-step {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 18px;
+  counter-increment: starter-step;
+
+  &__num {
+    width: 36px;
+    height: 36px;
+    border: 1px solid var(--wp--preset--color--border);
+    background: var(--wp--preset--color--surface);
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    font-weight: 800;
+    color: var(--wp--preset--color--accent);
+  }
+  &__num::before {
+    content: counter(starter-step, decimal-leading-zero);
+  }
+
+  &__title {
+    margin: 0;
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: var(--wp--preset--color--text);
+  }
+
+  &__text {
+    color: var(--wp--preset--color--text-muted);
+    font-size: .96rem;
+    margin: 5px 0 0;
+    line-height: 1.5;
+  }
+}
