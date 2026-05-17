@@ -1,5 +1,5 @@
 .starter-hero {
-  padding: var(--wp--preset--spacing--60) var(--wp--preset--spacing--30);
+  padding-block: clamp(64px, 7vw, 96px) var(--section, 110px);
   color: var(--wp--preset--color--text);
 
   &.is-variant-centered { text-align: center; }
@@ -7,63 +7,57 @@
   &.is-variant-media-bg {
     background-size: cover;
     background-position: center;
-    color: var(--wp--preset--color--surface);
+    color: #fff;
     position: relative;
     isolation: isolate;
-    border-radius: 0.75rem;
+    border-radius: var(--r-lg, 20px);
+    padding-inline: clamp(24px, 5vw, 56px);
 
     &::before {
       content: "";
       position: absolute;
       inset: 0;
-      background: var(--wp--preset--color--text);
-      opacity: 0.45;
+      background: var(--wp--preset--color--primary);
+      opacity: 0.55;
       border-radius: inherit;
       z-index: -1;
     }
   }
 
   &__headline {
-    font-size: var(--wp--preset--font-size--3xl);
-    line-height: 1.1;
-    letter-spacing: -0.02em;
+    font-size: var(--wp--preset--font-size--4xl);
+    line-height: 1.05;
+    letter-spacing: -0.03em;
+    font-weight: 800;
     margin: 0 0 var(--wp--preset--spacing--20);
-    font-weight: 700;
   }
 
   &__subheadline {
     font-size: var(--wp--preset--font-size--lg);
     color: var(--wp--preset--color--text-muted);
+    line-height: 1.6;
     margin: 0 0 var(--wp--preset--spacing--40);
-    max-width: 56ch;
+    max-width: 40ch;
   }
 
   &.is-variant-centered &__subheadline { margin-inline: auto; }
-  &.is-variant-media-bg &__subheadline { color: var(--wp--preset--color--surface-elevated); opacity: 0.92; }
+  &.is-variant-media-bg &__subheadline { color: rgba(255,255,255,.9); }
 
   &__cta {
     display: inline-flex;
     align-items: center;
-    gap: 0.5rem;
-    padding: var(--wp--preset--spacing--20) var(--wp--preset--spacing--40);
+    gap: 9px;
+    padding: 16px 26px;
     background: var(--wp--preset--color--accent);
-    color: var(--wp--preset--color--surface);
-    border-radius: 0.5rem;
+    color: #fff;
+    border-radius: var(--r-pill, 999px);
     text-decoration: none;
-    font-weight: 600;
-    transition: background-color 150ms ease, transform 150ms ease, box-shadow 150ms ease;
-    box-shadow: var(--wp--preset--shadow--subtle);
+    font-weight: 700;
+    transition: background-color .15s ease, transform .15s ease;
 
-    &:hover {
-      background: var(--wp--preset--color--accent-hover);
-      color: var(--wp--preset--color--surface);
-      transform: translateY(-1px);
-      box-shadow: var(--wp--preset--shadow--medium);
-    }
-
-    &:focus-visible {
-      outline: 2px solid var(--wp--preset--color--accent);
-      outline-offset: 3px;
-    }
+    &:hover { background: var(--wp--preset--color--accent-hover); color: #fff; transform: translateY(-1px); }
+    &:focus-visible { outline: 2px solid var(--wp--preset--color--accent); outline-offset: 3px; }
   }
+
+  &.is-variant-media-bg &__cta { background: #fff; color: var(--wp--preset--color--accent-hover); }
 }
