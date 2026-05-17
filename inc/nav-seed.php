@@ -20,8 +20,8 @@ const STARTER_NAV_MARKER = '_starter_seeded_nav';
 /**
  * Serialized block markup for the default menu.
  *
- * About / Blog / Contact, Contact carrying the `nav-cta` class so the
- * theme.json CSS renders it as a button. Relative custom URLs keep the
+ * About / Blog / Contact, all plain nav links. The header's pill CTA is a
+ * separate wp:button in parts/header.html. Relative custom URLs keep the
  * menu install-independent (active state handled by inc/nav-active.php).
  *
  * @return string
@@ -32,7 +32,7 @@ function starter_nav_menu_blocks(): string {
 		array(
 			'<!-- wp:navigation-link {"label":"About","url":"/about","kind":"custom"} /-->',
 			'<!-- wp:navigation-link {"label":"Blog","url":"/blog","kind":"custom"} /-->',
-			'<!-- wp:navigation-link {"label":"Contact","url":"/contact","kind":"custom","className":"nav-cta"} /-->',
+			'<!-- wp:navigation-link {"label":"Contact","url":"/contact","kind":"custom"} /-->',
 		)
 	);
 }
