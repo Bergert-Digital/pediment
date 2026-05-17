@@ -1,0 +1,17 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "starter/step",
+	"title": "Step",
+	"category": "starter",
+	"description": "A single numbered step (number auto-generated).",
+	"parent": [ "starter/steps" ],
+	"textdomain": "starter",
+	"supports": { "html": false, "inserter": false },
+	"attributes": {
+		"title": { "type": "string", "default": "" },
+		"text": { "type": "string", "default": "" }
+	},
+	"editorScript": "file:./index.js",
+	"render": "file:./render.php"
+}
