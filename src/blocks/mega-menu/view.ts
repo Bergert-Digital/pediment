@@ -1,7 +1,11 @@
 import { store, getContext, getElement } from '@wordpress/interactivity';
 
 type Ctx = { isOpen: boolean };
-let closeTimer: ReturnType< typeof setTimeout > | undefined;
+
+// Per-instance hover-close timers, keyed by the block root element.
+const timers = new WeakMap< Element, ReturnType< typeof setTimeout > >();
+
+const hoverCapable = () => window.matchMedia( '(hover: hover)' ).matches;
 
 const closeAllExcept = ( keep: Element | null ) => {
 	document
@@ -18,7 +22,9 @@ const { actions } = store( 'starter/mega-menu', {
 		open() {
 			const ctx = getContext< Ctx >();
 			const { ref } = getElement();
-			clearTimeout( closeTimer );
+			if ( ref ) {
+				clearTimeout( timers.get( ref ) );
+			}
 			closeAllExcept( ref );
 			ctx.isOpen = true;
 		},
@@ -26,6 +32,12 @@ const { actions } = store( 'starter/mega-menu', {
 			getContext< Ctx >().isOpen = false;
 		},
 		toggle() {
+			// Hover devices drive open/close via pointer + focus; the click
+			// is a no-op there to avoid an open()+toggle() double-fire on
+			// hybrid touch/hover devices. Non-hover (touch) uses the click.
+			if ( hoverCapable() ) {
+				return;
+			}
 			const ctx = getContext< Ctx >();
 			if ( ctx.isOpen ) {
 				actions.close();
@@ -34,29 +46,42 @@ const { actions } = store( 'starter/mega-menu', {
 			}
 		},
 		onPointerEnter() {
-			if ( window.matchMedia( '(hover: hover)' ).matches ) {
+			if ( hoverCapable() ) {
 				actions.open();
 			}
 		},
 		onPointerLeave() {
-			if ( window.matchMedia( '(hover: hover)' ).matches ) {
-				clearTimeout( closeTimer );
-				closeTimer = setTimeout( () => actions.close(), 150 );
+			if ( ! hoverCapable() ) {
+				return;
 			}
+			const { ref } = getElement();
+			if ( ! ref ) {
+				return;
+			}
+			const ctx = getContext< Ctx >();
+			clearTimeout( timers.get( ref ) );
+			timers.set(
+				ref,
+				setTimeout( () => {
+					ctx.isOpen = false;
+				}, 150 )
+			);
 		},
 		onKeydown( event: KeyboardEvent ) {
-			if ( event.key === 'Escape' ) {
-				const ctx = getContext< Ctx >();
-				if ( ctx.isOpen ) {
-					ctx.isOpen = false;
-					const { ref } = getElement();
-					ref
-						?.querySelector< HTMLButtonElement >(
-							'.starter-mega-menu__trigger'
-						)
-						?.focus();
-				}
+			if ( event.key !== 'Escape' ) {
+				return;
 			}
+			const ctx = getContext< Ctx >();
+			if ( ! ctx.isOpen ) {
+				return;
+			}
+			ctx.isOpen = false;
+			const { ref } = getElement();
+			ref
+				?.querySelector< HTMLButtonElement >(
+					'.starter-mega-menu__trigger'
+				)
+				?.focus();
 		},
 		onFocusOut( event: FocusEvent ) {
 			const { ref } = getElement();
@@ -68,17 +93,28 @@ const { actions } = store( 'starter/mega-menu', {
 	},
 	callbacks: {
 		init() {
+			const ctx = getContext< Ctx >();
 			const { ref } = getElement();
-			ref?.addEventListener( 'starter-mega-close', () =>
-				actions.close()
-			);
+
+			const onClose = () => {
+				ctx.isOpen = false;
+			};
 			const onDocPointer = ( e: Event ) => {
-				const ctx = getContext< Ctx >();
 				if ( ctx.isOpen && ref && ! ref.contains( e.target as Node ) ) {
-					actions.close();
+					ctx.isOpen = false;
 				}
 			};
+
+			ref?.addEventListener( 'starter-mega-close', onClose );
 			document.addEventListener( 'pointerdown', onDocPointer );
+
+			return () => {
+				ref?.removeEventListener( 'starter-mega-close', onClose );
+				document.removeEventListener( 'pointerdown', onDocPointer );
+				if ( ref ) {
+					clearTimeout( timers.get( ref ) );
+				}
+			};
 		},
 	},
 } );
