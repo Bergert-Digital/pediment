@@ -11,6 +11,6 @@
   &:hover { background: var(--wp--preset--color--surface-elevated); color: var(--wp--preset--color--accent); }
 
   &__icon { grid-row: 1 / span 2; width: 1.25rem; height: 1.25rem; color: var(--wp--preset--color--accent); }
-  &__label { font-weight: 600; }
+  &__label { grid-column: 2; font-weight: 600; }
   &__desc { grid-column: 2; color: var(--wp--preset--color--text-muted); font-size: var(--wp--preset--font-size--sm); }
 }
