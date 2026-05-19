@@ -1,5 +1,5 @@
 import { test, expect, type Page } from '@playwright/test';
-import { login } from './utils';
+import { login, createPageWithContent, deletePageBySlug } from './utils';
 
 // Opens the existing /mega-demo/ page (built from the "Mega Menu Demo
 // Header" pattern) in the block editor and asserts the mega-menu edits as
@@ -59,37 +59,32 @@ test.describe( 'mega menu editor', () => {
 		).toBeVisible();
 	} );
 
-	test( 'a fresh mega-menu has one column and an Add column button', async ( {
+	test( 'a fresh mega-menu defaults to one column with an Add column button', async ( {
 		page,
 	} ) => {
+		const slug = 'mega-add-col-fixture';
+		deletePageBySlug( slug );
+		const url = createPageWithContent(
+			slug,
+			'Mega Add Col Fixture',
+			'<!-- wp:navigation {"overlayMenu":"never"} -->' +
+				'<!-- wp:starter/mega-menu {"label":"Test"} /-->' +
+				'<!-- /wp:navigation -->'
+		);
+		const id = url.replace( /[^0-9]/g, '' );
 		await login( page );
-		await page.goto( '/wp-admin/post-new.php?post_type=page' );
-		// Dismiss the welcome guide if present.
-		await page
-			.getByRole( 'button', { name: 'Close', exact: true } )
-			.click()
-			.catch( () => {} );
-
-		const canvas = page.frameLocator( 'iframe[name="editor-canvas"]' );
-		// Insert the Mega Menu block via the inserter.
-		await page
-			.getByRole( 'button', { name: 'Toggle block inserter' } )
-			.click();
-		await page
-			.getByRole( 'searchbox', { name: 'Search' } )
-			.fill( 'Mega Menu' );
-		await page
-			.getByRole( 'option', { name: 'Mega Menu', exact: true } )
-			.click();
-
+		await page.goto( `/wp-admin/post.php?post=${ id }&action=edit` );
+		const canvas = page.frameLocator(
+			'iframe[name="editor-canvas"]'
+		);
 		const columns = canvas.locator( '.starter-mega-column' );
 		await expect( columns ).toHaveCount( 1 );
-
 		const addBtn = canvas.getByRole( 'button', {
 			name: 'Add column',
 		} );
 		await expect( addBtn ).toBeVisible();
 		await addBtn.click();
 		await expect( columns ).toHaveCount( 2 );
+		deletePageBySlug( slug );
 	} );
 } );
