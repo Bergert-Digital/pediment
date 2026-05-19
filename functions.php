@@ -22,6 +22,7 @@ require_once __DIR__ . '/inc/register-blocks.php';
 require_once __DIR__ . '/inc/icons.php';
 require_once __DIR__ . '/inc/block-styles.php';
 require_once __DIR__ . '/inc/hero-variants.php';
+require_once __DIR__ . '/inc/pull-quote-variants.php';
 require_once __DIR__ . '/inc/brand-settings.php';
 require_once __DIR__ . '/inc/contact-form.php';
 require_once __DIR__ . '/inc/patterns.php';
