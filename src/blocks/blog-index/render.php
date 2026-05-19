@@ -37,6 +37,9 @@ ob_start();
 		while ( $query->have_posts() ) :
 			$query->the_post();
 			$post_id = get_the_ID();
+			// Primary category = first term. Uncategorised posts get an empty
+			// slug: no badge, excluded from the filter list, and shown only
+			// under "All" (they are not in any specific category by design).
 			$terms   = get_the_category( $post_id );
 			$primary = ! empty( $terms ) ? $terms[0] : null;
 			$slug    = $primary ? (string) $primary->slug : '';
@@ -86,7 +89,7 @@ ob_start();
 							<h3 class="starter-blog-index__title"><?php echo esc_html( $card['title'] ); ?></h3>
 						</a>
 						<p class="starter-blog-index__excerpt"><?php echo esc_html( $card['excerpt'] ); ?></p>
-						<a class="starter-blog-index__readmore" href="<?php echo esc_url( $card['permalink'] ); ?>">
+						<a class="starter-blog-index__readmore" href="<?php echo esc_url( $card['permalink'] ); ?>" aria-label="<?php echo esc_attr( sprintf( /* translators: %s: post title */ __( 'Read more: %s', 'starter' ), $card['title'] ) ); ?>">
 							<?php esc_html_e( 'Read more', 'starter' ); ?>
 							<svg class="i" aria-hidden="true" focusable="false"><use href="#ph-arrow-right"></use></svg>
 						</a>
