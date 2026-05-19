@@ -38,6 +38,7 @@ class PullQuoteTest extends WP_UnitTestCase {
 		$path = dirname( __DIR__, 3 ) . '/src/blocks/pull-quote/block.json';
 		$this->assertFileIsReadable( $path );
 		$data = json_decode( file_get_contents( $path ), true );
+		$this->assertIsArray( $data );
 		$this->assertStringContainsStringIgnoringCase( 'testimonial', (string) $data['description'] );
 	}
 
