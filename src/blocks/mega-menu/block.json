@@ -9,7 +9,8 @@
 	"textdomain": "starter",
 	"supports": { "html": false, "reusable": false },
 	"attributes": {
-		"label": { "type": "string", "default": "" }
+		"label": { "type": "string", "default": "" },
+		"columns": { "type": "array", "default": [] }
 	},
 	"editorScript": "file:./index.js",
 	"editorStyle": "file:./index.css",
