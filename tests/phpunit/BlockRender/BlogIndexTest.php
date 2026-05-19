@@ -59,7 +59,7 @@ class BlogIndexTest extends WP_UnitTestCase {
 
 	public function test_card_has_featured_image_and_category_badge() {
 		$cat_id = $this->factory->category->create( array( 'slug' => 'briefing', 'name' => 'Briefing' ) );
-		$att_id = self::factory()->attachment->create_upload_object( DIR_TESTDATA . '/images/canola.jpg' );
+		$att_id = $this->factory->attachment->create_upload_object( DIR_TESTDATA . '/images/canola.jpg' );
 		$post_id = $this->factory->post->create(
 			array(
 				'post_title'    => 'Imaged post',
@@ -113,6 +113,7 @@ class BlogIndexTest extends WP_UnitTestCase {
 		$html = $this->render( '{"count":10,"showFilter":false}' );
 
 		$this->assertStringNotContainsString( 'starter-blog-index__filter', $html );
+		$this->assertStringContainsString( 'starter-blog-index__item', $html );
 		$this->assertStringContainsString( 'PA', $html );
 
 		wp_delete_post( $pa, true );
