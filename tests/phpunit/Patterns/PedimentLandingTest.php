@@ -66,13 +66,31 @@ class PedimentLandingTest extends WP_UnitTestCase {
 		);
 	}
 
-	public function test_pattern_renders_without_block_errors() {
+	public function test_pattern_renders_all_blocks_server_side() {
 		$html = do_blocks( $this->pattern()['content'] );
-		$this->assertStringNotContainsString( 'block-editor-block-list', $html );
+		// An unregistered/failed dynamic block leaves its raw wp-comment with
+		// no rendered wrapper class, so asserting every block's real class is
+		// a true server-side render guard (the editor-only "block-list"
+		// string never appears in PHP output and would be a vacuous check).
 		$this->assertStringNotContainsString( 'is not registered', $html );
-		$this->assertStringContainsString( 'is-variant-stat-card', $html );
-		$this->assertStringContainsString( 'is-style-band-navy', $html );
-		$this->assertStringContainsString( 'starter-blog-index', $html );
+		foreach (
+			array(
+				'starter-hero',
+				'is-variant-stat-card',
+				'starter-feature-grid',
+				'starter-steps',
+				'starter-stat',
+				'starter-pull-quote',
+				'is-variant-testimonial',
+				'starter-faq',
+				'starter-cta',
+				'starter-blog-index',
+				'is-style-band-navy',
+				'is-style-band-surface',
+			) as $needle
+		) {
+			$this->assertStringContainsString( $needle, $html, "rendered HTML must contain: $needle" );
+		}
 	}
 
 	public function test_pattern_copy_is_rebrandable_no_pediment() {

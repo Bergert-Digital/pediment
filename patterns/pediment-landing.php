@@ -6,7 +6,7 @@
  * Block Types: core/post-content
  * Description: Full Pediment landing page — hero, services, process, stats, testimonial, FAQ, CTA, and insights bands.
  */
-// phpcs:ignoreFile -- block pattern markup
+// phpcs:ignoreFile -- block pattern content
 ?>
 <!-- wp:group {"align":"full","className":"starter-band is-style-band-surface","layout":{"type":"constrained"}} -->
 <div class="wp-block-group alignfull starter-band is-style-band-surface">
