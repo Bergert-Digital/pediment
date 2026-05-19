@@ -59,7 +59,7 @@
 
 <!-- wp:group {"align":"full","className":"starter-band is-style-band-surface","layout":{"type":"constrained"}} -->
 <div class="wp-block-group alignfull starter-band is-style-band-surface">
-<!-- wp:starter/pull-quote {"variant":"testimonial","align":"wide","quote":"A short, specific endorsement written in the customer&rsquo;s own words.","authorName":"A. Customer","authorRole":"Title, Company"} /-->
+<!-- wp:starter/pull-quote {"variant":"testimonial","align":"wide","quote":"A short, specific endorsement written in the customer's own words.","authorName":"A. Customer","authorRole":"Title, Company"} /-->
 </div>
 <!-- /wp:group -->
 
