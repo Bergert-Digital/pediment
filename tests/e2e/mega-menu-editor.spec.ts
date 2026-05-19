@@ -7,27 +7,12 @@ import { login } from './utils';
 // icon cell present, url/icon controls in the inspector.
 async function openMegaDemoInEditor( page: Page ) {
 	await login( page );
-	await page.waitForFunction(
-		() =>
-			!! (
-				window as unknown as {
-					wp?: { apiFetch?: unknown };
-				}
-			 ).wp?.apiFetch
-	);
-	const id = await page.evaluate( async () => {
-		const r = await (
-			window as unknown as {
-				wp: {
-					apiFetch: ( o: { path: string } ) => Promise< unknown >;
-				};
-			}
-		 ).wp.apiFetch( {
-			path: '/wp/v2/pages?slug=mega-demo&status=publish',
-		} );
-		return ( r as Array< { id: number } > )[ 0 ].id;
-	} );
-	await page.goto( `/wp-admin/post.php?post=${ id }&action=edit` );
+	// Reach the page editor via the front-end admin-bar "Edit Page" link.
+	// (wp.apiFetch is not enqueued on the wp-admin dashboard, so it cannot
+	// be used to resolve the post id from there.)
+	await page.goto( '/mega-demo/' );
+	await page.click( '#wp-admin-bar-edit a' );
+	await page.waitForURL( /post\.php\?post=\d+&action=edit/ );
 	return page.frameLocator( 'iframe[name="editor-canvas"]' );
 }
 
