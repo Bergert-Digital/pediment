@@ -2,13 +2,29 @@
 /**
  * Server-side render for starter/mega-menu.
  *
- * @var array  $attributes
- * @var string $content
+ * @var array $attributes
  */
 
-$label     = isset( $attributes['label'] ) ? trim( (string) $attributes['label'] ) : '';
-$has_panel = '' !== trim( (string) $content );
-$panel_id  = wp_unique_id( 'starter-mega-' );
+$label   = isset( $attributes['label'] ) ? trim( (string) $attributes['label'] ) : '';
+$columns = isset( $attributes['columns'] ) && is_array( $attributes['columns'] )
+	? $attributes['columns']
+	: array();
+
+// Panel renders only if at least one link has a label or url.
+$has_panel = false;
+foreach ( $columns as $col ) {
+	$links = isset( $col['links'] ) && is_array( $col['links'] ) ? $col['links'] : array();
+	foreach ( $links as $lnk ) {
+		$l = isset( $lnk['label'] ) ? trim( (string) $lnk['label'] ) : '';
+		$u = isset( $lnk['url'] ) ? trim( (string) $lnk['url'] ) : '';
+		if ( '' !== $l || '' !== $u ) {
+			$has_panel = true;
+			break 2;
+		}
+	}
+}
+
+$panel_id = wp_unique_id( 'starter-mega-' );
 
 $wrapper = get_block_wrapper_attributes(
 	array(
@@ -21,6 +37,7 @@ $wrapper = get_block_wrapper_attributes(
 		'data-wp-on--mouseleave' => 'actions.onPointerLeave',
 	)
 );
+
 ob_start();
 ?>
 <div <?php echo $wrapper; // phpcs:ignore WordPress.Security.EscapeOutput ?>>
@@ -42,7 +59,50 @@ ob_start();
 			data-wp-bind--hidden="!context.isOpen"
 			data-wp-class--is-open="context.isOpen"
 		>
-			<?php echo $content; // phpcs:ignore WordPress.Security.EscapeOutput -- inner blocks pre-rendered ?>
+			<?php
+			foreach ( $columns as $col ) :
+				$heading = isset( $col['heading'] ) ? trim( (string) $col['heading'] ) : '';
+				$links   = isset( $col['links'] ) && is_array( $col['links'] ) ? $col['links'] : array();
+
+				$renderable = array();
+				foreach ( $links as $lnk ) {
+					$l = isset( $lnk['label'] ) ? trim( (string) $lnk['label'] ) : '';
+					$u = isset( $lnk['url'] ) ? trim( (string) $lnk['url'] ) : '';
+					if ( '' !== $l || '' !== $u ) {
+						$renderable[] = $lnk;
+					}
+				}
+				if ( empty( $renderable ) ) {
+					continue;
+				}
+				?>
+				<div class="starter-mega-column">
+					<?php if ( '' !== $heading ) : ?>
+						<p class="starter-mega-column__heading"><?php echo wp_kses_post( $heading ); ?></p>
+					<?php endif; ?>
+					<div class="starter-mega-column__links">
+						<?php
+						foreach ( $renderable as $lnk ) :
+							$l_label = isset( $lnk['label'] ) ? trim( (string) $lnk['label'] ) : '';
+							$l_url   = isset( $lnk['url'] ) ? trim( (string) $lnk['url'] ) : '';
+							$l_desc  = isset( $lnk['description'] ) ? trim( (string) $lnk['description'] ) : '';
+							$l_icon  = isset( $lnk['icon'] ) ? trim( (string) $lnk['icon'] ) : '';
+							?>
+							<a class="starter-mega-link" href="<?php echo esc_url( $l_url ); ?>">
+								<?php
+								if ( '' !== $l_icon && function_exists( 'starter_icon' ) ) {
+									echo starter_icon( $l_icon, 'starter-mega-link__icon' ); // phpcs:ignore WordPress.Security.EscapeOutput -- theme-controlled sprite SVG
+								}
+								?>
+								<span class="starter-mega-link__label"><?php echo wp_kses_post( $l_label ); ?></span>
+								<?php if ( '' !== $l_desc ) : ?>
+									<span class="starter-mega-link__desc"><?php echo wp_kses_post( $l_desc ); ?></span>
+								<?php endif; ?>
+							</a>
+						<?php endforeach; ?>
+					</div>
+				</div>
+			<?php endforeach; ?>
 		</div>
 	<?php endif; ?>
 </div>
