@@ -13,3 +13,8 @@
   font-weight: 600;
   margin-block-end: var(--wp--preset--spacing--20);
 }
+
+.starter-mega-menu__panel .block-list-appender {
+  grid-column: 1 / -1;
+  margin-block-start: var(--wp--preset--spacing--20);
+}
