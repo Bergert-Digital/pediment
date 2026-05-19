@@ -1,5 +1,14 @@
 import { Page } from '@playwright/test';
 import { execSync } from 'node:child_process';
+import { resolve } from 'node:path';
+
+// All wp-cli must target the child-theme wp-env (:8890) — the single test
+// base. `npx wp-env run cli` uses the cwd's .wp-env.json, so run it from the
+// sibling wp-starter-child-theme dir, NOT this theme checkout (which has its
+// own :8888 env with a different DB). Override with WP_ENV_CWD if needed.
+const WP_ENV_CWD =
+  process.env.WP_ENV_CWD ||
+  resolve(process.cwd(), '..', 'wp-starter-child-theme');
 
 export async function login(page: Page, user = 'admin', pass = 'password') {
   await page.goto('/wp-login.php');
@@ -21,13 +30,13 @@ export function createPageWithContent(slug: string, title: string, content: stri
   const escapedTitle = title.replace(/'/g, "'\\''");
   execSync(
     `npx wp-env run cli wp post create --post_type=page --post_status=publish --post_title='${escapedTitle}' --post_name='${slug}' --post_content='${escapedContent}'`,
-    { stdio: 'ignore' }
+    { stdio: 'ignore', cwd: WP_ENV_CWD }
   );
   // Resolve by slug; keep only a line that is purely digits so wp-env's
   // ℹ/✔ decoration lines are discarded regardless of which stream they use.
   const out = execSync(
     `bash -c "npx wp-env run cli wp post list --post_type=page --name='${slug}' --field=ID --format=ids 2>/dev/null | grep -E '^[0-9]+$' | head -n 1"`,
-    { encoding: 'utf8' }
+    { encoding: 'utf8', cwd: WP_ENV_CWD }
   );
   const id = parseInt(out.trim(), 10);
   if (!id) {
@@ -40,7 +49,7 @@ export function deletePageBySlug(slug: string): void {
   try {
     execSync(
       `bash -c "ids=\\$(npx wp-env run cli wp post list --post_type=page --name=${slug} --format=ids 2>/dev/null | tail -n 1); [ -n \\"\\$ids\\" ] && npx wp-env run cli wp post delete \\$ids --force >/dev/null 2>&1"`,
-      { stdio: 'ignore' }
+      { stdio: 'ignore', cwd: WP_ENV_CWD }
     );
   } catch {
     // ignore
