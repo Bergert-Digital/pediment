@@ -41,7 +41,7 @@ if ( 'testimonial' === $variant ) {
 				}
 				?>
 				<?php if ( '' !== $author_name || '' !== $author_role ) : ?>
-					<div>
+					<div class="starter-pull-quote__meta">
 						<?php if ( '' !== $author_name ) : ?>
 							<b class="starter-pull-quote__name"><?php echo wp_kses_post( $author_name ); ?></b>
 						<?php endif; ?>
