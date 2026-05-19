@@ -9,17 +9,48 @@ import {
 	PanelBody,
 	SelectControl,
 	TextControl,
+	TextareaControl,
 	Button,
 } from '@wordpress/components';
 
+type Metric = { value: string; label: string };
 type Attrs = {
-	variant: 'default' | 'centered' | 'media-bg';
+	variant: 'default' | 'centered' | 'media-bg' | 'stat-card';
 	headline: string;
 	subheadline: string;
 	ctaText: string;
 	ctaUrl: string;
+	secondaryText: string;
+	secondaryUrl: string;
+	eyebrow: string;
+	ticks: string[];
+	statValue: string;
+	statText: string;
+	metrics: Metric[];
 	mediaId: number;
 };
+
+const ALL_VARIANTS = [
+	'default',
+	'centered',
+	'media-bg',
+	'stat-card',
+] as const;
+const LABELS: Record< string, string > = {
+	default: 'Default',
+	centered: 'Centered',
+	'media-bg': 'Media BG',
+	'stat-card': 'Stat card',
+};
+
+function allowedVariants(): string[] {
+	const w = ( window as unknown as { starterHeroVariants?: unknown } )
+		.starterHeroVariants;
+	if ( Array.isArray( w ) && w.length ) {
+		return w.map( String );
+	}
+	return [ ...ALL_VARIANTS ];
+}
 
 export default function Edit( {
 	attributes,
@@ -31,6 +62,11 @@ export default function Edit( {
 	const blockProps = useBlockProps( {
 		className: `starter-hero is-variant-${ attributes.variant }`,
 	} );
+	const isStatCard = attributes.variant === 'stat-card';
+	const options = allowedVariants().map( ( v ) => ( {
+		label: LABELS[ v ] ?? v,
+		value: v,
+	} ) );
 
 	return (
 		<>
@@ -39,11 +75,7 @@ export default function Edit( {
 					<SelectControl
 						label={ __( 'Variant', 'starter' ) }
 						value={ attributes.variant }
-						options={ [
-							{ label: 'Default', value: 'default' },
-							{ label: 'Centered', value: 'centered' },
-							{ label: 'Media BG', value: 'media-bg' },
-						] }
+						options={ options }
 						onChange={ ( v ) =>
 							setAttributes( {
 								variant: v as Attrs[ 'variant' ],
@@ -55,7 +87,94 @@ export default function Edit( {
 						value={ attributes.ctaUrl }
 						onChange={ ( v ) => setAttributes( { ctaUrl: v } ) }
 					/>
-					{ attributes.variant === 'media-bg' && (
+					{ isStatCard && (
+						<>
+							<TextControl
+								label={ __( 'Eyebrow', 'starter' ) }
+								value={ attributes.eyebrow }
+								onChange={ ( v ) =>
+									setAttributes( { eyebrow: v } )
+								}
+							/>
+							<TextControl
+								label={ __( 'Secondary CTA text', 'starter' ) }
+								value={ attributes.secondaryText }
+								onChange={ ( v ) =>
+									setAttributes( { secondaryText: v } )
+								}
+							/>
+							<TextControl
+								label={ __( 'Secondary CTA URL', 'starter' ) }
+								value={ attributes.secondaryUrl }
+								onChange={ ( v ) =>
+									setAttributes( { secondaryUrl: v } )
+								}
+							/>
+							<TextareaControl
+								label={ __(
+									'Trust ticks (one per line)',
+									'starter'
+								) }
+								value={ ( attributes.ticks || [] ).join(
+									'\n'
+								) }
+								onChange={ ( v ) =>
+									setAttributes( {
+										ticks: v
+											.split( '\n' )
+											.map( ( s ) => s.trim() )
+											.filter( Boolean ),
+									} )
+								}
+							/>
+							<TextControl
+								label={ __( 'Stat value', 'starter' ) }
+								value={ attributes.statValue }
+								onChange={ ( v ) =>
+									setAttributes( { statValue: v } )
+								}
+							/>
+							<TextControl
+								label={ __( 'Stat text', 'starter' ) }
+								value={ attributes.statText }
+								onChange={ ( v ) =>
+									setAttributes( { statText: v } )
+								}
+							/>
+							<TextareaControl
+								label={ __(
+									'Metrics — “value | label” per line',
+									'starter'
+								) }
+								value={ ( attributes.metrics || [] )
+									.map(
+										( m ) => `${ m.value } | ${ m.label }`
+									)
+									.join( '\n' ) }
+								onChange={ ( v ) =>
+									setAttributes( {
+										metrics: v
+											.split( '\n' )
+											.map( ( line ) => {
+												const [ value, label ] =
+													line.split( '|' );
+												return {
+													value: ( value || '' ).trim(),
+													label: ( label || '' ).trim(),
+												};
+											} )
+											.filter(
+												( m ) =>
+													m.value !== '' ||
+													m.label !== ''
+											),
+									} )
+								}
+							/>
+						</>
+					) }
+					{ ( attributes.variant === 'media-bg' ||
+						isStatCard ) && (
 						<MediaUpload
 							allowedTypes={ [ 'image' ] }
 							onSelect={ ( media: any ) =>
@@ -74,6 +193,17 @@ export default function Edit( {
 			</InspectorControls>
 
 			<div { ...blockProps }>
+				{ isStatCard && (
+					<RichText
+						tagName="span"
+						className="starter-hero__eyebrow"
+						value={ attributes.eyebrow }
+						onChange={ ( v ) =>
+							setAttributes( { eyebrow: v } )
+						}
+						placeholder={ __( 'Eyebrow…', 'starter' ) }
+					/>
+				) }
 				<RichText
 					tagName="h1"
 					className="starter-hero__headline"
@@ -85,7 +215,9 @@ export default function Edit( {
 					tagName="p"
 					className="starter-hero__subheadline"
 					value={ attributes.subheadline }
-					onChange={ ( v ) => setAttributes( { subheadline: v } ) }
+					onChange={ ( v ) =>
+						setAttributes( { subheadline: v } )
+					}
 					placeholder={ __( 'Subheadline…', 'starter' ) }
 				/>
 				<RichText
