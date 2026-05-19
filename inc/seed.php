@@ -36,10 +36,7 @@ function starter_seed_run(): void {
 	$pages = array(
 		'home'    => array(
 			'title'   => 'Home',
-			'content' =>
-				'<!-- wp:starter/hero {"variant":"centered","headline":"Welcome","subheadline":"A short benefit-led promise.","ctaText":"Get started","ctaUrl":"/contact","align":"wide"} /-->' .
-				'<!-- wp:starter/cta {"title":"Ready to start?","body":"Tell us about your project.","primaryText":"Contact us","primaryUrl":"/contact","align":"wide"} /-->' .
-				'<!-- wp:starter/blog-index {"count":3,"align":"wide"} /-->',
+			'content' => starter_pediment_landing_content(),
 		),
 		'about'   => array(
 			'title'   => 'About',
@@ -94,4 +91,25 @@ function starter_seed_run(): void {
 	if ( function_exists( 'starter_nav_seed_entity' ) ) {
 		starter_nav_seed_entity();
 	}
+}
+
+/**
+ * The Pediment landing pattern content for the Home page.
+ *
+ * Reads the registered `starter/pediment-landing` pattern. Falls back to a
+ * minimal valid block composition so seeding never writes an empty Home even
+ * if patterns are unavailable.
+ *
+ * @return string Block markup.
+ */
+function starter_pediment_landing_content(): string {
+	if ( class_exists( 'WP_Block_Patterns_Registry' ) ) {
+		$pattern = WP_Block_Patterns_Registry::get_instance()->get_registered( 'starter/pediment-landing' );
+		if ( is_array( $pattern ) && ! empty( $pattern['content'] ) ) {
+			return (string) $pattern['content'];
+		}
+	}
+	return '<!-- wp:starter/hero {"variant":"centered","headline":"Welcome","subheadline":"A short benefit-led promise.","ctaText":"Get started","ctaUrl":"/contact","align":"wide"} /-->' .
+		'<!-- wp:starter/cta {"title":"Ready to start?","body":"Tell us about your project.","primaryText":"Contact us","primaryUrl":"/contact","align":"wide"} /-->' .
+		'<!-- wp:starter/blog-index {"count":3,"align":"wide"} /-->';
 }
