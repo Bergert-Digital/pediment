@@ -29,3 +29,57 @@
   &__quote { color: #fff; }
   &__citation { color: #9DB6E6; }
 }
+
+.starter-pull-quote.is-variant-testimonial {
+  .starter-pull-quote__quote {
+    font-size: clamp(1.5rem, 2.6vw, 2.1rem);
+    font-weight: 700;
+    line-height: 1.35;
+    letter-spacing: -0.02em;
+    color: var(--wp--preset--color--text);
+    margin: 0;
+  }
+
+  .starter-pull-quote__by {
+    margin-top: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+  }
+
+  .starter-pull-quote__avatar {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    object-fit: cover;
+    flex: none;
+  }
+
+  .starter-pull-quote__meta {
+    text-align: left;
+  }
+
+  .starter-pull-quote__name {
+    display: block;
+    font-weight: 700;
+    color: var(--wp--preset--color--text);
+  }
+
+  .starter-pull-quote__role {
+    display: block;
+    color: var(--wp--preset--color--text-muted);
+    font-size: 0.9rem;
+  }
+}
+
+.is-style-band-navy .starter-pull-quote.is-variant-testimonial {
+  .starter-pull-quote__quote,
+  .starter-pull-quote__name {
+    color: #fff;
+  }
+
+  .starter-pull-quote__role {
+    color: #9db6e6;
+  }
+}
