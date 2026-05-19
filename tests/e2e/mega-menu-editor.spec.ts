@@ -58,4 +58,38 @@ test.describe( 'mega menu editor', () => {
 			page.getByText( 'Icon (Phosphor name)' )
 		).toBeVisible();
 	} );
+
+	test( 'a fresh mega-menu has one column and an Add column button', async ( {
+		page,
+	} ) => {
+		await login( page );
+		await page.goto( '/wp-admin/post-new.php?post_type=page' );
+		// Dismiss the welcome guide if present.
+		await page
+			.getByRole( 'button', { name: 'Close', exact: true } )
+			.click()
+			.catch( () => {} );
+
+		const canvas = page.frameLocator( 'iframe[name="editor-canvas"]' );
+		// Insert the Mega Menu block via the inserter.
+		await page
+			.getByRole( 'button', { name: 'Toggle block inserter' } )
+			.click();
+		await page
+			.getByRole( 'searchbox', { name: 'Search' } )
+			.fill( 'Mega Menu' );
+		await page
+			.getByRole( 'option', { name: 'Mega Menu', exact: true } )
+			.click();
+
+		const columns = canvas.locator( '.starter-mega-column' );
+		await expect( columns ).toHaveCount( 1 );
+
+		const addBtn = canvas.getByRole( 'button', {
+			name: 'Add column',
+		} );
+		await expect( addBtn ).toBeVisible();
+		await addBtn.click();
+		await expect( columns ).toHaveCount( 2 );
+	} );
 } );
