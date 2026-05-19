@@ -8,7 +8,6 @@ import {
 import {
 	PanelBody,
 	SelectControl,
-	TextControl,
 	Button,
 } from '@wordpress/components';
 
@@ -68,20 +67,6 @@ export default function Edit( {
 					/>
 					{ isTestimonial && (
 						<>
-							<TextControl
-								label={ __( 'Author name', 'starter' ) }
-								value={ attributes.authorName }
-								onChange={ ( v ) =>
-									setAttributes( { authorName: v } )
-								}
-							/>
-							<TextControl
-								label={ __( 'Author role', 'starter' ) }
-								value={ attributes.authorRole }
-								onChange={ ( v ) =>
-									setAttributes( { authorRole: v } )
-								}
-							/>
 							<MediaUpload
 								allowedTypes={ [ 'image' ] }
 								onSelect={ ( media: any ) =>
