@@ -11,16 +11,27 @@ export async function login(page: Page, user = 'admin', pass = 'password') {
 
 /**
  * Create + publish a page via wp-cli so we don't depend on Gutenberg UI selectors.
+ * Resolves the new post id BY SLUG, not by parsing the create command's stdout:
+ * `npx wp-env run cli` wraps wp-cli output with decoration lines (`ℹ Starting…`,
+ * `✔ Ran … (in 0s 871ms)`), so `--porcelain` last-line parsing yields garbage.
  * Returns the front-end URL.
  */
 export function createPageWithContent(slug: string, title: string, content: string): string {
   const escapedContent = content.replace(/'/g, "'\\''");
   const escapedTitle = title.replace(/'/g, "'\\''");
-  const cmd = `npx wp-env run cli wp post create --post_type=page --post_status=publish --post_title='${escapedTitle}' --post_name='${slug}' --post_content='${escapedContent}' --porcelain`;
-  const out = execSync(cmd, { encoding: 'utf8' });
-  const id = parseInt(out.trim().split('\n').pop()!.trim(), 10);
+  execSync(
+    `npx wp-env run cli wp post create --post_type=page --post_status=publish --post_title='${escapedTitle}' --post_name='${slug}' --post_content='${escapedContent}'`,
+    { stdio: 'ignore' }
+  );
+  // Resolve by slug; keep only a line that is purely digits so wp-env's
+  // ℹ/✔ decoration lines are discarded regardless of which stream they use.
+  const out = execSync(
+    `bash -c "npx wp-env run cli wp post list --post_type=page --name='${slug}' --field=ID --format=ids 2>/dev/null | grep -E '^[0-9]+$' | head -n 1"`,
+    { encoding: 'utf8' }
+  );
+  const id = parseInt(out.trim(), 10);
   if (!id) {
-    throw new Error(`Failed to create page; wp-cli output: ${out}`);
+    throw new Error(`Failed to create/resolve page for slug '${slug}'; output: ${out}`);
   }
   return `/?page_id=${id}`;
 }
