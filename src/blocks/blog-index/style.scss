@@ -117,10 +117,6 @@
     color: var(--wp--preset--color--text-muted);
   }
 
-  &__date {
-    color: inherit;
-  }
-
   &__link {
     text-decoration: none;
     color: inherit;
@@ -162,6 +158,15 @@
       width: 1em;
       height: 1em;
       fill: currentColor;
+    }
+
+    &:hover {
+      color: var(--wp--preset--color--accent-hover);
+    }
+
+    &:focus-visible {
+      outline: 2px solid var(--wp--preset--color--accent);
+      outline-offset: 3px;
     }
   }
 
