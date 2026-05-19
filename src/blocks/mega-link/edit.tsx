@@ -24,7 +24,7 @@ export default function Edit( {
 			<InspectorControls>
 				<PanelBody title={ __( 'Link', 'starter' ) }>
 					<LinkControl
-						value={ { url } }
+						value={ url ? { url } : null }
 						onChange={ ( next: { url?: string } ) =>
 							setAttributes( { url: next.url ?? '' } )
 						}
@@ -38,20 +38,16 @@ export default function Edit( {
 				</PanelBody>
 			</InspectorControls>
 			<div { ...blockProps }>
-				{ icon ? (
-					<svg
-						className="starter-mega-link__icon"
-						aria-hidden="true"
-						focusable="false"
-					>
-						<use href={ `#ph-${ icon }` } />
-					</svg>
-				) : (
-					<span
-						className="starter-mega-link__icon starter-mega-link__icon--empty"
-						aria-hidden="true"
-					/>
-				) }
+				<span
+					className={
+						icon
+							? 'starter-mega-link__icon starter-mega-link__icon--name'
+							: 'starter-mega-link__icon starter-mega-link__icon--empty'
+					}
+					aria-hidden="true"
+				>
+					{ icon }
+				</span>
 				<RichText
 					tagName="span"
 					className="starter-mega-link__label"
