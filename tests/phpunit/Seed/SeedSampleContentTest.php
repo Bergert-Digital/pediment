@@ -55,4 +55,32 @@ class SeedSampleContentTest extends WP_UnitTestCase {
 			'pattern must be restored after re-init'
 		);
 	}
+
+	public function test_seed_creates_sample_posts_in_multiple_categories() {
+		do_action( 'init' );
+		starter_seed_run();
+		$posts = get_posts( array( 'post_type' => 'post', 'numberposts' => -1, 'post_status' => 'publish' ) );
+		$this->assertGreaterThanOrEqual( 6, count( $posts ), 'expect >= 6 sample posts' );
+		$cats  = wp_get_object_terms( wp_list_pluck( $posts, 'ID' ), 'category' );
+		$slugs = array_unique( wp_list_pluck( $cats, 'slug' ) );
+		$this->assertGreaterThanOrEqual( 2, count( $slugs ), 'posts span >= 2 categories' );
+		$this->assertContains( 'insights', $slugs );
+	}
+
+	public function test_sample_posts_are_idempotent() {
+		do_action( 'init' );
+		starter_seed_run();
+		$first = count( get_posts( array( 'post_type' => 'post', 'numberposts' => -1, 'post_status' => 'publish' ) ) );
+		starter_seed_run();
+		$second = count( get_posts( array( 'post_type' => 'post', 'numberposts' => -1, 'post_status' => 'publish' ) ) );
+		$this->assertSame( $first, $second, 'second seed must not duplicate posts' );
+	}
+
+	public function test_sample_posts_have_no_pediment_copy() {
+		do_action( 'init' );
+		starter_seed_run();
+		foreach ( get_posts( array( 'post_type' => 'post', 'numberposts' => -1, 'post_status' => 'publish' ) ) as $p ) {
+			$this->assertFalse( stripos( $p->post_title . ' ' . $p->post_content . ' ' . $p->post_excerpt, 'pediment' ) );
+		}
+	}
 }

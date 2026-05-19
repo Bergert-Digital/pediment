@@ -88,6 +88,8 @@ function starter_seed_run(): void {
 		update_option( 'page_for_posts', $page_ids['blog'] );
 	}
 
+	starter_seed_sample_posts();
+
 	if ( function_exists( 'starter_nav_seed_entity' ) ) {
 		starter_nav_seed_entity();
 	}
@@ -112,4 +114,58 @@ function starter_pediment_landing_content(): string {
 	return '<!-- wp:starter/hero {"variant":"centered","headline":"Welcome","subheadline":"A short benefit-led promise.","ctaText":"Get started","ctaUrl":"/contact","align":"wide"} /-->' .
 		'<!-- wp:starter/cta {"title":"Ready to start?","body":"Tell us about your project.","primaryText":"Contact us","primaryUrl":"/contact","align":"wide"} /-->' .
 		'<!-- wp:starter/blog-index {"count":3,"align":"wide"} /-->';
+}
+
+/**
+ * Idempotently create sample categories + posts so the Insights band
+ * (starter/blog-index) renders fully. Skips anything that already exists.
+ *
+ * @return void
+ */
+function starter_seed_sample_posts(): void {
+	$categories = array(
+		'insights'  => 'Insights',
+		'briefings' => 'Briefings',
+		'notes'     => 'Notes',
+	);
+	$cat_ids = array();
+	foreach ( $categories as $slug => $name ) {
+		$term = get_term_by( 'slug', $slug, 'category' );
+		if ( $term ) {
+			$cat_ids[ $slug ] = (int) $term->term_id;
+			continue;
+		}
+		$created = wp_insert_term( $name, 'category', array( 'slug' => $slug ) );
+		if ( ! is_wp_error( $created ) ) {
+			$cat_ids[ $slug ] = (int) $created['term_id'];
+		}
+	}
+
+	$posts = array(
+		array( 'slug' => 'sample-insight-one',   'title' => 'A practical insight on getting started', 'cat' => 'insights' ),
+		array( 'slug' => 'sample-insight-two',   'title' => 'What good looks like, in plain terms',     'cat' => 'insights' ),
+		array( 'slug' => 'sample-briefing-one',  'title' => 'A short briefing on a common decision',    'cat' => 'briefings' ),
+		array( 'slug' => 'sample-briefing-two',  'title' => 'Trade-offs worth weighing early',          'cat' => 'briefings' ),
+		array( 'slug' => 'sample-note-one',      'title' => 'A quick note on process',                  'cat' => 'notes' ),
+		array( 'slug' => 'sample-note-two',      'title' => 'A quick note on outcomes',                 'cat' => 'notes' ),
+	);
+	foreach ( $posts as $p ) {
+		if ( get_page_by_path( $p['slug'], OBJECT, 'post' ) ) {
+			continue;
+		}
+		$post_id = wp_insert_post(
+			array(
+				'post_type'    => 'post',
+				'post_status'  => 'publish',
+				'post_title'   => $p['title'],
+				'post_name'    => $p['slug'],
+				'post_excerpt' => 'A one-sentence summary of this sample article, ready to be replaced.',
+				'post_content' => '<!-- wp:paragraph --><p>Replace this sample article with your own writing.</p><!-- /wp:paragraph -->',
+			),
+			true
+		);
+		if ( ! is_wp_error( $post_id ) && isset( $cat_ids[ $p['cat'] ] ) ) {
+			wp_set_post_categories( (int) $post_id, array( $cat_ids[ $p['cat'] ] ) );
+		}
+	}
 }
