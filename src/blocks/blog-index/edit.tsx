@@ -1,9 +1,18 @@
 import { __ } from '@wordpress/i18n';
 import { useBlockProps, InspectorControls } from '@wordpress/block-editor';
-import { PanelBody, RangeControl, TextControl } from '@wordpress/components';
+import {
+	PanelBody,
+	RangeControl,
+	TextControl,
+	ToggleControl,
+} from '@wordpress/components';
 import ServerSideRender from '@wordpress/server-side-render';
 
-type Attrs = { count: number; categorySlug: string };
+type Attrs = {
+	count: number;
+	categorySlug: string;
+	showFilter: boolean;
+};
 
 export default function Edit( {
 	attributes,
@@ -29,6 +38,13 @@ export default function Edit( {
 						value={ attributes.categorySlug }
 						onChange={ ( v ) =>
 							setAttributes( { categorySlug: v } )
+						}
+					/>
+					<ToggleControl
+						label={ __( 'Show category filter', 'starter' ) }
+						checked={ attributes.showFilter }
+						onChange={ ( v ) =>
+							setAttributes( { showFilter: v } )
 						}
 					/>
 				</PanelBody>
