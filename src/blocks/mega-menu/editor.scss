@@ -1,20 +1,21 @@
-/* Editor-only. The front-end panel is position:absolute + [hidden]; in the
-   editor show it expanded and in-flow so its columns are visible/editable. */
+/* Editor-only. The block is display-only in the canvas (ServerSideRender of
+   render.php); all editing happens in the Inspector sidebar form. The
+   front-end panel is position:absolute + [hidden] and is revealed by the
+   Interactivity runtime, which does NOT execute in the editor — so reveal it
+   with CSS :hover/:focus for a look-only preview. Accepts the documented
+   absolute-overlay clipping / hover-flicker caveat. */
 .starter-mega-menu__panel,
 .starter-mega-menu__panel[hidden] {
-  position: static;
+  display: none;
+}
+
+.starter-mega-menu:hover .starter-mega-menu__panel,
+.starter-mega-menu__trigger:hover + .starter-mega-menu__panel,
+.starter-mega-menu__trigger:focus + .starter-mega-menu__panel {
   display: grid;
-  min-width: 0;
-  box-shadow: none;
 }
 
 .starter-mega-menu__trigger {
-  display: inline-block;
   font-weight: 600;
-  margin-block-end: var(--wp--preset--spacing--20);
-}
-
-.starter-mega-menu__panel .block-list-appender {
-  grid-column: 1 / -1;
-  margin-block-start: var(--wp--preset--spacing--20);
+  cursor: default;
 }
