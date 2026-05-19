@@ -43,6 +43,17 @@ _(none currently known — verify by running a user-journey audit)_
 - [ ] **Block empty-state sweep.** Walk all 11 blocks in the editor with empty attributes
   and as a visitor; confirm no broken markup, no `<a href="">`, no PHP notices. File any
   failures as 🔴.
+- [ ] **Sub-project B — full-Phosphor icon delivery.** Replace the hand-built ~11-symbol
+  sprite in [inc/icons.php](inc/icons.php) (printed per page via `wp_body_open`) with a
+  scalable mechanism for the full ~9000-icon Phosphor set — Phosphor webfont, or per-icon
+  inline SVG via `@phosphor-icons/core` emitting only icons actually used. Theme-wide:
+  touches `inc/icons.php`, build tooling, page weight, every block calling
+  `starter_icon()`. Needs its own brainstorm/spec. Prereq for C. Deferred from the
+  2026-05-19 mega-menu-editor-layout spec (sub-project A).
+- [ ] **Sub-project C — searchable icon picker.** Block-editor picker over the full
+  Phosphor catalog (virtualized list + search from B's icon-name manifest), wired into
+  `starter/mega-link`'s `icon` attribute and reusable across blocks. Depends on B; until
+  then the field is a relocated `TextControl`. Deferred from sub-project A.
 
 ## 🔵 Ideas / later
 
