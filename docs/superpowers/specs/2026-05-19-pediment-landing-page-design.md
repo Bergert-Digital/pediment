@@ -25,9 +25,10 @@ environment — image-free, generic/rebrandable copy.
    builds the Home page from it and sets it as the static front page.
 2. **Media:** Image-free. No binary assets, no attachment IDs. Blocks use
    their built-in CSS placeholders (hero stat-card frosted glass on tinted
-   panel; blog-index `surface-elevated` media placeholder + badge; logo-cloud
-   text wordmarks; testimonial no avatar; steps numbered/text). The editor
-   pattern and the seeded page are byte-identical.
+   panel; blog-index `surface-elevated` media placeholder + badge; testimonial
+   no avatar; steps numbered/text). The image-only `logo-cloud` band is
+   omitted (see The Pattern Composition). The editor pattern and the seeded
+   page are byte-identical.
 3. **Copy:** Generic, rebrandable starter copy that mirrors the mockup's
    structure/lengths/tone — never the fictional "Pediment consultancy" voice.
 4. **Sample content:** The seed also creates ~6 idempotent published posts
@@ -54,23 +55,28 @@ environment — image-free, generic/rebrandable copy.
 
 ## The Pattern Composition
 
-Nine full-bleed bands. Each band = `core/group {"align":"full"}` carrying
+**Eight** full-bleed bands. Each band = `core/group {"align":"full"}` carrying
 `is-style-band-surface` or `is-style-band-navy` (registered core/group block
 styles) plus the `starter-band` class for the shared `--section` vertical
-rhythm, wrapping a content-width inner stack. Band styles alternate exactly as
-the locked mockup.
+rhythm, wrapping a content-width inner stack. Band styles alternate as in the
+locked mockup (the mockup's logo-cloud band is omitted — see below).
 
 | # | Band | Style | Blocks | Generic copy intent |
 |---|------|-------|--------|---------------------|
 | 1 | Hero | surface | `starter/hero` `variant:"stat-card"` (image-free) | eyebrow, headline, subheadline, primary + secondary CTA, `ticks[]`, `statValue`/`statText`, 2 `metrics` |
-| 2 | Trusted by | surface | `starter/logo-cloud` | `caption` ("Trusted by teams everywhere") + the block's placeholder wordmarks |
-| 3 | Services | surface | `starter/feature-grid` → 3–4 `starter/feature` | icon + title + one-line generic service description |
-| 4 | How we work | surface | `starter/steps` → 4 `starter/step` | `title` + `text` per step |
-| 5 | Stats | **navy** | 4 × `starter/stat` in a row group | `value`/`label` (e.g. "120+ / Projects shipped") |
-| 6 | Testimonial | surface | `starter/pull-quote` `variant:"testimonial"` (no avatar) | `quote` + `authorName` + `authorRole` |
-| 7 | FAQ | surface | `starter/faq` → 5 `starter/faq-item` | generic `question`/`answer` |
-| 8 | CTA | **navy** | `starter/cta` | `title`/`body` + primary/secondary buttons |
-| 9 | Insights | surface | `starter/blog-index {"count":6,"showFilter":true}` | renders the seeded posts |
+| 2 | Services | surface | `starter/feature-grid` → 3–4 `starter/feature` | icon + title + one-line generic service description |
+| 3 | How we work | surface | `starter/steps` → 4 `starter/step` | `title` + `text` per step |
+| 4 | Stats | **navy** | 4 × `starter/stat` in a row group | `value`/`label` (e.g. "120+ / Projects shipped") |
+| 5 | Testimonial | surface | `starter/pull-quote` `variant:"testimonial"` (no avatar) | `quote` + `authorName` + `authorRole` |
+| 6 | FAQ | surface | `starter/faq` → 5 `starter/faq-item` | generic `question`/`answer` |
+| 7 | CTA | **navy** | `starter/cta` | `title`/`body` + primary/secondary buttons |
+| 8 | Insights | surface | `starter/blog-index {"count":6,"showFilter":true}` | renders the seeded posts |
+
+**Omitted — "Trusted by" / logo-cloud band:** `starter/logo-cloud`'s
+InnerBlocks allow **only `core/image`** (it is a real client-logo strip by
+design, Plan 4). Under the locked image-free decision it has nothing to
+render, so the band is dropped rather than shipping an empty strip. A fork
+that wants it adds `starter/logo-cloud` with its own logo images.
 
 Header and footer are template parts (`parts/header.html`, `parts/footer.html`)
 already styled to Pediment in earlier plans — they are **not** page content
@@ -112,11 +118,11 @@ patterns test location):
 
 - The pattern `starter/pediment-landing` is registered after `init`.
 - Its content `parse_blocks()` with zero invalid/`null`-name top-level blocks.
-- It contains the nine expected blocks: `starter/hero` (with
-  `variant:stat-card`), `starter/logo-cloud`, `starter/feature-grid`,
-  `starter/steps`, `starter/stat` (≥4), `starter/pull-quote` (with
-  `variant:testimonial`), `starter/faq`, `starter/cta`,
-  `starter/blog-index`; and both band styles
+- It contains the eight expected blocks: `starter/hero` (with
+  `variant:stat-card`), `starter/feature-grid`, `starter/steps`,
+  `starter/stat` (≥4), `starter/pull-quote` (with `variant:testimonial`),
+  `starter/faq`, `starter/cta`, `starter/blog-index`; it does **not**
+  contain `starter/logo-cloud`; and both band styles
   (`is-style-band-surface`, `is-style-band-navy`) are present.
 - `do_blocks()` of the pattern content emits no `Block "…" not found`
   / block-error markup and includes `is-variant-stat-card`, a navy band, and
