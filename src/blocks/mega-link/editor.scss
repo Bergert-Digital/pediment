@@ -1,0 +1,12 @@
+/* Editor-only. Size the live icon preview and give an unset icon a visible
+   placeholder so the grid's icon column does not collapse while editing. */
+.starter-mega-link__icon {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+.starter-mega-link__icon--empty {
+  display: block;
+  border: 1px dashed var(--wp--preset--color--border-strong);
+  border-radius: 0.25rem;
+}

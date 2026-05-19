@@ -1,6 +1,12 @@
 import { __ } from '@wordpress/i18n';
-import { useBlockProps, RichText } from '@wordpress/block-editor';
-import { TextControl } from '@wordpress/components';
+import {
+	useBlockProps,
+	RichText,
+	InspectorControls,
+	// eslint-disable-next-line @wordpress/no-unsafe-wp-apis
+	__experimentalLinkControl as LinkControl,
+} from '@wordpress/block-editor';
+import { PanelBody, TextControl } from '@wordpress/components';
 
 type Attrs = { label: string; url: string; description: string; icon: string };
 
@@ -12,32 +18,55 @@ export default function Edit( {
 	setAttributes: ( a: Partial< Attrs > ) => void;
 } ) {
 	const blockProps = useBlockProps( { className: 'starter-mega-link' } );
+	const { label, url, description, icon } = attributes;
 	return (
-		<div { ...blockProps }>
-			<TextControl
-				label={ __( 'Icon (Phosphor name)', 'starter' ) }
-				value={ attributes.icon }
-				onChange={ ( v ) => setAttributes( { icon: v } ) }
-			/>
-			<TextControl
-				label={ __( 'URL', 'starter' ) }
-				value={ attributes.url }
-				onChange={ ( v ) => setAttributes( { url: v } ) }
-			/>
-			<RichText
-				tagName="div"
-				className="starter-mega-link__label"
-				value={ attributes.label }
-				onChange={ ( v ) => setAttributes( { label: v } ) }
-				placeholder={ __( 'Link label…', 'starter' ) }
-			/>
-			<RichText
-				tagName="div"
-				className="starter-mega-link__desc"
-				value={ attributes.description }
-				onChange={ ( v ) => setAttributes( { description: v } ) }
-				placeholder={ __( 'Short description…', 'starter' ) }
-			/>
-		</div>
+		<>
+			<InspectorControls>
+				<PanelBody title={ __( 'Link', 'starter' ) }>
+					<LinkControl
+						value={ { url } }
+						onChange={ ( next: { url?: string } ) =>
+							setAttributes( { url: next.url ?? '' } )
+						}
+					/>
+					<TextControl
+						label={ __( 'Icon (Phosphor name)', 'starter' ) }
+						value={ icon }
+						onChange={ ( v ) => setAttributes( { icon: v } ) }
+						help={ __( 'e.g. gear, bank, article', 'starter' ) }
+					/>
+				</PanelBody>
+			</InspectorControls>
+			<div { ...blockProps }>
+				{ icon ? (
+					<svg
+						className="starter-mega-link__icon"
+						aria-hidden="true"
+						focusable="false"
+					>
+						<use href={ `#ph-${ icon }` } />
+					</svg>
+				) : (
+					<span
+						className="starter-mega-link__icon starter-mega-link__icon--empty"
+						aria-hidden="true"
+					/>
+				) }
+				<RichText
+					tagName="span"
+					className="starter-mega-link__label"
+					value={ label }
+					onChange={ ( v ) => setAttributes( { label: v } ) }
+					placeholder={ __( 'Link label…', 'starter' ) }
+				/>
+				<RichText
+					tagName="span"
+					className="starter-mega-link__desc"
+					value={ description }
+					onChange={ ( v ) => setAttributes( { description: v } ) }
+					placeholder={ __( 'Short description…', 'starter' ) }
+				/>
+			</div>
+		</>
 	);
 }
