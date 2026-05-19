@@ -35,8 +35,24 @@ class SeedSampleContentTest extends WP_UnitTestCase {
 		);
 	}
 
-	public function test_pattern_fallback_is_non_empty_string() {
-		$this->assertNotEmpty( starter_pediment_landing_content() );
-		$this->assertStringContainsString( 'wp:starter/', starter_pediment_landing_content() );
+	public function test_helper_falls_back_when_pattern_unregistered() {
+		$registry = WP_Block_Patterns_Registry::get_instance();
+		if ( $registry->is_registered( 'starter/pediment-landing' ) ) {
+			$registry->unregister( 'starter/pediment-landing' );
+		}
+		$fallback = starter_pediment_landing_content();
+		$this->assertNotEmpty( $fallback );
+		$this->assertStringContainsString( 'wp:starter/hero', $fallback );
+		$this->assertStringContainsString( 'wp:starter/blog-index', $fallback );
+		// Fallback is the minimal stub, NOT the 8-band landing pattern.
+		$this->assertStringNotContainsString( 'is-style-band-navy', $fallback );
+
+		// Re-register so later tests/classes see the real pattern again.
+		do_action( 'init' );
+		$this->assertStringContainsString(
+			'is-style-band-navy',
+			starter_pediment_landing_content(),
+			'pattern must be restored after re-init'
+		);
 	}
 }
