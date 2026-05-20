@@ -31,6 +31,9 @@
 }
 
 .starter-pull-quote.is-variant-testimonial {
+  max-width: 880px;
+  margin-inline: auto;
+
   .starter-pull-quote__quote {
     font-size: clamp(1.5rem, 2.6vw, 2.1rem);
     font-weight: 700;
