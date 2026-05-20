@@ -209,6 +209,7 @@ header.site-header{
 	gap: 0;
 }
 
+.starter-blog-index__meta,
 .is-style-insights-grid .starter-insight-card__body .wp-block-post-date {
 	font-size: 0.85rem;
 	font-weight: 600;
@@ -216,6 +217,7 @@ header.site-header{
 	margin: 0;
 }
 
+.starter-blog-index__title,
 .is-style-insights-grid .starter-insight-card__body .wp-block-post-title {
 	margin: 12px 0 0;
 	font-size: 1.18rem;
@@ -234,6 +236,7 @@ header.site-header{
 	color: var(--wp--preset--color--accent);
 }
 
+.starter-blog-index__excerpt,
 .is-style-insights-grid .starter-insight-card__body .wp-block-post-excerpt {
 	margin: 12px 0 0;
 	flex: 1;
