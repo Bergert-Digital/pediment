@@ -29,7 +29,10 @@ ob_start();
 		<p class="starter-feature__text"><?php echo wp_kses_post( $text ); ?></p>
 	<?php endif; ?>
 	<?php if ( '' !== $link_text && '' !== $link_url ) : ?>
-		<a class="starter-feature__more" href="<?php echo esc_url( $link_url ); ?>"><?php echo wp_kses_post( $link_text ); ?></a>
+		<a class="starter-feature__more" href="<?php echo esc_url( $link_url ); ?>">
+			<span><?php echo wp_kses_post( $link_text ); ?></span>
+			<svg class="i" aria-hidden="true" focusable="false"><use href="#ph-arrow-right"></use></svg>
+		</a>
 	<?php endif; ?>
 </div>
 <?php
