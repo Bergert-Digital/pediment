@@ -128,6 +128,36 @@ show `array_key_exists`, the JSON broke.
 
 ---
 
+## `@wordpress/components` runtime still wears the `__experimental` prefix
+
+**Symptom.** Editor shows "This block has encountered an error and cannot be previewed" on
+a block that uses `ToggleGroupControl` / `ToggleGroupControlOption`. Console shows
+`React.createElement: type is invalid — expected a string … but got: undefined`, pointing
+into the offending block's `edit` bundle.
+**Cause.** Several `@wordpress/components` exports graduated from `__experimental*` to a
+public name in newer versions of the npm package, but the **runtime exposed by
+`wp.components`** (the global the editor uses) still only has the experimental name in WP
+6.x. A TypeScript build resolves `import { ToggleGroupControl } from '@wordpress/components'`
+to a real symbol from the npm package, but at runtime the editor JS dependency extraction
+maps `@wordpress/components` to `wp.components` — and `wp.components.ToggleGroupControl`
+is `undefined`. React tries to render `undefined`, blows up the entire Edit component,
+and the editor catches the throw at the block boundary.
+**Fix.** Import via the experimental alias, even if your IDE flags it as deprecated:
+```ts
+import {
+  __experimentalToggleGroupControl as ToggleGroupControl,
+  __experimentalToggleGroupControlOption as ToggleGroupControlOption,
+} from '@wordpress/components';
+```
+**Catch it early.** Before using any "newer" `@wordpress/components` API, probe the
+runtime: `typeof window.wp.components.<ComponentName>`. If it's `'undefined'` but
+`window.wp.components.__experimental<ComponentName>` is `'object'`, use the experimental
+alias. Affected components observed at various points: `ToggleGroupControl`,
+`ToolsPanel`, `HStack`, `VStack`, `Heading`, `NumberControl` (some have already
+graduated; check per component, per WP version).
+
+---
+
 ## WordPress normalizes self-closing void tags in pattern source
 
 **Symptom.** A pattern PHPUnit assertion like

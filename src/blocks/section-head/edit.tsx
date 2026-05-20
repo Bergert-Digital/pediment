@@ -6,8 +6,8 @@ import {
 } from '@wordpress/block-editor';
 import {
 	PanelBody,
-	ToggleGroupControl,
-	ToggleGroupControlOption,
+	__experimentalToggleGroupControl as ToggleGroupControl,
+	__experimentalToggleGroupControlOption as ToggleGroupControlOption,
 } from '@wordpress/components';
 
 type Attrs = {
