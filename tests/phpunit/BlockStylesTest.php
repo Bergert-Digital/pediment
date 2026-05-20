@@ -12,4 +12,10 @@ class BlockStylesTest extends WP_UnitTestCase {
 		$this->assertContains( 'band-surface', $names );
 		$this->assertContains( 'band-navy', $names );
 	}
+
+	public function test_query_insights_grid_style_registered() {
+		do_action( 'init' );
+		$names = $this->styles_for( 'core/query' );
+		$this->assertContains( 'insights-grid', $names );
+	}
 }

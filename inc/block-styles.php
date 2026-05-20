@@ -33,5 +33,12 @@ add_action(
 				'label' => __( 'Band — navy', 'starter' ),
 			)
 		);
+		register_block_style(
+			'core/query',
+			array(
+				'name'  => 'insights-grid',
+				'label' => __( 'Insights grid', 'starter' ),
+			)
+		);
 	}
 );
