@@ -79,5 +79,12 @@ add_action(
 	0
 );
 
+add_action(
+	'after_setup_theme',
+	function () {
+		add_editor_style( 'assets/css/theme.css' );
+	}
+);
+
 add_action( 'after_switch_theme', 'starter_contact_schedule_cleanup' );
 add_action( 'switch_theme', 'starter_contact_unschedule_cleanup' );
