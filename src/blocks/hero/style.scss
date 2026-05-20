@@ -110,9 +110,19 @@
     gap: 14px 30px;
   }
   .starter-hero__tick {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
     color: var(--wp--preset--color--text-muted);
     font-size: .92rem;
     font-weight: 600;
+  }
+  .starter-hero__tick-icon {
+    width: 18px;
+    height: 18px;
+    flex: none;
+    color: var(--wp--preset--color--accent);
+    fill: currentColor;
   }
 
   .starter-hero__fig {
