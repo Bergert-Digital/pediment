@@ -65,13 +65,34 @@
 
 <!-- wp:group {"align":"full","className":"starter-band is-style-band-surface","style":{"spacing":{"margin":{"top":"0","bottom":"0"}}}} -->
 <div class="wp-block-group alignfull starter-band is-style-band-surface" style="margin-top:0;margin-bottom:0">
-<!-- wp:starter/faq {"align":"wide"} -->
+<!-- wp:columns {"align":"wide"} -->
+<div class="wp-block-columns alignwide">
+<!-- wp:column {"width":"35%"} -->
+<div class="wp-block-column" style="flex-basis:35%">
+<!-- wp:paragraph {"className":"kicker"} -->
+<p class="kicker">FAQ</p>
+<!-- /wp:paragraph -->
+<!-- wp:heading {"level":2} -->
+<h2 class="wp-block-heading">Answers to the questions you ask first</h2>
+<!-- /wp:heading -->
+<!-- wp:paragraph -->
+<p>Before the first call, here's how an engagement typically works — scope, team, and what to expect.</p>
+<!-- /wp:paragraph -->
+</div>
+<!-- /wp:column -->
+<!-- wp:column {"width":"65%"} -->
+<div class="wp-block-column" style="flex-basis:65%">
+<!-- wp:starter/faq -->
 <!-- wp:starter/faq-item {"question":"A question a prospective customer would ask?","answer":"A clear, concise answer in one or two sentences."} /-->
 <!-- wp:starter/faq-item {"question":"Another common question?","answer":"A clear, concise answer in one or two sentences."} /-->
 <!-- wp:starter/faq-item {"question":"A question about scope or process?","answer":"A clear, concise answer in one or two sentences."} /-->
 <!-- wp:starter/faq-item {"question":"A question about timelines?","answer":"A clear, concise answer in one or two sentences."} /-->
 <!-- wp:starter/faq-item {"question":"A question about what makes you different?","answer":"A clear, concise answer in one or two sentences."} /-->
 <!-- /wp:starter/faq -->
+</div>
+<!-- /wp:column -->
+</div>
+<!-- /wp:columns -->
 </div>
 <!-- /wp:group -->
 
