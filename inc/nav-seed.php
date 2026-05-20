@@ -50,7 +50,7 @@ function starter_nav_menu_blocks(): string {
 				),
 			),
 		),
-		JSON_HEX_TAG
+		JSON_HEX_TAG | JSON_UNESCAPED_SLASHES
 	);
 
 	return implode(
