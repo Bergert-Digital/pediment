@@ -128,6 +128,29 @@ show `array_key_exists`, the JSON broke.
 
 ---
 
+## SVG sprites injected by `wp_body_open` don't reach the editor iframe
+
+**Symptom.** A block that renders `<svg><use href="#ph-icon-name"></use></svg>` shows the
+icon correctly on the front end but renders as an empty box (or text fallback) in the
+block editor canvas, even though `edit.tsx` emits the same `<use>` reference.
+**Cause.** The Phosphor sprite is printed via `add_action( 'wp_body_open', ... )`, which
+fires on the public front-end HTML render. The block editor canvas is a separate iframe
+whose document never invokes `wp_body_open`. `<use href="#id">` only resolves to symbols
+in the same document, so the iframe's blocks can't reach the parent admin window's
+sprite.
+**Fix.** Add an `enqueue_block_editor_assets` action that ships an inline script which
+injects the sprite into both the outer admin document AND the editor canvas iframe's
+contentDocument, using a `MutationObserver` to handle the iframe being created
+asynchronously and a `load` listener to handle its document being replaced. See
+[inc/icons.php](../inc/icons.php) `starter_enqueue_editor_icon_sprite()` for the
+canonical implementation.
+**Catch it early.** Open a page with any `<use href="#ph-…">` block in the editor.
+Inspect `document.querySelector('iframe[name="editor-canvas"]').contentDocument.getElementById('starter-icon-sprite')`
+— it should be a `<div>` containing the sprite SVG. If null, injection isn't reaching
+the iframe.
+
+---
+
 ## RichText `allowedFormats={[]}` strips ALL inline formats — including custom ones
 
 **Symptom.** A custom `registerFormatType` (e.g., `starter/accent`) doesn't appear in the
