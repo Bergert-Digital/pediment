@@ -104,6 +104,7 @@
 
 <!-- wp:group {"align":"full","className":"starter-band is-style-band-surface","style":{"spacing":{"margin":{"top":"0","bottom":"0"}}},"layout":{"type":"constrained"}} -->
 <div class="wp-block-group alignfull starter-band is-style-band-surface is-layout-constrained wp-block-group-is-layout-constrained" style="margin-top:0;margin-bottom:0">
+<!-- wp:starter/section-head {"align":"wide","alignment":"center","eyebrow":"Insights","headline":"A short headline introducing the insights grid","lead":"One sentence framing what readers will find here."} /-->
 <!-- wp:starter/blog-index {"count":6,"showFilter":true,"align":"wide"} /-->
 </div>
 <!-- /wp:group -->

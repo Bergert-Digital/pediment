@@ -40,4 +40,31 @@ test.describe('landing layout (1440×900)', () => {
     // left edge. Allow 1px rounding slack.
     expect(Math.abs(headX - gridX)).toBeLessThanOrEqual(1);
   });
+
+  test('insights: section-head is centered', async ({ page }) => {
+    await page.goto('/');
+    // Insights is the last starter-band on the landing page.
+    const bands = page.locator('.entry-content > .starter-band');
+    const insightsBand = bands.last();
+    await insightsBand.scrollIntoViewIfNeeded();
+    const head = insightsBand.locator('.starter-section-head');
+    await expect(head).toBeVisible();
+    const { textAlign, parentWidth, boxWidth, boxLeft } =
+      await head.evaluate((el) => {
+        const inner = el.querySelector('.starter-section-head__inner') as HTMLElement;
+        const cs = window.getComputedStyle(inner);
+        const r = inner.getBoundingClientRect();
+        const parentR = (el as HTMLElement).getBoundingClientRect();
+        return {
+          textAlign: cs.textAlign,
+          parentWidth: Math.round(parentR.width),
+          boxWidth: Math.round(r.width),
+          boxLeft: Math.round(r.left - parentR.left),
+        };
+      });
+    expect(textAlign).toBe('center');
+    // is-alignment-center → margin-inline: auto → symmetric leading/trailing space.
+    const trailing = parentWidth - boxLeft - boxWidth;
+    expect(Math.abs(boxLeft - trailing)).toBeLessThanOrEqual(2);
+  });
 });
