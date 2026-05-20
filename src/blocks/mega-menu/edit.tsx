@@ -1,5 +1,11 @@
 import { __ } from '@wordpress/i18n';
-import { useBlockProps, InspectorControls } from '@wordpress/block-editor';
+import {
+	useBlockProps,
+	InspectorControls,
+	useBlockEditingMode,
+} from '@wordpress/block-editor';
+import { useSelect } from '@wordpress/data';
+import { store as editorStore } from '@wordpress/editor';
 import { PanelBody, TextControl, Button } from '@wordpress/components';
 import ServerSideRender from '@wordpress/server-side-render';
 
@@ -32,6 +38,21 @@ export default function Edit( {
 	attributes: Attrs;
 	setAttributes: ( a: Partial< Attrs > ) => void;
 } ) {
+	// Editing is only allowed when the wp_navigation entity is the open
+	// document (Site Editor → Navigation). Everywhere else (page editor
+	// preview, template editor) useBlockEditingMode('disabled') neutralizes
+	// the block — no toolbar, no Inspector, no setAttributes path. This is
+	// the destroy-on-attr-change escape hatch: uncontrolled core/navigation
+	// children get re-instantiated when mutated, which collapses the form
+	// mid-edit. Disabled mode prevents the mutation from ever firing.
+	const isEntityContext = useSelect(
+		( select ) =>
+			( select( editorStore ) as { getCurrentPostType?: () => string } )
+				?.getCurrentPostType?.() === 'wp_navigation',
+		[]
+	);
+	useBlockEditingMode( isEntityContext ? 'default' : 'disabled' );
+
 	const blockProps = useBlockProps( { className: 'starter-mega-menu' } );
 	const columns = attributes.columns ?? [];
 	const commit = ( next: Column[] ) => setAttributes( { columns: next } );
