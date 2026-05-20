@@ -102,6 +102,21 @@ class PedimentLandingTest extends WP_UnitTestCase {
 		$this->assertFalse( stripos( $content, 'consultanc' ) );
 	}
 
+	public function test_insights_band_starts_with_section_head() {
+		$content = $this->pattern()['content'];
+		$blocks  = parse_blocks( $content );
+		$top     = array_values(
+			array_filter(
+				$blocks,
+				static fn( $b ) => ! empty( $b['blockName'] )
+			)
+		);
+		$insights_band = end( $top );
+		$first_inner   = $insights_band['innerBlocks'][0];
+		$this->assertSame( 'starter/section-head', $first_inner['blockName'] );
+		$this->assertSame( 'center', $first_inner['attrs']['alignment'] );
+	}
+
 	public function test_services_band_uses_section_head_block() {
 		$content = $this->pattern()['content'];
 		$blocks  = parse_blocks( $content );
