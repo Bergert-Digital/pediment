@@ -1,5 +1,4 @@
 .starter-hero {
-  padding-block: clamp(64px, 7vw, 96px) var(--section, 110px);
   color: var(--wp--preset--color--text);
 
   &.is-variant-centered { text-align: center; }
@@ -67,8 +66,7 @@
   display: grid;
   grid-template-columns: 1.05fr .95fr;
   gap: clamp(32px, 5vw, 60px);
-  align-items: center;
-  padding-block: clamp(56px, 7vw, 96px);
+  align-items: start;
 
   .starter-hero__eyebrow {
     display: inline-flex;
