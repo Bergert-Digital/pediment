@@ -90,4 +90,31 @@ test.describe('mega-menu editor (entity context)', () => {
     expect(after.label).toBe('Edited');
     expect(after.selected).toBe(initialClientId);
   });
+
+	test('sidebar form: Add column reveals Column 2 panel', async ({ page }) => {
+		navId = createNavigationEntityWithContent(
+			'mega-form',
+			'Mega Form Fixture',
+			NAV_CONTENT
+		);
+		await login(page);
+		await page.goto(
+			`/wp-admin/site-editor.php?postType=wp_navigation&postId=${navId}&canvas=edit`
+		);
+
+		const canvas = page.frameLocator('iframe[name="editor-canvas"]');
+		await expect(canvas.locator('.starter-mega-menu').first()).toBeVisible({
+			timeout: 20000,
+		});
+		await canvas.locator('.starter-mega-menu').first().click();
+
+		// Sidebar form is visible with the seeded label.
+		await expect(page.getByLabel('Menu label')).toHaveValue('Products');
+
+		// Add column → Column 2 panel appears.
+		await page.getByRole('button', { name: 'Add column' }).click();
+		await expect(
+			page.getByRole('button', { name: /^Column 2/ })
+		).toBeVisible();
+	});
 });
