@@ -1,5 +1,10 @@
 *, *::before, *::after { box-sizing: border-box; }
 
+/* Accent highlight inside headings: <span class="accent">word</span>. Inserted via
+   the starter/accent RichText format (src/blocks/hero/accent-format.ts) and
+   round-tripped through wp_kses_post on render. */
+.accent{ color:var(--wp--preset--color--accent); }
+
 :root{
   --section: clamp(88px, 9vw, 132px);
   --band:    clamp(76px, 7.5vw, 108px);
