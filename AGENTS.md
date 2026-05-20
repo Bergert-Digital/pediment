@@ -40,6 +40,17 @@ plugin). See `docs/VISION.md`. Read `docs/STANDARDS.md` before changing code.
 1. `composer lint` · `npm run lint:js` · `npm run lint:blocks` · `npm run lint:colors`
 2. PHPUnit: `npx wp-env run tests-wordpress --env-cwd=wp-content/themes/wp-starter-theme vendor/bin/phpunit`
 3. Playwright: `npm run e2e`
+4. **Layout / typography / style changes**: also run `node tools/audit-landing.mjs` and
+   verify the affected band at **375px, 768px, and 1440px** viewports, AND in the block
+   editor (post.php?action=edit). A change that looks right at desktop but breaks the
+   mobile gutter, the editor canvas, or a band's measured x/width is not done. The audit
+   script's `test-results/audit/index.html` is the source of truth for "matches the
+   mockup".
+5. **Before claiming any WordPress-side fix**: skim `docs/WORDPRESS_TRAPS.md` for known
+   platform quirks (slug sanitization, has-global-padding nested-reset, wp_update_post
+   un-slashing, edit.tsx ↔ render.php parity, etc.). If a fix touches one of those areas,
+   add a brief note or new entry to the traps doc so the next session inherits the
+   knowledge.
 
 No success claims without running the relevant command and seeing it pass.
 
