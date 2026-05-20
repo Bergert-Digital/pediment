@@ -1,3 +1,5 @@
+*, *::before, *::after { box-sizing: border-box; }
+
 :root{
   --section: clamp(88px, 9vw, 132px);
   --band:    clamp(76px, 7.5vw, 108px);
