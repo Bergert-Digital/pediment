@@ -118,3 +118,54 @@ test.describe('mega-menu editor (entity context)', () => {
 		).toBeVisible();
 	});
 });
+
+test.describe('mega-menu editor (page context — read-only)', () => {
+	test('Inspector form is hidden and editing mode is disabled', async ({ page }) => {
+		// Legacy authoring surface: a page with an inline navigation containing
+		// a mega-menu. Editing must be blocked here — useBlockEditingMode is
+		// the gate that prevents the destroy-on-attr-change failure mode.
+		const slug = 'mega-pageeditor';
+		deletePageBySlug(slug);
+		const url = createPageWithContent(
+			slug,
+			'Mega Page Editor',
+			'<!-- wp:navigation {"overlayMenu":"never"} -->' +
+				'<!-- wp:starter/mega-menu {"label":"Products","columns":[]} /-->' +
+				'<!-- /wp:navigation -->'
+		);
+		const id = url.replace(/[^0-9]/g, '');
+		await login(page);
+		await page.goto(`/wp-admin/post.php?post=${id}&action=edit`);
+
+		const canvas = page.frameLocator('iframe[name="editor-canvas"]');
+		await expect(canvas.locator('.starter-mega-menu').first()).toBeVisible({
+			timeout: 20000,
+		});
+		await canvas.locator('.starter-mega-menu').first().click();
+
+		// The Inspector "Menu label" field must not be reachable.
+		await expect(page.getByLabel('Menu label')).toHaveCount(0);
+
+		// Cross-check via wp.data: editing mode for this block is 'disabled'.
+		const mode: string | null = await page.evaluate(`
+			(() => {
+				const sel = window.wp.data.select('core/block-editor');
+				const walk = (list) => {
+					for (const b of list) {
+						if (b.name === 'starter/mega-menu') return b;
+						const hit = walk(b.innerBlocks || []);
+						if (hit) return hit;
+					}
+					return null;
+				};
+				const t = walk(sel.getBlocks());
+				return t && sel.getBlockEditingMode
+					? sel.getBlockEditingMode(t.clientId)
+					: null;
+			})()
+		`);
+		expect(mode).toBe('disabled');
+
+		deletePageBySlug(slug);
+	});
+});
