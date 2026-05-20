@@ -249,6 +249,7 @@ header.site-header{
 	margin: 0;
 }
 
+.starter-blog-index__readmore,
 .is-style-insights-grid .starter-insight-card__body .wp-block-read-more {
 	align-self: flex-start;
 	margin-top: 20px;
@@ -258,6 +259,7 @@ header.site-header{
 	text-decoration: none;
 }
 
+.starter-blog-index__readmore:hover,
 .is-style-insights-grid .starter-insight-card__body .wp-block-read-more:hover {
 	color: var(--wp--preset--color--accent-hover);
 }
