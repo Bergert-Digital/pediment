@@ -128,6 +128,25 @@ show `array_key_exists`, the JSON broke.
 
 ---
 
+## WordPress normalizes self-closing void tags in pattern source
+
+**Symptom.** A pattern PHPUnit assertion like
+`$this->assertSame( starter_pediment_landing_content(), $home->post_content )` fails on
+nothing but a one-character whitespace diff inside an `<img>` tag — `<img alt=""/>`
+shows in the pattern source, `<img alt="" />` shows in the seeded `post_content`.
+**Cause.** WordPress's content normalization (KSES / wptexturize / serialize_block round-
+trips) inserts a space between the last attribute and the self-closing slash on void
+elements like `<img>` and `<br>`. The pattern source is read verbatim, but stored
+content goes through the normalization, so the two strings diverge.
+**Fix.** Write self-closing void tags with the space in the pattern source from the
+start: `<img alt="" />`, not `<img alt=""/>`. The same applies to other void elements
+authored inline in pattern markup.
+**Catch it early.** Run `phpunit --filter test_home_content_is_the_pattern` after any
+pattern edit that adds `<img>` / `<br>` / `<hr>` etc. — if it fails on whitespace, this
+is the cause.
+
+---
+
 ## SVG sprites injected by `wp_body_open` don't reach the editor iframe
 
 **Symptom.** A block that renders `<svg><use href="#ph-icon-name"></use></svg>` shows the
