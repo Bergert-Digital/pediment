@@ -8,14 +8,14 @@
  */
 // phpcs:ignoreFile -- block pattern content
 ?>
-<!-- wp:group {"align":"full","className":"starter-band is-style-band-surface","style":{"spacing":{"margin":{"top":"0","bottom":"0"}}}} -->
-<div class="wp-block-group alignfull starter-band is-style-band-surface" style="margin-top:0;margin-bottom:0">
+<!-- wp:group {"align":"full","className":"starter-band is-style-band-surface","style":{"spacing":{"margin":{"top":"0","bottom":"0"}}},"layout":{"type":"constrained"}} -->
+<div class="wp-block-group alignfull starter-band is-style-band-surface is-layout-constrained wp-block-group-is-layout-constrained" style="margin-top:0;margin-bottom:0">
 <!-- wp:starter/hero {"variant":"stat-card","align":"wide","eyebrow":"What we do","headline":"A clear headline that states your core offer","subheadline":"One supporting sentence that explains the value in plain, specific language.","ctaText":"Get started","ctaUrl":"/contact","secondaryText":"Learn more","secondaryUrl":"/about","ticks":["A concrete proof point","Another concrete proof point","A third proof point"],"statValue":"98%","statText":"A short outcome metric caption","metrics":[{"value":"12+","label":"Metric one"},{"value":"4.9","label":"Metric two"}]} /-->
 </div>
 <!-- /wp:group -->
 
-<!-- wp:group {"align":"full","className":"starter-band is-style-band-surface","style":{"spacing":{"margin":{"top":"0","bottom":"0"}}}} -->
-<div class="wp-block-group alignfull starter-band is-style-band-surface" style="margin-top:0;margin-bottom:0">
+<!-- wp:group {"align":"full","className":"starter-band is-style-band-surface","style":{"spacing":{"margin":{"top":"0","bottom":"0"}}},"layout":{"type":"constrained"}} -->
+<div class="wp-block-group alignfull starter-band is-style-band-surface is-layout-constrained wp-block-group-is-layout-constrained" style="margin-top:0;margin-bottom:0">
 <!-- wp:starter/feature-grid {"align":"wide"} -->
 <!-- wp:starter/feature {"icon":"trend-up","title":"First service","text":"One concise sentence describing this service and the outcome it delivers.","linkText":"Learn more","linkUrl":"/about"} /-->
 <!-- wp:starter/feature {"icon":"gear","title":"Second service","text":"One concise sentence describing this service and the outcome it delivers.","linkText":"Learn more","linkUrl":"/about"} /-->
@@ -25,8 +25,8 @@
 </div>
 <!-- /wp:group -->
 
-<!-- wp:group {"align":"full","className":"starter-band is-style-band-surface","style":{"spacing":{"margin":{"top":"0","bottom":"0"}}}} -->
-<div class="wp-block-group alignfull starter-band is-style-band-surface" style="margin-top:0;margin-bottom:0">
+<!-- wp:group {"align":"full","className":"starter-band is-style-band-surface","style":{"spacing":{"margin":{"top":"0","bottom":"0"}}},"layout":{"type":"constrained"}} -->
+<div class="wp-block-group alignfull starter-band is-style-band-surface is-layout-constrained wp-block-group-is-layout-constrained" style="margin-top:0;margin-bottom:0">
 <!-- wp:starter/steps {"align":"wide"} -->
 <!-- wp:starter/step {"title":"Discover","text":"What happens in this step, in one clear sentence."} /-->
 <!-- wp:starter/step {"title":"Design","text":"What happens in this step, in one clear sentence."} /-->
@@ -36,8 +36,8 @@
 </div>
 <!-- /wp:group -->
 
-<!-- wp:group {"align":"full","className":"starter-band is-style-band-navy","style":{"spacing":{"margin":{"top":"0","bottom":"0"}}}} -->
-<div class="wp-block-group alignfull starter-band is-style-band-navy" style="margin-top:0;margin-bottom:0">
+<!-- wp:group {"align":"full","className":"starter-band is-style-band-navy","style":{"spacing":{"margin":{"top":"0","bottom":"0"}}},"layout":{"type":"constrained"}} -->
+<div class="wp-block-group alignfull starter-band is-style-band-navy is-layout-constrained wp-block-group-is-layout-constrained" style="margin-top:0;margin-bottom:0">
 <!-- wp:columns {"align":"wide"} -->
 <div class="wp-block-columns alignwide">
 <!-- wp:column -->
@@ -57,14 +57,14 @@
 </div>
 <!-- /wp:group -->
 
-<!-- wp:group {"align":"full","className":"starter-band is-style-band-surface","style":{"spacing":{"margin":{"top":"0","bottom":"0"}}}} -->
-<div class="wp-block-group alignfull starter-band is-style-band-surface" style="margin-top:0;margin-bottom:0">
+<!-- wp:group {"align":"full","className":"starter-band is-style-band-surface","style":{"spacing":{"margin":{"top":"0","bottom":"0"}}},"layout":{"type":"constrained"}} -->
+<div class="wp-block-group alignfull starter-band is-style-band-surface is-layout-constrained wp-block-group-is-layout-constrained" style="margin-top:0;margin-bottom:0">
 <!-- wp:starter/pull-quote {"variant":"testimonial","align":"wide","quote":"A short, specific endorsement written in the customer's own words.","authorName":"A. Customer","authorRole":"Title, Company"} /-->
 </div>
 <!-- /wp:group -->
 
-<!-- wp:group {"align":"full","className":"starter-band is-style-band-surface","style":{"spacing":{"margin":{"top":"0","bottom":"0"}}}} -->
-<div class="wp-block-group alignfull starter-band is-style-band-surface" style="margin-top:0;margin-bottom:0">
+<!-- wp:group {"align":"full","className":"starter-band is-style-band-surface","style":{"spacing":{"margin":{"top":"0","bottom":"0"}}},"layout":{"type":"constrained"}} -->
+<div class="wp-block-group alignfull starter-band is-style-band-surface is-layout-constrained wp-block-group-is-layout-constrained" style="margin-top:0;margin-bottom:0">
 <!-- wp:columns {"align":"wide"} -->
 <div class="wp-block-columns alignwide">
 <!-- wp:column {"width":"35%"} -->
@@ -96,14 +96,14 @@
 </div>
 <!-- /wp:group -->
 
-<!-- wp:group {"align":"full","className":"starter-band is-style-band-navy","style":{"spacing":{"margin":{"top":"0","bottom":"0"}}}} -->
-<div class="wp-block-group alignfull starter-band is-style-band-navy" style="margin-top:0;margin-bottom:0">
+<!-- wp:group {"align":"full","className":"starter-band is-style-band-navy","style":{"spacing":{"margin":{"top":"0","bottom":"0"}}},"layout":{"type":"constrained"}} -->
+<div class="wp-block-group alignfull starter-band is-style-band-navy is-layout-constrained wp-block-group-is-layout-constrained" style="margin-top:0;margin-bottom:0">
 <!-- wp:starter/cta {"align":"wide","title":"Ready to start?","body":"One sentence inviting the visitor to take the next step.","primaryText":"Get in touch","primaryUrl":"/contact","secondaryText":"Learn more","secondaryUrl":"/about"} /-->
 </div>
 <!-- /wp:group -->
 
-<!-- wp:group {"align":"full","className":"starter-band is-style-band-surface","style":{"spacing":{"margin":{"top":"0","bottom":"0"}}}} -->
-<div class="wp-block-group alignfull starter-band is-style-band-surface" style="margin-top:0;margin-bottom:0">
+<!-- wp:group {"align":"full","className":"starter-band is-style-band-surface","style":{"spacing":{"margin":{"top":"0","bottom":"0"}}},"layout":{"type":"constrained"}} -->
+<div class="wp-block-group alignfull starter-band is-style-band-surface is-layout-constrained wp-block-group-is-layout-constrained" style="margin-top:0;margin-bottom:0">
 <!-- wp:starter/blog-index {"count":6,"showFilter":true,"align":"wide"} /-->
 </div>
 <!-- /wp:group -->

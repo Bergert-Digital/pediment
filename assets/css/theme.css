@@ -9,6 +9,12 @@
    `padding` shorthand (spec: it defeats vertical rhythm by specificity). */
 .starter-band{ padding-block: var(--section); }
 .is-style-band-surface{ background: var(--wp--preset--color--surface-elevated); }
+
+/* Site shell: header → main → footer should butt against each other. WP's
+   global block-gap (--wp--preset--spacing--40) otherwise inserts a visible
+   pale strip via is-layout-flow's `> * + *` rule and breaks the band rhythm.
+   Each region (header/main/footer/band) owns its own vertical padding. */
+.wp-site-blocks > * + *{ margin-block-start: 0; }
 .is-style-band-navy{
   background: var(--wp--preset--color--primary);
   color: #fff;
