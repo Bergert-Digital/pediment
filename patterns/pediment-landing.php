@@ -27,12 +27,28 @@
 
 <!-- wp:group {"align":"full","className":"starter-band is-style-band-elevated","style":{"spacing":{"margin":{"top":"0","bottom":"0"}}},"layout":{"type":"constrained"}} -->
 <div class="wp-block-group alignfull starter-band is-style-band-elevated is-layout-constrained wp-block-group-is-layout-constrained" style="margin-top:0;margin-bottom:0">
-<!-- wp:starter/steps {"align":"wide"} -->
+<!-- wp:columns {"align":"wide","verticalAlignment":"center","className":"starter-approach"} -->
+<div class="wp-block-columns alignwide are-vertically-aligned-center starter-approach">
+<!-- wp:column {"verticalAlignment":"center"} -->
+<div class="wp-block-column is-vertically-aligned-center">
+<!-- wp:starter/section-head {"alignment":"start","eyebrow":"How we work","headline":"A method built around outcomes, not slides","lead":""} /-->
+<!-- wp:starter/steps -->
 <!-- wp:starter/step {"title":"Discover","text":"What happens in this step, in one clear sentence."} /-->
 <!-- wp:starter/step {"title":"Design","text":"What happens in this step, in one clear sentence."} /-->
 <!-- wp:starter/step {"title":"Build","text":"What happens in this step, in one clear sentence."} /-->
 <!-- wp:starter/step {"title":"Launch","text":"What happens in this step, in one clear sentence."} /-->
 <!-- /wp:starter/steps -->
+</div>
+<!-- /wp:column -->
+<!-- wp:column {"verticalAlignment":"center","className":"starter-approach__media"} -->
+<div class="wp-block-column is-vertically-aligned-center starter-approach__media">
+<!-- wp:image {"sizeSlug":"large","className":"starter-approach__image"} -->
+<figure class="wp-block-image size-large starter-approach__image"><img alt="" /></figure>
+<!-- /wp:image -->
+</div>
+<!-- /wp:column -->
+</div>
+<!-- /wp:columns -->
 </div>
 <!-- /wp:group -->
 
