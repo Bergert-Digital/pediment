@@ -16,7 +16,14 @@ add_action(
 			'core/group',
 			array(
 				'name'  => 'band-surface',
-				'label' => __( 'Band — surface', 'starter' ),
+				'label' => __( 'Band — surface (white)', 'starter' ),
+			)
+		);
+		register_block_style(
+			'core/group',
+			array(
+				'name'  => 'band-elevated',
+				'label' => __( 'Band — elevated (tinted)', 'starter' ),
 			)
 		);
 		register_block_style(
