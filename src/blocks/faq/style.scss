@@ -29,29 +29,31 @@
     color: var(--wp--preset--color--text);
 
     &::-webkit-details-marker { display: none; }
+  }
 
-    /* circular toggle */
-    &::after {
-      content: "";
-      flex: none;
-      width: 34px;
-      height: 34px;
-      border-radius: 50%;
-      background: var(--wp--preset--color--primary);
-      /* chevron drawn with a rotated border box, centered */
-      background-image:
-        linear-gradient(45deg, transparent 42%, #fff 42%, #fff 58%, transparent 58%),
-        linear-gradient(-45deg, transparent 42%, #fff 42%, #fff 58%, transparent 58%);
-      background-size: 9px 2px, 9px 2px;
-      background-position: calc(50% - 3px) 55%, calc(50% + 3px) 55%;
-      background-repeat: no-repeat;
-      transition: transform .2s ease, background-color .2s ease;
+  &__toggle {
+    flex: none;
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    background: var(--wp--preset--color--primary);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform .2s ease, background-color .2s ease;
+
+    .i {
+      width: 15px;
+      height: 15px;
+      fill: currentColor;
     }
   }
 
   &[open] &__question {
     color: var(--wp--preset--color--accent-hover);
-    &::after {
+
+    .starter-faq-item__toggle {
       background-color: var(--wp--preset--color--accent);
       transform: rotate(180deg);
     }
