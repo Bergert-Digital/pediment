@@ -40,6 +40,25 @@
    Each region (header/main/footer/band) owns its own vertical padding. */
 .wp-site-blocks > * + *{ margin-block-start: 0; }
 
+/* Approach band: 2-column split — section head + steps on the left, image
+   card on the right (mockup .approach > .split). The columns wrapper picks up
+   the gap; the image cell gets the mockup's 4:5 portrait aspect-ratio, rounded
+   corners, and elevation. */
+.starter-approach{ gap: clamp(32px, 5vw, 70px); }
+.starter-approach__image{
+  margin: 0;
+  border-radius: var(--r-lg, 20px);
+  overflow: hidden;
+  box-shadow: var(--wp--preset--shadow--medium);
+  aspect-ratio: 4 / 5;
+}
+.starter-approach__image img{
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
 
 /* Eyebrow label + chip */
 .kicker{
