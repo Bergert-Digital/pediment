@@ -44,12 +44,14 @@ export default function Edit( {
 			<div { ...blockProps }>
 				<RichText
 					tagName="h2"
+					className="starter-cta__title"
 					value={ attributes.title }
 					onChange={ ( v ) => setAttributes( { title: v } ) }
 					placeholder={ __( 'Title…', 'starter' ) }
 				/>
 				<RichText
 					tagName="p"
+					className="starter-cta__body"
 					value={ attributes.body }
 					onChange={ ( v ) => setAttributes( { body: v } ) }
 					placeholder={ __( 'Body…', 'starter' ) }

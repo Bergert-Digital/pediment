@@ -86,21 +86,28 @@ the four `--wp--style--root--padding-*` declarations must have non-empty values.
 
 ---
 
-## `edit.tsx` DOM tree must mirror `render.php`'s column structure
+## `edit.tsx` DOM tree must mirror `render.php`'s structure (parity contract)
 
-**Symptom.** A block that uses CSS grid or flex (multi-column hero, side-by-side stats,
-two-column FAQ) renders correctly on the front end but looks scrambled in the block editor
-canvas — fields appear in wrong columns or rows.
-**Cause.** Block editor preview applies the same CSS as the front end. If `edit.tsx`
-flattens the children that `render.php` wraps in a column div, CSS grid auto-places those
-flat children in alternating columns instead of grouping them.
-**Fix.** Match the DOM structure in `edit.tsx` to `render.php`. For the hero, that means
-wrapping the four RichText fields in `<div className="starter-hero__col">` and adding an
-empty `<figure className="starter-hero__fig" aria-hidden="true" />` placeholder. See
-[src/blocks/hero/edit.tsx](../src/blocks/hero/edit.tsx) for the canonical pattern.
-**Catch it early.** Open the affected block in the editor at /wp-admin/post.php?action=edit
-after every block-touching change. If the editor preview doesn't visually resemble the
-front-end render, the DOM trees diverged.
+**Symptom.** A block looks correct on the front end but the editor preview shows the
+wrong layout — fields appear in wrong columns/rows, RichText classes are missing,
+non-editable visual chrome (figures, glass overlays, badge pills) is absent.
+**Cause.** WordPress's block API runs two independent render paths: `render.php` produces
+the visitor's HTML, `edit.tsx` produces the editor canvas. There is no auto-derivation
+between them — every structural element, every BEM class on a RichText, and every
+non-editable wrapper has to be hand-mirrored in `edit.tsx`. The moment one side gets a
+new wrapper div or class, the other silently drifts.
+**Fix.** Match the DOM structure in `edit.tsx` to `render.php` exactly. That includes
+(a) wrapper divs that CSS grid/flex layouts depend on (`.starter-hero__col`,
+`.starter-section-head__inner`), (b) BEM classNames on RichText tags
+(`className="starter-cta__title"` on the title RichText, etc.), and (c) non-editable
+visual chrome rendered via stateful JSX that reads the same attributes `render.php`
+reads (figure → glass card with stat/metrics, image preview via `useSelect` against
+`core` entities).
+**Catch it early.** [tests/e2e/edit-render-parity.spec.ts](../tests/e2e/edit-render-parity.spec.ts)
+asserts that a curated list of BEM selectors is present in both the editor canvas iframe
+AND the front-end HTML for every block on the home page. Add new selectors there
+whenever a block grows new visible structure; the test fails if a class lands on one
+side and not the other.
 
 ---
 
