@@ -27,9 +27,35 @@ const STARTER_NAV_MARKER = '_starter_seeded_nav';
  * @return string
  */
 function starter_nav_menu_blocks(): string {
+	$mega = wp_json_encode(
+		array(
+			'label'   => 'Products',
+			'columns' => array(
+				array(
+					'heading' => 'Product',
+					'links'   => array(
+						array(
+							'label'       => 'Pricing',
+							'url'         => '/pricing',
+							'description' => 'Plans',
+							'icon'        => 'tag',
+						),
+						array(
+							'label'       => 'Docs',
+							'url'         => '/docs',
+							'description' => 'Guides',
+							'icon'        => 'book',
+						),
+					),
+				),
+			),
+		)
+	);
+
 	return implode(
 		"\n",
 		array(
+			'<!-- wp:starter/mega-menu ' . $mega . ' /-->',
 			'<!-- wp:navigation-link {"label":"About","url":"/about","kind":"custom"} /-->',
 			'<!-- wp:navigation-link {"label":"Blog","url":"/blog","kind":"custom"} /-->',
 			'<!-- wp:navigation-link {"label":"Contact","url":"/contact","kind":"custom"} /-->',

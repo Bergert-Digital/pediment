@@ -11,6 +11,13 @@ class SeedNavTest extends WP_UnitTestCase {
 		$this->assertSame( 3, substr_count( $blocks, 'wp:navigation-link' ) );
 	}
 
+	public function test_menu_blocks_include_starter_mega_menu() {
+		$blocks = starter_nav_menu_blocks();
+		$this->assertStringContainsString( 'wp:starter/mega-menu', $blocks );
+		$this->assertStringContainsString( '"label":"Products"', $blocks );
+		$this->assertSame( 1, substr_count( $blocks, 'wp:starter/mega-menu' ) );
+	}
+
 	public function test_pristine_fallback_detection() {
 		$this->assertTrue( starter_nav_is_pristine_fallback( '<!-- wp:page-list /-->' ) );
 		$this->assertTrue( starter_nav_is_pristine_fallback( "\n <!-- wp:page-list /-->  \n" ) );
