@@ -11,6 +11,10 @@ plugin). See `docs/VISION.md`. Read `docs/STANDARDS.md` before changing code.
 
 ## Hard rules
 
+- **Stick to WordPress standards.** Prefer official WordPress APIs, hooks, filters, block
+  APIs, and conventions over custom solutions. Only invent a custom mechanism when
+  WordPress offers no official extension point for what's needed — and flag that choice
+  in the PR so it can be reviewed.
 - **No color literals in `src/blocks/`.** Use `var(--wp--preset--…)` from `theme.json`.
   `lint:colors` + the `Starter.NoColorLiteralSniff` PHPCS sniff will fail CI otherwise.
 - **Server-side render only.** Blocks render via `render.php`. Atomic blocks emit no `save()`
