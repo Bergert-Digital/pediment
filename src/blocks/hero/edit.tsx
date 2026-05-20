@@ -12,6 +12,7 @@ import {
 	TextareaControl,
 	Button,
 } from '@wordpress/components';
+import { useSelect } from '@wordpress/data';
 
 type Metric = { value: string; label: string };
 type Attrs = {
@@ -63,6 +64,27 @@ export default function Edit( {
 		className: `starter-hero is-variant-${ attributes.variant }`,
 	} );
 	const isStatCard = attributes.variant === 'stat-card';
+	const mediaUrl = useSelect(
+		( select ) => {
+			if ( ! attributes.mediaId ) {
+				return '';
+			}
+			const media = ( select( 'core' ) as any ).getMedia?.( attributes.mediaId );
+			const sizes = media?.media_details?.sizes;
+			return (
+				sizes?.large?.source_url ||
+				sizes?.medium_large?.source_url ||
+				sizes?.full?.source_url ||
+				media?.source_url ||
+				''
+			);
+		},
+		[ attributes.mediaId ]
+	);
+	const hasGlassContent =
+		!! attributes.statValue ||
+		!! attributes.statText ||
+		( Array.isArray( attributes.metrics ) && attributes.metrics.length > 0 );
 	const options = allowedVariants().map( ( v ) => ( {
 		label: LABELS[ v ] ?? v,
 		value: v,
@@ -230,7 +252,43 @@ export default function Edit( {
 					/>
 				</div>
 				{ isStatCard && (
-					<figure className="starter-hero__fig" aria-hidden="true" />
+					<figure className="starter-hero__fig" aria-hidden="true">
+						{ mediaUrl && (
+							<img
+								className="starter-hero__img"
+								src={ mediaUrl }
+								alt=""
+							/>
+						) }
+						{ hasGlassContent && (
+							<div className="starter-hero__glass">
+								{ attributes.statValue && (
+									<div className="starter-hero__stat-value">
+										{ attributes.statValue }
+									</div>
+								) }
+								{ attributes.statText && (
+									<div className="starter-hero__stat-text">
+										{ attributes.statText }
+									</div>
+								) }
+								{ Array.isArray( attributes.metrics ) &&
+									attributes.metrics.length > 0 && (
+										<div className="starter-hero__metrics">
+											{ attributes.metrics.map( ( m, i ) => (
+												<div
+													key={ i }
+													className="starter-hero__metric"
+												>
+													<b>{ m.value }</b>
+													<span>{ m.label }</span>
+												</div>
+											) ) }
+										</div>
+									) }
+							</div>
+						) }
+					</figure>
 				) }
 			</div>
 		</>
