@@ -28,20 +28,6 @@
    Each region (header/main/footer/band) owns its own vertical padding. */
 .wp-site-blocks > * + *{ margin-block-start: 0; }
 
-/* Section head (kicker + h2 + lead). Mockup: max-width:600px + bottom gap,
-   anchored to the band's left edge. WordPress's constrained-layout child
-   rule (margin-left:auto !important; margin-right:auto !important) centers
-   anything narrower than the content-size box, so we have to override with
-   !important here to anchor the head to the band's inline-start edge. */
-.is-layout-constrained > .head,
-.head{
-  max-width:600px !important;
-  margin-inline-start:0 !important;
-  margin-inline-end:auto !important;
-  margin-bottom:var(--head-gap);
-}
-.head h2{ margin-top:14px; }
-.lead{ font-size:1.15rem; color:var(--wp--preset--color--text-muted); line-height:1.6; }
 
 /* Eyebrow label + chip */
 .kicker{
