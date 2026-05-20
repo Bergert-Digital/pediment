@@ -17,4 +17,13 @@ test.describe('landing layout (1440×900)', () => {
     expect(maxWidth).toBe('1200px');
     expect(box.w).toBeLessThanOrEqual(1200);
   });
+
+  test('testimonial: pull-quote bounding box ≤ 900px wide', async ({ page }) => {
+    await page.goto('/');
+    const quote = page.locator('.starter-pull-quote.is-variant-testimonial').first();
+    await quote.scrollIntoViewIfNeeded();
+    const w = await quote.evaluate((el) => Math.round(el.getBoundingClientRect().width));
+    // Mockup is 880px; allow 20px slack for the gutter rounding.
+    expect(w).toBeLessThanOrEqual(900);
+  });
 });
