@@ -55,3 +55,43 @@ export function deletePageBySlug(slug: string): void {
     // ignore
   }
 }
+
+/**
+ * Create a `wp_navigation` entity via wp-cli with given content and a stable
+ * slug for later lookup. Mirrors createPageWithContent in resolving the new
+ * post ID by slug (wp-env's wp-cli wrapper decorates stdout, so --porcelain
+ * last-line parsing is unsafe).
+ */
+export function createNavigationEntityWithContent(
+  slug: string,
+  title: string,
+  content: string
+): number {
+  const escapedContent = content.replace(/'/g, "'\\''");
+  const escapedTitle = title.replace(/'/g, "'\\''");
+  execSync(
+    `npx wp-env run cli wp post create --post_type=wp_navigation --post_status=publish --post_title='${escapedTitle}' --post_name='${slug}' --post_content='${escapedContent}'`,
+    { stdio: 'ignore', cwd: WP_ENV_CWD }
+  );
+  const out = execSync(
+    `bash -c "npx wp-env run cli wp post list --post_type=wp_navigation --name='${slug}' --field=ID --format=ids 2>/dev/null | grep -E '^[0-9]+$' | head -n 1"`,
+    { encoding: 'utf8', cwd: WP_ENV_CWD }
+  );
+  const id = parseInt(out.trim(), 10);
+  if (!id) {
+    throw new Error(`Failed to create/resolve wp_navigation '${slug}'; output: ${out}`);
+  }
+  return id;
+}
+
+export function deleteNavigationEntityById(id: number): void {
+  if (!id) return;
+  try {
+    execSync(
+      `npx wp-env run cli wp post delete ${id} --force >/dev/null 2>&1`,
+      { stdio: 'ignore', cwd: WP_ENV_CWD }
+    );
+  } catch {
+    // ignore
+  }
+}
