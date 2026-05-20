@@ -25,8 +25,8 @@
 </div>
 <!-- /wp:group -->
 
-<!-- wp:group {"align":"full","className":"starter-band is-style-band-surface","style":{"spacing":{"margin":{"top":"0","bottom":"0"}}},"layout":{"type":"constrained"}} -->
-<div class="wp-block-group alignfull starter-band is-style-band-surface is-layout-constrained wp-block-group-is-layout-constrained" style="margin-top:0;margin-bottom:0">
+<!-- wp:group {"align":"full","className":"starter-band is-style-band-elevated","style":{"spacing":{"margin":{"top":"0","bottom":"0"}}},"layout":{"type":"constrained"}} -->
+<div class="wp-block-group alignfull starter-band is-style-band-elevated is-layout-constrained wp-block-group-is-layout-constrained" style="margin-top:0;margin-bottom:0">
 <!-- wp:starter/steps {"align":"wide"} -->
 <!-- wp:starter/step {"title":"Discover","text":"What happens in this step, in one clear sentence."} /-->
 <!-- wp:starter/step {"title":"Design","text":"What happens in this step, in one clear sentence."} /-->
@@ -96,8 +96,8 @@
 </div>
 <!-- /wp:group -->
 
-<!-- wp:group {"align":"full","className":"starter-band is-style-band-navy","style":{"spacing":{"margin":{"top":"0","bottom":"0"}}},"layout":{"type":"constrained"}} -->
-<div class="wp-block-group alignfull starter-band is-style-band-navy is-layout-constrained wp-block-group-is-layout-constrained" style="margin-top:0;margin-bottom:0">
+<!-- wp:group {"align":"full","className":"starter-band is-style-band-surface","style":{"spacing":{"margin":{"top":"0","bottom":"0"}}},"layout":{"type":"constrained"}} -->
+<div class="wp-block-group alignfull starter-band is-style-band-surface is-layout-constrained wp-block-group-is-layout-constrained" style="margin-top:0;margin-bottom:0">
 <!-- wp:starter/cta {"align":"wide","title":"Ready to start?","body":"One sentence inviting the visitor to take the next step.","primaryText":"Get in touch","primaryUrl":"/contact","secondaryText":"Learn more","secondaryUrl":"/about"} /-->
 </div>
 <!-- /wp:group -->

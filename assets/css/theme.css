@@ -8,18 +8,23 @@
 /* Section rhythm: a width-wrapper must own horizontal gutter only, never the
    `padding` shorthand (spec: it defeats vertical rhythm by specificity). */
 .starter-band{ padding-block: var(--section); }
-.is-style-band-surface{ background: var(--wp--preset--color--surface-elevated); }
+/* Mockup mapping: --bg #FFFFFF, --surface #F5F8FC, --navy #0A1B33.
+   Most bands are plain white; only the Steps/approach band is tinted;
+   only the Stats band is navy full-bleed. The CTA band is white — the
+   navy gradient rounded card is rendered by starter/cta itself. */
+.is-style-band-surface{ background: var(--wp--preset--color--surface); }
+.is-style-band-elevated{ background: var(--wp--preset--color--surface-elevated); }
+.is-style-band-navy{
+  background: var(--wp--preset--color--primary);
+  color: #fff;
+}
+.is-style-band-navy :where(h1,h2,h3,h4){ color:#fff; }
 
 /* Site shell: header → main → footer should butt against each other. WP's
    global block-gap (--wp--preset--spacing--40) otherwise inserts a visible
    pale strip via is-layout-flow's `> * + *` rule and breaks the band rhythm.
    Each region (header/main/footer/band) owns its own vertical padding. */
 .wp-site-blocks > * + *{ margin-block-start: 0; }
-.is-style-band-navy{
-  background: var(--wp--preset--color--primary);
-  color: #fff;
-}
-.is-style-band-navy :where(h1,h2,h3,h4){ color:#fff; }
 
 /* Eyebrow label + chip */
 .kicker{
