@@ -26,6 +26,11 @@
    Each region (header/main/footer/band) owns its own vertical padding. */
 .wp-site-blocks > * + *{ margin-block-start: 0; }
 
+/* Section head (kicker + h2 + lead). Mockup: max-width:600px + bottom gap. */
+.head{ max-width:600px; margin-bottom:var(--head-gap); }
+.head h2{ margin-top:14px; }
+.lead{ font-size:1.15rem; color:var(--wp--preset--color--text-muted); line-height:1.6; }
+
 /* Eyebrow label + chip */
 .kicker{
   font-size:13px; font-weight:700; letter-spacing:.14em;
