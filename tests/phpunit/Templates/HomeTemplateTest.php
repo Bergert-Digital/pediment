@@ -2,14 +2,17 @@
 
 class HomeTemplateTest extends WP_UnitTestCase {
 
+	public function set_up(): void {
+		parent::set_up();
+		$this->assertFileExists( $this->template_path(), 'templates/home.html must exist' );
+	}
+
 	private function template_path(): string {
 		return get_theme_file_path( 'templates/home.html' );
 	}
 
 	private function template_blocks(): array {
-		$this->assertFileExists( $this->template_path(), 'templates/home.html must exist' );
-		$content = file_get_contents( $this->template_path() );
-		return parse_blocks( $content );
+		return parse_blocks( file_get_contents( $this->template_path() ) );
 	}
 
 	private function find_first_block( array $blocks, string $name ): ?array {
