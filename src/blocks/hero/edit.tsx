@@ -193,40 +193,45 @@ export default function Edit( {
 			</InspectorControls>
 
 			<div { ...blockProps }>
-				{ isStatCard && (
+				<div className="starter-hero__col">
+					{ isStatCard && (
+						<RichText
+							tagName="span"
+							className="starter-hero__eyebrow"
+							value={ attributes.eyebrow }
+							onChange={ ( v ) =>
+								setAttributes( { eyebrow: v } )
+							}
+							placeholder={ __( 'Eyebrow…', 'starter' ) }
+						/>
+					) }
+					<RichText
+						tagName="h1"
+						className="starter-hero__headline"
+						value={ attributes.headline }
+						onChange={ ( v ) => setAttributes( { headline: v } ) }
+						placeholder={ __( 'Headline…', 'starter' ) }
+					/>
+					<RichText
+						tagName="p"
+						className="starter-hero__subheadline"
+						value={ attributes.subheadline }
+						onChange={ ( v ) =>
+							setAttributes( { subheadline: v } )
+						}
+						placeholder={ __( 'Subheadline…', 'starter' ) }
+					/>
 					<RichText
 						tagName="span"
-						className="starter-hero__eyebrow"
-						value={ attributes.eyebrow }
-						onChange={ ( v ) =>
-							setAttributes( { eyebrow: v } )
-						}
-						placeholder={ __( 'Eyebrow…', 'starter' ) }
+						className="starter-hero__cta"
+						value={ attributes.ctaText }
+						onChange={ ( v ) => setAttributes( { ctaText: v } ) }
+						placeholder={ __( 'CTA text…', 'starter' ) }
 					/>
+				</div>
+				{ isStatCard && (
+					<figure className="starter-hero__fig" aria-hidden="true" />
 				) }
-				<RichText
-					tagName="h1"
-					className="starter-hero__headline"
-					value={ attributes.headline }
-					onChange={ ( v ) => setAttributes( { headline: v } ) }
-					placeholder={ __( 'Headline…', 'starter' ) }
-				/>
-				<RichText
-					tagName="p"
-					className="starter-hero__subheadline"
-					value={ attributes.subheadline }
-					onChange={ ( v ) =>
-						setAttributes( { subheadline: v } )
-					}
-					placeholder={ __( 'Subheadline…', 'starter' ) }
-				/>
-				<RichText
-					tagName="span"
-					className="starter-hero__cta"
-					value={ attributes.ctaText }
-					onChange={ ( v ) => setAttributes( { ctaText: v } ) }
-					placeholder={ __( 'CTA text…', 'starter' ) }
-				/>
 			</div>
 		</>
 	);
