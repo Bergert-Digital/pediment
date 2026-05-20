@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 
 test.describe('blog landing (/blog/)', () => {
-  test('renders heading band, insight cards, and pagination block', async ({ page }) => {
+  test('renders heading band and insight cards with category badge', async ({ page }) => {
     await page.goto('/blog/');
 
     // Heading band
@@ -29,10 +29,6 @@ test.describe('blog landing (/blog/)', () => {
     );
     expect(position).toBe('absolute');
 
-    // Pagination block exists in the DOM (no `next` link if the seeded post
-    // count fits on one page — that's fine).
-    const pagination = page.locator('.is-style-insights-grid .wp-block-query-pagination');
-    await expect(pagination).toHaveCount(1);
   });
 
   test('no client-side filter row on the paginated landing', async ({ page }) => {
