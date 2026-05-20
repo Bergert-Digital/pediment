@@ -53,4 +53,11 @@ class SeedCommandTest extends WP_UnitTestCase {
 		$front = get_post( $front_id );
 		$this->assertSame( 'home', $front->post_name );
 	}
+
+	public function test_blog_page_has_empty_content_so_home_template_renders_listing() {
+		starter_seed_run();
+		$blog = get_page_by_path( 'blog' );
+		$this->assertInstanceOf( WP_Post::class, $blog );
+		$this->assertSame( '', trim( $blog->post_content ), 'Blog page content must be empty; home.html renders the listing.' );
+	}
 }

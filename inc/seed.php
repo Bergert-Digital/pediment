@@ -54,7 +54,8 @@ function starter_seed_run(): void {
 		),
 		'blog'    => array(
 			'title'   => 'Blog',
-			'content' => '<!-- wp:starter/blog-index {"count":10,"align":"wide"} /-->',
+			// home.html renders the listing; the page's own content is unused.
+			'content' => '',
 		),
 	);
 
