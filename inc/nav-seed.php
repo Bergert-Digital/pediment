@@ -20,8 +20,8 @@ const STARTER_NAV_MARKER = '_starter_seeded_nav';
 /**
  * Serialized block markup for the default menu.
  *
- * About / Blog / Contact, all plain nav links. The header's pill CTA is a
- * separate wp:button in parts/header.html. Relative custom URLs keep the
+ * Products mega-menu + About / Blog / Contact nav links. The header's pill CTA is
+ * a separate wp:button in parts/header.html. Relative custom URLs keep the
  * menu install-independent (active state handled by inc/nav-active.php).
  *
  * @return string
@@ -49,7 +49,8 @@ function starter_nav_menu_blocks(): string {
 					),
 				),
 			),
-		)
+		),
+		JSON_HEX_TAG
 	);
 
 	return implode(
