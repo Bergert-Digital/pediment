@@ -106,7 +106,11 @@
       "lineHeight": "1.65"
     },
     "spacing": {
-      "blockGap": "var(--wp--preset--spacing--40)"
+      "blockGap": "var(--wp--preset--spacing--40)",
+      "padding": {
+        "left":  "clamp(20px, 4vw, 40px)",
+        "right": "clamp(20px, 4vw, 40px)"
+      }
     },
     "elements": {
       "h1": { "typography": { "fontFamily": "var(--wp--preset--font-family--heading)", "fontSize": "var(--wp--preset--font-size--4-xl)", "lineHeight": "1.05", "letterSpacing": "-0.03em", "fontWeight": "800" } },

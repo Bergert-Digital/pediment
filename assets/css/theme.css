@@ -13,8 +13,15 @@
 }
 
 /* Section rhythm: a width-wrapper must own horizontal gutter only, never the
-   `padding` shorthand (spec: it defeats vertical rhythm by specificity). */
-.starter-band{ padding-block: var(--section); }
+   `padding` shorthand (spec: it defeats vertical rhythm by specificity).
+   padding-inline pulls from WP's root padding so it stays in sync with
+   theme.json's styles.spacing.padding — and overrides WP's nested
+   .has-global-padding zero-reset, which fires because <main> already has
+   global padding and our bands are children. */
+.starter-band{
+  padding-block: var(--section);
+  padding-inline: var(--wp--style--root--padding-left);
+}
 /* Mockup mapping: --bg #FFFFFF, --surface #F5F8FC, --navy #0A1B33.
    Most bands are plain white; only the Steps/approach band is tinted;
    only the Stats band is navy full-bleed. The CTA band is white — the
