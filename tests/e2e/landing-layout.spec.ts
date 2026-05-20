@@ -26,4 +26,18 @@ test.describe('landing layout (1440×900)', () => {
     // Mockup is 880px; allow 20px slack for the gutter rounding.
     expect(w).toBeLessThanOrEqual(900);
   });
+
+  test('services: section-head and feature-grid share the same left edge', async ({ page }) => {
+    await page.goto('/');
+    // Services band is the 2nd starter-band (index 1) in pediment-landing.
+    const band = page.locator('.entry-content > .starter-band').nth(1);
+    await band.scrollIntoViewIfNeeded();
+    const head = band.locator('.starter-section-head');
+    const grid = band.locator('.starter-feature-grid');
+    const headX = await head.evaluate((el) => Math.round(el.getBoundingClientRect().left));
+    const gridX = await grid.evaluate((el) => Math.round(el.getBoundingClientRect().left));
+    // The whole point of the new block: head and grid sit on the same alignwide
+    // left edge. Allow 1px rounding slack.
+    expect(Math.abs(headX - gridX)).toBeLessThanOrEqual(1);
+  });
 });

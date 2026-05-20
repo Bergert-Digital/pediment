@@ -16,19 +16,7 @@
 
 <!-- wp:group {"align":"full","className":"starter-band is-style-band-surface","style":{"spacing":{"margin":{"top":"0","bottom":"0"}}},"layout":{"type":"constrained"}} -->
 <div class="wp-block-group alignfull starter-band is-style-band-surface is-layout-constrained wp-block-group-is-layout-constrained" style="margin-top:0;margin-bottom:0">
-<!-- wp:group {"className":"head","align":"wide","layout":{"type":"constrained"}} -->
-<div class="wp-block-group head alignwide">
-<!-- wp:paragraph {"className":"kicker"} -->
-<p class="kicker">What we do</p>
-<!-- /wp:paragraph -->
-<!-- wp:heading {"level":2} -->
-<h2 class="wp-block-heading">A short headline framing the services you offer</h2>
-<!-- /wp:heading -->
-<!-- wp:paragraph {"className":"lead"} -->
-<p class="lead">One sentence describing how your services fit together and the outcome you deliver.</p>
-<!-- /wp:paragraph -->
-</div>
-<!-- /wp:group -->
+<!-- wp:starter/section-head {"align":"wide","alignment":"start","eyebrow":"What we do","headline":"A short headline framing the services you offer","lead":"One sentence describing how your services fit together and the outcome you deliver."} /-->
 <!-- wp:starter/feature-grid {"align":"wide"} -->
 <!-- wp:starter/feature {"icon":"trend-up","title":"First service","text":"One concise sentence describing this service and the outcome it delivers.","linkText":"Explore","linkUrl":"/about"} /-->
 <!-- wp:starter/feature {"icon":"gear","title":"Second service","text":"One concise sentence describing this service and the outcome it delivers.","linkText":"Explore","linkUrl":"/about"} /-->

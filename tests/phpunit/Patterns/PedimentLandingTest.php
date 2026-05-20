@@ -101,4 +101,27 @@ class PedimentLandingTest extends WP_UnitTestCase {
 		);
 		$this->assertFalse( stripos( $content, 'consultanc' ) );
 	}
+
+	public function test_services_band_uses_section_head_block() {
+		$content = $this->pattern()['content'];
+		$blocks  = parse_blocks( $content );
+		$top     = array_values(
+			array_filter(
+				$blocks,
+				static fn( $b ) => ! empty( $b['blockName'] )
+			)
+		);
+		// 2nd top-level band (index 1) is the Services band.
+		$services_band = $top[1];
+		$inner_names   = array_values(
+			array_filter(
+				array_map( static fn( $b ) => $b['blockName'], $services_band['innerBlocks'] )
+			)
+		);
+		$this->assertSame(
+			array( 'starter/section-head', 'starter/feature-grid' ),
+			$inner_names,
+			'services band should be [section-head, feature-grid]'
+		);
+	}
 }
