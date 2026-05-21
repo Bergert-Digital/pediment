@@ -33,18 +33,17 @@ function starter_nav_menu_blocks(): string {
 			'columns' => array(
 				array(
 					'heading' => 'Product',
+					'icon'    => 'bank',
 					'links'   => array(
 						array(
 							'label'       => 'Pricing',
 							'url'         => '/pricing',
 							'description' => 'Plans',
-							'icon'        => 'tag',
 						),
 						array(
 							'label'       => 'Docs',
 							'url'         => '/docs',
 							'description' => 'Guides',
-							'icon'        => 'book',
 						),
 					),
 				),

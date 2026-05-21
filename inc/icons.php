@@ -53,8 +53,13 @@ function starter_enqueue_editor_icon_sprite() {
 		return;
 	}
 	$sprite = file_get_contents( $sprite_path );
+	// Inject the sprite into the outer admin document AND into every iframe
+	// we can reach (post editor, site editor, template-part editor all use
+	// their own iframes; the Site Editor in particular swaps iframes when
+	// navigating between Navigation/Templates/Patterns screens, so a static
+	// one-shot selector is not enough). Same-origin in wp-admin → no CORS.
 	$script = sprintf(
-		"(function(){var sprite=%s;function inject(doc){if(!doc||!doc.body||doc.getElementById('starter-icon-sprite'))return;var w=doc.createElement('div');w.id='starter-icon-sprite';w.style.cssText='position:absolute;width:0;height:0;overflow:hidden';w.innerHTML=sprite;doc.body.insertBefore(w,doc.body.firstChild);}function tryIframe(f){if(!f)return;var go=function(){inject(f.contentDocument);};if(f.contentDocument&&f.contentDocument.readyState!=='loading')go();f.addEventListener('load',go);}inject(document);var existing=document.querySelector('iframe[name=\"editor-canvas\"]');tryIframe(existing);var mo=new MutationObserver(function(){var f=document.querySelector('iframe[name=\"editor-canvas\"]');if(f)tryIframe(f);});mo.observe(document.body,{childList:true,subtree:true});})();",
+		"(function(){var sprite=%s;function inject(doc){try{if(!doc||!doc.body||doc.getElementById('starter-icon-sprite'))return;var w=doc.createElement('div');w.id='starter-icon-sprite';w.style.cssText='position:absolute;width:0;height:0;overflow:hidden';w.setAttribute('aria-hidden','true');w.innerHTML=sprite;doc.body.insertBefore(w,doc.body.firstChild);}catch(e){}}function tryAll(){var frames=document.querySelectorAll('iframe');for(var i=0;i<frames.length;i++){(function(f){try{if(f.contentDocument&&f.contentDocument.readyState!=='loading')inject(f.contentDocument);}catch(e){}if(!f.dataset.starterIconBound){f.dataset.starterIconBound='1';f.addEventListener('load',function(){try{inject(f.contentDocument);}catch(e){}});}})(frames[i]);}}inject(document);tryAll();var mo=new MutationObserver(tryAll);mo.observe(document.body,{childList:true,subtree:true});})();",
 		wp_json_encode( $sprite )
 	);
 	wp_register_script( 'starter-editor-icon-sprite', '', array(), null, true );

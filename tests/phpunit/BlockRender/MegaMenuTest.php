@@ -22,11 +22,16 @@ class MegaMenuTest extends WP_UnitTestCase {
 		$this->assertStringContainsString( '<span class="starter-mega-link__desc">Plans</span>', $html );
 	}
 
-	public function test_link_with_icon_emits_icon_svg() {
-		$attrs = '{"label":"X","columns":[{"heading":"","links":[{"label":"Pricing","url":"/pricing","description":"","icon":"tag"}]}]}';
+	public function test_column_with_icon_emits_icon_svg_in_heading() {
+		$attrs = '{"label":"X","columns":[{"heading":"Section","icon":"tag","links":[{"label":"Pricing","url":"/pricing","description":""}]}]}';
 		$html  = $this->render( $attrs );
-		$this->assertStringContainsString( 'starter-mega-link__icon', $html );
+		$this->assertStringContainsString( 'starter-mega-column__icon', $html );
 		$this->assertStringContainsString( '<svg', $html );
+		// The icon must live inside the heading paragraph, not in the link.
+		$this->assertMatchesRegularExpression(
+			'/<p class="starter-mega-column__heading">[^<]*<svg[^<]*<use[^<]*ph-tag/',
+			$html
+		);
 	}
 
 	public function test_skips_links_without_label_or_url_and_empty_columns() {

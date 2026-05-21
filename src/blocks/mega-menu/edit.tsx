@@ -5,20 +5,32 @@ import {
 	useBlockEditingMode,
 } from '@wordpress/block-editor';
 import { useSelect } from '@wordpress/data';
+import { useState } from '@wordpress/element';
 import { store as editorStore } from '@wordpress/editor';
-import { PanelBody, TextControl, Button } from '@wordpress/components';
+import {
+	PanelBody,
+	TextControl,
+	ToggleControl,
+	Button,
+} from '@wordpress/components';
 
-type Link = { label: string; url: string; description: string; icon: string };
-type Column = { heading: string; links: Link[] };
+type Link = { label: string; url: string; description: string };
+type Column = { heading: string; icon: string; links: Link[] };
 type Attrs = { label: string; columns: Column[] };
 
 const emptyLink = (): Link => ( {
 	label: '',
 	url: '',
 	description: '',
-	icon: '',
 } );
-const emptyColumn = (): Column => ( { heading: '', links: [ emptyLink() ] } );
+const emptyColumn = (): Column => ( {
+	heading: '',
+	icon: '',
+	links: [ emptyLink() ],
+} );
+
+const iconSlug = ( raw: string | undefined ): string =>
+	( raw ?? '' ).toLowerCase().replace( /[^a-z0-9-]/g, '' );
 
 function move< T >( arr: T[], from: number, to: number ): T[] {
 	if ( to < 0 || to >= arr.length ) {
@@ -55,6 +67,17 @@ export default function Edit( {
 	);
 	useBlockEditingMode( isEntityContext ? 'default' : 'disabled' );
 
+	// Editor-only preview state: render the panel open by default so the
+	// columns are visible without hovering the trigger. Not a block attr —
+	// front-end behaviour (interactivity runtime hover/focus/click) is
+	// unchanged.
+	const [ previewPanelOpen, setPreviewPanelOpen ] = useState( true );
+
+	// Tracks the index of the most-recently-added column so its PanelBody
+	// mounts opened. initialOpen is only evaluated on first mount, so
+	// existing columns keep their toggled state when a new one is added.
+	const [ autoOpenIndex, setAutoOpenIndex ] = useState( -1 );
+
 	const blockProps = useBlockProps( { className: 'starter-mega-menu' } );
 	const columns = attributes.columns ?? [];
 	const commit = ( next: Column[] ) => setAttributes( { columns: next } );
@@ -77,6 +100,7 @@ export default function Edit( {
 	const previewColumns = columns
 		.map( ( c ) => ( {
 			heading: c.heading,
+			icon: c.icon,
 			links: ( c.links ?? [] ).filter( renderable ),
 		} ) )
 		.filter( ( c ) => c.links.length > 0 );
@@ -91,144 +115,208 @@ export default function Edit( {
 						value={ attributes.label }
 						onChange={ ( label ) => setAttributes( { label } ) }
 					/>
+					<ToggleControl
+						label={ __( 'Show panel preview', 'starter' ) }
+						help={ __(
+							'Renders the panel open in the editor canvas. Front-end hover/focus/click behaviour is unchanged.',
+							'starter'
+						) }
+						checked={ previewPanelOpen }
+						onChange={ setPreviewPanelOpen }
+					/>
 				</PanelBody>
 				{ columns.map( ( column, ci ) => (
 					<PanelBody
 						key={ ci }
 						title={ `${ __( 'Column', 'starter' ) } ${ ci + 1 }` }
-						initialOpen={ false }
+						initialOpen={ ci === autoOpenIndex }
 					>
-						<TextControl
-							label={ __( 'Heading', 'starter' ) }
-							value={ column.heading }
-							onChange={ ( heading ) =>
-								updateColumn( ci, { heading } )
-							}
-						/>
-						{ column.links.map( ( link, li ) => (
-							<div key={ li } className="starter-mega-form__link">
-								<TextControl
-									label={ __( 'Label', 'starter' ) }
-									value={ link.label }
-									onChange={ ( v ) =>
-										updateLink( ci, li, { label: v } )
-									}
-								/>
-								<TextControl
-									label={ __( 'URL', 'starter' ) }
-									type="url"
-									value={ link.url }
-									onChange={ ( v ) =>
-										updateLink( ci, li, { url: v } )
-									}
-								/>
-								<TextControl
-									label={ __( 'Description', 'starter' ) }
-									value={ link.description }
-									onChange={ ( v ) =>
-										updateLink( ci, li, {
-											description: v,
-										} )
-									}
-								/>
-								<TextControl
-									label={ __(
-										'Icon (Phosphor name)',
-										'starter'
-									) }
-									help={ __(
-										'e.g. gear, bank, article',
-										'starter'
-									) }
-									value={ link.icon }
-									onChange={ ( v ) =>
-										updateLink( ci, li, { icon: v } )
-									}
-								/>
-								<div className="starter-mega-form__row">
-									<Button
-										variant="tertiary"
-										onClick={ () =>
-											updateColumn( ci, {
-												links: move(
-													column.links,
-													li,
-													li - 1
-												),
+						<div className="starter-mega-form__section">
+							<p className="starter-mega-form__section-label">
+								{ __( 'Header', 'starter' ) }
+							</p>
+							<TextControl
+								label={ __( 'Heading', 'starter' ) }
+								value={ column.heading }
+								onChange={ ( heading ) =>
+									updateColumn( ci, { heading } )
+								}
+							/>
+							<TextControl
+								label={ __(
+									'Icon (Phosphor name)',
+									'starter'
+								) }
+								help={ __(
+									'Available: arrow-right, article, bank, caret-down, check-circle, gear, microphone, monitor-play, seal-check, stack, trend-up. Add more in assets/icons/phosphor-sprite.svg.',
+									'starter'
+								) }
+								value={ column.icon ?? '' }
+								onChange={ ( icon ) =>
+									updateColumn( ci, { icon } )
+								}
+							/>
+						</div>
+
+						<hr className="starter-mega-form__divider" />
+
+						<div className="starter-mega-form__section">
+							<p className="starter-mega-form__section-label">
+								{ __( 'Links', 'starter' ) }
+							</p>
+							{ column.links.map( ( link, li ) => (
+								<div
+									key={ li }
+									className="starter-mega-form__link"
+								>
+									<TextControl
+										label={ __( 'Label', 'starter' ) }
+										value={ link.label }
+										onChange={ ( v ) =>
+											updateLink( ci, li, {
+												label: v,
 											} )
 										}
-										disabled={ li === 0 }
-									>
-										{ __( 'Up', 'starter' ) }
-									</Button>
-									<Button
-										variant="tertiary"
-										onClick={ () =>
-											updateColumn( ci, {
-												links: move(
-													column.links,
-													li,
-													li + 1
-												),
+									/>
+									<TextControl
+										label={ __( 'URL', 'starter' ) }
+										type="url"
+										value={ link.url }
+										onChange={ ( v ) =>
+											updateLink( ci, li, {
+												url: v,
 											} )
 										}
-										disabled={
-											li === column.links.length - 1
-										}
-									>
-										{ __( 'Down', 'starter' ) }
-									</Button>
-									<Button
-										isDestructive
-										variant="tertiary"
-										onClick={ () =>
-											updateColumn( ci, {
-												links: column.links.filter(
-													( _, i ) => i !== li
-												),
+									/>
+									<TextControl
+										label={ __(
+											'Description',
+											'starter'
+										) }
+										value={ link.description }
+										onChange={ ( v ) =>
+											updateLink( ci, li, {
+												description: v,
 											} )
 										}
-									>
-										{ __( 'Remove link', 'starter' ) }
-									</Button>
+									/>
+									<div className="starter-mega-form__toolbar">
+										<Button
+											size="small"
+											variant="tertiary"
+											aria-label={ __(
+												'Move link up',
+												'starter'
+											) }
+											onClick={ () =>
+												updateColumn( ci, {
+													links: move(
+														column.links,
+														li,
+														li - 1
+													),
+												} )
+											}
+											disabled={ li === 0 }
+										>
+											↑
+										</Button>
+										<Button
+											size="small"
+											variant="tertiary"
+											aria-label={ __(
+												'Move link down',
+												'starter'
+											) }
+											onClick={ () =>
+												updateColumn( ci, {
+													links: move(
+														column.links,
+														li,
+														li + 1
+													),
+												} )
+											}
+											disabled={
+												li ===
+												column.links.length - 1
+											}
+										>
+											↓
+										</Button>
+										<Button
+											size="small"
+											isDestructive
+											variant="tertiary"
+											onClick={ () =>
+												updateColumn( ci, {
+													links: column.links.filter(
+														( _, i ) => i !== li
+													),
+												} )
+											}
+										>
+											{ __( 'Remove', 'starter' ) }
+										</Button>
+									</div>
 								</div>
-							</div>
-						) ) }
-						<Button
-							variant="secondary"
-							onClick={ () =>
-								updateColumn( ci, {
-									links: [ ...column.links, emptyLink() ],
-								} )
-							}
-						>
-							{ __( 'Add link', 'starter' ) }
-						</Button>
-						<div className="starter-mega-form__row">
+							) ) }
 							<Button
-								variant="tertiary"
+								variant="secondary"
+								className="starter-mega-form__add"
+								onClick={ () =>
+									updateColumn( ci, {
+										links: [
+											...column.links,
+											emptyLink(),
+										],
+									} )
+								}
+							>
+								{ __( 'Add link', 'starter' ) }
+							</Button>
+						</div>
+
+						<hr className="starter-mega-form__divider" />
+
+						<div className="starter-mega-form__toolbar starter-mega-form__toolbar--column">
+							<Button
+								size="small"
+								variant="secondary"
+								aria-label={ __(
+									'Move column up',
+									'starter'
+								) }
 								onClick={ () =>
 									commit( move( columns, ci, ci - 1 ) )
 								}
 								disabled={ ci === 0 }
 							>
-								{ __( 'Move column up', 'starter' ) }
+								↑
 							</Button>
 							<Button
-								variant="tertiary"
+								size="small"
+								variant="secondary"
+								aria-label={ __(
+									'Move column down',
+									'starter'
+								) }
 								onClick={ () =>
 									commit( move( columns, ci, ci + 1 ) )
 								}
 								disabled={ ci === columns.length - 1 }
 							>
-								{ __( 'Move column down', 'starter' ) }
+								↓
 							</Button>
 							<Button
+								size="small"
 								isDestructive
 								variant="tertiary"
 								onClick={ () =>
 									commit(
-										columns.filter( ( _, i ) => i !== ci )
+										columns.filter(
+											( _, i ) => i !== ci
+										)
 									)
 								}
 							>
@@ -240,9 +328,10 @@ export default function Edit( {
 				<PanelBody title={ __( 'Columns', 'starter' ) }>
 					<Button
 						variant="primary"
-						onClick={ () =>
-							commit( [ ...columns, emptyColumn() ] )
-						}
+						onClick={ () => {
+							setAutoOpenIndex( columns.length );
+							commit( [ ...columns, emptyColumn() ] );
+						} }
 					>
 						{ __( 'Add column', 'starter' ) }
 					</Button>
@@ -255,39 +344,65 @@ export default function Edit( {
 						: __( 'Menu', 'starter' ) }
 				</button>
 				{ hasPanel && (
-					<div className="starter-mega-menu__panel" hidden>
-						{ previewColumns.map( ( column, ci ) => (
-							<div key={ ci } className="starter-mega-column">
-								{ has( column.heading ) && (
-									<p className="starter-mega-column__heading">
-										{ column.heading }
-									</p>
-								) }
-								<div className="starter-mega-column__links">
-									{ column.links.map( ( link, li ) => (
-										<a
-											key={ li }
-											className="starter-mega-link"
-											href={ link.url }
-										>
-											{ has( link.icon ) && (
-												<span className="starter-mega-link__icon">
-													{ link.icon }
-												</span>
+					<div
+						className={
+							previewPanelOpen
+								? 'starter-mega-menu__panel is-preview-open'
+								: 'starter-mega-menu__panel'
+						}
+						hidden={ ! previewPanelOpen }
+					>
+						{ previewColumns.map( ( column, ci ) => {
+							const colIcon = iconSlug( column.icon );
+							const hasIcon = has( colIcon );
+							const hasHeading = has( column.heading );
+							return (
+								<div
+									key={ ci }
+									className="starter-mega-column"
+								>
+									{ ( hasHeading || hasIcon ) && (
+										<p className="starter-mega-column__heading">
+											{ hasIcon && (
+												<svg
+													className="i starter-mega-column__icon"
+													width="24"
+													height="24"
+													viewBox="0 0 256 256"
+													aria-hidden="true"
+													focusable="false"
+												>
+													<use
+														href={ `#ph-${ colIcon }` }
+													/>
+												</svg>
 											) }
-											<span className="starter-mega-link__label">
-												{ link.label }
-											</span>
-											{ has( link.description ) && (
-												<span className="starter-mega-link__desc">
-													{ link.description }
+											{ column.heading }
+										</p>
+									) }
+									<div className="starter-mega-column__links">
+										{ column.links.map( ( link, li ) => (
+											<a
+												key={ li }
+												className="starter-mega-link"
+												href={ link.url }
+											>
+												<span className="starter-mega-link__label">
+													{ link.label }
 												</span>
-											) }
-										</a>
-									) ) }
+												{ has(
+													link.description
+												) && (
+													<span className="starter-mega-link__desc">
+														{ link.description }
+													</span>
+												) }
+											</a>
+										) ) }
+									</div>
 								</div>
-							</div>
-						) ) }
+							);
+						} ) }
 					</div>
 				) }
 			</div>
