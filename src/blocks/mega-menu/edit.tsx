@@ -7,7 +7,6 @@ import {
 import { useSelect } from '@wordpress/data';
 import { store as editorStore } from '@wordpress/editor';
 import { PanelBody, TextControl, Button } from '@wordpress/components';
-import ServerSideRender from '@wordpress/server-side-render';
 
 type Link = { label: string; url: string; description: string; icon: string };
 type Column = { heading: string; links: Link[] };
@@ -30,6 +29,9 @@ function move< T >( arr: T[], from: number, to: number ): T[] {
 	copy.splice( to, 0, item );
 	return copy;
 }
+
+const has = ( s: string ) => s.trim() !== '';
+const renderable = ( l: Link ) => has( l.label ) || has( l.url );
 
 export default function Edit( {
 	attributes,
@@ -66,6 +68,19 @@ export default function Edit( {
 				i === li ? { ...l, ...patch } : l
 			),
 		} );
+
+	// Mirrors render.php: the panel renders only when at least one link has
+	// a label or url. The static preview deliberately reproduces render.php's
+	// DOM/classes (no ServerSideRender) so it updates synchronously in place
+	// — a core/navigation child that re-renders asynchronously gets
+	// deselected, which would collapse this sidebar form mid-edit.
+	const previewColumns = columns
+		.map( ( c ) => ( {
+			heading: c.heading,
+			links: ( c.links ?? [] ).filter( renderable ),
+		} ) )
+		.filter( ( c ) => c.links.length > 0 );
+	const hasPanel = previewColumns.length > 0;
 
 	return (
 		<>
@@ -234,10 +249,47 @@ export default function Edit( {
 				</PanelBody>
 			</InspectorControls>
 			<div { ...blockProps }>
-				<ServerSideRender
-					block="starter/mega-menu"
-					attributes={ attributes }
-				/>
+				<button type="button" className="starter-mega-menu__trigger">
+					{ has( attributes.label )
+						? attributes.label
+						: __( 'Menu', 'starter' ) }
+				</button>
+				{ hasPanel && (
+					<div className="starter-mega-menu__panel" hidden>
+						{ previewColumns.map( ( column, ci ) => (
+							<div key={ ci } className="starter-mega-column">
+								{ has( column.heading ) && (
+									<p className="starter-mega-column__heading">
+										{ column.heading }
+									</p>
+								) }
+								<div className="starter-mega-column__links">
+									{ column.links.map( ( link, li ) => (
+										<a
+											key={ li }
+											className="starter-mega-link"
+											href={ link.url }
+										>
+											{ has( link.icon ) && (
+												<span className="starter-mega-link__icon">
+													{ link.icon }
+												</span>
+											) }
+											<span className="starter-mega-link__label">
+												{ link.label }
+											</span>
+											{ has( link.description ) && (
+												<span className="starter-mega-link__desc">
+													{ link.description }
+												</span>
+											) }
+										</a>
+									) ) }
+								</div>
+							</div>
+						) ) }
+					</div>
+				) }
 			</div>
 		</>
 	);
