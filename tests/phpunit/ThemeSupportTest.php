@@ -12,5 +12,15 @@ class ThemeSupportTest extends WP_UnitTestCase {
 		$this->assertIsArray( $args[0] );
 		$this->assertTrue( $args[0]['flex-width'] ?? false, 'custom-logo must allow flex width.' );
 		$this->assertTrue( $args[0]['flex-height'] ?? false, 'custom-logo must allow flex height.' );
+		$this->assertContains(
+			'site-title',
+			$args[0]['header-text'] ?? array(),
+			'header-text must include site-title.'
+		);
+		$this->assertContains(
+			'site-description',
+			$args[0]['header-text'] ?? array(),
+			'header-text must include site-description.'
+		);
 	}
 }
