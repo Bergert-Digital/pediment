@@ -58,6 +58,13 @@
   object-fit: cover;
   display: block;
 }
+@media (min-width: 782px){
+  .starter-approach > .starter-approach__media{ align-self: stretch; }
+  .starter-approach__image{
+    aspect-ratio: auto;
+    height: 100%;
+  }
+}
 
 
 /* Eyebrow label + chip */
