@@ -34,6 +34,7 @@ function starter_seed_run(): void {
 	}
 
 	starter_seed_demo_image();
+	starter_seed_demo_logo();
 
 	$pages = array(
 		'home'    => array(
@@ -182,6 +183,73 @@ function starter_seed_demo_image(): int {
 
 	wp_update_attachment_metadata( (int) $attach_id, wp_generate_attachment_metadata( (int) $attach_id, $dest ) );
 	update_post_meta( (int) $attach_id, '_starter_seed_demo', '1' );
+
+	return (int) $attach_id;
+}
+
+/**
+ * Idempotently sideload the wide demo logo and set it as the site's
+ * Custom Logo. Mirrors starter_seed_demo_image().
+ *
+ * The marker meta `_starter_seed_demo_logo` makes removal trivial:
+ *   wp post list --post_type=attachment --meta_key=_starter_seed_demo_logo --field=ID
+ *   | xargs -I{} wp post delete {} --force
+ *
+ * @return int Attachment ID, or 0 on failure.
+ */
+function starter_seed_demo_logo(): int {
+	$existing = get_posts(
+		array(
+			'post_type'   => 'attachment',
+			'post_status' => 'inherit',
+			'numberposts' => 1,
+			'fields'      => 'ids',
+			'meta_key'    => '_starter_seed_demo_logo',
+			'meta_value'  => '1',
+		)
+	);
+	if ( ! empty( $existing ) ) {
+		$id = (int) $existing[0];
+		if ( (int) get_theme_mod( 'custom_logo', 0 ) !== $id ) {
+			set_theme_mod( 'custom_logo', $id );
+		}
+		return $id;
+	}
+
+	$src = get_template_directory() . '/docs/images/logo-demo.svg';
+	if ( ! file_exists( $src ) ) {
+		return 0;
+	}
+
+	require_once ABSPATH . 'wp-admin/includes/file.php';
+	require_once ABSPATH . 'wp-admin/includes/image.php';
+
+	$uploads = wp_upload_dir();
+	if ( ! empty( $uploads['error'] ) ) {
+		return 0;
+	}
+	$filename = wp_unique_filename( $uploads['path'], basename( $src ) );
+	$dest     = trailingslashit( $uploads['path'] ) . $filename;
+	if ( ! @copy( $src, $dest ) ) {
+		return 0;
+	}
+
+	$attach_id = wp_insert_attachment(
+		array(
+			'post_mime_type' => 'image/svg+xml',
+			'post_title'     => 'Demo logo (Pediment)',
+			'post_content'   => '',
+			'post_status'    => 'inherit',
+		),
+		$dest
+	);
+	if ( is_wp_error( $attach_id ) || ! $attach_id ) {
+		@unlink( $dest );
+		return 0;
+	}
+
+	update_post_meta( (int) $attach_id, '_starter_seed_demo_logo', '1' );
+	set_theme_mod( 'custom_logo', (int) $attach_id );
 
 	return (int) $attach_id;
 }
