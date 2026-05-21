@@ -49,6 +49,16 @@ class SeedDemoLogoTest extends WP_UnitTestCase {
 		$this->assertCount( 1, $attachments, 'Idempotent seed must not create a duplicate attachment.' );
 	}
 
+	public function test_idempotent_call_restores_drifted_theme_mod() {
+		$id = starter_seed_demo_logo();
+		set_theme_mod( 'custom_logo', 0 );
+
+		$second = starter_seed_demo_logo();
+
+		$this->assertSame( $id, $second, 'Second call must return the existing attachment, not create a new one.' );
+		$this->assertSame( $id, (int) get_theme_mod( 'custom_logo', 0 ), 'Theme mod must be restored to the existing attachment.' );
+	}
+
 	public function test_seed_run_invokes_demo_logo_seed() {
 		starter_seed_run();
 		$this->assertGreaterThan( 0, (int) get_theme_mod( 'custom_logo', 0 ) );

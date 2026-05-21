@@ -222,7 +222,6 @@ function starter_seed_demo_logo(): int {
 	}
 
 	require_once ABSPATH . 'wp-admin/includes/file.php';
-	require_once ABSPATH . 'wp-admin/includes/image.php';
 
 	$uploads = wp_upload_dir();
 	if ( ! empty( $uploads['error'] ) ) {
