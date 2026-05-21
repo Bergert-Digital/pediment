@@ -33,6 +33,8 @@ function starter_seed_run(): void {
 		}
 	}
 
+	starter_seed_demo_image();
+
 	$pages = array(
 		'home'    => array(
 			'title'   => 'Home',
@@ -106,15 +108,124 @@ function starter_seed_run(): void {
  * @return string Block markup.
  */
 function starter_pediment_landing_content(): string {
+	$content = '';
 	if ( class_exists( 'WP_Block_Patterns_Registry' ) ) {
 		$pattern = WP_Block_Patterns_Registry::get_instance()->get_registered( 'starter/pediment-landing' );
 		if ( is_array( $pattern ) && ! empty( $pattern['content'] ) ) {
-			return (string) $pattern['content'];
+			$content = (string) $pattern['content'];
 		}
 	}
-	return '<!-- wp:starter/hero {"variant":"centered","headline":"Welcome","subheadline":"A short benefit-led promise.","ctaText":"Get started","ctaUrl":"/contact","align":"wide"} /-->' .
-		'<!-- wp:starter/cta {"title":"Ready to start?","body":"Tell us about your project.","primaryText":"Contact us","primaryUrl":"/contact","align":"wide"} /-->' .
-		'<!-- wp:starter/blog-index {"count":3,"align":"wide"} /-->';
+	if ( '' === $content ) {
+		$content = '<!-- wp:starter/hero {"variant":"centered","headline":"Welcome","subheadline":"A short benefit-led promise.","ctaText":"Get started","ctaUrl":"/contact","align":"wide"} /-->' .
+			'<!-- wp:starter/cta {"title":"Ready to start?","body":"Tell us about your project.","primaryText":"Contact us","primaryUrl":"/contact","align":"wide"} /-->' .
+			'<!-- wp:starter/blog-index {"count":3,"align":"wide"} /-->';
+	}
+	return starter_seed_apply_demo_image( $content );
+}
+
+/**
+ * Idempotently sideload the demo image and tag it for easy cleanup.
+ *
+ * The marker meta `_starter_seed_demo` makes removal trivial:
+ *   wp post list --post_type=attachment --meta_key=_starter_seed_demo --field=ID
+ *   | xargs -I{} wp post delete {} --force
+ *
+ * @return int Attachment ID, or 0 on failure.
+ */
+function starter_seed_demo_image(): int {
+	$existing = get_posts(
+		array(
+			'post_type'   => 'attachment',
+			'post_status' => 'inherit',
+			'numberposts' => 1,
+			'fields'      => 'ids',
+			'meta_key'    => '_starter_seed_demo',
+			'meta_value'  => '1',
+		)
+	);
+	if ( ! empty( $existing ) ) {
+		return (int) $existing[0];
+	}
+
+	$src = get_template_directory() . '/docs/images/dylan-gillis-KdeqA3aTnBY-unsplash.jpg';
+	if ( ! file_exists( $src ) ) {
+		return 0;
+	}
+
+	require_once ABSPATH . 'wp-admin/includes/file.php';
+	require_once ABSPATH . 'wp-admin/includes/image.php';
+
+	$uploads = wp_upload_dir();
+	if ( ! empty( $uploads['error'] ) ) {
+		return 0;
+	}
+	$filename = wp_unique_filename( $uploads['path'], basename( $src ) );
+	$dest     = trailingslashit( $uploads['path'] ) . $filename;
+	if ( ! @copy( $src, $dest ) ) {
+		return 0;
+	}
+
+	$filetype  = wp_check_filetype( $dest, null );
+	$attach_id = wp_insert_attachment(
+		array(
+			'post_mime_type' => $filetype['type'] ?: 'image/jpeg',
+			'post_title'     => 'Demo image (Dylan Gillis on Unsplash)',
+			'post_content'   => '',
+			'post_status'    => 'inherit',
+		),
+		$dest
+	);
+	if ( is_wp_error( $attach_id ) || ! $attach_id ) {
+		@unlink( $dest );
+		return 0;
+	}
+
+	wp_update_attachment_metadata( (int) $attach_id, wp_generate_attachment_metadata( (int) $attach_id, $dest ) );
+	update_post_meta( (int) $attach_id, '_starter_seed_demo', '1' );
+
+	return (int) $attach_id;
+}
+
+/**
+ * Bake the seeded demo attachment into the pediment-landing pattern content:
+ * adds `mediaId` to the stat-card hero and fills the empty approach-band image.
+ */
+function starter_seed_apply_demo_image( string $content ): string {
+	$id = starter_seed_demo_image();
+	if ( ! $id ) {
+		return $content;
+	}
+
+	$content = preg_replace_callback(
+		'/<!-- wp:starter\/hero (\{[^}]*"variant":"stat-card"[^}]*\}) \/-->/',
+		function ( $m ) use ( $id ) {
+			$attrs = json_decode( $m[1], true );
+			if ( ! is_array( $attrs ) ) {
+				return $m[0];
+			}
+			if ( empty( $attrs['mediaId'] ) ) {
+				$attrs['mediaId'] = $id;
+			}
+			return '<!-- wp:starter/hero ' . wp_json_encode( $attrs ) . ' /-->';
+		},
+		$content
+	);
+
+	$empty_image = "<!-- wp:image {\"sizeSlug\":\"large\",\"className\":\"starter-approach__image\"} -->\n"
+		. "<figure class=\"wp-block-image size-large starter-approach__image\"><img alt=\"\" /></figure>\n"
+		. '<!-- /wp:image -->';
+	$url = (string) wp_get_attachment_image_url( $id, 'large' );
+	$populated_image = sprintf(
+		"<!-- wp:image {\"id\":%d,\"sizeSlug\":\"large\",\"className\":\"starter-approach__image\"} -->\n"
+		. "<figure class=\"wp-block-image size-large starter-approach__image\"><img src=\"%s\" alt=\"\" class=\"wp-image-%d\" /></figure>\n"
+		. '<!-- /wp:image -->',
+		$id,
+		esc_url( $url ),
+		$id
+	);
+	$content = str_replace( $empty_image, $populated_image, $content );
+
+	return $content;
 }
 
 /**
@@ -150,8 +261,14 @@ function starter_seed_sample_posts(): void {
 		array( 'slug' => 'sample-note-one',      'title' => 'A quick note on process',                  'cat' => 'notes' ),
 		array( 'slug' => 'sample-note-two',      'title' => 'A quick note on outcomes',                 'cat' => 'notes' ),
 	);
+	$demo_image_id = starter_seed_demo_image();
+
 	foreach ( $posts as $p ) {
-		if ( get_page_by_path( $p['slug'], OBJECT, 'post' ) ) {
+		$existing = get_page_by_path( $p['slug'], OBJECT, 'post' );
+		if ( $existing ) {
+			if ( $demo_image_id && ! has_post_thumbnail( $existing ) ) {
+				set_post_thumbnail( $existing, $demo_image_id );
+			}
 			continue;
 		}
 		$post_id = wp_insert_post(
@@ -167,6 +284,9 @@ function starter_seed_sample_posts(): void {
 		);
 		if ( ! is_wp_error( $post_id ) && isset( $cat_ids[ $p['cat'] ] ) ) {
 			wp_set_post_categories( (int) $post_id, array( $cat_ids[ $p['cat'] ] ) );
+		}
+		if ( ! is_wp_error( $post_id ) && $demo_image_id ) {
+			set_post_thumbnail( (int) $post_id, $demo_image_id );
 		}
 	}
 }
