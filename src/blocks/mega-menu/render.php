@@ -26,16 +26,21 @@ foreach ( $columns as $col ) {
 
 $panel_id = wp_unique_id( 'starter-mega-' );
 
-$wrapper = get_block_wrapper_attributes(
-	array(
-		'class'                  => 'starter-mega-menu',
-		'data-wp-interactive'    => 'starter/mega-menu',
-		'data-wp-context'        => '{ "isOpen": false }',
-		'data-wp-init'           => 'callbacks.init',
-		'data-wp-on--focusout'   => 'actions.onFocusOut',
-		'data-wp-on--mouseenter' => 'actions.onPointerEnter',
-		'data-wp-on--mouseleave' => 'actions.onPointerLeave',
-	)
+// Manually constructed wrapper. get_block_wrapper_attributes() hits
+// WP_Block_Supports's static-state machine, which crashes (null-attrs
+// TypeError in custom-classname support) when this block is rendered
+// inside a wp_navigation entity from the Site Editor admin path. The
+// block declares no spacing/color/border/layout supports, so the only
+// thing get_block_wrapper_attributes would add beyond these is the
+// user's customClassName — merged explicitly below.
+$wrapper_classes = array( 'wp-block-starter-mega-menu', 'starter-mega-menu' );
+if ( ! empty( $attributes['className'] ) ) {
+	$wrapper_classes[] = (string) $attributes['className'];
+}
+$wrapper = sprintf(
+	'class="%s" data-wp-interactive="starter/mega-menu" data-wp-context="%s" data-wp-init="callbacks.init" data-wp-on--focusout="actions.onFocusOut" data-wp-on--mouseenter="actions.onPointerEnter" data-wp-on--mouseleave="actions.onPointerLeave"',
+	esc_attr( implode( ' ', $wrapper_classes ) ),
+	esc_attr( '{ "isOpen": false }' )
 );
 
 ob_start();
