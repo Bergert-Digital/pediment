@@ -67,6 +67,7 @@ ob_start();
 			<?php
 			foreach ( $columns as $col ) :
 				$heading = isset( $col['heading'] ) ? trim( (string) $col['heading'] ) : '';
+				$c_icon  = isset( $col['icon'] ) ? trim( (string) $col['icon'] ) : '';
 				$links   = isset( $col['links'] ) && is_array( $col['links'] ) ? $col['links'] : array();
 
 				$renderable = array();
@@ -80,10 +81,17 @@ ob_start();
 				if ( empty( $renderable ) ) {
 					continue;
 				}
+				$has_icon    = ( '' !== $c_icon ) && function_exists( 'starter_icon' );
+				$has_heading = '' !== $heading;
 				?>
 				<div class="starter-mega-column">
-					<?php if ( '' !== $heading ) : ?>
-						<p class="starter-mega-column__heading"><?php echo wp_kses_post( $heading ); ?></p>
+					<?php if ( $has_heading || $has_icon ) : ?>
+						<p class="starter-mega-column__heading"><?php
+							if ( $has_icon ) {
+								echo starter_icon( $c_icon, 'starter-mega-column__icon' ); // phpcs:ignore WordPress.Security.EscapeOutput -- theme-controlled sprite SVG
+							}
+							echo wp_kses_post( $heading );
+						?></p>
 					<?php endif; ?>
 					<div class="starter-mega-column__links">
 						<?php
@@ -91,14 +99,8 @@ ob_start();
 							$l_label = isset( $lnk['label'] ) ? trim( (string) $lnk['label'] ) : '';
 							$l_url   = isset( $lnk['url'] ) ? trim( (string) $lnk['url'] ) : '';
 							$l_desc  = isset( $lnk['description'] ) ? trim( (string) $lnk['description'] ) : '';
-							$l_icon  = isset( $lnk['icon'] ) ? trim( (string) $lnk['icon'] ) : '';
 							?>
 							<a class="starter-mega-link" href="<?php echo esc_url( $l_url ); ?>">
-								<?php
-								if ( '' !== $l_icon && function_exists( 'starter_icon' ) ) {
-									echo starter_icon( $l_icon, 'starter-mega-link__icon' ); // phpcs:ignore WordPress.Security.EscapeOutput -- theme-controlled sprite SVG
-								}
-								?>
 								<span class="starter-mega-link__label"><?php echo wp_kses_post( $l_label ); ?></span>
 								<?php if ( '' !== $l_desc ) : ?>
 									<span class="starter-mega-link__desc"><?php echo wp_kses_post( $l_desc ); ?></span>
