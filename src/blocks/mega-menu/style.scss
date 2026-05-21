@@ -12,10 +12,13 @@
 
   &__panel {
     position: absolute;
-    left: 0;
-    top: 100%;
+    left: 50%;
+    top: calc(100% + 0.75rem);
+    transform: translateX(-50%);
     z-index: 60;
-    min-width: min(48rem, 90vw);
+    min-width: min(20rem, 90vw);
+    max-width: min(64rem, 90vw);
+    width: max-content;
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
     gap: var(--wp--preset--spacing--30);
@@ -106,7 +109,11 @@ svg.starter-mega-column__icon {
 .wp-block-navigation__responsive-container.is-menu-open {
   .starter-mega-menu__panel {
     position: static;
+    left: auto;
+    transform: none;
     min-width: 0;
+    max-width: none;
+    width: auto;
     grid-template-columns: 1fr;
     box-shadow: none;
     border: 0;
