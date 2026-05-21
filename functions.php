@@ -83,6 +83,14 @@ add_action(
 	'after_setup_theme',
 	function () {
 		add_editor_style( 'assets/css/theme.css' );
+		add_theme_support(
+			'custom-logo',
+			array(
+				'flex-width'  => true,
+				'flex-height' => true,
+				'header-text' => array( 'site-title', 'site-description' ),
+			)
+		);
 	}
 );
 
