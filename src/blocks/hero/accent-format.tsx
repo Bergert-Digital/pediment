@@ -20,7 +20,9 @@ registerFormatType( FORMAT_NAME, {
 				icon="art"
 				title={ __( 'Accent', 'starter' ) }
 				onClick={ () =>
-					onChange( toggleFormat( value as never, { type: FORMAT_NAME } ) )
+					onChange(
+						toggleFormat( value as never, { type: FORMAT_NAME } )
+					)
 				}
 				isActive={ isActive }
 			/>

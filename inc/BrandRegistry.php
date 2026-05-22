@@ -83,7 +83,10 @@ final class BrandRegistry {
 		// Fill in nulls so consumers can assume every field has sanitize/renderer.
 		foreach ( $fields as $key => $def ) {
 			$fields[ $key ] = array_merge(
-				array( 'sanitize' => null, 'renderer' => null ),
+				array(
+					'sanitize' => null,
+					'renderer' => null,
+				),
 				$def
 			);
 		}

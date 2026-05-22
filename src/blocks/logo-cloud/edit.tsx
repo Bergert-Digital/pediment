@@ -24,7 +24,11 @@ export default function Edit( {
 	const blockProps = useBlockProps( { className: 'starter-logo-cloud' } );
 	const innerProps = useInnerBlocksProps(
 		{ className: 'starter-logo-cloud__row' },
-		{ allowedBlocks: ALLOWED, template: TEMPLATE, orientation: 'horizontal' }
+		{
+			allowedBlocks: ALLOWED,
+			template: TEMPLATE,
+			orientation: 'horizontal',
+		}
 	);
 	return (
 		<section { ...blockProps }>

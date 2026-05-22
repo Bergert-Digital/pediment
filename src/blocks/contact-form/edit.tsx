@@ -75,10 +75,7 @@ export default function Edit( {
 					<textarea name="message" rows={ 5 } readOnly />
 				</label>
 
-				<button
-					type="button"
-					className="starter-contact-form__submit"
-				>
+				<button type="button" className="starter-contact-form__submit">
 					{ __( 'Send', 'starter' ) }
 				</button>
 

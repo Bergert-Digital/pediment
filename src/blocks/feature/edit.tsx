@@ -42,10 +42,16 @@ export default function Edit( {
 			<div { ...blockProps }>
 				<div className="starter-feature__ic" aria-hidden="true">
 					{ attributes.icon && (
-						<svg className="i" aria-hidden="true" focusable={ false }>
-							<use href={ `#ph-${ attributes.icon
-								.toLowerCase()
-								.replace( /[^a-z0-9-]/g, '' ) }` } />
+						<svg
+							className="i"
+							aria-hidden="true"
+							focusable={ false }
+						>
+							<use
+								href={ `#ph-${ attributes.icon
+									.toLowerCase()
+									.replace( /[^a-z0-9-]/g, '' ) }` }
+							/>
 						</svg>
 					) }
 				</div>

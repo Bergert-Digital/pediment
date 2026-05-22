@@ -5,11 +5,7 @@ import {
 	InspectorControls,
 	MediaUpload,
 } from '@wordpress/block-editor';
-import {
-	PanelBody,
-	SelectControl,
-	Button,
-} from '@wordpress/components';
+import { PanelBody, SelectControl, Button } from '@wordpress/components';
 
 type Attrs = {
 	variant: 'default' | 'testimonial';
