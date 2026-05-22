@@ -11,21 +11,6 @@ const NAV_CONTENT =
   '<!-- wp:pediment/mega-menu {"label":"Products","columns":[{"heading":"Product","links":[{"label":"Pricing","url":"/pricing","description":"Plans","icon":"tag"}]}]} /-->' +
   '<!-- wp:navigation-link {"label":"About","url":"/about","kind":"custom"} /-->';
 
-// Walk the block tree to find a pediment/mega-menu (it lives inside a
-// core/navigation; controlled inner-blocks mode keeps the tree shallow here).
-const FIND_MEGA_FN = `(() => {
-  const sel = window.wp.data.select('core/block-editor');
-  const walk = (list) => {
-    for (const b of list) {
-      if (b.name === 'pediment/mega-menu') return b;
-      const hit = walk(b.innerBlocks || []);
-      if (hit) return hit;
-    }
-    return null;
-  };
-  return walk(sel.getBlocks());
-})()`;
-
 test.describe('mega-menu editor (entity context)', () => {
   let navId = 0;
 
@@ -50,26 +35,21 @@ test.describe('mega-menu editor (entity context)', () => {
     );
 
     const canvas = page.frameLocator('iframe[name="editor-canvas"]');
-    await expect(canvas.locator('.starter-mega-menu').first()).toBeVisible({
-      timeout: 20000,
-    });
+    const wrapper = canvas.locator('.starter-mega-menu').first();
+    await expect(wrapper).toBeVisible({ timeout: 20000 });
 
-    // The wp_navigation entity loads its inner blocks (controlled-inner-blocks
-    // mode) asynchronously: the DOM wrapper appears as soon as the entity's
-    // template renders, but `core/block-editor.getBlocks()` only sees the
-    // child blocks after the entity record resolves. Poll until the tree
-    // walk finds the block before reading the initial clientId.
-    await page.waitForFunction(FIND_MEGA_FN, undefined, { timeout: 20000 });
-
-    // Read initial clientId + select the block (so the linchpin also verifies
-    // selection survives the mutation).
-    const initialClientId: string = await page.evaluate(`
-      (() => {
-        const target = ${FIND_MEGA_FN};
-        if (!target) throw new Error('mega-menu block not found in entity');
-        window.wp.data.dispatch('core/block-editor').selectBlock(target.clientId);
-        return target.clientId;
-      })()
+    // The wp_navigation entity wraps its inner blocks in a controlled-inner-
+    // blocks navigation, so `core/block-editor.getBlocks()` returns the
+    // outer navigation only — the tree walk for `pediment/mega-menu` lives
+    // under that root. Grab the clientId from the rendered wrapper's
+    // `data-block` attribute (Gutenberg writes it on every BlockListBlock)
+    // instead of round-tripping through the data store.
+    const initialClientId: string = (await wrapper.getAttribute('data-block')) ?? '';
+    expect(initialClientId).toBeTruthy();
+    await page.evaluate(`
+      window.wp.data
+        .dispatch('core/block-editor')
+        .selectBlock('${initialClientId}')
     `);
     expect(initialClientId).toBeTruthy();
 
@@ -83,11 +63,11 @@ test.describe('mega-menu editor (entity context)', () => {
 
     const after = await page.evaluate(`
       (() => {
-        const target = ${FIND_MEGA_FN};
         const sel = window.wp.data.select('core/block-editor');
+        const block = sel.getBlock('${initialClientId}');
         return {
-          clientId: target?.clientId ?? null,
-          label: target?.attributes?.label ?? null,
+          clientId: block?.clientId ?? null,
+          label: block?.attributes?.label ?? null,
           selected: sel.getSelectedBlockClientId(),
         };
       })()
@@ -145,49 +125,29 @@ test.describe('mega-menu editor (page context — read-only)', () => {
 		await page.goto(`/wp-admin/post.php?post=${id}&action=edit`);
 
 		const canvas = page.frameLocator('iframe[name="editor-canvas"]');
-		await expect(canvas.locator('.starter-mega-menu').first()).toBeVisible({
-			timeout: 20000,
-		});
-		// Select via wp.data, not a DOM click: in the page editor the parent
-		// `wp-block-navigation__container` is a drop zone and intercepts
-		// pointer events on its children, so a real click can't reach the
-		// disabled mega-menu wrapper.
-		await page.waitForFunction(`
-			(() => {
-				const sel = window.wp.data.select('core/block-editor');
-				const walk = (list) => {
-					for (const b of list) {
-						if (b.name === 'pediment/mega-menu') return b;
-						const hit = walk(b.innerBlocks || []);
-						if (hit) return hit;
-					}
-					return null;
-				};
-				const t = walk(sel.getBlocks());
-				if (!t) return false;
-				window.wp.data.dispatch('core/block-editor').selectBlock(t.clientId);
-				return true;
-			})()
-		`, undefined, { timeout: 20000 });
+		const wrapper = canvas.locator('.starter-mega-menu').first();
+		await expect(wrapper).toBeVisible({ timeout: 20000 });
+		// In the page editor the parent `.wp-block-navigation__container` is
+		// a drop zone and intercepts pointer events on its children, so a
+		// real click never reaches the disabled wrapper. `force: true`
+		// bypasses Playwright's hit-testing — Gutenberg still selects the
+		// block from the synthetic event reaching the BlockListBlock root.
+		await wrapper.click({ force: true });
 
 		// The Inspector "Menu label" field must not be reachable.
 		await expect(page.getByLabel('Menu label')).toHaveCount(0);
 
 		// Cross-check via wp.data: editing mode for this block is 'disabled'.
+		// Read the clientId from the rendered wrapper instead of walking
+		// `getBlocks()`, which in the page editor's controlled-inner-blocks
+		// navigation only exposes the outer nav.
+		const clientId = (await wrapper.getAttribute('data-block')) ?? '';
+		expect(clientId).toBeTruthy();
 		const mode: string | null = await page.evaluate(`
 			(() => {
 				const sel = window.wp.data.select('core/block-editor');
-				const walk = (list) => {
-					for (const b of list) {
-						if (b.name === 'pediment/mega-menu') return b;
-						const hit = walk(b.innerBlocks || []);
-						if (hit) return hit;
-					}
-					return null;
-				};
-				const t = walk(sel.getBlocks());
-				return t && sel.getBlockEditingMode
-					? sel.getBlockEditingMode(t.clientId)
+				return sel.getBlockEditingMode
+					? sel.getBlockEditingMode('${clientId}')
 					: null;
 			})()
 		`);
