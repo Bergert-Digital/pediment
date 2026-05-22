@@ -27,7 +27,7 @@
 
 /* On the navy band: white figures, slate sub-text */
 .is-style-band-navy .starter-stat {
-  &__value { color: #fff; }
-  &__label { color: #fff; }
-  &__context { color: #9DB6E6; }
+  &__value { color: var(--wp--preset--color--surface); }
+  &__label { color: var(--wp--preset--color--surface); }
+  &__context { color: var(--wp--custom--color--text-on-dark); }
 }

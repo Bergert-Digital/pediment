@@ -47,15 +47,15 @@
 .starter-mega-form__divider {
   margin: 1rem 0;
   border: 0;
-  border-top: 1px solid rgba(0, 0, 0, 0.1);
+  border-top: 1px solid color-mix(in srgb, var(--wp--preset--color--text) 10%, transparent);
 }
 
 .starter-mega-form__link {
   padding: 0.75rem;
   margin-bottom: 0.75rem;
-  border: 1px solid rgba(0, 0, 0, 0.08);
+  border: 1px solid color-mix(in srgb, var(--wp--preset--color--text) 8%, transparent);
   border-radius: 4px;
-  background: rgba(0, 0, 0, 0.015);
+  background: color-mix(in srgb, var(--wp--preset--color--text) 1.5%, transparent);
 }
 
 .starter-mega-form__toolbar {

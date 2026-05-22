@@ -32,6 +32,6 @@
 }
 
 .is-style-band-navy .starter-social-links a {
-  color: #9DB6E6;
-  &:hover, &:focus-visible { color: #fff; }
+  color: var(--wp--custom--color--text-on-dark);
+  &:hover, &:focus-visible { color: var(--wp--preset--color--surface); }
 }

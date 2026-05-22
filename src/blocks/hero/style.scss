@@ -6,7 +6,7 @@
   &.is-variant-media-bg {
     background-size: cover;
     background-position: center;
-    color: #fff;
+    color: var(--wp--preset--color--surface);
     position: relative;
     isolation: isolate;
     border-radius: var(--r-lg, 20px);
@@ -40,7 +40,7 @@
   }
 
   &.is-variant-centered &__subheadline { margin-inline: auto; }
-  &.is-variant-media-bg &__subheadline { color: rgba(255,255,255,.9); }
+  &.is-variant-media-bg &__subheadline { color: color-mix(in srgb, var(--wp--preset--color--surface) 90%, transparent); }
 
   &__cta {
     display: inline-flex;
@@ -48,17 +48,17 @@
     gap: 9px;
     padding: 16px 26px;
     background: var(--wp--preset--color--accent);
-    color: #fff;
+    color: var(--wp--preset--color--surface);
     border-radius: var(--r-pill, 999px);
     text-decoration: none;
     font-weight: 700;
     transition: background-color .15s ease, transform .15s ease;
 
-    &:hover { background: var(--wp--preset--color--accent-hover); color: #fff; transform: translateY(-1px); }
+    &:hover { background: var(--wp--preset--color--accent-hover); color: var(--wp--preset--color--surface); transform: translateY(-1px); }
     &:focus-visible { outline: 2px solid var(--wp--preset--color--accent); outline-offset: 3px; }
   }
 
-  &.is-variant-media-bg &__cta { background: #fff; color: var(--wp--preset--color--accent-hover); }
+  &.is-variant-media-bg &__cta { background: var(--wp--preset--color--surface); color: var(--wp--preset--color--accent-hover); }
 }
 
 /* stat-card variant: split text + photo-with-glass-stats */
@@ -154,10 +154,10 @@
     background: color-mix(in srgb, var(--wp--preset--color--primary) 60%, transparent);
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, .16);
+    border: 1px solid color-mix(in srgb, var(--wp--preset--color--surface) 16%, transparent);
     border-radius: 16px;
     padding: 22px 24px;
-    color: #fff;
+    color: var(--wp--preset--color--surface);
   }
   .starter-hero__stat-value {
     font-size: 2.4rem;
@@ -166,7 +166,7 @@
     line-height: 1;
   }
   .starter-hero__stat-text {
-    color: #c9d6ec;
+    color: var(--wp--custom--color--text-on-dark-soft);
     font-size: .88rem;
     margin-top: 6px;
   }
@@ -174,7 +174,7 @@
     display: flex;
     gap: 22px;
     margin-top: 18px;
-    border-top: 1px solid rgba(255, 255, 255, .16);
+    border-top: 1px solid color-mix(in srgb, var(--wp--preset--color--surface) 16%, transparent);
     padding-top: 16px;
   }
   .starter-hero__metric b {
@@ -184,7 +184,7 @@
   }
   .starter-hero__metric span {
     font-size: .74rem;
-    color: #c9d6ec;
+    color: var(--wp--custom--color--text-on-dark-soft);
   }
 
   @media (max-width: 781px) {

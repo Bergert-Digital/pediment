@@ -88,6 +88,13 @@
         { "slug": "focus",  "name": "Focus",   "shadow": "0 0 0 3px rgba(14,116,144,0.35)" }
       ]
     },
+    "custom": {
+      "color": {
+        "text-on-dark": "#9DB6E6",
+        "text-on-dark-soft": "#C9D6EC",
+        "text-on-accent-muted": "#B9C8E6"
+      }
+    },
     "blocks": {
       "core/button": {
         "border": { "radius": true }

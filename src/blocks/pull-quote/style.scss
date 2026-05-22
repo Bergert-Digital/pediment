@@ -26,8 +26,8 @@
 }
 
 .is-style-band-navy .starter-pull-quote {
-  &__quote { color: #fff; }
-  &__citation { color: #9DB6E6; }
+  &__quote { color: var(--wp--preset--color--surface); }
+  &__citation { color: var(--wp--custom--color--text-on-dark); }
 }
 
 .starter-pull-quote.is-variant-testimonial,
@@ -80,10 +80,10 @@
 .is-style-band-navy .starter-pull-quote.is-variant-testimonial {
   .starter-pull-quote__quote,
   .starter-pull-quote__name {
-    color: #fff;
+    color: var(--wp--preset--color--surface);
   }
 
   .starter-pull-quote__role {
-    color: #9db6e6;
+    color: var(--wp--custom--color--text-on-dark);
   }
 }

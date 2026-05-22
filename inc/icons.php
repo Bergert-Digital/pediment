@@ -62,7 +62,7 @@ function starter_enqueue_editor_icon_sprite() {
 		"(function(){var sprite=%s;function inject(doc){try{if(!doc||!doc.body||doc.getElementById('starter-icon-sprite'))return;var w=doc.createElement('div');w.id='starter-icon-sprite';w.style.cssText='position:absolute;width:0;height:0;overflow:hidden';w.setAttribute('aria-hidden','true');w.innerHTML=sprite;doc.body.insertBefore(w,doc.body.firstChild);}catch(e){}}function tryAll(){var frames=document.querySelectorAll('iframe');for(var i=0;i<frames.length;i++){(function(f){try{if(f.contentDocument&&f.contentDocument.readyState!=='loading')inject(f.contentDocument);}catch(e){}if(!f.dataset.starterIconBound){f.dataset.starterIconBound='1';f.addEventListener('load',function(){try{inject(f.contentDocument);}catch(e){}});}})(frames[i]);}}inject(document);tryAll();var mo=new MutationObserver(tryAll);mo.observe(document.body,{childList:true,subtree:true});})();",
 		wp_json_encode( $sprite )
 	);
-	wp_register_script( 'starter-editor-icon-sprite', '', array(), null, true );
+	wp_register_script( 'starter-editor-icon-sprite', '', array(), wp_get_theme()->get( 'Version' ) ?: '0', true );
 	wp_enqueue_script( 'starter-editor-icon-sprite' );
 	wp_add_inline_script( 'starter-editor-icon-sprite', $script );
 }
