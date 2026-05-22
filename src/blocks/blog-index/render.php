@@ -36,11 +36,11 @@ ob_start();
 		$filters = array(); // slug => name, in first-appearance order.
 		while ( $query->have_posts() ) :
 			$query->the_post();
-			$post_id = get_the_ID();
+			$pid = get_the_ID();
 			// Primary category = first term. Uncategorised posts get an empty
 			// slug: no badge, excluded from the filter list, and shown only
 			// under "All" (they are not in any specific category by design).
-			$terms   = get_the_category( $post_id );
+			$terms   = get_the_category( $pid );
 			$primary = ! empty( $terms ) ? $terms[0] : null;
 			$slug    = $primary ? (string) $primary->slug : '';
 			$name    = $primary ? (string) $primary->name : '';
@@ -50,14 +50,14 @@ ob_start();
 			$cards[] = array(
 				'slug'      => $slug,
 				'cat_name'  => $name,
-				'permalink' => get_permalink( $post_id ),
-				'title'     => get_the_title( $post_id ),
-				'date'      => get_the_date( '', $post_id ),
-				'datetime'  => get_the_date( 'c', $post_id ),
-				'excerpt'   => get_the_excerpt( $post_id ),
-				'thumb'     => has_post_thumbnail( $post_id )
+				'permalink' => get_permalink( $pid ),
+				'title'     => get_the_title( $pid ),
+				'date'      => get_the_date( '', $pid ),
+				'datetime'  => get_the_date( 'c', $pid ),
+				'excerpt'   => get_the_excerpt( $pid ),
+				'thumb'     => has_post_thumbnail( $pid )
 					? get_the_post_thumbnail(
-						$post_id,
+						$pid,
 						'large',
 						array(
 							'class' => 'starter-blog-index__img',

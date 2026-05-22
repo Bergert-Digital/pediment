@@ -6,7 +6,9 @@ import {
 } from '@wordpress/block-editor';
 import {
 	PanelBody,
+	// eslint-disable-next-line @wordpress/no-unsafe-wp-apis -- public ToggleGroupControl not yet stabilised in @wordpress/components v28
 	__experimentalToggleGroupControl as ToggleGroupControl,
+	// eslint-disable-next-line @wordpress/no-unsafe-wp-apis -- see above
 	__experimentalToggleGroupControlOption as ToggleGroupControlOption,
 } from '@wordpress/components';
 

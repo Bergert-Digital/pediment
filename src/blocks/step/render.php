@@ -5,10 +5,10 @@
  * @var array $attributes
  */
 
-$title = isset( $attributes['title'] ) ? (string) $attributes['title'] : '';
-$text  = isset( $attributes['text'] ) ? (string) $attributes['text'] : '';
+$step_title = isset( $attributes['title'] ) ? (string) $attributes['title'] : '';
+$text       = isset( $attributes['text'] ) ? (string) $attributes['text'] : '';
 
-if ( '' === $title && '' === $text ) {
+if ( '' === $step_title && '' === $text ) {
 	return '';
 }
 
@@ -18,8 +18,8 @@ ob_start();
 <div <?php echo $wrapper; // phpcs:ignore WordPress.Security.EscapeOutput ?>>
 	<span class="starter-step__num" aria-hidden="true"></span>
 	<div class="starter-step__body">
-		<?php if ( '' !== $title ) : ?>
-			<h3 class="starter-step__title"><?php echo wp_kses_post( $title ); ?></h3>
+		<?php if ( '' !== $step_title ) : ?>
+			<h3 class="starter-step__title"><?php echo wp_kses_post( $step_title ); ?></h3>
 		<?php endif; ?>
 		<?php if ( '' !== $text ) : ?>
 			<p class="starter-step__text"><?php echo wp_kses_post( $text ); ?></p>

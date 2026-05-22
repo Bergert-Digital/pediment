@@ -5,13 +5,13 @@
  * @var array $attributes
  */
 
-$icon      = isset( $attributes['icon'] ) ? (string) $attributes['icon'] : '';
-$title     = isset( $attributes['title'] ) ? (string) $attributes['title'] : '';
-$text      = isset( $attributes['text'] ) ? (string) $attributes['text'] : '';
-$link_text = isset( $attributes['linkText'] ) ? (string) $attributes['linkText'] : '';
-$link_url  = isset( $attributes['linkUrl'] ) ? (string) $attributes['linkUrl'] : '';
+$icon          = isset( $attributes['icon'] ) ? (string) $attributes['icon'] : '';
+$feature_title = isset( $attributes['title'] ) ? (string) $attributes['title'] : '';
+$text          = isset( $attributes['text'] ) ? (string) $attributes['text'] : '';
+$link_text     = isset( $attributes['linkText'] ) ? (string) $attributes['linkText'] : '';
+$link_url      = isset( $attributes['linkUrl'] ) ? (string) $attributes['linkUrl'] : '';
 
-if ( '' === $title && '' === $text ) {
+if ( '' === $feature_title && '' === $text ) {
 	return '';
 }
 
@@ -22,8 +22,8 @@ ob_start();
 	<?php if ( '' !== $icon && function_exists( 'starter_icon' ) ) : ?>
 		<span class="starter-feature__ic"><?php echo starter_icon( $icon ); // phpcs:ignore WordPress.Security.EscapeOutput -- theme-controlled sprite ?></span>
 	<?php endif; ?>
-	<?php if ( '' !== $title ) : ?>
-		<h3 class="starter-feature__title"><?php echo wp_kses_post( $title ); ?></h3>
+	<?php if ( '' !== $feature_title ) : ?>
+		<h3 class="starter-feature__title"><?php echo wp_kses_post( $feature_title ); ?></h3>
 	<?php endif; ?>
 	<?php if ( '' !== $text ) : ?>
 		<p class="starter-feature__text"><?php echo wp_kses_post( $text ); ?></p>

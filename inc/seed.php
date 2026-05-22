@@ -256,6 +256,9 @@ function starter_seed_demo_logo(): int {
 /**
  * Bake the seeded demo attachment into the pediment-landing pattern content:
  * adds `mediaId` to the stat-card hero and fills the empty approach-band image.
+ *
+ * @param string $content Raw pattern markup.
+ * @return string Pattern markup with the demo image baked in.
  */
 function starter_seed_apply_demo_image( string $content ): string {
 	$id = starter_seed_demo_image();

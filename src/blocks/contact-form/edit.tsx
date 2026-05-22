@@ -14,13 +14,17 @@ type Attrs = {
 };
 
 export default function Edit( {
+	clientId,
 	attributes,
 	setAttributes,
 }: {
+	clientId: string;
 	attributes: Attrs;
 	setAttributes: ( a: Partial< Attrs > ) => void;
 } ) {
 	const blockProps = useBlockProps( { className: 'starter-contact-form' } );
+	const fieldId = ( name: string ) =>
+		`starter-contact-${ clientId }-${ name }`;
 	return (
 		<>
 			<InspectorControls>
@@ -56,23 +60,55 @@ export default function Edit( {
 				</PanelBody>
 			</InspectorControls>
 			<form { ...blockProps } onSubmit={ ( e ) => e.preventDefault() }>
-				<label className="starter-contact-form__field">
+				<label
+					className="starter-contact-form__field"
+					htmlFor={ fieldId( 'name' ) }
+				>
 					<span>{ __( 'Name', 'starter' ) }</span>
-					<input type="text" name="name" readOnly />
+					<input
+						id={ fieldId( 'name' ) }
+						type="text"
+						name="name"
+						readOnly
+					/>
 				</label>
-				<label className="starter-contact-form__field">
+				<label
+					className="starter-contact-form__field"
+					htmlFor={ fieldId( 'email' ) }
+				>
 					<span>{ __( 'Email', 'starter' ) }</span>
-					<input type="email" name="email" readOnly />
+					<input
+						id={ fieldId( 'email' ) }
+						type="email"
+						name="email"
+						readOnly
+					/>
 				</label>
 				{ attributes.includePhone && (
-					<label className="starter-contact-form__field">
+					<label
+						className="starter-contact-form__field"
+						htmlFor={ fieldId( 'phone' ) }
+					>
 						<span>{ __( 'Phone', 'starter' ) }</span>
-						<input type="tel" name="phone" readOnly />
+						<input
+							id={ fieldId( 'phone' ) }
+							type="tel"
+							name="phone"
+							readOnly
+						/>
 					</label>
 				) }
-				<label className="starter-contact-form__field">
+				<label
+					className="starter-contact-form__field"
+					htmlFor={ fieldId( 'message' ) }
+				>
 					<span>{ __( 'Message', 'starter' ) }</span>
-					<textarea name="message" rows={ 5 } readOnly />
+					<textarea
+						id={ fieldId( 'message' ) }
+						name="message"
+						rows={ 5 }
+						readOnly
+					/>
 				</label>
 
 				<button type="button" className="starter-contact-form__submit">
