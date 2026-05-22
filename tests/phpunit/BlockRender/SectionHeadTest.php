@@ -2,13 +2,13 @@
 
 class SectionHeadTest extends WP_UnitTestCase {
 	private function render( array $attrs ): string {
-		return do_blocks( '<!-- wp:starter/section-head ' . wp_json_encode( $attrs ) . ' /-->' );
+		return do_blocks( '<!-- wp:pediment/section-head ' . wp_json_encode( $attrs ) . ' /-->' );
 	}
 
 	public function test_block_is_registered() {
 		do_action( 'init' );
 		$this->assertTrue(
-			WP_Block_Type_Registry::get_instance()->is_registered( 'starter/section-head' )
+			WP_Block_Type_Registry::get_instance()->is_registered( 'pediment/section-head' )
 		);
 	}
 

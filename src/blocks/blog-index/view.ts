@@ -1,5 +1,5 @@
 /**
- * Presentational category filter for starter/blog-index.
+ * Presentational category filter for pediment/blog-index.
  *
  * Pure client-side: toggles the `hidden` attribute on cards. No server
  * round-trip — matches the locked design ("filter is presentational").

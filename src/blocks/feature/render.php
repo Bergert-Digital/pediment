@@ -1,6 +1,6 @@
 <?php
 /**
- * Server-side render for starter/feature.
+ * Server-side render for pediment/feature.
  *
  * @var array $attributes
  */
@@ -19,8 +19,8 @@ $wrapper = get_block_wrapper_attributes( array( 'class' => 'starter-feature' ) )
 ob_start();
 ?>
 <div <?php echo $wrapper; // phpcs:ignore WordPress.Security.EscapeOutput ?>>
-	<?php if ( '' !== $icon && function_exists( 'starter_icon' ) ) : ?>
-		<span class="starter-feature__ic"><?php echo starter_icon( $icon ); // phpcs:ignore WordPress.Security.EscapeOutput -- theme-controlled sprite ?></span>
+	<?php if ( '' !== $icon && function_exists( 'pediment_icon' ) ) : ?>
+		<span class="starter-feature__ic"><?php echo pediment_icon( $icon ); // phpcs:ignore WordPress.Security.EscapeOutput -- theme-controlled sprite ?></span>
 	<?php endif; ?>
 	<?php if ( '' !== $feature_title ) : ?>
 		<h3 class="starter-feature__title"><?php echo wp_kses_post( $feature_title ); ?></h3>

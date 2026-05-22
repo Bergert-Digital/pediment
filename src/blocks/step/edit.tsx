@@ -20,14 +20,14 @@ export default function Edit( {
 					className="starter-step__title"
 					value={ attributes.title }
 					onChange={ ( v ) => setAttributes( { title: v } ) }
-					placeholder={ __( 'Step title…', 'starter' ) }
+					placeholder={ __( 'Step title…', 'pediment' ) }
 				/>
 				<RichText
 					tagName="p"
 					className="starter-step__text"
 					value={ attributes.text }
 					onChange={ ( v ) => setAttributes( { text: v } ) }
-					placeholder={ __( 'Step description…', 'starter' ) }
+					placeholder={ __( 'Step description…', 'pediment' ) }
 				/>
 			</div>
 		</div>

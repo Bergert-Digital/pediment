@@ -1,8 +1,8 @@
 <?php
 /**
- * WP-CLI: `wp starter-theme seed` — populate Brand defaults + sample pages.
+ * WP-CLI: `wp pediment seed` — populate Brand defaults + sample pages.
  *
- * @package Starter
+ * @package Pediment
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -10,17 +10,17 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 if ( defined( 'WP_CLI' ) && WP_CLI ) {
-	\WP_CLI::add_command( 'starter-theme seed', 'starter_seed_cli' );
+	\WP_CLI::add_command( 'pediment seed', 'pediment_seed_cli' );
 }
 
-function starter_seed_cli(): void {
-	starter_seed_run();
+function pediment_seed_cli(): void {
+	pediment_seed_run();
 	if ( class_exists( '\\WP_CLI' ) ) {
-		\WP_CLI::success( 'Starter theme seeded.' );
+		\WP_CLI::success( 'Pediment seeded.' );
 	}
 }
 
-function starter_seed_run(): void {
+function pediment_seed_run(): void {
 	$brand_defaults = array(
 		'brand_name'    => get_bloginfo( 'name' ) ?: 'Acme',
 		'brand_tagline' => 'Short benefit-led promise.',
@@ -28,32 +28,32 @@ function starter_seed_run(): void {
 		'contact_email' => get_option( 'admin_email' ),
 	);
 	foreach ( $brand_defaults as $k => $v ) {
-		if ( '' === (string) \Starter\Brand::get( $k, '' ) ) {
-			\Starter\Brand::set( $k, $v );
+		if ( '' === (string) \Pediment\Brand::get( $k, '' ) ) {
+			\Pediment\Brand::set( $k, $v );
 		}
 	}
 
-	starter_seed_demo_image();
-	starter_seed_demo_logo();
+	pediment_seed_demo_image();
+	pediment_seed_demo_logo();
 
 	$pages = array(
 		'home'    => array(
 			'title'   => 'Home',
-			'content' => starter_pediment_landing_content(),
+			'content' => pediment_pediment_landing_content(),
 		),
 		'about'   => array(
 			'title'   => 'About',
 			'content' =>
-				'<!-- wp:starter/hero {"variant":"default","headline":"About us","subheadline":"Who we are and what we do.","align":"wide"} /-->' .
-				'<!-- wp:starter/prose -->' .
+				'<!-- wp:pediment/hero {"variant":"default","headline":"About us","subheadline":"Who we are and what we do.","align":"wide"} /-->' .
+				'<!-- wp:pediment/prose -->' .
 					'<!-- wp:paragraph --><p>Tell your story here. Keep it human and specific.</p><!-- /wp:paragraph -->' .
-				'<!-- /wp:starter/prose -->',
+				'<!-- /wp:pediment/prose -->',
 		),
 		'contact' => array(
 			'title'   => 'Contact',
 			'content' =>
-				'<!-- wp:starter/hero {"variant":"centered","headline":"Contact","subheadline":"Tell us about your project.","align":"wide"} /-->' .
-				'<!-- wp:starter/contact-form {"includePhone":true} /-->',
+				'<!-- wp:pediment/hero {"variant":"centered","headline":"Contact","subheadline":"Tell us about your project.","align":"wide"} /-->' .
+				'<!-- wp:pediment/contact-form {"includePhone":true} /-->',
 		),
 		'blog'    => array(
 			'title'   => 'Blog',
@@ -92,48 +92,48 @@ function starter_seed_run(): void {
 		update_option( 'page_for_posts', $page_ids['blog'] );
 	}
 
-	starter_seed_sample_posts();
+	pediment_seed_sample_posts();
 
-	if ( function_exists( 'starter_nav_seed_entity' ) ) {
-		starter_nav_seed_entity();
+	if ( function_exists( 'pediment_nav_seed_entity' ) ) {
+		pediment_nav_seed_entity();
 	}
 }
 
 /**
  * The Pediment landing pattern content for the Home page.
  *
- * Reads the registered `starter/pediment-landing` pattern. Falls back to a
+ * Reads the registered `pediment/pediment-landing` pattern. Falls back to a
  * minimal valid block composition so seeding never writes an empty Home even
  * if patterns are unavailable.
  *
  * @return string Block markup.
  */
-function starter_pediment_landing_content(): string {
+function pediment_pediment_landing_content(): string {
 	$content = '';
 	if ( class_exists( 'WP_Block_Patterns_Registry' ) ) {
-		$pattern = WP_Block_Patterns_Registry::get_instance()->get_registered( 'starter/pediment-landing' );
+		$pattern = WP_Block_Patterns_Registry::get_instance()->get_registered( 'pediment/pediment-landing' );
 		if ( is_array( $pattern ) && ! empty( $pattern['content'] ) ) {
 			$content = (string) $pattern['content'];
 		}
 	}
 	if ( '' === $content ) {
-		$content = '<!-- wp:starter/hero {"variant":"centered","headline":"Welcome","subheadline":"A short benefit-led promise.","ctaText":"Get started","ctaUrl":"/contact","align":"wide"} /-->' .
-			'<!-- wp:starter/cta {"title":"Ready to start?","body":"Tell us about your project.","primaryText":"Contact us","primaryUrl":"/contact","align":"wide"} /-->' .
-			'<!-- wp:starter/blog-index {"count":3,"align":"wide"} /-->';
+		$content = '<!-- wp:pediment/hero {"variant":"centered","headline":"Welcome","subheadline":"A short benefit-led promise.","ctaText":"Get started","ctaUrl":"/contact","align":"wide"} /-->' .
+			'<!-- wp:pediment/cta {"title":"Ready to start?","body":"Tell us about your project.","primaryText":"Contact us","primaryUrl":"/contact","align":"wide"} /-->' .
+			'<!-- wp:pediment/blog-index {"count":3,"align":"wide"} /-->';
 	}
-	return starter_seed_apply_demo_image( $content );
+	return pediment_seed_apply_demo_image( $content );
 }
 
 /**
  * Idempotently sideload the demo image and tag it for easy cleanup.
  *
- * The marker meta `_starter_seed_demo` makes removal trivial:
- *   wp post list --post_type=attachment --meta_key=_starter_seed_demo --field=ID
+ * The marker meta `_pediment_seed_demo` makes removal trivial:
+ *   wp post list --post_type=attachment --meta_key=_pediment_seed_demo --field=ID
  *   | xargs -I{} wp post delete {} --force
  *
  * @return int Attachment ID, or 0 on failure.
  */
-function starter_seed_demo_image(): int {
+function pediment_seed_demo_image(): int {
 	// phpcs:disable WordPress.DB.SlowDBQuery -- seed lookup runs once per activation; meta lookup acceptable here.
 	$existing = get_posts(
 		array(
@@ -141,7 +141,7 @@ function starter_seed_demo_image(): int {
 			'post_status' => 'inherit',
 			'numberposts' => 1,
 			'fields'      => 'ids',
-			'meta_key'    => '_starter_seed_demo',
+			'meta_key'    => '_pediment_seed_demo',
 			'meta_value'  => '1',
 		)
 	);
@@ -185,22 +185,22 @@ function starter_seed_demo_image(): int {
 	}
 
 	wp_update_attachment_metadata( (int) $attach_id, wp_generate_attachment_metadata( (int) $attach_id, $dest ) );
-	update_post_meta( (int) $attach_id, '_starter_seed_demo', '1' );
+	update_post_meta( (int) $attach_id, '_pediment_seed_demo', '1' );
 
 	return (int) $attach_id;
 }
 
 /**
  * Idempotently sideload the wide demo logo and set it as the site's
- * Custom Logo. Mirrors starter_seed_demo_image().
+ * Custom Logo. Mirrors pediment_seed_demo_image().
  *
- * The marker meta `_starter_seed_demo_logo` makes removal trivial:
- *   wp post list --post_type=attachment --meta_key=_starter_seed_demo_logo --field=ID
+ * The marker meta `_pediment_seed_demo_logo` makes removal trivial:
+ *   wp post list --post_type=attachment --meta_key=_pediment_seed_demo_logo --field=ID
  *   | xargs -I{} wp post delete {} --force
  *
  * @return int Attachment ID, or 0 on failure.
  */
-function starter_seed_demo_logo(): int {
+function pediment_seed_demo_logo(): int {
 	// phpcs:disable WordPress.DB.SlowDBQuery -- seed lookup runs once per activation; meta lookup acceptable here.
 	$existing = get_posts(
 		array(
@@ -208,7 +208,7 @@ function starter_seed_demo_logo(): int {
 			'post_status' => 'inherit',
 			'numberposts' => 1,
 			'fields'      => 'ids',
-			'meta_key'    => '_starter_seed_demo_logo',
+			'meta_key'    => '_pediment_seed_demo_logo',
 			'meta_value'  => '1',
 		)
 	);
@@ -253,7 +253,7 @@ function starter_seed_demo_logo(): int {
 		return 0;
 	}
 
-	update_post_meta( (int) $attach_id, '_starter_seed_demo_logo', '1' );
+	update_post_meta( (int) $attach_id, '_pediment_seed_demo_logo', '1' );
 	set_theme_mod( 'custom_logo', (int) $attach_id );
 
 	return (int) $attach_id;
@@ -266,14 +266,14 @@ function starter_seed_demo_logo(): int {
  * @param string $content Raw pattern markup.
  * @return string Pattern markup with the demo image baked in.
  */
-function starter_seed_apply_demo_image( string $content ): string {
-	$id = starter_seed_demo_image();
+function pediment_seed_apply_demo_image( string $content ): string {
+	$id = pediment_seed_demo_image();
 	if ( ! $id ) {
 		return $content;
 	}
 
 	$content = preg_replace_callback(
-		'/<!-- wp:starter\/hero (\{[^}]*"variant":"stat-card"[^}]*\}) \/-->/',
+		'/<!-- wp:pediment\/hero (\{[^}]*"variant":"stat-card"[^}]*\}) \/-->/',
 		function ( $m ) use ( $id ) {
 			$attrs = json_decode( $m[1], true );
 			if ( ! is_array( $attrs ) ) {
@@ -282,7 +282,7 @@ function starter_seed_apply_demo_image( string $content ): string {
 			if ( empty( $attrs['mediaId'] ) ) {
 				$attrs['mediaId'] = $id;
 			}
-			return '<!-- wp:starter/hero ' . wp_json_encode( $attrs ) . ' /-->';
+			return '<!-- wp:pediment/hero ' . wp_json_encode( $attrs ) . ' /-->';
 		},
 		$content
 	);
@@ -306,11 +306,11 @@ function starter_seed_apply_demo_image( string $content ): string {
 
 /**
  * Idempotently create sample categories + posts so the Insights band
- * (starter/blog-index) renders fully. Skips anything that already exists.
+ * (pediment/blog-index) renders fully. Skips anything that already exists.
  *
  * @return void
  */
-function starter_seed_sample_posts(): void {
+function pediment_seed_sample_posts(): void {
 	$categories = array(
 		'insights'  => 'Insights',
 		'briefings' => 'Briefings',
@@ -361,7 +361,7 @@ function starter_seed_sample_posts(): void {
 			'cat'   => 'notes',
 		),
 	);
-	$demo_image_id = starter_seed_demo_image();
+	$demo_image_id = pediment_seed_demo_image();
 
 	foreach ( $posts as $p ) {
 		$existing = get_page_by_path( $p['slug'], OBJECT, 'post' );

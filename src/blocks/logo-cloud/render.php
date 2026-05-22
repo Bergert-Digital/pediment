@@ -1,6 +1,6 @@
 <?php
 /**
- * Server-side render for starter/logo-cloud.
+ * Server-side render for pediment/logo-cloud.
  *
  * @var array  $attributes
  * @var string $content

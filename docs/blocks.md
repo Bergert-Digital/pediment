@@ -19,15 +19,15 @@ For the AI plugin (Plan B) to compose with a block, `block.json` must include:
 
 - **`description`** — a one-sentence description of what the block does and when to use it. Goes directly into the AI tool schema.
 - **Explicit `attributes`** — every attribute must be declared with a `type` and ideally a `default`. Don't rely on `supports` to declare implicit attributes.
-- **`name` namespaced under `starter/`** — for starter blocks. Client themes use `client/`.
+- **`name` namespaced under `pediment/`** — for starter blocks. Client themes use `client/`.
 
 Example:
 
 ```json
 {
-  "name": "starter/my-block",
+  "name": "pediment/my-block",
   "title": "My Block",
-  "category": "starter",
+  "category": "pediment",
   "description": "Short, action-oriented description used by the AI composer.",
   "attributes": {
     "title": { "type": "string", "default": "" },

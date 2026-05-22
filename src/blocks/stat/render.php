@@ -1,6 +1,6 @@
 <?php
 /**
- * Server-side render for starter/stat.
+ * Server-side render for pediment/stat.
  *
  * @var array $attributes
  */

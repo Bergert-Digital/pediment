@@ -17,7 +17,7 @@ const closeAllExcept = ( keep: Element | null ) => {
 		} );
 };
 
-const { actions } = store( 'starter/mega-menu', {
+const { actions } = store( 'pediment/mega-menu', {
 	actions: {
 		open() {
 			const ctx = getContext< Ctx >();

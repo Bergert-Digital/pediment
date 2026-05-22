@@ -8,7 +8,7 @@ Every block in `src/blocks/<name>/` has exactly: `block.json`, `index.tsx`, `edi
 `render.php`, `style.scss`. Enforced by `npm run lint:blocks`.
 
 - `block.json` has an explicit one-sentence `description` and fully-typed `attributes` with
-  defaults. Namespace `starter/` (parent) or `client/` (child). API version 3.
+  defaults. Namespace `pediment/` (parent) or `client/` (child). API version 3.
 - Rendered server-side via `render.php`. No `save()` markup for atomic blocks;
   `<InnerBlocks.Content />` for containers.
 - Output is sanitized: `wp_kses_post()` for rich text, `esc_html()` for strings, `esc_url()`
@@ -30,7 +30,7 @@ on every block change, not just new blocks.
 
 - **PHPUnit:** every block has `tests/phpunit/BlockRender/<Name>Test.php` covering valid +
   edge-case (empty) attributes. Contact form, patterns, seed, and brand registry have suites.
-  Run: `npx wp-env run tests-wordpress --env-cwd=wp-content/themes/wp-starter-theme vendor/bin/phpunit`
+  Run: `npx wp-env run tests-wordpress --env-cwd=wp-content/themes/pediment vendor/bin/phpunit`
 - **Playwright:** editor block insertion, front-page render, brand settings, contact form.
   Run: `npm run e2e` (requires `npm run env:start`).
 - A feature or fix is not done until its test passes and the relevant screenshot looks right.
@@ -44,7 +44,7 @@ lint-blocks, phpunit, and e2e on every PR and push to main. Red CI never merges.
 ## Extensibility discipline
 
 Parent files are read-only from a child theme's perspective. Brand Settings extends only via
-`starter_brand_fields` / `starter_brand_sections`. A change that forces a child to edit a
+`pediment_brand_fields` / `pediment_brand_sections`. A change that forces a child to edit a
 parent file is a parent-API gap to fix upstream, not a child workaround.
 
 ## Distribution

@@ -15,7 +15,7 @@ Walk this mentally before shipping anything that touches the fork/extension surf
    parent without `!important` hacks? Is the token name discoverable?
 4. Add a `client/promo-banner`-style block. **Friction check:** does the block contract in
    `docs/client-blocks.md` still match reality? Does the AI plugin pick it up with no extra work?
-5. Add a brand field via `starter_brand_fields`. **Friction check:** does it appear in the admin
+5. Add a brand field via `pediment_brand_fields`. **Friction check:** does it appear in the admin
    UI, participate in `Brand::all()`, and round-trip through its sanitizer?
 
 If any step needs a workaround, that's the bug — not the symptom you noticed downstream.

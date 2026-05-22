@@ -1,11 +1,11 @@
 {
 	"$schema": "https://schemas.wp.org/trunk/block.json",
 	"apiVersion": 3,
-	"name": "starter/pull-quote",
+	"name": "pediment/pull-quote",
 	"title": "Pull Quote",
-	"category": "starter",
+	"category": "pediment",
 	"description": "An emphasized quotation, optionally rendered as a testimonial with avatar, author name, and role.",
-	"textdomain": "starter",
+	"textdomain": "pediment",
 	"supports": { "html": false, "align": [ "wide" ] },
 	"attributes": {
 		"variant": { "type": "string", "enum": [ "default", "testimonial" ], "default": "default" },

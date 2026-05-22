@@ -1,6 +1,6 @@
 <?php
 /**
- * Server-side render for starter/blog-index (Insights cards).
+ * Server-side render for pediment/blog-index (Insights cards).
  *
  * The post query is unchanged (count + optional categorySlug). The filter
  * bar is purely presentational — view.js toggles card visibility client-side.
@@ -29,7 +29,7 @@ ob_start();
 ?>
 <section <?php echo $wrapper; // phpcs:ignore WordPress.Security.EscapeOutput ?>>
 	<?php if ( ! $query->have_posts() ) : ?>
-		<p class="starter-blog-index__empty"><?php esc_html_e( 'No posts yet.', 'starter' ); ?></p>
+		<p class="starter-blog-index__empty"><?php esc_html_e( 'No posts yet.', 'pediment' ); ?></p>
 		<?php
 	else :
 		$cards   = array();
@@ -73,7 +73,7 @@ ob_start();
 		?>
 		<?php if ( $render_filter ) : ?>
 			<div class="starter-blog-index__filter">
-				<button type="button" class="is-active" data-filter="all"><?php esc_html_e( 'All', 'starter' ); ?></button>
+				<button type="button" class="is-active" data-filter="all"><?php esc_html_e( 'All', 'pediment' ); ?></button>
 				<?php foreach ( $filters as $f_slug => $f_name ) : ?>
 					<button type="button" data-filter="<?php echo esc_attr( $f_slug ); ?>"><?php echo esc_html( $f_name ); ?></button>
 				<?php endforeach; ?>
@@ -96,8 +96,8 @@ ob_start();
 							<h3 class="starter-blog-index__title"><?php echo esc_html( $card['title'] ); ?></h3>
 						</a>
 						<p class="starter-blog-index__excerpt"><?php echo esc_html( $card['excerpt'] ); ?></p>
-						<a class="starter-blog-index__readmore" href="<?php echo esc_url( $card['permalink'] ); ?>" aria-label="<?php echo esc_attr( sprintf( /* translators: %s: post title */ __( 'Read more: %s', 'starter' ), $card['title'] ) ); ?>">
-							<?php esc_html_e( 'Read more', 'starter' ); ?>
+						<a class="starter-blog-index__readmore" href="<?php echo esc_url( $card['permalink'] ); ?>" aria-label="<?php echo esc_attr( sprintf( /* translators: %s: post title */ __( 'Read more: %s', 'pediment' ), $card['title'] ) ); ?>">
+							<?php esc_html_e( 'Read more', 'pediment' ); ?>
 							<svg class="i" aria-hidden="true" focusable="false"><use href="#ph-arrow-right"></use></svg>
 						</a>
 					</div>

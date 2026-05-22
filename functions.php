@@ -1,19 +1,19 @@
 <?php
 /**
- * Starter Theme bootstrap.
+ * Pediment bootstrap.
  *
- * @package Starter
+ * @package Pediment
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-if ( ! defined( 'STARTER_THEME_DIR' ) ) {
-	define( 'STARTER_THEME_DIR', __DIR__ );
+if ( ! defined( 'PEDIMENT_THEME_DIR' ) ) {
+	define( 'PEDIMENT_THEME_DIR', __DIR__ );
 }
-if ( ! defined( 'STARTER_THEME_VERSION' ) ) {
-	define( 'STARTER_THEME_VERSION', '0.1.0' );
+if ( ! defined( 'PEDIMENT_THEME_VERSION' ) ) {
+	define( 'PEDIMENT_THEME_VERSION', '0.1.0' );
 }
 
 require_once __DIR__ . '/inc/BrandRegistry.php';
@@ -35,12 +35,12 @@ require_once __DIR__ . '/inc/mega-menu.php';
 add_action(
 	'wp_enqueue_scripts',
 	function () {
-		if ( ! has_block( 'starter/contact-form' ) ) {
+		if ( ! has_block( 'pediment/contact-form' ) ) {
 			return;
 		}
 		$rel = 'assets/js/frontend-contact-form.js';
 		wp_enqueue_script(
-			'starter-frontend-contact-form',
+			'pediment-frontend-contact-form',
 			get_theme_file_uri( $rel ),
 			array(),
 			(string) filemtime( get_theme_file_path( $rel ) ),
@@ -54,14 +54,14 @@ add_action(
 	function () {
 		$css = 'assets/css/theme.css';
 		wp_enqueue_style(
-			'starter-theme',
+			'pediment-theme',
 			get_theme_file_uri( $css ),
 			array(),
 			(string) filemtime( get_theme_file_path( $css ) )
 		);
 		$js = 'assets/js/reveal.js';
 		wp_enqueue_script(
-			'starter-reveal',
+			'pediment-reveal',
 			get_theme_file_uri( $js ),
 			array(),
 			(string) filemtime( get_theme_file_path( $js ) ),
@@ -94,5 +94,5 @@ add_action(
 	}
 );
 
-add_action( 'after_switch_theme', 'starter_contact_schedule_cleanup' );
-add_action( 'switch_theme', 'starter_contact_unschedule_cleanup' );
+add_action( 'after_switch_theme', 'pediment_contact_schedule_cleanup' );
+add_action( 'switch_theme', 'pediment_contact_unschedule_cleanup' );

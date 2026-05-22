@@ -34,9 +34,9 @@ export default function Edit( {
 	return (
 		<>
 			<InspectorControls>
-				<PanelBody title={ __( 'Section head', 'starter' ) }>
+				<PanelBody title={ __( 'Section head', 'pediment' ) }>
 					<ToggleGroupControl
-						label={ __( 'Alignment', 'starter' ) }
+						label={ __( 'Alignment', 'pediment' ) }
 						value={ attributes.alignment }
 						onChange={ ( v ) =>
 							setAttributes( {
@@ -48,15 +48,15 @@ export default function Edit( {
 					>
 						<ToggleGroupControlOption
 							value="start"
-							label={ __( 'Start', 'starter' ) }
+							label={ __( 'Start', 'pediment' ) }
 						/>
 						<ToggleGroupControlOption
 							value="center"
-							label={ __( 'Center', 'starter' ) }
+							label={ __( 'Center', 'pediment' ) }
 						/>
 					</ToggleGroupControl>
 					<ToggleGroupControl
-						label={ __( 'Heading level', 'starter' ) }
+						label={ __( 'Heading level', 'pediment' ) }
 						value={ String( attributes.level ) }
 						onChange={ ( v ) =>
 							setAttributes( { level: v === '3' ? 3 : 2 } )
@@ -75,7 +75,7 @@ export default function Edit( {
 						className="starter-section-head__eyebrow"
 						value={ attributes.eyebrow }
 						onChange={ ( v ) => setAttributes( { eyebrow: v } ) }
-						placeholder={ __( 'Eyebrow…', 'starter' ) }
+						placeholder={ __( 'Eyebrow…', 'pediment' ) }
 						allowedFormats={ [] }
 					/>
 					<RichText
@@ -83,7 +83,7 @@ export default function Edit( {
 						className="starter-section-head__headline"
 						value={ attributes.headline }
 						onChange={ ( v ) => setAttributes( { headline: v } ) }
-						placeholder={ __( 'Headline…', 'starter' ) }
+						placeholder={ __( 'Headline…', 'pediment' ) }
 						allowedFormats={ [] }
 					/>
 					<RichText
@@ -91,7 +91,7 @@ export default function Edit( {
 						className="starter-section-head__lead"
 						value={ attributes.lead }
 						onChange={ ( v ) => setAttributes( { lead: v } ) }
-						placeholder={ __( 'Lead…', 'starter' ) }
+						placeholder={ __( 'Lead…', 'pediment' ) }
 						allowedFormats={ [] }
 					/>
 				</div>

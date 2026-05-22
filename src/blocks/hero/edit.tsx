@@ -45,8 +45,8 @@ const LABELS: Record< string, string > = {
 };
 
 function allowedVariants(): string[] {
-	const w = ( window as unknown as { starterHeroVariants?: unknown } )
-		.starterHeroVariants;
+	const w = ( window as unknown as { pedimentHeroVariants?: unknown } )
+		.pedimentHeroVariants;
 	if ( Array.isArray( w ) && w.length ) {
 		return w.map( String );
 	}
@@ -96,9 +96,9 @@ export default function Edit( {
 	return (
 		<>
 			<InspectorControls>
-				<PanelBody title={ __( 'Hero settings', 'starter' ) }>
+				<PanelBody title={ __( 'Hero settings', 'pediment' ) }>
 					<SelectControl
-						label={ __( 'Variant', 'starter' ) }
+						label={ __( 'Variant', 'pediment' ) }
 						value={ attributes.variant }
 						options={ options }
 						onChange={ ( v ) =>
@@ -108,28 +108,28 @@ export default function Edit( {
 						}
 					/>
 					<TextControl
-						label={ __( 'CTA URL', 'starter' ) }
+						label={ __( 'CTA URL', 'pediment' ) }
 						value={ attributes.ctaUrl }
 						onChange={ ( v ) => setAttributes( { ctaUrl: v } ) }
 					/>
 					{ isStatCard && (
 						<>
 							<TextControl
-								label={ __( 'Eyebrow', 'starter' ) }
+								label={ __( 'Eyebrow', 'pediment' ) }
 								value={ attributes.eyebrow }
 								onChange={ ( v ) =>
 									setAttributes( { eyebrow: v } )
 								}
 							/>
 							<TextControl
-								label={ __( 'Secondary CTA text', 'starter' ) }
+								label={ __( 'Secondary CTA text', 'pediment' ) }
 								value={ attributes.secondaryText }
 								onChange={ ( v ) =>
 									setAttributes( { secondaryText: v } )
 								}
 							/>
 							<TextControl
-								label={ __( 'Secondary CTA URL', 'starter' ) }
+								label={ __( 'Secondary CTA URL', 'pediment' ) }
 								value={ attributes.secondaryUrl }
 								onChange={ ( v ) =>
 									setAttributes( { secondaryUrl: v } )
@@ -138,7 +138,7 @@ export default function Edit( {
 							<TextareaControl
 								label={ __(
 									'Trust ticks (one per line)',
-									'starter'
+									'pediment'
 								) }
 								value={ ( attributes.ticks || [] ).join(
 									'\n'
@@ -153,14 +153,14 @@ export default function Edit( {
 								}
 							/>
 							<TextControl
-								label={ __( 'Stat value', 'starter' ) }
+								label={ __( 'Stat value', 'pediment' ) }
 								value={ attributes.statValue }
 								onChange={ ( v ) =>
 									setAttributes( { statValue: v } )
 								}
 							/>
 							<TextControl
-								label={ __( 'Stat text', 'starter' ) }
+								label={ __( 'Stat text', 'pediment' ) }
 								value={ attributes.statText }
 								onChange={ ( v ) =>
 									setAttributes( { statText: v } )
@@ -169,7 +169,7 @@ export default function Edit( {
 							<TextareaControl
 								label={ __(
 									'Metrics — “value | label” per line',
-									'starter'
+									'pediment'
 								) }
 								value={ ( attributes.metrics || [] )
 									.map(
@@ -211,8 +211,8 @@ export default function Edit( {
 							render={ ( { open }: { open: () => void } ) => (
 								<Button variant="secondary" onClick={ open }>
 									{ attributes.mediaId
-										? __( 'Replace image', 'starter' )
-										: __( 'Pick image', 'starter' ) }
+										? __( 'Replace image', 'pediment' )
+										: __( 'Pick image', 'pediment' ) }
 								</Button>
 							) }
 						/>
@@ -230,7 +230,7 @@ export default function Edit( {
 							onChange={ ( v ) =>
 								setAttributes( { eyebrow: v } )
 							}
-							placeholder={ __( 'Eyebrow…', 'starter' ) }
+							placeholder={ __( 'Eyebrow…', 'pediment' ) }
 						/>
 					) }
 					<RichText
@@ -238,7 +238,7 @@ export default function Edit( {
 						className="starter-hero__headline"
 						value={ attributes.headline }
 						onChange={ ( v ) => setAttributes( { headline: v } ) }
-						placeholder={ __( 'Headline…', 'starter' ) }
+						placeholder={ __( 'Headline…', 'pediment' ) }
 					/>
 					<RichText
 						tagName="p"
@@ -247,14 +247,14 @@ export default function Edit( {
 						onChange={ ( v ) =>
 							setAttributes( { subheadline: v } )
 						}
-						placeholder={ __( 'Subheadline…', 'starter' ) }
+						placeholder={ __( 'Subheadline…', 'pediment' ) }
 					/>
 					<RichText
 						tagName="span"
 						className="starter-hero__cta"
 						value={ attributes.ctaText }
 						onChange={ ( v ) => setAttributes( { ctaText: v } ) }
-						placeholder={ __( 'CTA text…', 'starter' ) }
+						placeholder={ __( 'CTA text…', 'pediment' ) }
 					/>
 				</div>
 				{ isStatCard && (

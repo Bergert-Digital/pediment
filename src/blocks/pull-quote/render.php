@@ -1,6 +1,6 @@
 <?php
 /**
- * Server-side render for starter/pull-quote.
+ * Server-side render for pediment/pull-quote.
  *
  * @var array $attributes
  */
@@ -9,8 +9,8 @@ $variant  = isset( $attributes['variant'] ) ? (string) $attributes['variant'] : 
 $quote    = isset( $attributes['quote'] ) ? (string) $attributes['quote'] : '';
 $citation = isset( $attributes['citation'] ) ? (string) $attributes['citation'] : '';
 
-$allowed = function_exists( 'starter_pull_quote_variants' )
-	? starter_pull_quote_variants()
+$allowed = function_exists( 'pediment_pull_quote_variants' )
+	? pediment_pull_quote_variants()
 	: array( 'default', 'testimonial' );
 if ( ! in_array( $variant, $allowed, true ) ) {
 	$variant = 'default';

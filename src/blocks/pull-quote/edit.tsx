@@ -23,8 +23,8 @@ const LABELS: Record< string, string > = {
 };
 
 function allowedVariants(): string[] {
-	const w = ( window as unknown as { starterPullQuoteVariants?: unknown } )
-		.starterPullQuoteVariants;
+	const w = ( window as unknown as { pedimentPullQuoteVariants?: unknown } )
+		.pedimentPullQuoteVariants;
 	if ( Array.isArray( w ) && w.length ) {
 		return w.map( String );
 	}
@@ -50,9 +50,9 @@ export default function Edit( {
 	return (
 		<>
 			<InspectorControls>
-				<PanelBody title={ __( 'Pull quote settings', 'starter' ) }>
+				<PanelBody title={ __( 'Pull quote settings', 'pediment' ) }>
 					<SelectControl
-						label={ __( 'Variant', 'starter' ) }
+						label={ __( 'Variant', 'pediment' ) }
 						value={ attributes.variant }
 						options={ options }
 						onChange={ ( v ) =>
@@ -74,8 +74,8 @@ export default function Edit( {
 										onClick={ open }
 									>
 										{ attributes.avatarId
-											? __( 'Replace avatar', 'starter' )
-											: __( 'Pick avatar', 'starter' ) }
+											? __( 'Replace avatar', 'pediment' )
+											: __( 'Pick avatar', 'pediment' ) }
 									</Button>
 								) }
 							/>
@@ -91,7 +91,7 @@ export default function Edit( {
 						className="starter-pull-quote__quote"
 						value={ attributes.quote }
 						onChange={ ( v ) => setAttributes( { quote: v } ) }
-						placeholder={ __( 'Quote…', 'starter' ) }
+						placeholder={ __( 'Quote…', 'pediment' ) }
 					/>
 					<figcaption className="starter-pull-quote__by">
 						<div className="starter-pull-quote__meta">
@@ -102,7 +102,7 @@ export default function Edit( {
 								onChange={ ( v ) =>
 									setAttributes( { authorName: v } )
 								}
-								placeholder={ __( 'Name…', 'starter' ) }
+								placeholder={ __( 'Name…', 'pediment' ) }
 							/>
 							<RichText
 								tagName="span"
@@ -111,7 +111,7 @@ export default function Edit( {
 								onChange={ ( v ) =>
 									setAttributes( { authorRole: v } )
 								}
-								placeholder={ __( 'Role…', 'starter' ) }
+								placeholder={ __( 'Role…', 'pediment' ) }
 							/>
 						</div>
 					</figcaption>
@@ -123,14 +123,14 @@ export default function Edit( {
 						className="starter-pull-quote__quote"
 						value={ attributes.quote }
 						onChange={ ( v ) => setAttributes( { quote: v } ) }
-						placeholder={ __( 'Quote…', 'starter' ) }
+						placeholder={ __( 'Quote…', 'pediment' ) }
 					/>
 					<RichText
 						tagName="cite"
 						className="starter-pull-quote__citation"
 						value={ attributes.citation }
 						onChange={ ( v ) => setAttributes( { citation: v } ) }
-						placeholder={ __( 'Citation (optional)…', 'starter' ) }
+						placeholder={ __( 'Citation (optional)…', 'pediment' ) }
 					/>
 				</blockquote>
 			) }

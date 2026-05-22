@@ -1,12 +1,12 @@
 {
 	"$schema": "https://schemas.wp.org/trunk/block.json",
 	"apiVersion": 3,
-	"name": "starter/mega-menu",
+	"name": "pediment/mega-menu",
 	"title": "Mega Menu",
-	"category": "starter",
+	"category": "pediment",
 	"description": "A mega-menu dropdown for the navigation: columns of icon links.",
 	"parent": [ "core/navigation" ],
-	"textdomain": "starter",
+	"textdomain": "pediment",
 	"supports": { "html": false, "reusable": false },
 	"attributes": {
 		"label": { "type": "string", "default": "" },

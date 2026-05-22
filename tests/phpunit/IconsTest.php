@@ -3,25 +3,25 @@
 class IconsTest extends WP_UnitTestCase {
 	public function set_up(): void {
 		parent::set_up();
-		remove_action( 'wp_body_open', 'starter_print_icon_sprite', 1 );
-		add_action( 'wp_body_open', 'starter_print_icon_sprite', 1 );
+		remove_action( 'wp_body_open', 'pediment_print_icon_sprite', 1 );
+		add_action( 'wp_body_open', 'pediment_print_icon_sprite', 1 );
 	}
 
-	public function test_starter_icon_returns_use_reference() {
-		$html = starter_icon( 'arrow-right' );
+	public function test_pediment_icon_returns_use_reference() {
+		$html = pediment_icon( 'arrow-right' );
 		$this->assertSame(
 			'<svg class="i" aria-hidden="true" focusable="false"><use href="#ph-arrow-right"></use></svg>',
 			$html
 		);
 	}
 
-	public function test_starter_icon_accepts_extra_class() {
-		$html = starter_icon( 'bank', 'brand-mark' );
+	public function test_pediment_icon_accepts_extra_class() {
+		$html = pediment_icon( 'bank', 'brand-mark' );
 		$this->assertStringContainsString( 'class="i brand-mark"', $html );
 	}
 
-	public function test_starter_icon_sanitizes_name() {
-		$html = starter_icon( 'arrow right"/><script>' );
+	public function test_pediment_icon_sanitizes_name() {
+		$html = pediment_icon( 'arrow right"/><script>' );
 		$this->assertStringContainsString( '#ph-arrowright', $html );
 		$this->assertStringNotContainsString( '<script>', $html );
 	}

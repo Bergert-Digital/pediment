@@ -4,13 +4,13 @@ class PedimentLandingTest extends WP_UnitTestCase {
 
 	private function pattern() {
 		do_action( 'init' );
-		return WP_Block_Patterns_Registry::get_instance()->get_registered( 'starter/pediment-landing' );
+		return WP_Block_Patterns_Registry::get_instance()->get_registered( 'pediment/pediment-landing' );
 	}
 
-	public function test_pattern_is_registered_in_starter_category() {
+	public function test_pattern_is_registered_in_pediment_category() {
 		$p = $this->pattern();
-		$this->assertIsArray( $p, 'starter/pediment-landing must be registered' );
-		$this->assertContains( 'starter', $p['categories'] );
+		$this->assertIsArray( $p, 'pediment/pediment-landing must be registered' );
+		$this->assertContains( 'pediment', $p['categories'] );
 	}
 
 	public function test_pattern_content_parses_cleanly() {
@@ -39,19 +39,19 @@ class PedimentLandingTest extends WP_UnitTestCase {
 		$content = $this->pattern()['content'];
 		foreach (
 			array(
-				'wp:starter/hero',
+				'wp:pediment/hero',
 				'"variant":"stat-card"',
-				'wp:starter/feature-grid',
-				'wp:starter/feature ',
-				'wp:starter/steps',
-				'wp:starter/step ',
-				'wp:starter/stat ',
-				'wp:starter/pull-quote',
+				'wp:pediment/feature-grid',
+				'wp:pediment/feature ',
+				'wp:pediment/steps',
+				'wp:pediment/step ',
+				'wp:pediment/stat ',
+				'wp:pediment/pull-quote',
 				'"variant":"testimonial"',
-				'wp:starter/faq ',
-				'wp:starter/faq-item',
-				'wp:starter/cta ',
-				'wp:starter/blog-index',
+				'wp:pediment/faq ',
+				'wp:pediment/faq-item',
+				'wp:pediment/cta ',
+				'wp:pediment/blog-index',
 				'is-style-band-surface',
 				'is-style-band-navy',
 				'starter-band',
@@ -60,7 +60,7 @@ class PedimentLandingTest extends WP_UnitTestCase {
 			$this->assertStringContainsString( $needle, $content, "pattern must contain: $needle" );
 		}
 		$this->assertStringNotContainsString(
-			'wp:starter/logo-cloud',
+			'wp:pediment/logo-cloud',
 			$content,
 			'image-only logo-cloud band is intentionally omitted'
 		);
@@ -113,7 +113,7 @@ class PedimentLandingTest extends WP_UnitTestCase {
 		);
 		$insights_band = end( $top );
 		$first_inner   = $insights_band['innerBlocks'][0];
-		$this->assertSame( 'starter/section-head', $first_inner['blockName'] );
+		$this->assertSame( 'pediment/section-head', $first_inner['blockName'] );
 		$this->assertSame( 'center', $first_inner['attrs']['alignment'] );
 	}
 
@@ -134,7 +134,7 @@ class PedimentLandingTest extends WP_UnitTestCase {
 			)
 		);
 		$this->assertSame(
-			array( 'starter/section-head', 'starter/feature-grid' ),
+			array( 'pediment/section-head', 'pediment/feature-grid' ),
 			$inner_names,
 			'services band should be [section-head, feature-grid]'
 		);

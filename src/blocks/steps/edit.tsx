@@ -1,10 +1,10 @@
 import { useBlockProps, useInnerBlocksProps } from '@wordpress/block-editor';
 
-const ALLOWED = [ 'starter/step' ];
+const ALLOWED = [ 'pediment/step' ];
 const TEMPLATE: [ string, Record< string, unknown > ][] = [
-	[ 'starter/step', {} ],
-	[ 'starter/step', {} ],
-	[ 'starter/step', {} ],
+	[ 'pediment/step', {} ],
+	[ 'pediment/step', {} ],
+	[ 'pediment/step', {} ],
 ];
 
 export default function Edit() {

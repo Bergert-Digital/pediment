@@ -1,11 +1,11 @@
 {
 	"$schema": "https://schemas.wp.org/trunk/block.json",
 	"apiVersion": 3,
-	"name": "starter/blog-index",
+	"name": "pediment/blog-index",
 	"title": "Blog Index",
-	"category": "starter",
+	"category": "pediment",
 	"description": "Recent posts as Insight cards with featured image, category badge, and an optional presentational category filter.",
-	"textdomain": "starter",
+	"textdomain": "pediment",
 	"supports": { "html": false, "align": [ "wide" ] },
 	"attributes": {
 		"count": { "type": "number", "default": 6 },

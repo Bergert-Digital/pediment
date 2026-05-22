@@ -8,14 +8,14 @@
  * we create (or adopt) a `wp_navigation` entity and point the header's
  * (bare) navigation block at it via `render_block_data`.
  *
- * @package Starter
+ * @package Pediment
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-const STARTER_NAV_MARKER = '_starter_seeded_nav';
+const PEDIMENT_NAV_MARKER = '_pediment_seeded_nav';
 
 /**
  * Serialized block markup for the default menu.
@@ -26,7 +26,7 @@ const STARTER_NAV_MARKER = '_starter_seeded_nav';
  *
  * @return string
  */
-function starter_nav_menu_blocks(): string {
+function pediment_nav_menu_blocks(): string {
 	$mega = wp_json_encode(
 		array(
 			'label'   => 'Products',
@@ -55,7 +55,7 @@ function starter_nav_menu_blocks(): string {
 	return implode(
 		"\n",
 		array(
-			'<!-- wp:starter/mega-menu ' . $mega . ' /-->',
+			'<!-- wp:pediment/mega-menu ' . $mega . ' /-->',
 			'<!-- wp:navigation-link {"label":"About","url":"/about","kind":"custom"} /-->',
 			'<!-- wp:navigation-link {"label":"Blog","url":"/blog","kind":"custom"} /-->',
 			'<!-- wp:navigation-link {"label":"Contact","url":"/contact","kind":"custom"} /-->',
@@ -73,7 +73,7 @@ function starter_nav_menu_blocks(): string {
  * @param string $content Raw post_content.
  * @return bool
  */
-function starter_nav_is_pristine_fallback( string $content ): bool {
+function pediment_nav_is_pristine_fallback( string $content ): bool {
 	return '<!-- wp:page-list /-->' === trim( $content );
 }
 
@@ -85,14 +85,14 @@ function starter_nav_is_pristine_fallback( string $content ): bool {
  *
  * @return int Post ID, or 0 when none exists yet.
  */
-function starter_nav_find_entity_id(): int {
+function pediment_nav_find_entity_id(): int {
 	$ids = get_posts(
 		array(
 			'post_type'        => 'wp_navigation',
 			'post_status'      => 'any',
 			'numberposts'      => 1,
 			'fields'           => 'ids',
-			'meta_key'         => STARTER_NAV_MARKER, // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key
+			'meta_key'         => PEDIMENT_NAV_MARKER, // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key
 			'suppress_filters' => false,
 		)
 	);
@@ -112,13 +112,13 @@ function starter_nav_find_entity_id(): int {
  *
  * @return int The navigation post ID (0 on failure).
  */
-function starter_nav_seed_entity(): int {
-	$existing = starter_nav_find_entity_id();
+function pediment_nav_seed_entity(): int {
+	$existing = pediment_nav_find_entity_id();
 	if ( $existing > 0 ) {
 		return $existing;
 	}
 
-	$blocks = starter_nav_menu_blocks();
+	$blocks = pediment_nav_menu_blocks();
 
 	$fallback = get_posts(
 		array(
@@ -131,7 +131,7 @@ function starter_nav_seed_entity(): int {
 		)
 	);
 
-	if ( ! empty( $fallback ) && starter_nav_is_pristine_fallback( $fallback[0]->post_content ) ) {
+	if ( ! empty( $fallback ) && pediment_nav_is_pristine_fallback( $fallback[0]->post_content ) ) {
 		$id = wp_update_post(
 			array(
 				'ID'           => $fallback[0]->ID,
@@ -146,7 +146,7 @@ function starter_nav_seed_entity(): int {
 				'post_type'    => 'wp_navigation',
 				'post_status'  => 'publish',
 				'post_title'   => 'Header Navigation',
-				'post_name'    => 'starter-header',
+				'post_name'    => 'pediment-header',
 				'post_content' => $blocks,
 			),
 			true
@@ -157,11 +157,11 @@ function starter_nav_seed_entity(): int {
 		return 0;
 	}
 
-	update_post_meta( (int) $id, STARTER_NAV_MARKER, '1' );
+	update_post_meta( (int) $id, PEDIMENT_NAV_MARKER, '1' );
 
 	return (int) $id;
 }
-add_action( 'after_switch_theme', 'starter_nav_seed_entity' );
+add_action( 'after_switch_theme', 'pediment_nav_seed_entity' );
 
 /**
  * Point the header's bare navigation block at the seeded entity.
@@ -173,7 +173,7 @@ add_action( 'after_switch_theme', 'starter_nav_seed_entity' );
  * @param array $parsed_block The parsed block.
  * @return array
  */
-function starter_nav_bind_ref( array $parsed_block ): array {
+function pediment_nav_bind_ref( array $parsed_block ): array {
 	if ( 'core/navigation' !== ( $parsed_block['blockName'] ?? '' ) ) {
 		return $parsed_block;
 	}
@@ -181,11 +181,11 @@ function starter_nav_bind_ref( array $parsed_block ): array {
 		return $parsed_block;
 	}
 
-	$ref = starter_nav_find_entity_id();
+	$ref = pediment_nav_find_entity_id();
 	if ( $ref > 0 ) {
 		$parsed_block['attrs']['ref'] = $ref;
 	}
 
 	return $parsed_block;
 }
-add_filter( 'render_block_data', 'starter_nav_bind_ref' );
+add_filter( 'render_block_data', 'pediment_nav_bind_ref' );

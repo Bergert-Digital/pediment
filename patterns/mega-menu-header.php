@@ -1,8 +1,8 @@
 <?php
 /**
  * Title: Mega Menu Demo Header
- * Slug: starter/mega-menu-header
- * Categories: starter
+ * Slug: pediment/mega-menu-header
+ * Categories: pediment
  * Inserter: true
  */
 ?>

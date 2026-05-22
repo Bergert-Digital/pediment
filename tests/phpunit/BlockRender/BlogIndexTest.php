@@ -2,7 +2,7 @@
 
 class BlogIndexTest extends WP_UnitTestCase {
 	private function render( string $json ): string {
-		return do_blocks( '<!-- wp:starter/blog-index ' . $json . ' /-->' );
+		return do_blocks( '<!-- wp:pediment/blog-index ' . $json . ' /-->' );
 	}
 
 	public function test_renders_recent_posts() {
@@ -17,7 +17,7 @@ class BlogIndexTest extends WP_UnitTestCase {
 			);
 		}
 
-		$html = do_blocks( '<!-- wp:starter/blog-index {"count":3} /-->' );
+		$html = do_blocks( '<!-- wp:pediment/blog-index {"count":3} /-->' );
 
 		$this->assertStringContainsString( 'First post', $html );
 		$this->assertStringContainsString( 'Second post', $html );
@@ -33,7 +33,7 @@ class BlogIndexTest extends WP_UnitTestCase {
 		$in_id  = $this->factory->post->create( array( 'post_title' => 'News one',  'post_status' => 'publish', 'post_category' => array( $cat_id ) ) );
 		$out_id = $this->factory->post->create( array( 'post_title' => 'Other one', 'post_status' => 'publish' ) );
 
-		$html = do_blocks( '<!-- wp:starter/blog-index {"count":10,"categorySlug":"news"} /-->' );
+		$html = do_blocks( '<!-- wp:pediment/blog-index {"count":10,"categorySlug":"news"} /-->' );
 
 		$this->assertStringContainsString( 'News one', $html );
 		$this->assertStringNotContainsString( 'Other one', $html );
@@ -44,7 +44,7 @@ class BlogIndexTest extends WP_UnitTestCase {
 	}
 
 	public function test_renders_empty_state_when_no_posts() {
-		$html = do_blocks( '<!-- wp:starter/blog-index {"count":3} /-->' );
+		$html = do_blocks( '<!-- wp:pediment/blog-index {"count":3} /-->' );
 		$this->assertStringContainsString( 'starter-blog-index__empty', $html );
 	}
 

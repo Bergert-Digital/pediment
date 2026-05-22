@@ -26,7 +26,7 @@ export default function Edit( {
 	return (
 		<>
 			<InspectorControls>
-				<PanelBody title={ __( 'CTA links', 'starter' ) }>
+				<PanelBody title={ __( 'CTA links', 'pediment' ) }>
 					<TextControl
 						label="Primary URL"
 						value={ attributes.primaryUrl }
@@ -47,14 +47,14 @@ export default function Edit( {
 					className="starter-cta__title"
 					value={ attributes.title }
 					onChange={ ( v ) => setAttributes( { title: v } ) }
-					placeholder={ __( 'Title…', 'starter' ) }
+					placeholder={ __( 'Title…', 'pediment' ) }
 				/>
 				<RichText
 					tagName="p"
 					className="starter-cta__body"
 					value={ attributes.body }
 					onChange={ ( v ) => setAttributes( { body: v } ) }
-					placeholder={ __( 'Body…', 'starter' ) }
+					placeholder={ __( 'Body…', 'pediment' ) }
 				/>
 				<div className="starter-cta__actions">
 					<RichText
@@ -64,7 +64,7 @@ export default function Edit( {
 						onChange={ ( v ) =>
 							setAttributes( { primaryText: v } )
 						}
-						placeholder={ __( 'Primary CTA…', 'starter' ) }
+						placeholder={ __( 'Primary CTA…', 'pediment' ) }
 					/>
 					<RichText
 						tagName="div"
@@ -75,7 +75,7 @@ export default function Edit( {
 						}
 						placeholder={ __(
 							'Secondary CTA (optional)…',
-							'starter'
+							'pediment'
 						) }
 					/>
 				</div>

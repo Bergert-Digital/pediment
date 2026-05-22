@@ -1,6 +1,6 @@
 # Brand Settings
 
-Brand Settings is a WordPress admin page (Settings → Brand Settings) that stores brand-level configuration in a single option (`starter_theme_brand`). Values are accessible at runtime via `\Starter\Brand::get( $key )`.
+Brand Settings is a WordPress admin page (Settings → Brand Settings) that stores brand-level configuration in a single option (`pediment_theme_brand`). Values are accessible at runtime via `\Pediment\Brand::get( $key )`.
 
 ## Built-in fields
 
@@ -20,12 +20,12 @@ Built-in sections: `identity`, `contact`, `social`, `og`.
 
 ## Extending from a child theme
 
-A child theme can add fields and sections to Brand Settings without editing the parent. Two filters: `starter_brand_fields` and `starter_brand_sections`.
+A child theme can add fields and sections to Brand Settings without editing the parent. Two filters: `pediment_brand_fields` and `pediment_brand_sections`.
 
 ### Add a field
 
 ```php
-add_filter( 'starter_brand_fields', function ( $fields ) {
+add_filter( 'pediment_brand_fields', function ( $fields ) {
     $fields['newsletter_form_id'] = array(
         'label'    => __( 'Newsletter form ID', 'acme' ),
         'section'  => 'contact',                  // 'identity'|'contact'|'social'|'og'|<custom>
@@ -37,15 +37,15 @@ add_filter( 'starter_brand_fields', function ( $fields ) {
 } );
 
 // Read at runtime:
-$form_id = (int) \Starter\Brand::get( 'newsletter_form_id', 0 );
+$form_id = (int) \Pediment\Brand::get( 'newsletter_form_id', 0 );
 ```
 
-The field appears in the admin UI, its default participates in `\Starter\Brand::all()`, and submitted values pass through your `sanitize` callable before being saved.
+The field appears in the admin UI, its default participates in `\Pediment\Brand::all()`, and submitted values pass through your `sanitize` callable before being saved.
 
 ### Add a section
 
 ```php
-add_filter( 'starter_brand_sections', function ( $sections ) {
+add_filter( 'pediment_brand_sections', function ( $sections ) {
     $sections['legal'] = array( 'title' => __( 'Legal', 'acme' ) );
     return $sections;
 } );
@@ -68,10 +68,10 @@ Set `'sanitize' => 'my_callable'` (or a closure) to override the default. The ca
 
 ### Custom renderer
 
-If the built-in types don't fit, pass a `'renderer'` callable. The renderer receives `array( 'key' => $key )` and is responsible for echoing the field HTML, reading the current value via `\Starter\Brand::get()` and writing to `<input name="starter_theme_brand[<key>]" …>`.
+If the built-in types don't fit, pass a `'renderer'` callable. The renderer receives `array( 'key' => $key )` and is responsible for echoing the field HTML, reading the current value via `\Pediment\Brand::get()` and writing to `<input name="pediment_theme_brand[<key>]" …>`.
 
 ```php
-add_filter( 'starter_brand_fields', function ( $fields ) {
+add_filter( 'pediment_brand_fields', function ( $fields ) {
     $fields['theme_color'] = array(
         'label'    => __( 'Theme colour', 'acme' ),
         'section'  => 'identity',
@@ -85,10 +85,10 @@ add_filter( 'starter_brand_fields', function ( $fields ) {
 
 function acme_brand_field_color( array $args ): void {
     $key   = $args['key'];
-    $value = (string) \Starter\Brand::get( $key, '#000000' );
+    $value = (string) \Pediment\Brand::get( $key, '#000000' );
     printf(
         '<input type="color" name="%1$s[%2$s]" value="%3$s" />',
-        esc_attr( \Starter\Brand::OPTION ),
+        esc_attr( \Pediment\Brand::OPTION ),
         esc_attr( $key ),
         esc_attr( $value )
     );
@@ -98,7 +98,7 @@ function acme_brand_field_color( array $args ): void {
 ### Removing a field
 
 ```php
-add_filter( 'starter_brand_fields', function ( $fields ) {
+add_filter( 'pediment_brand_fields', function ( $fields ) {
     unset( $fields['address'] );
     return $fields;
 } );

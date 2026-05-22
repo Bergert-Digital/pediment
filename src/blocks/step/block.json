@@ -1,12 +1,12 @@
 {
 	"$schema": "https://schemas.wp.org/trunk/block.json",
 	"apiVersion": 3,
-	"name": "starter/step",
+	"name": "pediment/step",
 	"title": "Step",
-	"category": "starter",
+	"category": "pediment",
 	"description": "A single numbered step (number auto-generated).",
-	"parent": [ "starter/steps" ],
-	"textdomain": "starter",
+	"parent": [ "pediment/steps" ],
+	"textdomain": "pediment",
 	"supports": { "html": false, "inserter": false },
 	"attributes": {
 		"title": { "type": "string", "default": "" },

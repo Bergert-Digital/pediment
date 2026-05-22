@@ -1,6 +1,6 @@
 <?php
 /**
- * Server-side render for starter/section-head.
+ * Server-side render for pediment/section-head.
  *
  * @var array $attributes
  */

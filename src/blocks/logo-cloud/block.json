@@ -1,11 +1,11 @@
 {
 	"$schema": "https://schemas.wp.org/trunk/block.json",
 	"apiVersion": 3,
-	"name": "starter/logo-cloud",
+	"name": "pediment/logo-cloud",
 	"title": "Logo Cloud",
-	"category": "starter",
+	"category": "pediment",
 	"description": "A “trusted by” strip of client or partner logos.",
-	"textdomain": "starter",
+	"textdomain": "pediment",
 	"supports": { "html": false, "align": [ "wide", "full" ] },
 	"attributes": {
 		"caption": { "type": "string", "default": "" }

@@ -25,7 +25,7 @@ type BlockContract = {
 
 const CONTRACTS: BlockContract[] = [
 	{
-		name: 'starter/hero (stat-card variant)',
+		name: 'pediment/hero (stat-card variant)',
 		selectors: [
 			'.starter-hero',
 			'.starter-hero__col',
@@ -41,7 +41,7 @@ const CONTRACTS: BlockContract[] = [
 		],
 	},
 	{
-		name: 'starter/section-head',
+		name: 'pediment/section-head',
 		selectors: [
 			'.starter-section-head',
 			'.starter-section-head__inner',
@@ -50,7 +50,7 @@ const CONTRACTS: BlockContract[] = [
 		],
 	},
 	{
-		name: 'starter/feature-grid + starter/feature',
+		name: 'pediment/feature-grid + pediment/feature',
 		selectors: [
 			'.starter-feature-grid',
 			'.starter-feature',
@@ -61,7 +61,7 @@ const CONTRACTS: BlockContract[] = [
 		],
 	},
 	{
-		name: 'starter/steps + starter/step',
+		name: 'pediment/steps + pediment/step',
 		selectors: [
 			'.starter-steps',
 			'.starter-step',
@@ -71,7 +71,7 @@ const CONTRACTS: BlockContract[] = [
 		],
 	},
 	{
-		name: 'starter/cta',
+		name: 'pediment/cta',
 		selectors: [
 			'.starter-cta',
 			'.starter-cta__title',
@@ -81,7 +81,7 @@ const CONTRACTS: BlockContract[] = [
 		],
 	},
 	{
-		name: 'starter/pull-quote (testimonial variant)',
+		name: 'pediment/pull-quote (testimonial variant)',
 		selectors: [
 			'.starter-pull-quote',
 			'.starter-pull-quote.is-variant-testimonial',

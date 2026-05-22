@@ -2,7 +2,7 @@
 
 class MegaMenuTest extends WP_UnitTestCase {
 	private function render( string $attrs ): string {
-		return do_blocks( '<!-- wp:starter/mega-menu ' . $attrs . ' /-->' );
+		return do_blocks( '<!-- wp:pediment/mega-menu ' . $attrs . ' /-->' );
 	}
 
 	public function test_no_panel_when_no_columns() {

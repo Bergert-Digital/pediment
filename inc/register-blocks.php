@@ -2,7 +2,7 @@
 /**
  * Auto-registers every block in build/blocks/<name>/.
  *
- * @package Starter
+ * @package Pediment
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -15,8 +15,8 @@ add_filter(
 		array_unshift(
 			$categories,
 			array(
-				'slug'  => 'starter',
-				'title' => __( 'Starter blocks', 'starter' ),
+				'slug'  => 'pediment',
+				'title' => __( 'Pediment blocks', 'pediment' ),
 			)
 		);
 		return $categories;
@@ -28,9 +28,9 @@ add_filter(
  *
  * @param string|null $base_dir Directory containing block subfolders. Defaults to theme's build/blocks.
  */
-function starter_register_blocks( $base_dir = null ) {
+function pediment_register_blocks( $base_dir = null ) {
 	if ( null === $base_dir || '' === $base_dir ) {
-		$base_dir = STARTER_THEME_DIR . '/build/blocks';
+		$base_dir = PEDIMENT_THEME_DIR . '/build/blocks';
 	}
 
 	if ( ! is_dir( $base_dir ) ) {
@@ -54,6 +54,6 @@ function starter_register_blocks( $base_dir = null ) {
 add_action(
 	'init',
 	function () {
-		starter_register_blocks();
+		pediment_register_blocks();
 	}
 );

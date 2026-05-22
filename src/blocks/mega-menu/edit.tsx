@@ -110,17 +110,17 @@ export default function Edit( {
 	return (
 		<>
 			<InspectorControls>
-				<PanelBody title={ __( 'Mega Menu', 'starter' ) }>
+				<PanelBody title={ __( 'Mega Menu', 'pediment' ) }>
 					<TextControl
-						label={ __( 'Menu label', 'starter' ) }
+						label={ __( 'Menu label', 'pediment' ) }
 						value={ attributes.label }
 						onChange={ ( label ) => setAttributes( { label } ) }
 					/>
 					<ToggleControl
-						label={ __( 'Show panel preview', 'starter' ) }
+						label={ __( 'Show panel preview', 'pediment' ) }
 						help={ __(
 							'Renders the panel open in the editor canvas. Front-end hover/focus/click behaviour is unchanged.',
-							'starter'
+							'pediment'
 						) }
 						checked={ previewPanelOpen }
 						onChange={ setPreviewPanelOpen }
@@ -129,15 +129,15 @@ export default function Edit( {
 				{ columns.map( ( column, ci ) => (
 					<PanelBody
 						key={ ci }
-						title={ `${ __( 'Column', 'starter' ) } ${ ci + 1 }` }
+						title={ `${ __( 'Column', 'pediment' ) } ${ ci + 1 }` }
 						initialOpen={ ci === autoOpenIndex }
 					>
 						<div className="starter-mega-form__section">
 							<p className="starter-mega-form__section-label">
-								{ __( 'Header', 'starter' ) }
+								{ __( 'Header', 'pediment' ) }
 							</p>
 							<TextControl
-								label={ __( 'Heading', 'starter' ) }
+								label={ __( 'Heading', 'pediment' ) }
 								value={ column.heading }
 								onChange={ ( heading ) =>
 									updateColumn( ci, { heading } )
@@ -146,11 +146,11 @@ export default function Edit( {
 							<TextControl
 								label={ __(
 									'Icon (Phosphor name)',
-									'starter'
+									'pediment'
 								) }
 								help={ __(
 									'Available: arrow-right, article, bank, caret-down, check-circle, gear, microphone, monitor-play, seal-check, stack, trend-up. Add more in assets/icons/phosphor-sprite.svg.',
-									'starter'
+									'pediment'
 								) }
 								value={ column.icon ?? '' }
 								onChange={ ( icon ) =>
@@ -163,7 +163,7 @@ export default function Edit( {
 
 						<div className="starter-mega-form__section">
 							<p className="starter-mega-form__section-label">
-								{ __( 'Links', 'starter' ) }
+								{ __( 'Links', 'pediment' ) }
 							</p>
 							{ column.links.map( ( link, li ) => (
 								<div
@@ -171,7 +171,7 @@ export default function Edit( {
 									className="starter-mega-form__link"
 								>
 									<TextControl
-										label={ __( 'Label', 'starter' ) }
+										label={ __( 'Label', 'pediment' ) }
 										value={ link.label }
 										onChange={ ( v ) =>
 											updateLink( ci, li, {
@@ -180,7 +180,7 @@ export default function Edit( {
 										}
 									/>
 									<TextControl
-										label={ __( 'URL', 'starter' ) }
+										label={ __( 'URL', 'pediment' ) }
 										type="url"
 										value={ link.url }
 										onChange={ ( v ) =>
@@ -190,7 +190,7 @@ export default function Edit( {
 										}
 									/>
 									<TextControl
-										label={ __( 'Description', 'starter' ) }
+										label={ __( 'Description', 'pediment' ) }
 										value={ link.description }
 										onChange={ ( v ) =>
 											updateLink( ci, li, {
@@ -204,7 +204,7 @@ export default function Edit( {
 											variant="tertiary"
 											aria-label={ __(
 												'Move link up',
-												'starter'
+												'pediment'
 											) }
 											onClick={ () =>
 												updateColumn( ci, {
@@ -224,7 +224,7 @@ export default function Edit( {
 											variant="tertiary"
 											aria-label={ __(
 												'Move link down',
-												'starter'
+												'pediment'
 											) }
 											onClick={ () =>
 												updateColumn( ci, {
@@ -253,7 +253,7 @@ export default function Edit( {
 												} )
 											}
 										>
-											{ __( 'Remove', 'starter' ) }
+											{ __( 'Remove', 'pediment' ) }
 										</Button>
 									</div>
 								</div>
@@ -267,7 +267,7 @@ export default function Edit( {
 									} )
 								}
 							>
-								{ __( 'Add link', 'starter' ) }
+								{ __( 'Add link', 'pediment' ) }
 							</Button>
 						</div>
 
@@ -277,7 +277,7 @@ export default function Edit( {
 							<Button
 								size="small"
 								variant="secondary"
-								aria-label={ __( 'Move column up', 'starter' ) }
+								aria-label={ __( 'Move column up', 'pediment' ) }
 								onClick={ () =>
 									commit( move( columns, ci, ci - 1 ) )
 								}
@@ -290,7 +290,7 @@ export default function Edit( {
 								variant="secondary"
 								aria-label={ __(
 									'Move column down',
-									'starter'
+									'pediment'
 								) }
 								onClick={ () =>
 									commit( move( columns, ci, ci + 1 ) )
@@ -309,12 +309,12 @@ export default function Edit( {
 									)
 								}
 							>
-								{ __( 'Remove column', 'starter' ) }
+								{ __( 'Remove column', 'pediment' ) }
 							</Button>
 						</div>
 					</PanelBody>
 				) ) }
-				<PanelBody title={ __( 'Columns', 'starter' ) }>
+				<PanelBody title={ __( 'Columns', 'pediment' ) }>
 					<Button
 						variant="primary"
 						onClick={ () => {
@@ -322,7 +322,7 @@ export default function Edit( {
 							commit( [ ...columns, emptyColumn() ] );
 						} }
 					>
-						{ __( 'Add column', 'starter' ) }
+						{ __( 'Add column', 'pediment' ) }
 					</Button>
 				</PanelBody>
 			</InspectorControls>
@@ -330,7 +330,7 @@ export default function Edit( {
 				<button type="button" className="starter-mega-menu__trigger">
 					{ has( attributes.label )
 						? attributes.label
-						: __( 'Menu', 'starter' ) }
+						: __( 'Menu', 'pediment' ) }
 				</button>
 				{ hasPanel && (
 					<div

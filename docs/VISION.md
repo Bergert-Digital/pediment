@@ -2,12 +2,12 @@
 
 ## What this is
 
-**wp-starter-theme** is a forkable WordPress full-site-editing block theme that serves as the
+**pediment** is a forkable WordPress full-site-editing block theme that serves as the
 foundation of a three-part agency stack:
 
 | Piece | Repo | Role |
 |---|---|---|
-| **Parent theme** | `wp-starter-theme` (this repo) | Blocks, design tokens, Brand Settings, contact form. Read-only in production. |
+| **Parent theme** | `pediment` (this repo) | Blocks, design tokens, Brand Settings, contact form. Read-only in production. |
 | **Child theme** | `wp-starter-child-theme` | Per-client fork: `theme.json` overrides + `client/*` blocks. |
 | **AI plugin** | `wp-starter-ai` | Composes/edits pages from prompts using the registered blocks. |
 
@@ -38,7 +38,7 @@ Two distinct users, both of whom must succeed:
   `description` and fully-typed `attributes` so the AI plugin can compose with it at runtime
   via `WP_Block_Type_Registry` — no per-block registration on the plugin side.
 - **Extend, don't fork the parent.** Child themes extend Brand Settings via the
-  `starter_brand_fields` / `starter_brand_sections` filters and add `client/*` blocks. Wanting
+  `pediment_brand_fields` / `pediment_brand_sections` filters and add `client/*` blocks. Wanting
   to edit a parent file means opening an upstream PR instead.
 - **Quality is non-negotiable.** PHPUnit covers every block's render; Playwright covers the
   editor, front page, brand settings, and contact form; CI gates merges.

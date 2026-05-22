@@ -37,7 +37,7 @@ export default function Edit( {
 				className="starter-logo-cloud__caption"
 				value={ attributes.caption }
 				onChange={ ( v ) => setAttributes( { caption: v } ) }
-				placeholder={ __( 'Trusted by…', 'starter' ) }
+				placeholder={ __( 'Trusted by…', 'pediment' ) }
 			/>
 			<div { ...innerProps } />
 		</section>

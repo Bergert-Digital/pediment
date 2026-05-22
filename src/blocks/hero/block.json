@@ -1,11 +1,11 @@
 {
 	"$schema": "https://schemas.wp.org/trunk/block.json",
 	"apiVersion": 3,
-	"name": "starter/hero",
+	"name": "pediment/hero",
 	"title": "Hero",
-	"category": "starter",
+	"category": "pediment",
 	"description": "A page-opening hero with headline, subheadline, and primary CTA. Variants: default, centered, media-bg, stat-card.",
-	"textdomain": "starter",
+	"textdomain": "pediment",
 	"supports": { "html": false, "align": [ "wide", "full" ] },
 	"attributes": {
 		"variant": {

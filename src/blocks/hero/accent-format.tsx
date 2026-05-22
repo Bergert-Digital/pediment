@@ -8,17 +8,17 @@ type EditProps = {
 	onChange: ( value: unknown ) => void;
 };
 
-const FORMAT_NAME = 'starter/accent';
+const FORMAT_NAME = 'pediment/accent';
 
 registerFormatType( FORMAT_NAME, {
-	title: __( 'Accent', 'starter' ),
+	title: __( 'Accent', 'pediment' ),
 	tagName: 'span',
 	className: 'accent',
 	edit( { isActive, value, onChange }: EditProps ) {
 		return (
 			<RichTextToolbarButton
 				icon="art"
-				title={ __( 'Accent', 'starter' ) }
+				title={ __( 'Accent', 'pediment' ) }
 				onClick={ () =>
 					onChange(
 						toggleFormat( value as never, { type: FORMAT_NAME } )

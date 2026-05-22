@@ -1,6 +1,6 @@
 <?php
 /**
- * Server-side render for starter/feature-grid.
+ * Server-side render for pediment/feature-grid.
  *
  * @var array  $attributes
  * @var string $content

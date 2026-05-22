@@ -44,8 +44,8 @@ class ThemeJsonTest extends WP_UnitTestCase {
 
 	public function test_global_assets_enqueue() {
 		do_action( 'wp_enqueue_scripts' );
-		$this->assertTrue( wp_style_is( 'starter-theme', 'enqueued' ) );
-		$this->assertTrue( wp_script_is( 'starter-reveal', 'enqueued' ) );
+		$this->assertTrue( wp_style_is( 'pediment-theme', 'enqueued' ) );
+		$this->assertTrue( wp_script_is( 'pediment-reveal', 'enqueued' ) );
 	}
 
 	public function test_focus_shadow_uses_accent() {

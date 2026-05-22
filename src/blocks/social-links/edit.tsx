@@ -8,13 +8,13 @@ export default function Edit() {
 	return (
 		<div { ...blockProps }>
 			<ServerSideRender
-				block="starter/social-links"
+				block="pediment/social-links"
 				EmptyResponsePlaceholder={ () => (
 					<Placeholder
-						label={ __( 'Social links', 'starter' ) }
+						label={ __( 'Social links', 'pediment' ) }
 						instructions={ __(
 							'No social links configured. Add them under Settings → Brand Settings → Social.',
-							'starter'
+							'pediment'
 						) }
 					/>
 				) }

@@ -114,7 +114,7 @@ side and not the other.
 ## `wp_update_post` un-slashes `post_content`, corrupting block-attribute JSON
 
 **Symptom.** Calling `wp_update_post` with `post_content` containing a block markup
-comment like `<!-- wp:starter/hero {"headline":"<span class=\"accent\">…</span>"} -->`
+comment like `<!-- wp:pediment/hero {"headline":"<span class=\"accent\">…</span>"} -->`
 results in stored content with stripped backslashes (`u003c` literal text or unbalanced
 quotes), and the page crashes with
 `PHP Fatal error: array_key_exists(): Argument #2 ($array) must be of type array, null given in block-supports/align.php`.
@@ -168,7 +168,7 @@ graduated; check per component, per WP version).
 ## WordPress normalizes self-closing void tags in pattern source
 
 **Symptom.** A pattern PHPUnit assertion like
-`$this->assertSame( starter_pediment_landing_content(), $home->post_content )` fails on
+`$this->assertSame( pediment_pediment_landing_content(), $home->post_content )` fails on
 nothing but a one-character whitespace diff inside an `<img>` tag — `<img alt=""/>`
 shows in the pattern source, `<img alt="" />` shows in the seeded `post_content`.
 **Cause.** WordPress's content normalization (KSES / wptexturize / serialize_block round-
@@ -198,7 +198,7 @@ sprite.
 injects the sprite into both the outer admin document AND the editor canvas iframe's
 contentDocument, using a `MutationObserver` to handle the iframe being created
 asynchronously and a `load` listener to handle its document being replaced. See
-[inc/icons.php](../inc/icons.php) `starter_enqueue_editor_icon_sprite()` for the
+[inc/icons.php](../inc/icons.php) `pediment_enqueue_editor_icon_sprite()` for the
 canonical implementation.
 **Catch it early.** Open a page with any `<use href="#ph-…">` block in the editor.
 Inspect `document.querySelector('iframe[name="editor-canvas"]').contentDocument.getElementById('starter-icon-sprite')`
@@ -209,12 +209,12 @@ the iframe.
 
 ## RichText `allowedFormats={[]}` strips ALL inline formats — including custom ones
 
-**Symptom.** A custom `registerFormatType` (e.g., `starter/accent`) doesn't appear in the
+**Symptom.** A custom `registerFormatType` (e.g., `pediment/accent`) doesn't appear in the
 toolbar for a specific RichText field, even though it's registered correctly globally.
 **Cause.** `allowedFormats={[]}` on a RichText component is an *exclusive* allowlist —
 empty array means no formats. Custom formats are not auto-included.
 **Fix.** Either omit `allowedFormats` entirely (allows all registered formats), or pass an
-explicit list including the custom: `allowedFormats={['core/bold', 'core/italic', 'starter/accent']}`.
+explicit list including the custom: `allowedFormats={['core/bold', 'core/italic', 'pediment/accent']}`.
 For the section-head block's eyebrow / headline / lead, we keep `allowedFormats={[]}`
 intentionally — those fields should stay plaintext. The hero `headline` omits it so the
 Accent button is reachable.

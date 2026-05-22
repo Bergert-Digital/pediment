@@ -8,16 +8,16 @@ import {
 } from './utils';
 
 const NAV_CONTENT =
-  '<!-- wp:starter/mega-menu {"label":"Products","columns":[{"heading":"Product","links":[{"label":"Pricing","url":"/pricing","description":"Plans","icon":"tag"}]}]} /-->' +
+  '<!-- wp:pediment/mega-menu {"label":"Products","columns":[{"heading":"Product","links":[{"label":"Pricing","url":"/pricing","description":"Plans","icon":"tag"}]}]} /-->' +
   '<!-- wp:navigation-link {"label":"About","url":"/about","kind":"custom"} /-->';
 
-// Walk the block tree to find a starter/mega-menu (it lives inside a
+// Walk the block tree to find a pediment/mega-menu (it lives inside a
 // core/navigation; controlled inner-blocks mode keeps the tree shallow here).
 const FIND_MEGA_FN = `(() => {
   const sel = window.wp.data.select('core/block-editor');
   const walk = (list) => {
     for (const b of list) {
-      if (b.name === 'starter/mega-menu') return b;
+      if (b.name === 'pediment/mega-menu') return b;
       const hit = walk(b.innerBlocks || []);
       if (hit) return hit;
     }
@@ -130,7 +130,7 @@ test.describe('mega-menu editor (page context — read-only)', () => {
 			slug,
 			'Mega Page Editor',
 			'<!-- wp:navigation {"overlayMenu":"never"} -->' +
-				'<!-- wp:starter/mega-menu {"label":"Products","columns":[]} /-->' +
+				'<!-- wp:pediment/mega-menu {"label":"Products","columns":[]} /-->' +
 				'<!-- /wp:navigation -->'
 		);
 		const id = url.replace(/[^0-9]/g, '');
@@ -152,7 +152,7 @@ test.describe('mega-menu editor (page context — read-only)', () => {
 				const sel = window.wp.data.select('core/block-editor');
 				const walk = (list) => {
 					for (const b of list) {
-						if (b.name === 'starter/mega-menu') return b;
+						if (b.name === 'pediment/mega-menu') return b;
 						const hit = walk(b.innerBlocks || []);
 						if (hit) return hit;
 					}

@@ -1,6 +1,6 @@
 <?php
 /**
- * Server-side render for starter/hero.
+ * Server-side render for pediment/hero.
  *
  * @var array $attributes
  */
@@ -12,8 +12,8 @@ $cta_text    = isset( $attributes['ctaText'] ) ? (string) $attributes['ctaText']
 $cta_url     = isset( $attributes['ctaUrl'] ) ? (string) $attributes['ctaUrl'] : '';
 $media_id    = isset( $attributes['mediaId'] ) ? (int) $attributes['mediaId'] : 0;
 
-$allowed = function_exists( 'starter_hero_variants' )
-	? starter_hero_variants()
+$allowed = function_exists( 'pediment_hero_variants' )
+	? pediment_hero_variants()
 	: array( 'default', 'centered', 'media-bg', 'stat-card' );
 if ( ! in_array( $variant, $allowed, true ) ) {
 	$variant = 'default';

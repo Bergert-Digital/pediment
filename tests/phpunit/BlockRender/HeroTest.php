@@ -2,7 +2,7 @@
 
 class HeroTest extends WP_UnitTestCase {
 	private function render( array $attrs ): string {
-		$block_markup = '<!-- wp:starter/hero ' . wp_json_encode( $attrs ) . ' /-->';
+		$block_markup = '<!-- wp:pediment/hero ' . wp_json_encode( $attrs ) . ' /-->';
 		return do_blocks( $block_markup );
 	}
 
@@ -131,11 +131,11 @@ class HeroTest extends WP_UnitTestCase {
 		$this->assertStringNotContainsString( 'starter-hero__eyebrow', $html );
 	}
 
-	public function test_starter_hero_variants_filter_is_default_superset() {
-		$this->assertTrue( function_exists( 'starter_hero_variants' ) );
+	public function test_pediment_hero_variants_filter_is_default_superset() {
+		$this->assertTrue( function_exists( 'pediment_hero_variants' ) );
 		$this->assertSame(
 			array( 'default', 'centered', 'media-bg', 'stat-card' ),
-			starter_hero_variants()
+			pediment_hero_variants()
 		);
 	}
 
@@ -143,7 +143,7 @@ class HeroTest extends WP_UnitTestCase {
 		$cb = static function ( $variants ) {
 			return array_values( array_diff( $variants, array( 'stat-card' ) ) );
 		};
-		add_filter( 'starter_hero_variants', $cb );
+		add_filter( 'pediment_hero_variants', $cb );
 		try {
 			$html = $this->render(
 				array(
@@ -156,7 +156,7 @@ class HeroTest extends WP_UnitTestCase {
 			$this->assertStringNotContainsString( 'is-variant-stat-card', $html );
 			$this->assertStringNotContainsString( 'starter-hero__glass', $html );
 		} finally {
-			remove_filter( 'starter_hero_variants', $cb );
+			remove_filter( 'pediment_hero_variants', $cb );
 		}
 	}
 }

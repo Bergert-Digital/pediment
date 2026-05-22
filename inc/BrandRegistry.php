@@ -2,10 +2,10 @@
 /**
  * Brand settings field & section registry.
  *
- * @package Starter
+ * @package Pediment
  */
 
-namespace Starter;
+namespace Pediment;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -18,55 +18,55 @@ final class BrandRegistry {
 	public static function fields(): array {
 		$fields = array(
 			'brand_name'    => array(
-				'label'   => __( 'Brand name', 'starter' ),
+				'label'   => __( 'Brand name', 'pediment' ),
 				'section' => 'identity',
 				'type'    => 'text',
 				'default' => '',
 			),
 			'brand_tagline' => array(
-				'label'   => __( 'Tagline', 'starter' ),
+				'label'   => __( 'Tagline', 'pediment' ),
 				'section' => 'identity',
 				'type'    => 'text',
 				'default' => '',
 			),
 			'voice_tone'    => array(
-				'label'   => __( 'Voice / tone', 'starter' ),
+				'label'   => __( 'Voice / tone', 'pediment' ),
 				'section' => 'identity',
 				'type'    => 'textarea',
 				'default' => '',
 			),
 			'logo_id'       => array(
-				'label'   => __( 'Logo', 'starter' ),
+				'label'   => __( 'Logo', 'pediment' ),
 				'section' => 'identity',
 				'type'    => 'image',
 				'default' => 0,
 			),
 			'contact_email' => array(
-				'label'   => __( 'Contact email', 'starter' ),
+				'label'   => __( 'Contact email', 'pediment' ),
 				'section' => 'contact',
 				'type'    => 'email',
 				'default' => '',
 			),
 			'phone'         => array(
-				'label'   => __( 'Phone', 'starter' ),
+				'label'   => __( 'Phone', 'pediment' ),
 				'section' => 'contact',
 				'type'    => 'text',
 				'default' => '',
 			),
 			'address'       => array(
-				'label'   => __( 'Address', 'starter' ),
+				'label'   => __( 'Address', 'pediment' ),
 				'section' => 'contact',
 				'type'    => 'textarea',
 				'default' => '',
 			),
 			'social_links'  => array(
-				'label'   => __( 'Social links', 'starter' ),
+				'label'   => __( 'Social links', 'pediment' ),
 				'section' => 'social',
 				'type'    => 'social',
 				'default' => array(),
 			),
 			'og_image_id'   => array(
-				'label'   => __( 'Default OG image', 'starter' ),
+				'label'   => __( 'Default OG image', 'pediment' ),
 				'section' => 'og',
 				'type'    => 'image',
 				'default' => 0,
@@ -78,7 +78,7 @@ final class BrandRegistry {
 		 *
 		 * @param array<string,array<string,mixed>> $fields Fields keyed by field key.
 		 */
-		$fields = (array) apply_filters( 'starter_brand_fields', $fields );
+		$fields = (array) apply_filters( 'pediment_brand_fields', $fields );
 
 		// Fill in nulls so consumers can assume every field has sanitize/renderer.
 		foreach ( $fields as $key => $def ) {
@@ -98,10 +98,10 @@ final class BrandRegistry {
 	 */
 	public static function sections(): array {
 		$sections = array(
-			'identity' => array( 'title' => __( 'Identity', 'starter' ) ),
-			'contact'  => array( 'title' => __( 'Contact', 'starter' ) ),
-			'social'   => array( 'title' => __( 'Social', 'starter' ) ),
-			'og'       => array( 'title' => __( 'OG / SEO', 'starter' ) ),
+			'identity' => array( 'title' => __( 'Identity', 'pediment' ) ),
+			'contact'  => array( 'title' => __( 'Contact', 'pediment' ) ),
+			'social'   => array( 'title' => __( 'Social', 'pediment' ) ),
+			'og'       => array( 'title' => __( 'OG / SEO', 'pediment' ) ),
 		);
 
 		/**
@@ -109,6 +109,6 @@ final class BrandRegistry {
 		 *
 		 * @param array<string,array<string,string>> $sections Sections keyed by section slug.
 		 */
-		return (array) apply_filters( 'starter_brand_sections', $sections );
+		return (array) apply_filters( 'pediment_brand_sections', $sections );
 	}
 }

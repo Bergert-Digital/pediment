@@ -24,13 +24,13 @@ export default function Edit( {
 } ) {
 	const blockProps = useBlockProps( { className: 'starter-contact-form' } );
 	const fieldId = ( name: string ) =>
-		`starter-contact-${ clientId }-${ name }`;
+		`pediment-contact-${ clientId }-${ name }`;
 	return (
 		<>
 			<InspectorControls>
-				<PanelBody title={ __( 'Form settings', 'starter' ) }>
+				<PanelBody title={ __( 'Form settings', 'pediment' ) }>
 					<ToggleControl
-						label={ __( 'Include phone field', 'starter' ) }
+						label={ __( 'Include phone field', 'pediment' ) }
 						checked={ attributes.includePhone }
 						onChange={ ( v ) =>
 							setAttributes( { includePhone: v } )
@@ -39,7 +39,7 @@ export default function Edit( {
 					<TextControl
 						label={ __(
 							'Recipient email (override Brand default)',
-							'starter'
+							'pediment'
 						) }
 						value={ attributes.recipientOverride }
 						onChange={ ( v ) =>
@@ -47,10 +47,10 @@ export default function Edit( {
 						}
 					/>
 					<TextareaControl
-						label={ __( 'Success message', 'starter' ) }
+						label={ __( 'Success message', 'pediment' ) }
 						help={ __(
 							'Shown to visitors after the form is submitted.',
-							'starter'
+							'pediment'
 						) }
 						value={ attributes.successMessage }
 						onChange={ ( v ) =>
@@ -64,7 +64,7 @@ export default function Edit( {
 					className="starter-contact-form__field"
 					htmlFor={ fieldId( 'name' ) }
 				>
-					<span>{ __( 'Name', 'starter' ) }</span>
+					<span>{ __( 'Name', 'pediment' ) }</span>
 					<input
 						id={ fieldId( 'name' ) }
 						type="text"
@@ -76,7 +76,7 @@ export default function Edit( {
 					className="starter-contact-form__field"
 					htmlFor={ fieldId( 'email' ) }
 				>
-					<span>{ __( 'Email', 'starter' ) }</span>
+					<span>{ __( 'Email', 'pediment' ) }</span>
 					<input
 						id={ fieldId( 'email' ) }
 						type="email"
@@ -89,7 +89,7 @@ export default function Edit( {
 						className="starter-contact-form__field"
 						htmlFor={ fieldId( 'phone' ) }
 					>
-						<span>{ __( 'Phone', 'starter' ) }</span>
+						<span>{ __( 'Phone', 'pediment' ) }</span>
 						<input
 							id={ fieldId( 'phone' ) }
 							type="tel"
@@ -102,7 +102,7 @@ export default function Edit( {
 					className="starter-contact-form__field"
 					htmlFor={ fieldId( 'message' ) }
 				>
-					<span>{ __( 'Message', 'starter' ) }</span>
+					<span>{ __( 'Message', 'pediment' ) }</span>
 					<textarea
 						id={ fieldId( 'message' ) }
 						name="message"
@@ -112,7 +112,7 @@ export default function Edit( {
 				</label>
 
 				<button type="button" className="starter-contact-form__submit">
-					{ __( 'Send', 'starter' ) }
+					{ __( 'Send', 'pediment' ) }
 				</button>
 
 				<p

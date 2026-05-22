@@ -1,6 +1,6 @@
 <?php
 /**
- * Server-side render for starter/step. Number is generated via CSS counter.
+ * Server-side render for pediment/step. Number is generated via CSS counter.
  *
  * @var array $attributes
  */

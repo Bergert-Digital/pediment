@@ -1,10 +1,10 @@
 import { useBlockProps, useInnerBlocksProps } from '@wordpress/block-editor';
 
-const ALLOWED = [ 'starter/feature' ];
+const ALLOWED = [ 'pediment/feature' ];
 const TEMPLATE: [ string, Record< string, unknown > ][] = [
-	[ 'starter/feature', { icon: 'trend-up' } ],
-	[ 'starter/feature', { icon: 'gear' } ],
-	[ 'starter/feature', { icon: 'stack' } ],
+	[ 'pediment/feature', { icon: 'trend-up' } ],
+	[ 'pediment/feature', { icon: 'gear' } ],
+	[ 'pediment/feature', { icon: 'stack' } ],
 ];
 
 export default function Edit() {

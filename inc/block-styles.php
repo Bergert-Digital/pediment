@@ -2,7 +2,7 @@
 /**
  * Register theme block styles.
  *
- * @package Starter
+ * @package Pediment
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -16,28 +16,28 @@ add_action(
 			'core/group',
 			array(
 				'name'  => 'band-surface',
-				'label' => __( 'Band — surface (white)', 'starter' ),
+				'label' => __( 'Band — surface (white)', 'pediment' ),
 			)
 		);
 		register_block_style(
 			'core/group',
 			array(
 				'name'  => 'band-elevated',
-				'label' => __( 'Band — elevated (tinted)', 'starter' ),
+				'label' => __( 'Band — elevated (tinted)', 'pediment' ),
 			)
 		);
 		register_block_style(
 			'core/group',
 			array(
 				'name'  => 'band-navy',
-				'label' => __( 'Band — navy', 'starter' ),
+				'label' => __( 'Band — navy', 'pediment' ),
 			)
 		);
 		register_block_style(
 			'core/query',
 			array(
 				'name'  => 'insights-grid',
-				'label' => __( 'Insights grid', 'starter' ),
+				'label' => __( 'Insights grid', 'pediment' ),
 			)
 		);
 	}

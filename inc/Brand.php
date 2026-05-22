@@ -2,17 +2,17 @@
 /**
  * Brand settings storage and accessor.
  *
- * @package Starter
+ * @package Pediment
  */
 
-namespace Starter;
+namespace Pediment;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
 final class Brand {
-	public const OPTION = 'starter_theme_brand';
+	public const OPTION = 'pediment_theme_brand';
 
 	private static function defaults(): array {
 		$defaults = array();

@@ -1,6 +1,6 @@
 <?php
 /**
- * Server-side render for starter/social-links.
+ * Server-side render for pediment/social-links.
  *
  * @var array $attributes
  */
@@ -14,8 +14,8 @@
  *
  * @return array<string, string>
  */
-if ( ! function_exists( 'starter_social_links_icons' ) ) :
-	function starter_social_links_icons(): array {
+if ( ! function_exists( 'pediment_social_links_icons' ) ) :
+	function pediment_social_links_icons(): array {
 		// The <title> inside each SVG is for source-code readability only —
 		// the SVG is marked aria-hidden so neither role nor title reaches
 		// assistive tech. The link's accessible name comes from the parent
@@ -47,35 +47,35 @@ endif;
  *
  * @return array<string, string>
  */
-if ( ! function_exists( 'starter_social_links_labels' ) ) :
-	function starter_social_links_labels(): array {
+if ( ! function_exists( 'pediment_social_links_labels' ) ) :
+	function pediment_social_links_labels(): array {
 		return array(
-			'twitter'   => __( 'Twitter', 'starter' ),
-			'x'         => __( 'X', 'starter' ),
-			'github'    => __( 'GitHub', 'starter' ),
-			'linkedin'  => __( 'LinkedIn', 'starter' ),
-			'instagram' => __( 'Instagram', 'starter' ),
-			'facebook'  => __( 'Facebook', 'starter' ),
-			'youtube'   => __( 'YouTube', 'starter' ),
-			'mastodon'  => __( 'Mastodon', 'starter' ),
-			'rss'       => __( 'RSS', 'starter' ),
+			'twitter'   => __( 'Twitter', 'pediment' ),
+			'x'         => __( 'X', 'pediment' ),
+			'github'    => __( 'GitHub', 'pediment' ),
+			'linkedin'  => __( 'LinkedIn', 'pediment' ),
+			'instagram' => __( 'Instagram', 'pediment' ),
+			'facebook'  => __( 'Facebook', 'pediment' ),
+			'youtube'   => __( 'YouTube', 'pediment' ),
+			'mastodon'  => __( 'Mastodon', 'pediment' ),
+			'rss'       => __( 'RSS', 'pediment' ),
 		);
 	}
 endif;
 
-if ( ! class_exists( '\\Starter\\Brand' ) ) {
+if ( ! class_exists( '\\Pediment\\Brand' ) ) {
 	return '';
 }
 
-$links = \Starter\Brand::get( 'social_links', array() );
+$links = \Pediment\Brand::get( 'social_links', array() );
 $links = is_array( $links ) ? $links : array();
 
 if ( empty( $links ) ) {
 	return '';
 }
 
-$icons  = starter_social_links_icons();
-$labels = starter_social_links_labels();
+$icons  = pediment_social_links_icons();
+$labels = pediment_social_links_labels();
 
 $wrapper = get_block_wrapper_attributes( array( 'class' => 'starter-social-links' ) );
 

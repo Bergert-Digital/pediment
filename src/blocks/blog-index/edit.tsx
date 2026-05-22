@@ -25,23 +25,23 @@ export default function Edit( {
 	return (
 		<>
 			<InspectorControls>
-				<PanelBody title={ __( 'Blog index', 'starter' ) }>
+				<PanelBody title={ __( 'Blog index', 'pediment' ) }>
 					<RangeControl
-						label={ __( 'Posts to show', 'starter' ) }
+						label={ __( 'Posts to show', 'pediment' ) }
 						value={ attributes.count }
 						min={ 1 }
 						max={ 20 }
 						onChange={ ( v ) => setAttributes( { count: v ?? 6 } ) }
 					/>
 					<TextControl
-						label={ __( 'Category slug (optional)', 'starter' ) }
+						label={ __( 'Category slug (optional)', 'pediment' ) }
 						value={ attributes.categorySlug }
 						onChange={ ( v ) =>
 							setAttributes( { categorySlug: v } )
 						}
 					/>
 					<ToggleControl
-						label={ __( 'Show category filter', 'starter' ) }
+						label={ __( 'Show category filter', 'pediment' ) }
 						checked={ attributes.showFilter }
 						onChange={ ( v ) => setAttributes( { showFilter: v } ) }
 					/>
@@ -49,7 +49,7 @@ export default function Edit( {
 			</InspectorControls>
 			<div { ...blockProps }>
 				<ServerSideRender
-					block="starter/blog-index"
+					block="pediment/blog-index"
 					attributes={ attributes }
 				/>
 			</div>

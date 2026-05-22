@@ -2,12 +2,12 @@
 
 class PullQuoteTest extends WP_UnitTestCase {
 	private function render( array $attrs ): string {
-		$block_markup = '<!-- wp:starter/pull-quote ' . wp_json_encode( $attrs ) . ' /-->';
+		$block_markup = '<!-- wp:pediment/pull-quote ' . wp_json_encode( $attrs ) . ' /-->';
 		return do_blocks( $block_markup );
 	}
 
 	public function test_renders_quote_and_citation() {
-		$html = do_blocks( '<!-- wp:starter/pull-quote {"quote":"To be or not to be","citation":"Hamlet"} /-->' );
+		$html = do_blocks( '<!-- wp:pediment/pull-quote {"quote":"To be or not to be","citation":"Hamlet"} /-->' );
 		$this->assertStringContainsString( '<blockquote', $html );
 		$this->assertStringContainsString( 'To be or not to be', $html );
 		$this->assertStringContainsString( '<cite', $html );
@@ -15,7 +15,7 @@ class PullQuoteTest extends WP_UnitTestCase {
 	}
 
 	public function test_omits_cite_when_citation_empty() {
-		$html = do_blocks( '<!-- wp:starter/pull-quote {"quote":"Just a quote","citation":""} /-->' );
+		$html = do_blocks( '<!-- wp:pediment/pull-quote {"quote":"Just a quote","citation":""} /-->' );
 		$this->assertStringContainsString( 'Just a quote', $html );
 		$this->assertStringNotContainsString( '<cite', $html );
 	}
@@ -105,11 +105,11 @@ class PullQuoteTest extends WP_UnitTestCase {
 		wp_delete_attachment( $attachment_id, true );
 	}
 
-	public function test_starter_pull_quote_variants_filter_is_default_superset() {
-		$this->assertTrue( function_exists( 'starter_pull_quote_variants' ) );
+	public function test_pediment_pull_quote_variants_filter_is_default_superset() {
+		$this->assertTrue( function_exists( 'pediment_pull_quote_variants' ) );
 		$this->assertSame(
 			array( 'default', 'testimonial' ),
-			starter_pull_quote_variants()
+			pediment_pull_quote_variants()
 		);
 	}
 
@@ -117,7 +117,7 @@ class PullQuoteTest extends WP_UnitTestCase {
 		$cb = static function ( $variants ) {
 			return array_values( array_diff( $variants, array( 'testimonial' ) ) );
 		};
-		add_filter( 'starter_pull_quote_variants', $cb );
+		add_filter( 'pediment_pull_quote_variants', $cb );
 		try {
 			$html = $this->render(
 				array(
@@ -130,7 +130,7 @@ class PullQuoteTest extends WP_UnitTestCase {
 			$this->assertStringNotContainsString( 'is-variant-testimonial', $html );
 			$this->assertStringNotContainsString( 'starter-pull-quote__by', $html );
 		} finally {
-			remove_filter( 'starter_pull_quote_variants', $cb );
+			remove_filter( 'pediment_pull_quote_variants', $cb );
 		}
 	}
 }

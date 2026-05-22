@@ -25,15 +25,15 @@ export default function Edit( {
 	return (
 		<>
 			<InspectorControls>
-				<PanelBody title={ __( 'Feature', 'starter' ) }>
+				<PanelBody title={ __( 'Feature', 'pediment' ) }>
 					<TextControl
-						label={ __( 'Phosphor icon name', 'starter' ) }
+						label={ __( 'Phosphor icon name', 'pediment' ) }
 						value={ attributes.icon }
 						onChange={ ( v ) => setAttributes( { icon: v } ) }
-						help={ __( 'e.g. trend-up, gear, stack', 'starter' ) }
+						help={ __( 'e.g. trend-up, gear, stack', 'pediment' ) }
 					/>
 					<TextControl
-						label={ __( 'Link URL', 'starter' ) }
+						label={ __( 'Link URL', 'pediment' ) }
 						value={ attributes.linkUrl }
 						onChange={ ( v ) => setAttributes( { linkUrl: v } ) }
 					/>
@@ -60,21 +60,21 @@ export default function Edit( {
 					className="starter-feature__title"
 					value={ attributes.title }
 					onChange={ ( v ) => setAttributes( { title: v } ) }
-					placeholder={ __( 'Title…', 'starter' ) }
+					placeholder={ __( 'Title…', 'pediment' ) }
 				/>
 				<RichText
 					tagName="p"
 					className="starter-feature__text"
 					value={ attributes.text }
 					onChange={ ( v ) => setAttributes( { text: v } ) }
-					placeholder={ __( 'Description…', 'starter' ) }
+					placeholder={ __( 'Description…', 'pediment' ) }
 				/>
 				<RichText
 					tagName="span"
 					className="starter-feature__more"
 					value={ attributes.linkText }
 					onChange={ ( v ) => setAttributes( { linkText: v } ) }
-					placeholder={ __( 'Link text (optional)…', 'starter' ) }
+					placeholder={ __( 'Link text (optional)…', 'pediment' ) }
 				/>
 			</div>
 		</>

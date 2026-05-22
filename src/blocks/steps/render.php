@@ -1,6 +1,6 @@
 <?php
 /**
- * Server-side render for starter/steps.
+ * Server-side render for pediment/steps.
  *
  * @var array  $attributes
  * @var string $content

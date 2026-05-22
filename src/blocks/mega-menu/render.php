@@ -1,6 +1,6 @@
 <?php
 /**
- * Server-side render for starter/mega-menu.
+ * Server-side render for pediment/mega-menu.
  *
  * @var array $attributes
  */
@@ -38,7 +38,7 @@ if ( ! empty( $attributes['className'] ) ) {
 	$wrapper_classes[] = (string) $attributes['className'];
 }
 $wrapper = sprintf(
-	'class="%s" data-wp-interactive="starter/mega-menu" data-wp-context="%s" data-wp-init="callbacks.init" data-wp-on--focusout="actions.onFocusOut" data-wp-on--mouseenter="actions.onPointerEnter" data-wp-on--mouseleave="actions.onPointerLeave"',
+	'class="%s" data-wp-interactive="pediment/mega-menu" data-wp-context="%s" data-wp-init="callbacks.init" data-wp-on--focusout="actions.onFocusOut" data-wp-on--mouseenter="actions.onPointerEnter" data-wp-on--mouseleave="actions.onPointerLeave"',
 	esc_attr( implode( ' ', $wrapper_classes ) ),
 	esc_attr( '{ "isOpen": false }' )
 );
@@ -57,7 +57,7 @@ ob_start();
 		<?php
 		if ( '' === $label ) :
 			?>
-			aria-label="<?php echo esc_attr__( 'Menu', 'starter' ); ?>"<?php endif; ?>
+			aria-label="<?php echo esc_attr__( 'Menu', 'pediment' ); ?>"<?php endif; ?>
 		data-wp-bind--aria-expanded="context.isOpen"
 		data-wp-on--focus="actions.onTriggerFocus"
 		data-wp-on--click="actions.toggle"
@@ -87,7 +87,7 @@ ob_start();
 				if ( empty( $renderable ) ) {
 					continue;
 				}
-				$has_icon    = ( '' !== $c_icon ) && function_exists( 'starter_icon' );
+				$has_icon    = ( '' !== $c_icon ) && function_exists( 'pediment_icon' );
 				$has_heading = '' !== $heading;
 				?>
 				<div class="starter-mega-column">
@@ -95,7 +95,7 @@ ob_start();
 						<p class="starter-mega-column__heading">
 						<?php
 						if ( $has_icon ) {
-							echo starter_icon( $c_icon, 'starter-mega-column__icon' ); // phpcs:ignore WordPress.Security.EscapeOutput -- theme-controlled sprite SVG
+							echo pediment_icon( $c_icon, 'starter-mega-column__icon' ); // phpcs:ignore WordPress.Security.EscapeOutput -- theme-controlled sprite SVG
 						}
 							echo wp_kses_post( $heading );
 						?>

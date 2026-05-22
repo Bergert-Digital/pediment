@@ -4,11 +4,11 @@ class SocialLinksTest extends WP_UnitTestCase {
 	protected function setUp(): void {
 		parent::setUp();
 		// Reset Brand option to a clean state for each test.
-		delete_option( \Starter\Brand::OPTION );
+		delete_option( \Pediment\Brand::OPTION );
 	}
 
 	private function render(): string {
-		return do_blocks( '<!-- wp:starter/social-links /-->' );
+		return do_blocks( '<!-- wp:pediment/social-links /-->' );
 	}
 
 	public function test_returns_empty_string_when_brand_social_links_is_empty() {
@@ -18,7 +18,7 @@ class SocialLinksTest extends WP_UnitTestCase {
 	}
 
 	public function test_renders_one_anchor_per_configured_link() {
-		\Starter\Brand::set(
+		\Pediment\Brand::set(
 			'social_links',
 			array(
 				array( 'platform' => 'twitter', 'url' => 'https://twitter.com/x' ),
@@ -34,7 +34,7 @@ class SocialLinksTest extends WP_UnitTestCase {
 	}
 
 	public function test_known_platform_renders_inline_svg_icon() {
-		\Starter\Brand::set(
+		\Pediment\Brand::set(
 			'social_links',
 			array( array( 'platform' => 'github', 'url' => 'https://github.com/x' ) )
 		);
@@ -47,7 +47,7 @@ class SocialLinksTest extends WP_UnitTestCase {
 	}
 
 	public function test_unknown_platform_renders_text_label_fallback_with_ucfirst() {
-		\Starter\Brand::set(
+		\Pediment\Brand::set(
 			'social_links',
 			array( array( 'platform' => 'bluesky', 'url' => 'https://bsky.app/profile/x' ) )
 		);
@@ -58,7 +58,7 @@ class SocialLinksTest extends WP_UnitTestCase {
 	}
 
 	public function test_twitter_and_x_aliases_render_the_same_icon() {
-		\Starter\Brand::set(
+		\Pediment\Brand::set(
 			'social_links',
 			array(
 				array( 'platform' => 'twitter', 'url' => 'https://twitter.com/x' ),
@@ -74,7 +74,7 @@ class SocialLinksTest extends WP_UnitTestCase {
 	}
 
 	public function test_skips_entries_with_empty_platform_or_url() {
-		\Starter\Brand::set(
+		\Pediment\Brand::set(
 			'social_links',
 			array(
 				array( 'platform' => 'github',   'url' => 'https://github.com/x' ),
@@ -89,7 +89,7 @@ class SocialLinksTest extends WP_UnitTestCase {
 	}
 
 	public function test_each_anchor_has_rel_noopener_noreferrer() {
-		\Starter\Brand::set(
+		\Pediment\Brand::set(
 			'social_links',
 			array( array( 'platform' => 'github', 'url' => 'https://github.com/x' ) )
 		);
@@ -99,7 +99,7 @@ class SocialLinksTest extends WP_UnitTestCase {
 	}
 
 	public function test_each_anchor_has_aria_label_matching_platform() {
-		\Starter\Brand::set(
+		\Pediment\Brand::set(
 			'social_links',
 			array(
 				array( 'platform' => 'github',   'url' => 'https://github.com/x' ),

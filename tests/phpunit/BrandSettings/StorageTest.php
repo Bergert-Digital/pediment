@@ -1,6 +1,6 @@
 <?php
 
-use Starter\Brand;
+use Pediment\Brand;
 
 class StorageTest extends WP_UnitTestCase {
 	public function set_up(): void {
@@ -49,12 +49,12 @@ class StorageTest extends WP_UnitTestCase {
 			);
 			return $fields;
 		};
-		add_filter( 'starter_brand_fields', $cb );
+		add_filter( 'pediment_brand_fields', $cb );
 
-		$all = \Starter\Brand::all();
+		$all = \Pediment\Brand::all();
 		$this->assertArrayHasKey( 'legal_page_id', $all );
 		$this->assertSame( 42, $all['legal_page_id'] );
 
-		remove_filter( 'starter_brand_fields', $cb );
+		remove_filter( 'pediment_brand_fields', $cb );
 	}
 }

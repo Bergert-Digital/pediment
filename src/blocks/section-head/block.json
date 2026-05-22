@@ -1,11 +1,11 @@
 {
 	"$schema": "https://schemas.wp.org/trunk/block.json",
 	"apiVersion": 3,
-	"name": "starter/section-head",
+	"name": "pediment/section-head",
 	"title": "Section Head",
-	"category": "starter",
+	"category": "pediment",
 	"description": "Eyebrow + headline + lead intro for a section/band. Use at align:wide above content blocks.",
-	"textdomain": "starter",
+	"textdomain": "pediment",
 	"supports": { "html": false, "align": [ "wide" ] },
 	"attributes": {
 		"eyebrow":   { "type": "string", "default": "" },

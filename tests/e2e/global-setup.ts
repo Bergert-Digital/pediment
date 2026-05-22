@@ -10,7 +10,7 @@ export default async function globalSetup(): Promise<void> {
     execSync(`npx wp-env run cli wp ${cmd}`, { stdio: 'pipe' }).toString().trim();
 
   wp(`rewrite structure '/%postname%/' --hard`);
-  wp(`starter-theme seed`);
+  wp(`pediment seed`);
   const homeId = wp(`post list --post_type=page --name=home --field=ID --posts_per_page=1`);
   if (homeId) {
     wp(`option update show_on_front page`);

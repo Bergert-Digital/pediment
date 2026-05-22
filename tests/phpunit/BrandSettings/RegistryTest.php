@@ -2,7 +2,7 @@
 
 class RegistryTest extends WP_UnitTestCase {
     public function test_fields_returns_all_parent_fields_with_expected_shape() {
-        $fields = \Starter\BrandRegistry::fields();
+        $fields = \Pediment\BrandRegistry::fields();
 
         $expected_keys = array(
             'brand_name', 'brand_tagline', 'voice_tone', 'logo_id',
@@ -30,7 +30,7 @@ class RegistryTest extends WP_UnitTestCase {
     }
 
     public function test_sections_returns_all_parent_sections() {
-        $sections = \Starter\BrandRegistry::sections();
+        $sections = \Pediment\BrandRegistry::sections();
 
         foreach ( array( 'identity', 'contact', 'social', 'og' ) as $slug ) {
             $this->assertArrayHasKey( $slug, $sections );
@@ -39,7 +39,7 @@ class RegistryTest extends WP_UnitTestCase {
     }
 
     public function test_fields_have_null_sanitize_and_renderer_keys_by_default() {
-        $fields = \Starter\BrandRegistry::fields();
+        $fields = \Pediment\BrandRegistry::fields();
 
         foreach ( $fields as $key => $def ) {
             $this->assertArrayHasKey( 'sanitize', $def, "Field {$key} should have a sanitize key" );
@@ -60,29 +60,29 @@ class RegistryTest extends WP_UnitTestCase {
             );
             return $fields;
         };
-        add_filter( 'starter_brand_fields', $cb );
+        add_filter( 'pediment_brand_fields', $cb );
 
-        $fields = \Starter\BrandRegistry::fields();
+        $fields = \Pediment\BrandRegistry::fields();
 
         $this->assertArrayHasKey( 'custom_field', $fields );
         $this->assertSame( 'absint', $fields['custom_field']['sanitize'], 'Pre-set sanitize must survive the null merge.' );
         $this->assertNull( $fields['custom_field']['renderer'], 'Unset renderer should fill with null.' );
 
-        remove_filter( 'starter_brand_fields', $cb );
+        remove_filter( 'pediment_brand_fields', $cb );
     }
 
-    public function test_starter_brand_sections_filter_adds_sections() {
+    public function test_pediment_brand_sections_filter_adds_sections() {
         $cb = static function ( $sections ) {
             $sections['legal'] = array( 'title' => 'Legal' );
             return $sections;
         };
-        add_filter( 'starter_brand_sections', $cb );
+        add_filter( 'pediment_brand_sections', $cb );
 
-        $sections = \Starter\BrandRegistry::sections();
+        $sections = \Pediment\BrandRegistry::sections();
 
         $this->assertArrayHasKey( 'legal', $sections );
         $this->assertSame( 'Legal', $sections['legal']['title'] );
 
-        remove_filter( 'starter_brand_sections', $cb );
+        remove_filter( 'pediment_brand_sections', $cb );
     }
 }
