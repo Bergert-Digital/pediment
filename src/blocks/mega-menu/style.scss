@@ -6,8 +6,19 @@
     border: 0;
     padding: 0;
     font: inherit;
-    color: inherit;
+    /* Match sibling nav links: muted by default, ink on hover/open.
+       The trigger isn't a .wp-block-navigation-item__content, so it
+       doesn't inherit the doubled-class color override applied in
+       assets/css/theme.css. */
+    color: var(--wp--preset--color--text-muted);
     cursor: pointer;
+    transition: color 0.15s ease;
+
+    &:hover,
+    &:focus-visible,
+    &[aria-expanded="true"] {
+      color: var(--wp--preset--color--text);
+    }
   }
 
   &__panel {
@@ -53,11 +64,11 @@
   align-items: center;
   gap: 0.5rem;
   margin: 0;
-  font-size: 0.75rem;
+  font-size: 0.78rem;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.06em;
-  opacity: 0.65;
+  letter-spacing: 0.14em;
+  color: var(--wp--preset--color--accent);
 }
 
 /* svg.* (specificity 0,1,1) beats global .i (0,1,0) loaded later. */
@@ -84,13 +95,14 @@ svg.starter-mega-column__icon {
      link label/description align vertically with the heading text. */
   padding: 0.5rem 0.625rem 0.5rem 2rem;
   border-radius: 0.375rem;
-  color: inherit;
+  color: var(--wp--preset--color--text);
   text-decoration: none;
-  transition: background-color 140ms ease;
+  transition: background-color 140ms ease, color 140ms ease;
 
   &:hover,
   &:focus-visible {
-    background: color-mix(in srgb, currentColor 6%, transparent);
+    background: color-mix(in srgb, var(--wp--preset--color--accent) 8%, transparent);
+    color: var(--wp--preset--color--accent);
   }
 
   &__label {
@@ -100,8 +112,13 @@ svg.starter-mega-column__icon {
 
   &__desc {
     font-size: 0.85rem;
-    opacity: 0.7;
+    color: var(--wp--preset--color--text-muted);
     line-height: 1.4;
+  }
+
+  &:hover &__desc,
+  &:focus-visible &__desc {
+    color: var(--wp--preset--color--accent-hover);
   }
 }
 
