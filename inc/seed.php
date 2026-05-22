@@ -134,6 +134,7 @@ function starter_pediment_landing_content(): string {
  * @return int Attachment ID, or 0 on failure.
  */
 function starter_seed_demo_image(): int {
+	// phpcs:disable WordPress.DB.SlowDBQuery -- seed lookup runs once per activation; meta lookup acceptable here.
 	$existing = get_posts(
 		array(
 			'post_type'   => 'attachment',
@@ -144,6 +145,7 @@ function starter_seed_demo_image(): int {
 			'meta_value'  => '1',
 		)
 	);
+	// phpcs:enable WordPress.DB.SlowDBQuery
 	if ( ! empty( $existing ) ) {
 		return (int) $existing[0];
 	}
@@ -162,6 +164,7 @@ function starter_seed_demo_image(): int {
 	}
 	$filename = wp_unique_filename( $uploads['path'], basename( $src ) );
 	$dest     = trailingslashit( $uploads['path'] ) . $filename;
+	// phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged -- copy() can emit non-fatal warnings; return value drives the failure path.
 	if ( ! @copy( $src, $dest ) ) {
 		return 0;
 	}
@@ -177,7 +180,7 @@ function starter_seed_demo_image(): int {
 		$dest
 	);
 	if ( is_wp_error( $attach_id ) || ! $attach_id ) {
-		@unlink( $dest );
+		wp_delete_file( $dest );
 		return 0;
 	}
 
@@ -198,6 +201,7 @@ function starter_seed_demo_image(): int {
  * @return int Attachment ID, or 0 on failure.
  */
 function starter_seed_demo_logo(): int {
+	// phpcs:disable WordPress.DB.SlowDBQuery -- seed lookup runs once per activation; meta lookup acceptable here.
 	$existing = get_posts(
 		array(
 			'post_type'   => 'attachment',
@@ -208,6 +212,7 @@ function starter_seed_demo_logo(): int {
 			'meta_value'  => '1',
 		)
 	);
+	// phpcs:enable WordPress.DB.SlowDBQuery
 	if ( ! empty( $existing ) ) {
 		$id = (int) $existing[0];
 		if ( (int) get_theme_mod( 'custom_logo', 0 ) !== $id ) {
@@ -229,6 +234,7 @@ function starter_seed_demo_logo(): int {
 	}
 	$filename = wp_unique_filename( $uploads['path'], basename( $src ) );
 	$dest     = trailingslashit( $uploads['path'] ) . $filename;
+	// phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged -- copy() can emit non-fatal warnings; return value drives the failure path.
 	if ( ! @copy( $src, $dest ) ) {
 		return 0;
 	}
@@ -243,7 +249,7 @@ function starter_seed_demo_logo(): int {
 		$dest
 	);
 	if ( is_wp_error( $attach_id ) || ! $attach_id ) {
-		@unlink( $dest );
+		wp_delete_file( $dest );
 		return 0;
 	}
 

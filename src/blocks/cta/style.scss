@@ -1,10 +1,10 @@
 .starter-cta {
   background: var(--wp--preset--color--primary);
-  color: #fff;
+  color: var(--wp--preset--color--surface);
   border-radius: var(--r-panel, 28px);
   padding: clamp(56px, 7vw, 84px) clamp(28px, 5vw, 60px);
   text-align: center;
-  background-image: radial-gradient(90% 120% at 50% 0%, rgba(14,116,144,.5), transparent 60%);
+  background-image: radial-gradient(90% 120% at 50% 0%, color-mix(in srgb, var(--wp--preset--color--accent) 50%, transparent), transparent 60%);
 
   &__title {
     font-size: var(--wp--preset--font-size--3-xl);
@@ -12,11 +12,11 @@
     letter-spacing: -0.02em;
     font-weight: 800;
     margin: 0 0 var(--wp--preset--spacing--20);
-    color: #fff;
+    color: var(--wp--preset--color--surface);
   }
 
   &__body {
-    color: #B9C8E6;
+    color: var(--wp--custom--color--text-on-accent-muted);
     margin: 0 auto var(--wp--preset--spacing--40);
     max-width: 46ch;
   }
@@ -40,21 +40,21 @@
     transition: background-color .15s ease, color .15s ease, border-color .15s ease;
 
     &:focus-visible {
-      outline: 2px solid #fff;
+      outline: 2px solid var(--wp--preset--color--surface);
       outline-offset: 3px;
     }
   }
 
   &__btn--primary {
-    background: #fff;
+    background: var(--wp--preset--color--surface);
     color: var(--wp--preset--color--accent-hover);
-    &:hover { background: #fff; color: var(--wp--preset--color--accent); }
+    &:hover { background: var(--wp--preset--color--surface); color: var(--wp--preset--color--accent); }
   }
 
   &__btn--secondary {
     background: transparent;
-    color: #fff;
-    border-color: rgba(255,255,255,.45);
-    &:hover { border-color: #fff; }
+    color: var(--wp--preset--color--surface);
+    border-color: color-mix(in srgb, var(--wp--preset--color--surface) 45%, transparent);
+    &:hover { border-color: var(--wp--preset--color--surface); }
   }
 }

@@ -16,7 +16,10 @@ class MegaMenuTest extends WP_UnitTestCase {
 		$attrs = '{"label":"Products","columns":[{"heading":"Product","links":[{"label":"Pricing","url":"/pricing","description":"Plans","icon":"tag"},{"label":"Docs","url":"/docs","description":"","icon":""}]}]}';
 		$html  = $this->render( $attrs );
 		$this->assertStringContainsString( 'starter-mega-menu__panel', $html );
-		$this->assertStringContainsString( '<p class="starter-mega-column__heading">Product</p>', $html );
+		$this->assertMatchesRegularExpression(
+			'/<p class="starter-mega-column__heading">\s*Product\s*<\/p>/',
+			$html
+		);
 		$this->assertSame( 2, substr_count( $html, 'class="starter-mega-link"' ) );
 		$this->assertStringContainsString( 'href="/pricing"', $html );
 		$this->assertStringContainsString( '<span class="starter-mega-link__desc">Plans</span>', $html );
