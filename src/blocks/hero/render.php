@@ -79,10 +79,10 @@ if ( 'stat-card' === $variant ) {
 					<?php endif; ?>
 					<?php if ( ! empty( $metrics ) ) : ?>
 						<div class="starter-hero__metrics">
-							<?php foreach ( $metrics as $m ) : ?>
+							<?php foreach ( $metrics as $metric ) : ?>
 								<?php
-								$mv = is_array( $m ) && isset( $m['value'] ) ? (string) $m['value'] : '';
-								$ml = is_array( $m ) && isset( $m['label'] ) ? (string) $m['label'] : '';
+								$mv = is_array( $metric ) && isset( $metric['value'] ) ? (string) $metric['value'] : '';
+								$ml = is_array( $metric ) && isset( $metric['label'] ) ? (string) $metric['label'] : '';
 								?>
 								<div class="starter-hero__metric">
 									<b><?php echo wp_kses_post( $mv ); ?></b>

@@ -191,7 +191,15 @@ function starter_brand_sanitize( $input ): array {
 		if ( 'email' === $type ) {
 			$value = isset( $raw ) ? sanitize_text_field( wp_unslash( (string) $raw ) ) : '';
 			if ( '' !== $value && ! is_email( $value ) ) {
-				add_settings_error( \Starter\Brand::OPTION, 'invalid_' . $key, sprintf( __( '%s is invalid.', 'starter' ), $field['label'] ) );
+				add_settings_error(
+					\Starter\Brand::OPTION,
+					'invalid_' . $key,
+					sprintf(
+						/* translators: %s: field label */
+						__( '%s is invalid.', 'starter' ),
+						$field['label']
+					)
+				);
 				$value = '';
 			}
 			$clean[ $key ] = $value;

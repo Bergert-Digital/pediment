@@ -119,7 +119,7 @@ const { actions } = store( 'starter/mega-menu', {
 					// holds focus, .focus() is a no-op and would leave
 					// suppressFocus stuck true, swallowing the next genuine
 					// focus-open.
-					if ( trig && document.activeElement !== trig ) {
+					if ( trig && trig.ownerDocument.activeElement !== trig ) {
 						ctx.suppressFocus = true;
 					}
 					trig?.focus();
