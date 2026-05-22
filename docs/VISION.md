@@ -8,8 +8,8 @@ foundation of a three-part agency stack:
 | Piece | Repo | Role |
 |---|---|---|
 | **Parent theme** | `pediment` (this repo) | Blocks, design tokens, Brand Settings, contact form. Read-only in production. |
-| **Child theme** | `wp-starter-child-theme` | Per-client fork: `theme.json` overrides + `client/*` blocks. |
-| **AI plugin** | `wp-starter-ai` | Composes/edits pages from prompts using the registered blocks. |
+| **Child theme** | `pediment-child-theme` | Per-client fork: `theme.json` overrides + `client/*` blocks. |
+| **AI plugin** | `pediment-ai` | Composes/edits pages from prompts using the registered blocks. |
 
 The parent theme is the durable, shared layer. Everything client-specific lives downstream in a
 child theme so the parent improves for every client at once.

@@ -6,7 +6,7 @@ take precedence over this file.
 ## What this project is
 
 A forkable WordPress FSE block theme — the parent layer of a three-repo agency stack
-(`pediment` parent · `wp-starter-child-theme` per-client child · `wp-starter-ai`
+(`pediment` parent · `pediment-child-theme` per-client child · `pediment-ai`
 plugin). See `docs/VISION.md`. Read `docs/STANDARDS.md` before changing code.
 
 ## Hard rules
@@ -31,7 +31,7 @@ plugin). See `docs/VISION.md`. Read `docs/STANDARDS.md` before changing code.
 ## Environment
 
 - Local dev: wp-env (Docker). The shared test base is the **child-theme** env at
-  `localhost:8890`; do **not** start wp-env from `pediment` or `wp-starter-ai`
+  `localhost:8890`; do **not** start wp-env from `pediment` or `pediment-ai`
   independently. "Dev server down" → check the Docker daemon first.
 - PHP 8.1+, WordPress 6.4+. `@wordpress/scripts` build (`npm run build` → `build/blocks/`).
 

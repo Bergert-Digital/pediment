@@ -6,7 +6,7 @@ How to evaluate work from a user's perspective. There are two users — judge ag
 
 Walk this mentally before shipping anything that touches the fork/extension surface:
 
-1. Clone `wp-starter-child-theme`, run the fork rename checklist. **Friction check:** is every
+1. Clone `pediment-child-theme`, run the fork rename checklist. **Friction check:** is every
    token to rename actually listed in the README? Did anything new I added introduce a token
    that a forker would miss and ship with "starter-child" still in it?
 2. `npm run env:start`, `npm run build`. **Friction check:** does a clean checkout build without

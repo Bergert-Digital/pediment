@@ -4,10 +4,10 @@
 			"path": "."
 		},
 		{
-			"path": "../wp-starter-ai"
+			"path": "../pediment-ai"
 		},
 		{
-			"path": "../wp-starter-child-theme"
+			"path": "../pediment-child-theme"
 		}
 	],
 	"settings": {}
