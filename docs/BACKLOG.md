@@ -5,7 +5,7 @@ Checked items are removed during the next /dev-cycle tidy pass.
 
 > Scaffolded 2026-05-15 by inferring from the codebase + recent plans. The distribution
 > direction (child-theme repo, retiring wp-client-template, zip pipelines, section rhythm)
-> appears **shipped** — child repo is live on GitHub with CI/release, wp-starter-ai has its
+> appears **shipped** — child repo is live on GitHub with CI/release, pediment-ai has its
 > release pipeline, wp-client-template is gone locally. These items below are verification,
 > drift-hunting, and hygiene — not the big build. Re-validate each per Step 5 before picking up.
 
@@ -22,7 +22,7 @@ _(none currently known — verify by running a user-journey audit)_
 - [ ] **Confirm the child repo has the `PEDIMENT_THEME_PAT` secret.** The child's
   `ci.yml` phpunit/e2e jobs do a cross-repo checkout of the parent using
   `secrets.PEDIMENT_THEME_PAT`. If it's unset those jobs fail. Check
-  `gh secret list --repo Bergert-Digital/wp-starter-child-theme` and flag to the user if missing.
+  `gh secret list --repo Bergert-Digital/pediment-child-theme` and flag to the user if missing.
 - [ ] **Hunt repo-name drift.** Parent remote is `Bergert-Digital/WP-Starter` but
   `style.css` Theme URI and some docs say `github.com/bergert/pediment`. Distribution
   README/banner links may point at a non-existent `Bergert-Digital/pediment`. Audit
