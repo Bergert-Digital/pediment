@@ -190,7 +190,10 @@ export default function Edit( {
 										}
 									/>
 									<TextControl
-										label={ __( 'Description', 'pediment' ) }
+										label={ __(
+											'Description',
+											'pediment'
+										) }
 										value={ link.description }
 										onChange={ ( v ) =>
 											updateLink( ci, li, {
@@ -277,7 +280,10 @@ export default function Edit( {
 							<Button
 								size="small"
 								variant="secondary"
-								aria-label={ __( 'Move column up', 'pediment' ) }
+								aria-label={ __(
+									'Move column up',
+									'pediment'
+								) }
 								onClick={ () =>
 									commit( move( columns, ci, ci - 1 ) )
 								}

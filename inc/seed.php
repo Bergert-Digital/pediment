@@ -37,11 +37,11 @@ function pediment_seed_run(): void {
 	pediment_seed_demo_logo();
 
 	$pages = array(
-		'home'    => array(
+		'home'      => array(
 			'title'   => 'Home',
 			'content' => pediment_pediment_landing_content(),
 		),
-		'about'   => array(
+		'about'     => array(
 			'title'   => 'About',
 			'content' =>
 				'<!-- wp:pediment/hero {"variant":"default","headline":"About us","subheadline":"Who we are and what we do.","align":"wide"} /-->' .
@@ -49,16 +49,20 @@ function pediment_seed_run(): void {
 					'<!-- wp:paragraph --><p>Tell your story here. Keep it human and specific.</p><!-- /wp:paragraph -->' .
 				'<!-- /wp:pediment/prose -->',
 		),
-		'contact' => array(
+		'contact'   => array(
 			'title'   => 'Contact',
 			'content' =>
 				'<!-- wp:pediment/hero {"variant":"centered","headline":"Contact","subheadline":"Tell us about your project.","align":"wide"} /-->' .
 				'<!-- wp:pediment/contact-form {"includePhone":true} /-->',
 		),
-		'blog'    => array(
+		'blog'      => array(
 			'title'   => 'Blog',
 			// home.html renders the listing; the page's own content is unused.
 			'content' => '',
+		),
+		'mega-demo' => array(
+			'title'   => 'Mega Menu Demo',
+			'content' => pediment_seed_mega_demo_content(),
 		),
 	);
 
@@ -122,6 +126,32 @@ function pediment_pediment_landing_content(): string {
 			'<!-- wp:pediment/blog-index {"count":3,"align":"wide"} /-->';
 	}
 	return pediment_seed_apply_demo_image( $content );
+}
+
+/**
+ * Mega-menu demo fixture content for the /mega-demo/ page.
+ *
+ * Reuses the registered `pediment/mega-menu-header` pattern so the e2e suite
+ * always asserts against the canonical fixture. Falls back to a minimal
+ * inline composition (kept in sync with the pattern) so seeding never writes
+ * an empty page if pattern registration is unavailable at seed time.
+ *
+ * @return string Block markup.
+ */
+function pediment_seed_mega_demo_content(): string {
+	if ( class_exists( 'WP_Block_Patterns_Registry' ) ) {
+		$pattern = WP_Block_Patterns_Registry::get_instance()->get_registered( 'pediment/mega-menu-header' );
+		if ( is_array( $pattern ) && ! empty( $pattern['content'] ) ) {
+			return (string) $pattern['content'];
+		}
+	}
+	return '<!-- wp:group {"className":"mega-demo","layout":{"type":"constrained"}} -->' .
+		'<div class="wp-block-group mega-demo">' .
+			'<!-- wp:navigation {"overlayMenu":"mobile","layout":{"type":"flex","orientation":"horizontal"}} -->' .
+				'<!-- wp:pediment/mega-menu {"label":"Products","columns":[{"heading":"Banking","links":[{"label":"Checking","url":"#checking"}]}]} /-->' .
+			'<!-- /wp:navigation -->' .
+		'</div>' .
+		'<!-- /wp:group -->';
 }
 
 /**

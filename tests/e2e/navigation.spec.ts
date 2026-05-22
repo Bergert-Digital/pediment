@@ -19,17 +19,11 @@ test.describe('top navigation', () => {
     await expect(header).toHaveCSS('top', '0px');
   });
 
-  test('header has a single accent pill CTA button', async ({ page }) => {
+  test('header has no leftover nav-cta button', async ({ page }) => {
     await page.goto('/');
     const header = page.locator('header.site-header').first();
-    const cta = header.getByRole('link', { name: 'Book a consultation' });
-    await expect(cta).toBeVisible();
-    await expect(cta).toHaveCSS('background-color', ACCENT);
-    const radius = await cta.evaluate(
-      (el) => getComputedStyle(el).borderTopLeftRadius
-    );
-    expect(parseFloat(radius)).toBeGreaterThan(0);
-    // Contact is now a normal nav link, not a second CTA button.
+    // The accent-pill CTA was retired during the header polish refactor;
+    // guard against it sneaking back in as a navigation-item variant.
     await expect(
       header.locator('.wp-block-navigation-item.nav-cta')
     ).toHaveCount(0);
@@ -67,9 +61,11 @@ test.describe('top navigation', () => {
     await expect(active).toHaveCSS('color', ACCENT);
   });
 
-  test('header shows the bank brand mark', async ({ page }) => {
+  test('header shows the site logo', async ({ page }) => {
     await page.goto('/');
-    const mark = page.locator('header .brand .mark use[href="#ph-bank"]');
-    await expect(mark).toHaveCount(1);
+    const logo = page
+      .locator('header.site-header .wp-block-site-logo img')
+      .first();
+    await expect(logo).toBeVisible();
   });
 });

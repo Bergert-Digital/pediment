@@ -1,14 +1,11 @@
 import { Page } from '@playwright/test';
 import { execSync } from 'node:child_process';
-import { resolve } from 'node:path';
 
-// All wp-cli must target the child-theme wp-env (:8890) — the single test
-// base. `npx wp-env run cli` uses the cwd's .wp-env.json, so run it from the
-// sibling pediment-child-theme dir, NOT this theme checkout (which has its
-// own :8888 env with a different DB). Override with WP_ENV_CWD if needed.
-const WP_ENV_CWD =
-  process.env.WP_ENV_CWD ||
-  resolve(process.cwd(), '..', 'pediment-child-theme');
+// `npx wp-env run cli` uses the cwd's .wp-env.json. In CI we start wp-env
+// from this theme dir, so default to process.cwd(). Local dev that wants to
+// target a different env (e.g. the sibling pediment-child-theme at :8890)
+// must set WP_ENV_CWD explicitly.
+const WP_ENV_CWD = process.env.WP_ENV_CWD || process.cwd();
 
 export async function login(page: Page, user = 'admin', pass = 'password') {
   await page.goto('/wp-login.php');

@@ -20,7 +20,7 @@ add_action(
 			register_block_pattern_category(
 				'pediment',
 				array(
-					'label' => __('Pediment','pediment'),
+					'label' => __( 'Pediment', 'pediment' ),
 				)
 			);
 		}

@@ -94,12 +94,15 @@ class PedimentLandingTest extends WP_UnitTestCase {
 	}
 
 	public function test_pattern_copy_is_rebrandable_no_pediment() {
-		$content = $this->pattern()['content'];
+		// Check user-visible copy only: block markup and class names legitimately
+		// contain the `pediment` namespace, so render the pattern and strip tags
+		// before asserting the fictional brand voice never reaches readers.
+		$text = wp_strip_all_tags( do_blocks( $this->pattern()['content'] ) );
 		$this->assertFalse(
-			stripos( $content, 'pediment' ),
-			'pattern content must not ship the fictional Pediment brand voice'
+			stripos( $text, 'pediment' ),
+			'pattern copy must not ship the fictional Pediment brand voice'
 		);
-		$this->assertFalse( stripos( $content, 'consultanc' ) );
+		$this->assertFalse( stripos( $text, 'consultanc' ) );
 	}
 
 	public function test_insights_band_starts_with_section_head() {
