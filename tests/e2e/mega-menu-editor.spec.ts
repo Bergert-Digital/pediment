@@ -54,6 +54,13 @@ test.describe('mega-menu editor (entity context)', () => {
       timeout: 20000,
     });
 
+    // The wp_navigation entity loads its inner blocks (controlled-inner-blocks
+    // mode) asynchronously: the DOM wrapper appears as soon as the entity's
+    // template renders, but `core/block-editor.getBlocks()` only sees the
+    // child blocks after the entity record resolves. Poll until the tree
+    // walk finds the block before reading the initial clientId.
+    await page.waitForFunction(FIND_MEGA_FN, undefined, { timeout: 20000 });
+
     // Read initial clientId + select the block (so the linchpin also verifies
     // selection survives the mutation).
     const initialClientId: string = await page.evaluate(`
@@ -141,7 +148,27 @@ test.describe('mega-menu editor (page context — read-only)', () => {
 		await expect(canvas.locator('.starter-mega-menu').first()).toBeVisible({
 			timeout: 20000,
 		});
-		await canvas.locator('.starter-mega-menu').first().click();
+		// Select via wp.data, not a DOM click: in the page editor the parent
+		// `wp-block-navigation__container` is a drop zone and intercepts
+		// pointer events on its children, so a real click can't reach the
+		// disabled mega-menu wrapper.
+		await page.waitForFunction(`
+			(() => {
+				const sel = window.wp.data.select('core/block-editor');
+				const walk = (list) => {
+					for (const b of list) {
+						if (b.name === 'pediment/mega-menu') return b;
+						const hit = walk(b.innerBlocks || []);
+						if (hit) return hit;
+					}
+					return null;
+				};
+				const t = walk(sel.getBlocks());
+				if (!t) return false;
+				window.wp.data.dispatch('core/block-editor').selectBlock(t.clientId);
+				return true;
+			})()
+		`, undefined, { timeout: 20000 });
 
 		// The Inspector "Menu label" field must not be reachable.
 		await expect(page.getByLabel('Menu label')).toHaveCount(0);
