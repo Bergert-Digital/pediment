@@ -120,14 +120,8 @@
   .anim [data-reveal]{ opacity:1 !important; transform:none !important; transition:none; }
 }
 
-/* Brand mark (header/footer logo badge) + header polish */
+/* Brand row (header/footer site-logo wrapper) + header polish */
 .brand{ display:flex; align-items:center; gap:10px; }
-.brand .mark{
-  width:30px; height:30px; border-radius:9px;
-  background:linear-gradient(140deg, var(--wp--preset--color--accent), var(--wp--preset--color--accent-hover));
-  display:flex; align-items:center; justify-content:center; color:#fff; flex:none;
-}
-.brand .mark .i{ width:18px; height:18px; }
 /* layer a frosted backdrop on the (already sticky, theme.json) header */
 header.site-header{
   background:color-mix(in srgb, var(--wp--preset--color--surface) 86%, transparent);
