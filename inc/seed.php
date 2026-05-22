@@ -278,10 +278,10 @@ function starter_seed_apply_demo_image( string $content ): string {
 		$content
 	);
 
-	$empty_image = "<!-- wp:image {\"sizeSlug\":\"large\",\"className\":\"starter-approach__image\"} -->\n"
+	$empty_image     = "<!-- wp:image {\"sizeSlug\":\"large\",\"className\":\"starter-approach__image\"} -->\n"
 		. "<figure class=\"wp-block-image size-large starter-approach__image\"><img alt=\"\" /></figure>\n"
 		. '<!-- /wp:image -->';
-	$url = (string) wp_get_attachment_image_url( $id, 'large' );
+	$url             = (string) wp_get_attachment_image_url( $id, 'large' );
 	$populated_image = sprintf(
 		"<!-- wp:image {\"id\":%d,\"sizeSlug\":\"large\",\"className\":\"starter-approach__image\"} -->\n"
 		. "<figure class=\"wp-block-image size-large starter-approach__image\"><img src=\"%s\" alt=\"\" class=\"wp-image-%d\" /></figure>\n"
@@ -290,7 +290,7 @@ function starter_seed_apply_demo_image( string $content ): string {
 		esc_url( $url ),
 		$id
 	);
-	$content = str_replace( $empty_image, $populated_image, $content );
+	$content         = str_replace( $empty_image, $populated_image, $content );
 
 	return $content;
 }
@@ -307,7 +307,7 @@ function starter_seed_sample_posts(): void {
 		'briefings' => 'Briefings',
 		'notes'     => 'Notes',
 	);
-	$cat_ids = array();
+	$cat_ids    = array();
 	foreach ( $categories as $slug => $name ) {
 		$term = get_term_by( 'slug', $slug, 'category' );
 		if ( $term ) {
@@ -320,13 +320,37 @@ function starter_seed_sample_posts(): void {
 		}
 	}
 
-	$posts = array(
-		array( 'slug' => 'sample-insight-one',   'title' => 'A practical insight on getting started', 'cat' => 'insights' ),
-		array( 'slug' => 'sample-insight-two',   'title' => 'What good looks like, in plain terms',     'cat' => 'insights' ),
-		array( 'slug' => 'sample-briefing-one',  'title' => 'A short briefing on a common decision',    'cat' => 'briefings' ),
-		array( 'slug' => 'sample-briefing-two',  'title' => 'Trade-offs worth weighing early',          'cat' => 'briefings' ),
-		array( 'slug' => 'sample-note-one',      'title' => 'A quick note on process',                  'cat' => 'notes' ),
-		array( 'slug' => 'sample-note-two',      'title' => 'A quick note on outcomes',                 'cat' => 'notes' ),
+	$posts         = array(
+		array(
+			'slug'  => 'sample-insight-one',
+			'title' => 'A practical insight on getting started',
+			'cat'   => 'insights',
+		),
+		array(
+			'slug'  => 'sample-insight-two',
+			'title' => 'What good looks like, in plain terms',
+			'cat'   => 'insights',
+		),
+		array(
+			'slug'  => 'sample-briefing-one',
+			'title' => 'A short briefing on a common decision',
+			'cat'   => 'briefings',
+		),
+		array(
+			'slug'  => 'sample-briefing-two',
+			'title' => 'Trade-offs worth weighing early',
+			'cat'   => 'briefings',
+		),
+		array(
+			'slug'  => 'sample-note-one',
+			'title' => 'A quick note on process',
+			'cat'   => 'notes',
+		),
+		array(
+			'slug'  => 'sample-note-two',
+			'title' => 'A quick note on outcomes',
+			'cat'   => 'notes',
+		),
 	);
 	$demo_image_id = starter_seed_demo_image();
 

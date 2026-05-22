@@ -61,8 +61,9 @@ export default function Edit( {
 	// mid-edit. Disabled mode prevents the mutation from ever firing.
 	const isEntityContext = useSelect(
 		( select ) =>
-			( select( editorStore ) as { getCurrentPostType?: () => string } )
-				?.getCurrentPostType?.() === 'wp_navigation',
+			(
+				select( editorStore ) as { getCurrentPostType?: () => string }
+			 )?.getCurrentPostType?.() === 'wp_navigation',
 		[]
 	);
 	useBlockEditingMode( isEntityContext ? 'default' : 'disabled' );
@@ -189,10 +190,7 @@ export default function Edit( {
 										}
 									/>
 									<TextControl
-										label={ __(
-											'Description',
-											'starter'
-										) }
+										label={ __( 'Description', 'starter' ) }
 										value={ link.description }
 										onChange={ ( v ) =>
 											updateLink( ci, li, {
@@ -238,8 +236,7 @@ export default function Edit( {
 												} )
 											}
 											disabled={
-												li ===
-												column.links.length - 1
+												li === column.links.length - 1
 											}
 										>
 											↓
@@ -266,10 +263,7 @@ export default function Edit( {
 								className="starter-mega-form__add"
 								onClick={ () =>
 									updateColumn( ci, {
-										links: [
-											...column.links,
-											emptyLink(),
-										],
+										links: [ ...column.links, emptyLink() ],
 									} )
 								}
 							>
@@ -283,10 +277,7 @@ export default function Edit( {
 							<Button
 								size="small"
 								variant="secondary"
-								aria-label={ __(
-									'Move column up',
-									'starter'
-								) }
+								aria-label={ __( 'Move column up', 'starter' ) }
 								onClick={ () =>
 									commit( move( columns, ci, ci - 1 ) )
 								}
@@ -314,9 +305,7 @@ export default function Edit( {
 								variant="tertiary"
 								onClick={ () =>
 									commit(
-										columns.filter(
-											( _, i ) => i !== ci
-										)
+										columns.filter( ( _, i ) => i !== ci )
 									)
 								}
 							>
@@ -357,10 +346,7 @@ export default function Edit( {
 							const hasIcon = has( colIcon );
 							const hasHeading = has( column.heading );
 							return (
-								<div
-									key={ ci }
-									className="starter-mega-column"
-								>
+								<div key={ ci } className="starter-mega-column">
 									{ ( hasHeading || hasIcon ) && (
 										<p className="starter-mega-column__heading">
 											{ hasIcon && (
@@ -390,9 +376,7 @@ export default function Edit( {
 												<span className="starter-mega-link__label">
 													{ link.label }
 												</span>
-												{ has(
-													link.description
-												) && (
+												{ has( link.description ) && (
 													<span className="starter-mega-link__desc">
 														{ link.description }
 													</span>

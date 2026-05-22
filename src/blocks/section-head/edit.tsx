@@ -37,12 +37,21 @@ export default function Edit( {
 						label={ __( 'Alignment', 'starter' ) }
 						value={ attributes.alignment }
 						onChange={ ( v ) =>
-							setAttributes( { alignment: ( v as 'start' | 'center' ) ?? 'start' } )
+							setAttributes( {
+								alignment:
+									( v as 'start' | 'center' ) ?? 'start',
+							} )
 						}
 						isBlock
 					>
-						<ToggleGroupControlOption value="start" label={ __( 'Start', 'starter' ) } />
-						<ToggleGroupControlOption value="center" label={ __( 'Center', 'starter' ) } />
+						<ToggleGroupControlOption
+							value="start"
+							label={ __( 'Start', 'starter' ) }
+						/>
+						<ToggleGroupControlOption
+							value="center"
+							label={ __( 'Center', 'starter' ) }
+						/>
 					</ToggleGroupControl>
 					<ToggleGroupControl
 						label={ __( 'Heading level', 'starter' ) }

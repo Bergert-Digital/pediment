@@ -69,7 +69,9 @@ export default function Edit( {
 			if ( ! attributes.mediaId ) {
 				return '';
 			}
-			const media = ( select( 'core' ) as any ).getMedia?.( attributes.mediaId );
+			const media = ( select( 'core' ) as any ).getMedia?.(
+				attributes.mediaId
+			);
 			const sizes = media?.media_details?.sizes;
 			return (
 				sizes?.large?.source_url ||
@@ -84,7 +86,8 @@ export default function Edit( {
 	const hasGlassContent =
 		!! attributes.statValue ||
 		!! attributes.statText ||
-		( Array.isArray( attributes.metrics ) && attributes.metrics.length > 0 );
+		( Array.isArray( attributes.metrics ) &&
+			attributes.metrics.length > 0 );
 	const options = allowedVariants().map( ( v ) => ( {
 		label: LABELS[ v ] ?? v,
 		value: v,
@@ -181,8 +184,12 @@ export default function Edit( {
 												const [ value, label ] =
 													line.split( '|' );
 												return {
-													value: ( value || '' ).trim(),
-													label: ( label || '' ).trim(),
+													value: (
+														value || ''
+													).trim(),
+													label: (
+														label || ''
+													).trim(),
 												};
 											} )
 											.filter(
@@ -195,8 +202,7 @@ export default function Edit( {
 							/>
 						</>
 					) }
-					{ ( attributes.variant === 'media-bg' ||
-						isStatCard ) && (
+					{ ( attributes.variant === 'media-bg' || isStatCard ) && (
 						<MediaUpload
 							allowedTypes={ [ 'image' ] }
 							onSelect={ ( media: any ) =>
@@ -275,15 +281,17 @@ export default function Edit( {
 								{ Array.isArray( attributes.metrics ) &&
 									attributes.metrics.length > 0 && (
 										<div className="starter-hero__metrics">
-											{ attributes.metrics.map( ( m, i ) => (
-												<div
-													key={ i }
-													className="starter-hero__metric"
-												>
-													<b>{ m.value }</b>
-													<span>{ m.label }</span>
-												</div>
-											) ) }
+											{ attributes.metrics.map(
+												( m, i ) => (
+													<div
+														key={ i }
+														className="starter-hero__metric"
+													>
+														<b>{ m.value }</b>
+														<span>{ m.label }</span>
+													</div>
+												)
+											) }
 										</div>
 									) }
 							</div>

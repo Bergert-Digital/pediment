@@ -50,8 +50,14 @@ ob_start();
 		type="button"
 		class="starter-mega-menu__trigger"
 		aria-expanded="false"
-		<?php if ( $has_panel ) : ?>aria-controls="<?php echo esc_attr( $panel_id ); ?>"<?php endif; ?>
-		<?php if ( '' === $label ) : ?>aria-label="<?php echo esc_attr__( 'Menu', 'starter' ); ?>"<?php endif; ?>
+		<?php
+		if ( $has_panel ) :
+			?>
+			aria-controls="<?php echo esc_attr( $panel_id ); ?>"<?php endif; ?>
+		<?php
+		if ( '' === $label ) :
+			?>
+			aria-label="<?php echo esc_attr__( 'Menu', 'starter' ); ?>"<?php endif; ?>
 		data-wp-bind--aria-expanded="context.isOpen"
 		data-wp-on--focus="actions.onTriggerFocus"
 		data-wp-on--click="actions.toggle"
@@ -86,12 +92,14 @@ ob_start();
 				?>
 				<div class="starter-mega-column">
 					<?php if ( $has_heading || $has_icon ) : ?>
-						<p class="starter-mega-column__heading"><?php
-							if ( $has_icon ) {
-								echo starter_icon( $c_icon, 'starter-mega-column__icon' ); // phpcs:ignore WordPress.Security.EscapeOutput -- theme-controlled sprite SVG
-							}
+						<p class="starter-mega-column__heading">
+						<?php
+						if ( $has_icon ) {
+							echo starter_icon( $c_icon, 'starter-mega-column__icon' ); // phpcs:ignore WordPress.Security.EscapeOutput -- theme-controlled sprite SVG
+						}
 							echo wp_kses_post( $heading );
-						?></p>
+						?>
+						</p>
 					<?php endif; ?>
 					<div class="starter-mega-column__links">
 						<?php

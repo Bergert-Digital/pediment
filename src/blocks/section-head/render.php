@@ -22,9 +22,18 @@ ob_start();
 ?>
 <div <?php echo $wrapper; // phpcs:ignore WordPress.Security.EscapeOutput ?>>
 	<div class="starter-section-head__inner">
-		<?php if ( '' !== $eyebrow ) : ?><p class="starter-section-head__eyebrow"><?php echo wp_kses_post( $eyebrow ); ?></p><?php endif; ?>
-		<?php if ( '' !== $headline ) : ?><<?php echo $h_tag; // phpcs:ignore WordPress.Security.EscapeOutput ?> class="starter-section-head__headline"><?php echo wp_kses_post( $headline ); ?></<?php echo $h_tag; // phpcs:ignore WordPress.Security.EscapeOutput ?>><?php endif; ?>
-		<?php if ( '' !== $lead ) : ?><p class="starter-section-head__lead"><?php echo wp_kses_post( $lead ); ?></p><?php endif; ?>
+		<?php
+		if ( '' !== $eyebrow ) :
+			?>
+			<p class="starter-section-head__eyebrow"><?php echo wp_kses_post( $eyebrow ); ?></p><?php endif; ?>
+		<?php
+		if ( '' !== $headline ) :
+			?>
+			<<?php echo $h_tag; // phpcs:ignore WordPress.Security.EscapeOutput ?> class="starter-section-head__headline"><?php echo wp_kses_post( $headline ); ?></<?php echo $h_tag; // phpcs:ignore WordPress.Security.EscapeOutput ?>><?php endif; ?>
+		<?php
+		if ( '' !== $lead ) :
+			?>
+			<p class="starter-section-head__lead"><?php echo wp_kses_post( $lead ); ?></p><?php endif; ?>
 	</div>
 </div>
 <?php

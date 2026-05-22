@@ -56,7 +56,14 @@ ob_start();
 				'datetime'  => get_the_date( 'c', $post_id ),
 				'excerpt'   => get_the_excerpt( $post_id ),
 				'thumb'     => has_post_thumbnail( $post_id )
-					? get_the_post_thumbnail( $post_id, 'large', array( 'class' => 'starter-blog-index__img', 'alt' => '' ) )
+					? get_the_post_thumbnail(
+						$post_id,
+						'large',
+						array(
+							'class' => 'starter-blog-index__img',
+							'alt'   => '',
+						)
+					)
 					: '',
 			);
 		endwhile;

@@ -43,9 +43,7 @@ export default function Edit( {
 					<ToggleControl
 						label={ __( 'Show category filter', 'starter' ) }
 						checked={ attributes.showFilter }
-						onChange={ ( v ) =>
-							setAttributes( { showFilter: v } )
-						}
+						onChange={ ( v ) => setAttributes( { showFilter: v } ) }
 					/>
 				</PanelBody>
 			</InspectorControls>
