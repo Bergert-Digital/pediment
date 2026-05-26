@@ -32,23 +32,6 @@ require_once __DIR__ . '/inc/mega-menu.php';
 add_action(
 	'wp_enqueue_scripts',
 	function () {
-		if ( ! has_block( 'pediment/contact-form' ) ) {
-			return;
-		}
-		$rel = 'assets/js/frontend-contact-form.js';
-		wp_enqueue_script(
-			'pediment-frontend-contact-form',
-			get_theme_file_uri( $rel ),
-			array(),
-			(string) filemtime( get_theme_file_path( $rel ) ),
-			true
-		);
-	}
-);
-
-add_action(
-	'wp_enqueue_scripts',
-	function () {
 		$css = 'assets/css/theme.css';
 		wp_enqueue_style(
 			'pediment-theme',
