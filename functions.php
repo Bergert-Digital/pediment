@@ -80,6 +80,7 @@ add_action(
 add_action(
 	'after_setup_theme',
 	function () {
+		load_theme_textdomain( 'pediment', get_template_directory() . '/languages' );
 		add_editor_style( 'assets/css/theme.css' );
 		add_theme_support(
 			'custom-logo',
