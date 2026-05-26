@@ -45,8 +45,9 @@
   & &__cta {
     display: inline-flex;
     align-items: center;
-    gap: 9px;
-    padding: 16px 26px;
+    gap: 8px;
+    padding: 10px 20px;
+    font-size: var(--wp--preset--font-size--sm);
     background: var(--wp--preset--color--accent);
     color: var(--wp--preset--color--surface);
     border-radius: var(--r-pill, 999px);
