@@ -11,7 +11,7 @@
     font-weight: 700;
     line-height: 1.35;
     letter-spacing: -0.02em;
-    color: var(--wp--preset--color--text);
+    color: var(--wp--preset--color--foreground);
     margin: 0;
   }
 
@@ -20,7 +20,7 @@
     margin-top: var(--wp--preset--spacing--30);
     font-style: normal;
     font-weight: 600;
-    color: var(--wp--preset--color--text-muted);
+    color: var(--wp--preset--color--foreground-muted);
     font-size: var(--wp--preset--font-size--sm);
   }
 }
@@ -40,7 +40,7 @@
     font-weight: 700;
     line-height: 1.35;
     letter-spacing: -0.02em;
-    color: var(--wp--preset--color--text);
+    color: var(--wp--preset--color--foreground);
     margin: 0;
   }
 
@@ -67,12 +67,12 @@
   .starter-pull-quote__name {
     display: block;
     font-weight: 700;
-    color: var(--wp--preset--color--text);
+    color: var(--wp--preset--color--foreground);
   }
 
   .starter-pull-quote__role {
     display: block;
-    color: var(--wp--preset--color--text-muted);
+    color: var(--wp--preset--color--foreground-muted);
     font-size: 0.9rem;
   }
 }

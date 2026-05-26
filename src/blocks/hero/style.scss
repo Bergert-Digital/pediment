@@ -1,5 +1,5 @@
 .starter-hero {
-  color: var(--wp--preset--color--text);
+  color: var(--wp--preset--color--foreground);
 
   &.is-variant-centered { text-align: center; }
 
@@ -33,7 +33,7 @@
 
   &__subheadline {
     font-size: var(--wp--preset--font-size--lg);
-    color: var(--wp--preset--color--text-muted);
+    color: var(--wp--preset--color--foreground-muted);
     line-height: 1.6;
     margin: 0 0 var(--wp--preset--spacing--40);
     max-width: 40ch;
@@ -42,7 +42,7 @@
   &.is-variant-centered &__subheadline { margin-inline: auto; }
   &.is-variant-media-bg &__subheadline { color: color-mix(in srgb, var(--wp--preset--color--surface) 90%, transparent); }
 
-  &__cta {
+  & &__cta {
     display: inline-flex;
     align-items: center;
     gap: 9px;
@@ -92,7 +92,7 @@
 
   .starter-hero__cta--secondary {
     background: var(--wp--preset--color--surface);
-    color: var(--wp--preset--color--text);
+    color: var(--wp--preset--color--foreground);
     border: 1.5px solid var(--wp--preset--color--border);
   }
   .starter-hero__cta--secondary:hover {
@@ -113,7 +113,7 @@
     display: inline-flex;
     align-items: center;
     gap: 10px;
-    color: var(--wp--preset--color--text-muted);
+    color: var(--wp--preset--color--foreground-muted);
     font-size: .92rem;
     font-weight: 600;
   }

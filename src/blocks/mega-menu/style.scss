@@ -10,14 +10,14 @@
        The trigger isn't a .wp-block-navigation-item__content, so it
        doesn't inherit the doubled-class color override applied in
        assets/css/theme.css. */
-    color: var(--wp--preset--color--text-muted);
+    color: var(--wp--preset--color--foreground-muted);
     cursor: pointer;
     transition: color 0.15s ease;
 
     &:hover,
     &:focus-visible,
     &[aria-expanded="true"] {
-      color: var(--wp--preset--color--text);
+      color: var(--wp--preset--color--foreground);
     }
   }
 
@@ -95,7 +95,7 @@ svg.starter-mega-column__icon {
      link label/description align vertically with the heading text. */
   padding: 0.5rem 0.625rem 0.5rem 2rem;
   border-radius: 0.375rem;
-  color: var(--wp--preset--color--text);
+  color: var(--wp--preset--color--foreground);
   text-decoration: none;
   transition: background-color 140ms ease, color 140ms ease;
 
@@ -112,7 +112,7 @@ svg.starter-mega-column__icon {
 
   &__desc {
     font-size: 0.85rem;
-    color: var(--wp--preset--color--text-muted);
+    color: var(--wp--preset--color--foreground-muted);
     line-height: 1.4;
   }
 

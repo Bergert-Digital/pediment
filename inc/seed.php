@@ -101,6 +101,77 @@ function pediment_seed_run(): void {
 	if ( function_exists( 'pediment_nav_seed_entity' ) ) {
 		pediment_nav_seed_entity();
 	}
+
+	pediment_seed_header_template_part();
+}
+
+/**
+ * Seed an editable, DB-backed `header` wp_template_part so per-site header edits
+ * (logo, nav, CTA, spacers, …) persist via the Site Editor instead of requiring
+ * theme-file changes. Idempotent: skips when a header part already exists for the
+ * active theme.
+ */
+function pediment_seed_header_template_part(): void {
+	$theme = get_stylesheet();
+
+	$existing = get_posts(
+		array(
+			'name'        => 'header',
+			'post_type'   => 'wp_template_part',
+			'post_status' => 'publish',
+			'numberposts' => 1,
+			'fields'      => 'ids',
+			// phpcs:ignore WordPress.DB.SlowDBQuery -- seed lookup runs once per activation; tax query acceptable here.
+			'tax_query'   => array(
+				array(
+					'taxonomy' => 'wp_theme',
+					'field'    => 'name',
+					'terms'    => $theme,
+				),
+			),
+		)
+	);
+	if ( ! empty( $existing ) ) {
+		return;
+	}
+
+	$markup = '<!-- wp:group {"tagName":"header","className":"site-header","style":{"spacing":{"padding":{"top":"var:preset|spacing|20","bottom":"var:preset|spacing|20"},"blockGap":"0"},"border":{"bottom":{"color":"var:preset|color|border","width":"1px"}}},"backgroundColor":"surface","layout":{"type":"constrained"}} -->'
+		. '<header class="wp-block-group site-header has-border-color has-surface-background-color has-background" style="border-bottom-color:var(--wp--preset--color--border);border-bottom-width:1px;padding-top:var(--wp--preset--spacing--20);padding-bottom:var(--wp--preset--spacing--20)">'
+		. '<!-- wp:group {"align":"wide","layout":{"type":"flex","justifyContent":"space-between","flexWrap":"nowrap"},"style":{"spacing":{"blockGap":"0"}}} -->'
+		. '<div class="wp-block-group alignwide">'
+		. '<!-- wp:group {"className":"brand","layout":{"type":"flex","flexWrap":"nowrap"}} -->'
+		. '<div class="wp-block-group brand">'
+		. '<!-- wp:site-logo {"width":150} /-->'
+		. '</div>'
+		. '<!-- /wp:group -->'
+		. '<!-- wp:navigation {"overlayMenu":"mobile","layout":{"type":"flex","orientation":"horizontal","flexWrap":"nowrap"},"style":{"spacing":{"blockGap":"var:preset|spacing|30"},"typography":{"fontWeight":"600"}}} /-->'
+		. '<!-- wp:buttons -->'
+		. '<div class="wp-block-buttons">'
+		. '<!-- wp:button {"backgroundColor":"accent","textColor":"surface","style":{"border":{"radius":"999px"}}} -->'
+		. '<div class="wp-block-button"><a class="wp-block-button__link has-surface-color has-accent-background-color has-text-color has-background wp-element-button" href="/contact" style="border-radius:999px">Contact</a></div>'
+		. '<!-- /wp:button -->'
+		. '</div>'
+		. '<!-- /wp:buttons -->'
+		. '</div>'
+		. '<!-- /wp:group -->'
+		. '</header>'
+		. '<!-- /wp:group -->';
+
+	$id = wp_insert_post(
+		array(
+			'post_type'    => 'wp_template_part',
+			'post_status'  => 'publish',
+			'post_name'    => 'header',
+			'post_title'   => 'Header',
+			'post_content' => $markup,
+		),
+		true
+	);
+	if ( is_wp_error( $id ) || ! $id ) {
+		return;
+	}
+	wp_set_object_terms( (int) $id, $theme, 'wp_theme' );
+	wp_set_object_terms( (int) $id, 'header', 'wp_template_part_area' );
 }
 
 /**
@@ -302,36 +373,53 @@ function pediment_seed_apply_demo_image( string $content ): string {
 		return $content;
 	}
 
-	$content = preg_replace_callback(
-		'/<!-- wp:pediment\/hero (\{[^}]*"variant":"stat-card"[^}]*\}) \/-->/',
-		function ( $m ) use ( $id ) {
-			$attrs = json_decode( $m[1], true );
-			if ( ! is_array( $attrs ) ) {
-				return $m[0];
-			}
-			if ( empty( $attrs['mediaId'] ) ) {
-				$attrs['mediaId'] = $id;
-			}
-			return '<!-- wp:pediment/hero ' . wp_json_encode( $attrs ) . ' /-->';
-		},
-		$content
-	);
+	$url = (string) wp_get_attachment_image_url( $id, 'large' );
 
-	$empty_image     = "<!-- wp:image {\"sizeSlug\":\"large\",\"className\":\"starter-approach__image\"} -->\n"
-		. "<figure class=\"wp-block-image size-large starter-approach__image\"><img alt=\"\" /></figure>\n"
-		. '<!-- /wp:image -->';
-	$url             = (string) wp_get_attachment_image_url( $id, 'large' );
-	$populated_image = sprintf(
-		"<!-- wp:image {\"id\":%d,\"sizeSlug\":\"large\",\"className\":\"starter-approach__image\"} -->\n"
-		. "<figure class=\"wp-block-image size-large starter-approach__image\"><img src=\"%s\" alt=\"\" class=\"wp-image-%d\" /></figure>\n"
-		. '<!-- /wp:image -->',
-		$id,
-		esc_url( $url ),
-		$id
-	);
-	$content         = str_replace( $empty_image, $populated_image, $content );
+	$walk = function ( array &$block ) use ( &$walk, $id, $url ) {
+		$name = $block['blockName'] ?? '';
 
-	return $content;
+		if (
+			'pediment/hero' === $name
+			&& 'stat-card' === ( $block['attrs']['variant'] ?? '' )
+			&& empty( $block['attrs']['mediaId'] )
+		) {
+			$block['attrs']['mediaId'] = $id;
+		}
+
+		if (
+			'core/image' === $name
+			&& in_array(
+				'starter-approach__image',
+				preg_split( '/\s+/', (string) ( $block['attrs']['className'] ?? '' ), -1, PREG_SPLIT_NO_EMPTY ),
+				true
+			)
+			&& empty( $block['attrs']['id'] )
+		) {
+			$block['attrs']['id'] = $id;
+			$figure               = sprintf(
+				'<figure class="wp-block-image size-large starter-approach__image"><img src="%s" alt="" class="wp-image-%d" /></figure>',
+				esc_url( $url ),
+				$id
+			);
+			$block['innerHTML']    = $figure;
+			$block['innerContent'] = array( $figure );
+		}
+
+		if ( ! empty( $block['innerBlocks'] ) ) {
+			foreach ( $block['innerBlocks'] as &$inner ) {
+				$walk( $inner );
+			}
+			unset( $inner );
+		}
+	};
+
+	$blocks = parse_blocks( $content );
+	foreach ( $blocks as &$block ) {
+		$walk( $block );
+	}
+	unset( $block );
+
+	return serialize_blocks( $blocks );
 }
 
 /**

@@ -96,7 +96,7 @@
 .btn--primary:hover{ background:var(--wp--preset--color--accent-hover); color:#fff; }
 .btn--ghost{
   background:var(--wp--preset--color--surface);
-  color:var(--wp--preset--color--text);
+  color:var(--wp--preset--color--foreground);
   border-color:var(--wp--preset--color--border);
 }
 .btn--ghost:hover{ border-color:var(--wp--preset--color--accent); color:var(--wp--preset--color--accent); }
@@ -128,23 +128,16 @@ header.site-header{
   backdrop-filter:blur(10px);
   -webkit-backdrop-filter:blur(10px);
 }
-/* Header layout: brand on the left, nav fills the rest of the row, and
-   the spacers placed inside the nav (which already get `flex-grow:1`
-   from WP's auto-generated `.wp-container-content-N` class) push the
-   menu items toward the visual centre. The three nested wrappers
-   between <nav> and the flex layer that actually holds the spacers
-   need to stretch to 100% — otherwise the inner flex container
-   shrink-wraps and the spacers have nothing to grow into.
+/* Header layout: the alignwide group uses justify-content:space-between
+   with three children (brand, nav, CTA). The nav must size to its
+   content so space-between can distribute the slack — explicitly
+   flex:0 0 auto, since WP's default for a navigation block inside a
+   header flex container can otherwise behave as flex:1.
    IMPORTANT: target `nav.wp-block-navigation` specifically — the inner
-   <ul class="wp-block-navigation__container"> also carries a bare
-   `wp-block-navigation` class, so an unqualified `.wp-block-navigation`
-   selector matches the ul too and flex-grows it inside the content
-   layer, hijacking the slack the spacers need. */
-.site-header nav.wp-block-navigation{ flex:1 1 auto; min-width:0; }
-.site-header nav.wp-block-navigation > .wp-block-navigation__responsive-container,
-.site-header .wp-block-navigation__responsive-close,
-.site-header .wp-block-navigation__responsive-dialog,
-.site-header .wp-block-navigation__responsive-container-content{ width:100%; }
+   <ul class="wp-block-navigation__container"> also carries the bare
+   `wp-block-navigation` class, so an unqualified selector would match
+   the ul too. */
+.site-header nav.wp-block-navigation{ flex:0 0 auto; min-width:0; }
 /* Double the gap between menu items only (the <ul> inherits the nav's
    spacing--30 by default; bumping it here doesn't disturb the gap used
    between spacers/ul/buttons at the content layer above). */
@@ -156,12 +149,12 @@ header.site-header{
    match the doubled class to land at 0,3,1, and declare hover/focus
    with the same selector since `:hover` alone won't out-specify it. */
 .wp-block-navigation a.wp-block-navigation-item__content.wp-block-navigation-item__content{
-  color:var(--wp--preset--color--text-muted);
+  color:var(--wp--preset--color--foreground-muted);
   transition:color .15s ease;
 }
 .wp-block-navigation a.wp-block-navigation-item__content.wp-block-navigation-item__content:hover,
 .wp-block-navigation a.wp-block-navigation-item__content.wp-block-navigation-item__content:focus-visible{
-  color:var(--wp--preset--color--text);
+  color:var(--wp--preset--color--foreground);
 }
 /* Active nav link = accent. WP 6.7 core ships a doubled-class
    `.wp-block-navigation .wp-block-navigation-item__content.wp-block-navigation-item__content{color:inherit}`
@@ -268,7 +261,7 @@ header.site-header{
 .is-style-insights-grid .starter-insight-card__body .wp-block-post-date {
 	font-size: 0.85rem;
 	font-weight: 600;
-	color: var(--wp--preset--color--text-muted);
+	color: var(--wp--preset--color--foreground-muted);
 	margin: 0;
 }
 
@@ -278,7 +271,7 @@ header.site-header{
 	font-size: 1.18rem;
 	line-height: 1.28;
 	letter-spacing: -0.01em;
-	color: var(--wp--preset--color--text);
+	color: var(--wp--preset--color--foreground);
 	transition: color .15s ease;
 }
 
@@ -295,7 +288,7 @@ header.site-header{
 .is-style-insights-grid .starter-insight-card__body .wp-block-post-excerpt {
 	margin: 12px 0 0;
 	flex: 1;
-	color: var(--wp--preset--color--text-muted);
+	color: var(--wp--preset--color--foreground-muted);
 	line-height: 1.55;
 	font-size: 0.96rem;
 }
@@ -344,7 +337,7 @@ header.site-header{
 	border-radius: var(--r-pill, 999px);
 	border: 1.5px solid var(--wp--preset--color--border);
 	background: var(--wp--preset--color--surface);
-	color: var(--wp--preset--color--text);
+	color: var(--wp--preset--color--foreground);
 	font-weight: 700;
 	font-size: 0.92rem;
 	text-decoration: none;
