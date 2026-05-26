@@ -23,6 +23,11 @@ add_action(
 			PEDIMENT_CONTACT_ROUTE,
 			array(
 				'methods'             => 'POST',
+				// Public by design: this is an anonymous contact form. CSRF protection
+				// via WP nonces would require either a logged-in session or a
+				// page-rendered token + server-side verification — neither makes sense
+				// for a marketing site's contact form. Anti-spam relies on the
+				// honeypot (`hp_field`) and time-trap (`_t`) in the callback.
 				'permission_callback' => '__return_true',
 				'callback'            => 'pediment_contact_handle_submission',
 			)

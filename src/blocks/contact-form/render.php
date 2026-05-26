@@ -11,11 +11,10 @@ $success_message = isset( $attributes['successMessage'] ) ? (string) $attributes
 
 $wrapper = get_block_wrapper_attributes(
 	array(
-		'class'           => 'starter-contact-form',
-		'data-success'    => $success_message,
-		'data-recipient'  => $recipient,
-		'data-rest-url'   => esc_url_raw( rest_url( 'pediment/v1/contact' ) ),
-		'data-rest-nonce' => wp_create_nonce( 'wp_rest' ),
+		'class'          => 'starter-contact-form',
+		'data-success'   => $success_message,
+		'data-recipient' => $recipient,
+		'data-rest-url'  => esc_url_raw( rest_url( 'pediment/v1/contact' ) ),
 	)
 );
 
