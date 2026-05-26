@@ -23,9 +23,9 @@ class ThemeJsonTest extends WP_UnitTestCase {
 
 	public function test_navy_ink_and_surfaces() {
 		$p = $this->palette();
-		$this->assertSame( '#0B1B33', $p['text'] );
+		$this->assertSame( '#0B1B33', $p['foreground'] );
 		$this->assertSame( '#0A1B33', $p['primary'] );
-		$this->assertSame( '#5C6B82', $p['text-muted'] );
+		$this->assertSame( '#5C6B82', $p['foreground-muted'] );
 		$this->assertSame( '#FFFFFF', $p['surface'] );
 		$this->assertSame( '#F5F8FC', $p['surface-elevated'] );
 		$this->assertSame( '#E4EAF2', $p['border'] );
