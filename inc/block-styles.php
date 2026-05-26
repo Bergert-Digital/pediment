@@ -42,3 +42,21 @@ add_action(
 		);
 	}
 );
+
+// Insight-card styles ship only on pages that render `pediment/blog-index` or
+// `core/query` (the two blocks that produce insight-card markup). Hoists ~5 KB
+// of CSS out of the always-loaded theme.css.
+add_action(
+	'init',
+	function () {
+		$rel  = 'assets/css/insight-card.css';
+		$args = array(
+			'handle' => 'pediment-insight-card',
+			'src'    => get_theme_file_uri( $rel ),
+			'ver'    => (string) filemtime( get_theme_file_path( $rel ) ),
+			'path'   => get_theme_file_path( $rel ),
+		);
+		wp_enqueue_block_style( 'pediment/blog-index', $args );
+		wp_enqueue_block_style( 'core/query', $args );
+	}
+);
