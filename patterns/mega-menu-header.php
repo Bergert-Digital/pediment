@@ -3,6 +3,9 @@
  * Title: Mega Menu Demo Header
  * Slug: pediment/mega-menu-header
  * Categories: pediment
+ * Description: Header with a Pediment mega-menu showcasing nested columns and links.
+ * Keywords: header, navigation, mega menu, dropdown
+ * Viewport Width: 1400
  * Inserter: true
  */
 ?>

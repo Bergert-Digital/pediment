@@ -3,6 +3,9 @@
  * Title: Hero + CTA + FAQ
  * Slug: pediment/hero-cta-faq
  * Categories: pediment
+ * Description: Minimal landing composition: centered hero, CTA band, and three-item FAQ.
+ * Keywords: hero, cta, faq, landing, simple page
+ * Viewport Width: 1200
  */
 // phpcs:ignoreFile -- block pattern content
 ?>

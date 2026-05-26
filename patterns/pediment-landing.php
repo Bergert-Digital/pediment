@@ -5,6 +5,8 @@
  * Categories: pediment
  * Block Types: core/post-content
  * Description: Full Pediment landing page — hero, services, process, stats, testimonial, FAQ, CTA, and insights bands.
+ * Keywords: landing, home, full page, services, process, stats, testimonial
+ * Viewport Width: 1400
  */
 // phpcs:ignoreFile -- block pattern content
 ?>
