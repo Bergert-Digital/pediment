@@ -22,6 +22,7 @@ $timestamp = time();
 
 ob_start();
 ?>
+<?php // $wrapper is pre-escaped by get_block_wrapper_attributes(); echoing as-is. ?>
 <form <?php echo $wrapper; // phpcs:ignore WordPress.Security.EscapeOutput ?>>
 	<label class="starter-contact-form__field">
 		<span><?php esc_html_e( 'Name', 'pediment' ); ?></span>
