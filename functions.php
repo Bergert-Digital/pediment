@@ -67,11 +67,12 @@ add_action(
 	}
 );
 
-// No-FOUC: add the .anim class before first paint.
+// No-FOUC: add the .anim class before first paint. Use wp_print_inline_script_tag
+// so security plugins / hosts that emit a CSP nonce can attach it automatically.
 add_action(
 	'wp_head',
 	function () {
-		echo "<script>document.documentElement.classList.add('anim')</script>\n";
+		wp_print_inline_script_tag( "document.documentElement.classList.add('anim')" );
 	},
 	0
 );
