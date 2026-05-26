@@ -3,6 +3,9 @@
  * Title: Prose article
  * Slug: pediment/prose-article
  * Categories: pediment
+ * Description: Article-style long-form layout: heading, paragraph, subheading.
+ * Keywords: article, prose, blog post, long form, writing
+ * Viewport Width: 720
  */
 // phpcs:ignoreFile -- block pattern content
 ?>

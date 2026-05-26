@@ -3,6 +3,9 @@
  * Title: Contact page
  * Slug: pediment/contact-page
  * Categories: pediment
+ * Description: Centered contact hero + form with name, email, phone, and message.
+ * Keywords: contact, form, get in touch
+ * Viewport Width: 1200
  */
 // phpcs:ignoreFile -- block pattern content
 ?>
