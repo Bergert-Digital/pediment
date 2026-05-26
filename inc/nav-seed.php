@@ -20,42 +20,18 @@ const PEDIMENT_NAV_MARKER = '_pediment_seeded_nav';
 /**
  * Serialized block markup for the default menu.
  *
- * Products mega-menu + About / Blog / Contact nav links. The header's pill CTA is
- * a separate wp:button in parts/header.html. Relative custom URLs keep the
- * menu install-independent (active state handled by inc/nav-active.php).
+ * Links only at pages the seed creates. The header's pill CTA is a separate
+ * wp:button in the seeded header template part. The mega-menu block is
+ * showcased on the /mega-demo page, not in the default header nav. Relative
+ * custom URLs keep the menu install-independent (active state handled by
+ * inc/nav-active.php).
  *
  * @return string
  */
 function pediment_nav_menu_blocks(): string {
-	$mega = wp_json_encode(
-		array(
-			'label'   => 'Products',
-			'columns' => array(
-				array(
-					'heading' => 'Product',
-					'icon'    => 'bank',
-					'links'   => array(
-						array(
-							'label'       => 'Pricing',
-							'url'         => '/pricing',
-							'description' => 'Plans',
-						),
-						array(
-							'label'       => 'Docs',
-							'url'         => '/docs',
-							'description' => 'Guides',
-						),
-					),
-				),
-			),
-		),
-		JSON_HEX_TAG | JSON_UNESCAPED_SLASHES
-	);
-
 	return implode(
 		"\n",
 		array(
-			'<!-- wp:pediment/mega-menu ' . $mega . ' /-->',
 			'<!-- wp:navigation-link {"label":"About","url":"/about","kind":"custom"} /-->',
 			'<!-- wp:navigation-link {"label":"Blog","url":"/blog","kind":"custom"} /-->',
 			'<!-- wp:navigation-link {"label":"Contact","url":"/contact","kind":"custom"} /-->',
