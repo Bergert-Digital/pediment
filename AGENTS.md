@@ -46,11 +46,11 @@ plugin). See `docs/VISION.md`. Read `docs/STANDARDS.md` before changing code.
    mobile gutter, the editor canvas, or a band's measured x/width is not done. The audit
    script's `test-results/audit/index.html` is the source of truth for "matches the
    mockup".
-5. **Before claiming any WordPress-side fix**: skim `docs/WORDPRESS_TRAPS.md` for known
+5. **Before claiming any WordPress-side fix**: consult @docs/WORDPRESS_TRAPS.md for known
    platform quirks (slug sanitization, has-global-padding nested-reset, wp_update_post
-   un-slashing, edit.tsx ↔ render.php parity, etc.). If a fix touches one of those areas,
-   add a brief note or new entry to the traps doc so the next session inherits the
-   knowledge.
+   un-slashing, edit.tsx ↔ render.php parity, REST nonce theatre, etc.). If a fix touches
+   one of those areas, add a brief note or new entry to the traps doc so the next
+   session inherits the knowledge.
 
 No success claims without running the relevant command and seeing it pass.
 
