@@ -27,15 +27,31 @@ function pediment_icon( $name, $extra_class = '' ) {
 }
 
 /**
+ * Read the Phosphor sprite once per request. Cached in a static so any
+ * combined front-end + editor-asset flow within a single request hits
+ * memory after the first read.
+ *
+ * @return string Raw SVG markup, or '' if the file is missing.
+ */
+function pediment_icon_sprite_contents(): string {
+	static $contents = null;
+	if ( null === $contents ) {
+		$file     = get_theme_file_path( 'assets/icons/phosphor-sprite.svg' );
+		$contents = is_readable( $file ) ? (string) file_get_contents( $file ) : '';
+	}
+	return $contents;
+}
+
+/**
  * Print the Phosphor sprite once, then deregister itself so it cannot
  * fire twice within a single request.
  */
 function pediment_print_icon_sprite() {
 	remove_action( 'wp_body_open', 'pediment_print_icon_sprite', 1 );
-	$file = get_theme_file_path( 'assets/icons/phosphor-sprite.svg' );
-	if ( is_readable( $file ) ) {
+	$sprite = pediment_icon_sprite_contents();
+	if ( '' !== $sprite ) {
 		// Static, theme-controlled SVG sprite; safe to output verbatim.
-		echo file_get_contents( $file ); // phpcs:ignore WordPress.Security.EscapeOutput
+		echo $sprite; // phpcs:ignore WordPress.Security.EscapeOutput
 	}
 }
 add_action( 'wp_body_open', 'pediment_print_icon_sprite', 1 );
@@ -48,11 +64,10 @@ add_action( 'wp_body_open', 'pediment_print_icon_sprite', 1 );
  * from the outer admin window once the canvas iframe appears.
  */
 function pediment_enqueue_editor_icon_sprite() {
-	$sprite_path = get_theme_file_path( 'assets/icons/phosphor-sprite.svg' );
-	if ( ! is_readable( $sprite_path ) ) {
+	$sprite = pediment_icon_sprite_contents();
+	if ( '' === $sprite ) {
 		return;
 	}
-	$sprite = file_get_contents( $sprite_path );
 	// Inject the sprite into the outer admin document AND into every iframe
 	// we can reach (post editor, site editor, template-part editor all use
 	// their own iframes; the Site Editor in particular swaps iframes when
