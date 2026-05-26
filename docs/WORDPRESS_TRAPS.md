@@ -240,6 +240,92 @@ If it's < 1200, the symptom is expected.
 
 ---
 
+## Public REST endpoint with `__return_true` + ceremonial nonce
+
+**Symptom.** A block (e.g. contact form) renders `data-rest-nonce` and its front-end JS
+sends `X-WP-Nonce`, suggesting CSRF protection. But `curl -X POST` with no nonce — or a
+deliberately wrong one — still returns 200. A reviewer flags the route as missing CSRF;
+another points at the nonce and says it's fine. Both are partly right.
+**Cause.** `permission_callback => '__return_true'` short-circuits authentication. WP's
+`rest_cookie_check_errors` only rejects bad nonces for *logged-in* users; anonymous
+requests with no nonce, an invalid nonce, or the right nonce are all accepted identically.
+The nonce in the rendered HTML is theatre against anonymous clients.
+**Fix.** Pick one and add an inline comment at the `register_rest_route` call so the next
+reader knows the choice was deliberate:
+- True public endpoint (contact form, public webhook): keep `__return_true`, **delete**
+  the unused `data-rest-nonce` + `X-WP-Nonce` plumbing from the block's `render.php` and
+  view JS. Rely on honeypot + time-trap + rate-limiting.
+- Nonce-required endpoint: replace `__return_true` with a callback that calls
+  `wp_verify_nonce( $request->get_header( 'x_wp_nonce' ), 'wp_rest' )`.
+**Catch it early.** From a logged-out shell:
+`curl -i -X POST -H 'Content-Type: application/json' -d '{}' http://localhost:8888/wp-json/<ns>/<route>`
+If it returns 200 (or a validation 400, not a 401/403) and the front-end *also* sends
+`X-WP-Nonce`, the nonce isn't doing anything — fix the gap or strip the nonce.
+
+---
+
+## Front-end block JS: prefer `viewScript` over `has_block()` + manual enqueue
+
+**Symptom.** A `wp_enqueue_scripts` callback in `functions.php` does
+`if ( ! has_block( 'pediment/<name>' ) ) return;` and then `wp_enqueue_script(...)` by
+hand. Works, but the pattern is duplicated per block; deps and version stay hand-rolled
+and drift from what `@wordpress/scripts` would emit.
+**Cause.** Two valid mechanisms exist. The manual one was added before `viewScript`
+matured. As of API v3, declaring `"viewScript": "file:./view.js"` in `block.json` makes WP
+(a) load the script only when the block is rendered, (b) wire deps + version from
+`build/blocks/<name>/view.asset.php` automatically, and (c) respect `strategy => 'defer'`
+when registered with the WP 6.3+ args.
+**Fix.** Add `"viewScript": "file:./view.js"` to the block's `block.json`, move the JS
+into `src/blocks/<name>/view.{ts,js}` so the build emits a sibling `.asset.php`, and
+delete the matching `wp_enqueue_scripts` + `has_block` block in `functions.php`. To
+defer, hook `wp_script_attributes` and set `defer => true` on the generated handle, or
+pass `'strategy' => 'defer'` via a `register_block_type_args` filter.
+**Catch it early.** `grep -nE 'has_block\(' inc/ functions.php` — every match is a
+candidate for `viewScript` migration unless it's gating CSS or a shared library.
+
+---
+
+## Inline `echo "<script>"` in `wp_head` breaks under strict CSP
+
+**Symptom.** The site works fine until a host or security plugin enables a strict
+Content-Security-Policy header. Browser console then reports
+`Refused to execute inline script because it violates the following CSP directive`, and
+the no-FOUC `.anim` class never lands — a flash of unstyled content appears, or
+animations never trigger.
+**Cause.** `echo "<script>...</script>"` writes the tag without a `nonce` attribute. WP's
+`wp_print_inline_script_tag()` (5.7+) emits the same script but auto-attaches the CSP
+nonce registered by a security plugin via the `wp_inline_script_attributes` filter.
+**Fix.** Replace `echo "<script>...</script>";` in `functions.php`/`inc/icons.php` with
+`wp_print_inline_script_tag( 'document.documentElement.classList.add("anim")' )` (or
+`wp_get_inline_script_tag()` if you need the string). The same fix applies to the editor
+icon-sprite injector in `inc/icons.php`.
+**Catch it early.** `grep -rnE 'echo .*<script' functions.php inc/` — each match needs the
+helper instead. Periodically smoke-test with a strict CSP header injected via
+`.wp-env.override.json` and confirm the home page paints correctly.
+
+---
+
+## `theme.json` `styles.css` is inlined into every page's `<head>`
+
+**Symptom.** PageSpeed flags "render-blocking inline CSS"; even a minimal page emits a
+~3KB `<style>` block in `<head>` containing rules that have nothing to do with the
+rendered blocks (Navigation submenu colors, CTA-button hovers, etc.). Caching is
+impossible because the rules are inline, not enqueued.
+**Cause.** Anything inside `theme.json` `styles.css` is concatenated into WP's global
+stylesheet, which is emitted inline on every request. It's an escape hatch for selectors
+the schema can't express, not a general-purpose stylesheet location.
+**Fix.** Triage each rule in [theme.json](../theme.json) `styles.css`:
+1. Block-scoped → move to `styles.blocks.<ns/name>` (where the Site Editor can override
+   it) or to that block's `style.scss` / `viewStyle`.
+2. True global layout (`.wp-site-blocks`, `<main>` flex chain) → keep in `theme.json`.
+3. Theme chrome that doesn't belong to a block (header layout, custom utility classes) →
+   move to [assets/css/theme.css](../assets/css/theme.css) and enqueue normally.
+**Catch it early.** `curl -s http://localhost:8888/ | tr '<' '\n' | grep -c '^style'` —
+the count, and the size of the first `<style>…</style>` block, should shrink after the
+triage. Anything > ~500 bytes inline is a smell.
+
+---
+
 ## The audit tool is verification, not optional research
 
 **Symptom.** Layout fixes ship, the front page looks right at the author's viewport,
