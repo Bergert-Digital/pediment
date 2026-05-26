@@ -43,17 +43,17 @@ function pediment_seed_run(): void {
 		),
 		'about'     => array(
 			'title'   => 'About',
-			'content' =>
-				'<!-- wp:pediment/hero {"variant":"default","headline":"About us","subheadline":"Who we are and what we do.","align":"wide"} /-->' .
-				'<!-- wp:pediment/prose -->' .
-					'<!-- wp:paragraph --><p>Tell your story here. Keep it human and specific.</p><!-- /wp:paragraph -->' .
-				'<!-- /wp:pediment/prose -->',
+			'content' => pediment_seed_page_band_hero( 'ABOUT', 'About us', 'Who we are and what we do.' ) .
+				pediment_seed_page_band_content(
+					'<!-- wp:pediment/prose -->' .
+						'<!-- wp:paragraph --><p>Tell your story here. Keep it human and specific.</p><!-- /wp:paragraph -->' .
+					'<!-- /wp:pediment/prose -->'
+				),
 		),
 		'contact'   => array(
 			'title'   => 'Contact',
-			'content' =>
-				'<!-- wp:pediment/hero {"variant":"centered","headline":"Contact","subheadline":"Tell us about your project.","align":"wide"} /-->' .
-				'<!-- wp:pediment/contact-form {"includePhone":true} /-->',
+			'content' => pediment_seed_page_band_hero( 'CONTACT', 'Contact', 'Tell us about your project.' ) .
+				pediment_seed_page_band_content( '<!-- wp:pediment/contact-form {"includePhone":true} /-->' ),
 		),
 		'blog'      => array(
 			'title'   => 'Blog',
@@ -103,6 +103,14 @@ function pediment_seed_run(): void {
 	}
 
 	pediment_seed_header_template_part();
+
+	// Without pretty permalinks the seeded /about/, /blog/, /contact/ URLs 404.
+	// Default WP installs ship with the plain `?p=ID` structure; switch to
+	// /%postname%/ and flush so the nav links the seed paints actually resolve.
+	if ( '' === (string) get_option( 'permalink_structure', '' ) ) {
+		update_option( 'permalink_structure', '/%postname%/' );
+		flush_rewrite_rules();
+	}
 }
 
 /**
@@ -395,8 +403,8 @@ function pediment_seed_apply_demo_image( string $content ): string {
 			)
 			&& empty( $block['attrs']['id'] )
 		) {
-			$block['attrs']['id'] = $id;
-			$figure               = sprintf(
+			$block['attrs']['id']  = $id;
+			$figure                = sprintf(
 				'<figure class="wp-block-image size-large starter-approach__image"><img src="%s" alt="" class="wp-image-%d" /></figure>',
 				esc_url( $url ),
 				$id
@@ -507,4 +515,44 @@ function pediment_seed_sample_posts(): void {
 			set_post_thumbnail( (int) $post_id, $demo_image_id );
 		}
 	}
+}
+
+/**
+ * Build the surface-band hero used on simple pages (About, Contact, etc.).
+ *
+ * Mirrors the blog index hero (templates/home.html): a full-bleed
+ * .starter-band.is-style-band-surface with a centered kicker eyebrow, H1, and
+ * lead paragraph. The H1 here serves as the page heading (page.html drops
+ * wp:post-title, so content owns the H1).
+ *
+ * @param string $kicker   Short uppercase eyebrow label (e.g. "ABOUT").
+ * @param string $headline H1 text.
+ * @param string $lead     Subtitle paragraph text.
+ * @return string Block markup.
+ */
+function pediment_seed_page_band_hero( string $kicker, string $headline, string $lead ): string {
+	return '<!-- wp:group {"align":"full","className":"starter-band is-style-band-surface","style":{"spacing":{"margin":{"top":"0","bottom":"0"}}},"layout":{"type":"constrained"}} -->' .
+		'<div class="wp-block-group alignfull starter-band is-style-band-surface is-layout-constrained wp-block-group-is-layout-constrained" style="margin-top:0;margin-bottom:0">' .
+			'<!-- wp:paragraph {"align":"center","className":"kicker"} --><p class="has-text-align-center kicker">' . esc_html( $kicker ) . '</p><!-- /wp:paragraph -->' .
+			'<!-- wp:heading {"textAlign":"center","level":1} --><h1 class="wp-block-heading has-text-align-center">' . esc_html( $headline ) . '</h1><!-- /wp:heading -->' .
+			'<!-- wp:paragraph {"align":"center","className":"lead"} --><p class="has-text-align-center lead">' . esc_html( $lead ) . '</p><!-- /wp:paragraph -->' .
+		'</div>' .
+		'<!-- /wp:group -->';
+}
+
+/**
+ * Wrap page content (prose, contact form, etc.) in a transparent .starter-band
+ * so it inherits the same vertical rhythm as the hero band above it.
+ * Theme.css zeroes block-gap between site-block children, so without a band
+ * the content butts directly against the hero.
+ *
+ * @param string $inner_blocks Already-serialized block markup to wrap.
+ * @return string
+ */
+function pediment_seed_page_band_content( string $inner_blocks ): string {
+	return '<!-- wp:group {"align":"full","className":"starter-band","style":{"spacing":{"margin":{"top":"0","bottom":"0"}}},"layout":{"type":"constrained"}} -->' .
+		'<div class="wp-block-group alignfull starter-band is-layout-constrained wp-block-group-is-layout-constrained" style="margin-top:0;margin-bottom:0">' .
+			$inner_blocks .
+		'</div>' .
+		'<!-- /wp:group -->';
 }
