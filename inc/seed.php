@@ -259,7 +259,7 @@ function pediment_seed_demo_image(): int {
 		return (int) $existing[0];
 	}
 
-	$src = get_template_directory() . '/docs/images/dylan-gillis-KdeqA3aTnBY-unsplash.jpg';
+	$src = get_template_directory() . '/assets/seed/dylan-gillis-KdeqA3aTnBY-unsplash.jpg';
 	if ( ! file_exists( $src ) ) {
 		return 0;
 	}
@@ -330,7 +330,7 @@ function pediment_seed_demo_logo(): int {
 		return $id;
 	}
 
-	$src = get_template_directory() . '/docs/images/logo-demo.svg';
+	$src = get_template_directory() . '/assets/seed/logo-demo.svg';
 	if ( ! file_exists( $src ) ) {
 		return 0;
 	}
