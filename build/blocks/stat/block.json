@@ -1,0 +1,30 @@
+{
+  "$schema": "https://schemas.wp.org/trunk/block.json",
+  "apiVersion": 3,
+  "name": "pediment/stat",
+  "title": "Stat",
+  "category": "pediment",
+  "description": "A prominent number or short value with a label and optional context line.",
+  "textdomain": "pediment",
+  "supports": {
+    "html": false
+  },
+  "attributes": {
+    "value": {
+      "type": "string",
+      "default": ""
+    },
+    "label": {
+      "type": "string",
+      "default": ""
+    },
+    "context": {
+      "type": "string",
+      "default": ""
+    }
+  },
+  "editorScript": "file:./index.js",
+  "editorStyle": "file:./style-index.css",
+  "style": "file:./style-index.css",
+  "render": "file:./render.php"
+}
