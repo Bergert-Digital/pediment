@@ -1,6 +1,7 @@
 .git
 .github
 .distignore
+.worktrees
 .wp-env.json
 node_modules
 src
