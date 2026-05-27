@@ -13,14 +13,27 @@ if ( defined( 'WP_CLI' ) && WP_CLI ) {
 	\WP_CLI::add_command( 'pediment seed', 'pediment_seed_cli' );
 }
 
-function pediment_seed_cli(): void {
-	pediment_seed_run();
+/**
+ * WP-CLI entrypoint.
+ *
+ * ## OPTIONS
+ *
+ * [--force]
+ * : Re-apply content (and demo image refs) to pages that already exist.
+ *   Without this flag, existing pages at the seeded slugs are left untouched.
+ *
+ * @param array $args       Positional args (unused).
+ * @param array $assoc_args Associative args from WP-CLI.
+ */
+function pediment_seed_cli( array $args = array(), array $assoc_args = array() ): void {
+	$force = ! empty( $assoc_args['force'] );
+	pediment_seed_run( $force );
 	if ( class_exists( '\\WP_CLI' ) ) {
-		\WP_CLI::success( 'Pediment seeded.' );
+		\WP_CLI::success( $force ? 'Pediment re-seeded (--force).' : 'Pediment seeded.' );
 	}
 }
 
-function pediment_seed_run(): void {
+function pediment_seed_run( bool $force = false ): void {
 	$brand_defaults = array(
 		'brand_name'    => get_bloginfo( 'name' ) ?: 'Acme',
 		'brand_tagline' => 'Short benefit-led promise.',
@@ -69,7 +82,18 @@ function pediment_seed_run(): void {
 	$page_ids = array();
 	foreach ( $pages as $slug => $page ) {
 		$existing = get_page_by_path( $slug, OBJECT, 'page' );
-		if ( $existing ) {
+		if ( $existing && ! $force ) {
+			$page_ids[ $slug ] = (int) $existing->ID;
+			continue;
+		}
+		if ( $existing && $force ) {
+			wp_update_post(
+				array(
+					'ID'           => (int) $existing->ID,
+					'post_content' => $page['content'],
+				),
+				true
+			);
 			$page_ids[ $slug ] = (int) $existing->ID;
 			continue;
 		}

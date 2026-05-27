@@ -57,6 +57,7 @@ Stop with `npm run env:stop`.
 | `composer lint`                                  | PHPCS (WP standards + custom color sniff)        |
 | `npm run e2e`                                    | Playwright against http://localhost:8888         |
 | `npx wp-env run cli wp pediment seed`       | Populate Brand defaults + 4 sample pages         |
+| `npx wp-env run cli wp pediment seed --force` | Re-apply seeded page content (destructive: overwrites hand-edited /home/, /about/, /contact/, /blog/, /mega-demo/) |
 
 ### Run PHPUnit
 
