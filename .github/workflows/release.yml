@@ -59,10 +59,8 @@ jobs:
           VERSION: ${{ inputs.version }}
         run: |
           sed -i -E "s/^(Version:[[:space:]]+).+$/\1$VERSION/" style.css
-          sed -i -E "s/(define\([[:space:]]*'PEDIMENT_THEME_VERSION',[[:space:]]*')[^']*('[[:space:]]*\))/\1$VERSION\2/" functions.php
           node -e "const f='package.json';const p=require('./'+f);p.version=process.env.VERSION;require('fs').writeFileSync(f,JSON.stringify(p,null,2)+'\n');"
           grep -E "^Version:" style.css
-          grep "PEDIMENT_THEME_VERSION" functions.php
           grep '"version"' package.json
 
       - name: Create release commit and push tag
@@ -73,7 +71,7 @@ jobs:
           git config user.name  "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -f build
-          git add style.css functions.php package.json
+          git add style.css package.json
           git commit -m "build: artifacts for $TAG"
           git tag -a "$TAG" -m "Release $TAG"
           git push origin "refs/tags/$TAG"
