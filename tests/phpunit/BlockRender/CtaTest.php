@@ -2,7 +2,7 @@
 
 class CtaTest extends WP_UnitTestCase {
 	private function render( array $attrs ): string {
-		return do_blocks( '<!-- wp:starter/cta ' . wp_json_encode( $attrs ) . ' /-->' );
+		return do_blocks( '<!-- wp:pediment/cta ' . wp_json_encode( $attrs ) . ' /-->' );
 	}
 
 	public function test_renders_title_body_and_primary_button() {

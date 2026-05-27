@@ -1,10 +1,11 @@
 import { __ } from '@wordpress/i18n';
+import { useBlockProps, InspectorControls } from '@wordpress/block-editor';
 import {
-	useBlockProps,
-	RichText,
-	InspectorControls,
-} from '@wordpress/block-editor';
-import { PanelBody, ToggleControl, TextControl } from '@wordpress/components';
+	PanelBody,
+	ToggleControl,
+	TextControl,
+	TextareaControl,
+} from '@wordpress/components';
 
 type Attrs = {
 	includePhone: boolean;
@@ -13,19 +14,23 @@ type Attrs = {
 };
 
 export default function Edit( {
+	clientId,
 	attributes,
 	setAttributes,
 }: {
+	clientId: string;
 	attributes: Attrs;
 	setAttributes: ( a: Partial< Attrs > ) => void;
 } ) {
 	const blockProps = useBlockProps( { className: 'starter-contact-form' } );
+	const fieldId = ( name: string ) =>
+		`pediment-contact-${ clientId }-${ name }`;
 	return (
 		<>
 			<InspectorControls>
-				<PanelBody title={ __( 'Form settings', 'starter' ) }>
+				<PanelBody title={ __( 'Form settings', 'pediment' ) }>
 					<ToggleControl
-						label={ __( 'Include phone field', 'starter' ) }
+						label={ __( 'Include phone field', 'pediment' ) }
 						checked={ attributes.includePhone }
 						onChange={ ( v ) =>
 							setAttributes( { includePhone: v } )
@@ -34,61 +39,86 @@ export default function Edit( {
 					<TextControl
 						label={ __(
 							'Recipient email (override Brand default)',
-							'starter'
+							'pediment'
 						) }
 						value={ attributes.recipientOverride }
 						onChange={ ( v ) =>
 							setAttributes( { recipientOverride: v } )
 						}
 					/>
+					<TextareaControl
+						label={ __( 'Success message', 'pediment' ) }
+						help={ __(
+							'Shown to visitors after the form is submitted.',
+							'pediment'
+						) }
+						value={ attributes.successMessage }
+						onChange={ ( v ) =>
+							setAttributes( { successMessage: v } )
+						}
+					/>
 				</PanelBody>
 			</InspectorControls>
 			<form { ...blockProps } onSubmit={ ( e ) => e.preventDefault() }>
-				<label htmlFor="starter-contact-name">
-					{ __( 'Name', 'starter' ) }{ ' ' }
+				<label
+					className="starter-contact-form__field"
+					htmlFor={ fieldId( 'name' ) }
+				>
+					<span>{ __( 'Name', 'pediment' ) }</span>
 					<input
-						id="starter-contact-name"
+						id={ fieldId( 'name' ) }
 						type="text"
-						disabled
-						placeholder={ __( 'Name', 'starter' ) }
+						name="name"
+						readOnly
 					/>
 				</label>
-				<label htmlFor="starter-contact-email">
-					{ __( 'Email', 'starter' ) }{ ' ' }
+				<label
+					className="starter-contact-form__field"
+					htmlFor={ fieldId( 'email' ) }
+				>
+					<span>{ __( 'Email', 'pediment' ) }</span>
 					<input
-						id="starter-contact-email"
+						id={ fieldId( 'email' ) }
 						type="email"
-						disabled
-						placeholder={ __( 'Email', 'starter' ) }
+						name="email"
+						readOnly
 					/>
 				</label>
 				{ attributes.includePhone && (
-					<label htmlFor="starter-contact-phone">
-						{ __( 'Phone', 'starter' ) }{ ' ' }
+					<label
+						className="starter-contact-form__field"
+						htmlFor={ fieldId( 'phone' ) }
+					>
+						<span>{ __( 'Phone', 'pediment' ) }</span>
 						<input
-							id="starter-contact-phone"
+							id={ fieldId( 'phone' ) }
 							type="tel"
-							disabled
-							placeholder={ __( 'Phone', 'starter' ) }
+							name="phone"
+							readOnly
 						/>
 					</label>
 				) }
-				<label htmlFor="starter-contact-message">
-					{ __( 'Message', 'starter' ) }{ ' ' }
+				<label
+					className="starter-contact-form__field"
+					htmlFor={ fieldId( 'message' ) }
+				>
+					<span>{ __( 'Message', 'pediment' ) }</span>
 					<textarea
-						id="starter-contact-message"
-						disabled
-						placeholder={ __( 'Message', 'starter' ) }
+						id={ fieldId( 'message' ) }
+						name="message"
+						rows={ 5 }
+						readOnly
 					/>
 				</label>
-				<button type="button" disabled>
-					{ __( 'Send', 'starter' ) }
+
+				<button type="button" className="starter-contact-form__submit">
+					{ __( 'Send', 'pediment' ) }
 				</button>
-				<RichText
-					tagName="p"
-					value={ attributes.successMessage }
-					onChange={ ( v ) => setAttributes( { successMessage: v } ) }
-					placeholder={ __( 'Success message…', 'starter' ) }
+
+				<p
+					className="starter-contact-form__status"
+					role="status"
+					hidden
 				/>
 			</form>
 		</>

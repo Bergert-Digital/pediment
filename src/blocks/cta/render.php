@@ -1,6 +1,6 @@
 <?php
 /**
- * Server-side render for starter/cta.
+ * Server-side render for pediment/cta.
  *
  * @var array $attributes
  */

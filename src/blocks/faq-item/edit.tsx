@@ -14,16 +14,18 @@ export default function Edit( {
 	return (
 		<div { ...blockProps }>
 			<RichText
-				tagName="strong"
+				tagName="div"
+				className="starter-faq-item__question"
 				value={ attributes.question }
 				onChange={ ( v ) => setAttributes( { question: v } ) }
-				placeholder={ __( 'Question…', 'starter' ) }
+				placeholder={ __( 'Question…', 'pediment' ) }
 			/>
 			<RichText
-				tagName="p"
+				tagName="div"
+				className="starter-faq-item__answer"
 				value={ attributes.answer }
 				onChange={ ( v ) => setAttributes( { answer: v } ) }
-				placeholder={ __( 'Answer…', 'starter' ) }
+				placeholder={ __( 'Answer…', 'pediment' ) }
 			/>
 		</div>
 	);

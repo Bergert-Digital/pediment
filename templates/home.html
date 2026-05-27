@@ -1,0 +1,65 @@
+<!-- wp:template-part {"slug":"header","tagName":"header"} /-->
+
+<!-- wp:group {"tagName":"main","layout":{"type":"constrained"}} -->
+<main class="wp-block-group">
+
+<!-- wp:group {"align":"full","className":"starter-band is-style-band-surface","style":{"spacing":{"margin":{"top":"0","bottom":"0"}}},"layout":{"type":"constrained"}} -->
+<div class="wp-block-group alignfull starter-band is-style-band-surface is-layout-constrained wp-block-group-is-layout-constrained" style="margin-top:0;margin-bottom:0">
+	<!-- wp:paragraph {"align":"center","className":"kicker"} -->
+	<p class="has-text-align-center kicker">INSIGHTS</p>
+	<!-- /wp:paragraph -->
+	<!-- wp:heading {"textAlign":"center","level":1} -->
+	<h1 class="wp-block-heading has-text-align-center">Latest thinking from the team</h1>
+	<!-- /wp:heading -->
+	<!-- wp:paragraph {"align":"center","className":"lead"} -->
+	<p class="has-text-align-center lead">Field notes, briefings, and longer-form essays from across the team.</p>
+	<!-- /wp:paragraph -->
+</div>
+<!-- /wp:group -->
+
+<!-- wp:group {"align":"full","className":"starter-band","style":{"spacing":{"margin":{"top":"0","bottom":"0"}}},"layout":{"type":"constrained"}} -->
+<div class="wp-block-group alignfull starter-band is-layout-constrained wp-block-group-is-layout-constrained" style="margin-top:0;margin-bottom:0">
+	<!-- wp:query {"queryId":0,"query":{"perPage":9,"pages":0,"offset":0,"postType":"post","order":"desc","orderBy":"date","inherit":true},"align":"wide","className":"is-style-insights-grid"} -->
+	<div class="wp-block-query alignwide is-style-insights-grid">
+
+		<!-- wp:post-template {"layout":{"type":"grid","columnCount":3}} -->
+
+			<!-- wp:group {"className":"starter-insight-card__media","layout":{"type":"default"}} -->
+			<div class="wp-block-group starter-insight-card__media">
+				<!-- wp:post-featured-image {"isLink":true,"aspectRatio":"16/11"} /-->
+				<!-- wp:post-terms {"term":"category"} /-->
+			</div>
+			<!-- /wp:group -->
+
+			<!-- wp:group {"className":"starter-insight-card__body","layout":{"type":"flex","orientation":"vertical","flexWrap":"nowrap"}} -->
+			<div class="wp-block-group starter-insight-card__body">
+				<!-- wp:post-date {"fontSize":"sm"} /-->
+				<!-- wp:post-title {"isLink":true,"level":3} /-->
+				<!-- wp:post-excerpt {"moreText":"","showMoreOnNewLine":false} /-->
+				<!-- wp:read-more {"content":"Read more →"} /-->
+			</div>
+			<!-- /wp:group -->
+
+		<!-- /wp:post-template -->
+
+		<!-- wp:query-no-results -->
+			<!-- wp:paragraph -->
+			<p>No posts yet.</p>
+			<!-- /wp:paragraph -->
+		<!-- /wp:query-no-results -->
+
+		<!-- wp:query-pagination {"paginationArrow":"arrow","layout":{"type":"flex","justifyContent":"center"}} -->
+			<!-- wp:query-pagination-previous /-->
+			<!-- wp:query-pagination-numbers /-->
+			<!-- wp:query-pagination-next /-->
+		<!-- /wp:query-pagination -->
+
+	</div>
+	<!-- /wp:query -->
+</div>
+<!-- /wp:group -->
+
+</main>
+<!-- /wp:group -->
+
+<!-- wp:template-part {"slug":"footer","tagName":"footer"} /-->

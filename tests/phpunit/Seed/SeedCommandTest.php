@@ -1,6 +1,6 @@
 <?php
 
-use Starter\Brand;
+use Pediment\Brand;
 
 class SeedCommandTest extends WP_UnitTestCase {
 	public function set_up(): void {
@@ -12,7 +12,7 @@ class SeedCommandTest extends WP_UnitTestCase {
 	}
 
 	public function test_seed_creates_four_pages() {
-		starter_seed_run();
+		pediment_seed_run();
 
 		$slugs = wp_list_pluck(
 			get_posts( array( 'post_type' => 'page', 'numberposts' => -1, 'post_status' => 'publish' ) ),
@@ -25,14 +25,14 @@ class SeedCommandTest extends WP_UnitTestCase {
 	}
 
 	public function test_seed_sets_brand_defaults() {
-		starter_seed_run();
+		pediment_seed_run();
 		$this->assertNotEmpty( Brand::get( 'brand_name' ) );
 		$this->assertNotEmpty( Brand::get( 'voice_tone' ) );
 	}
 
 	public function test_seed_is_idempotent() {
-		starter_seed_run();
-		starter_seed_run();
+		pediment_seed_run();
+		pediment_seed_run();
 		$count = count(
 			get_posts(
 				array(
@@ -47,10 +47,17 @@ class SeedCommandTest extends WP_UnitTestCase {
 	}
 
 	public function test_seed_sets_static_front_page() {
-		starter_seed_run();
+		pediment_seed_run();
 		$front_id = (int) get_option( 'page_on_front' );
 		$this->assertGreaterThan( 0, $front_id );
 		$front = get_post( $front_id );
 		$this->assertSame( 'home', $front->post_name );
+	}
+
+	public function test_blog_page_has_empty_content_so_home_template_renders_listing() {
+		pediment_seed_run();
+		$blog = get_page_by_path( 'blog' );
+		$this->assertInstanceOf( WP_Post::class, $blog );
+		$this->assertSame( '', trim( $blog->post_content ), 'Blog page content must be empty; home.html renders the listing.' );
 	}
 }

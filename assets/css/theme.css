@@ -1,0 +1,144 @@
+*, *::before, *::after { box-sizing: border-box; }
+
+/* Accent highlight inside headings: <span class="accent">word</span>. Inserted via
+   the starter/accent RichText format (src/blocks/hero/accent-format.ts) and
+   round-tripped through wp_kses_post on render. */
+.accent{ color:var(--wp--preset--color--accent); }
+
+:root{
+  --section: clamp(88px, 9vw, 132px);
+  --band:    clamp(76px, 7.5vw, 108px);
+  --head-gap: clamp(40px, 5vw, 60px);
+  --r-pill: 999px; --r-lg: 20px; --r-md: 14px; --r-panel: 28px;
+}
+
+/* Section rhythm: a width-wrapper must own horizontal gutter only, never the
+   `padding` shorthand (spec: it defeats vertical rhythm by specificity).
+   padding-inline pulls from WP's root padding so it stays in sync with
+   theme.json's styles.spacing.padding — and overrides WP's nested
+   .has-global-padding zero-reset, which fires because <main> already has
+   global padding and our bands are children. */
+.starter-band{
+  padding-block: var(--section);
+  padding-inline: var(--wp--style--root--padding-left);
+}
+/* Mockup mapping: --bg #FFFFFF, --surface #F5F8FC, --navy #0A1B33.
+   Most bands are plain white; only the Steps/approach band is tinted;
+   only the Stats band is navy full-bleed. The CTA band is white — the
+   navy gradient rounded card is rendered by starter/cta itself. */
+.is-style-band-surface{ background: var(--wp--preset--color--surface); }
+.is-style-band-elevated{ background: var(--wp--preset--color--surface-elevated); }
+.is-style-band-navy{
+  background: var(--wp--preset--color--primary);
+  color: #fff;
+}
+.is-style-band-navy :where(h1,h2,h3,h4){ color:#fff; }
+
+/* Site shell: header → main → footer should butt against each other. WP's
+   global block-gap (--wp--preset--spacing--40) otherwise inserts a visible
+   pale strip via is-layout-flow's `> * + *` rule and breaks the band rhythm.
+   Each region (header/main/footer/band) owns its own vertical padding. */
+.wp-site-blocks > * + *{ margin-block-start: 0; }
+
+/* Approach band: 2-column split — section head + steps on the left, image
+   card on the right (mockup .approach > .split). The columns wrapper picks up
+   the gap; the image cell gets the mockup's 4:5 portrait aspect-ratio, rounded
+   corners, and elevation. */
+.starter-approach{ gap: clamp(32px, 5vw, 70px); }
+.starter-approach__image{
+  margin: 0;
+  border-radius: var(--r-lg, 20px);
+  overflow: hidden;
+  box-shadow: var(--wp--preset--shadow--medium);
+  aspect-ratio: 4 / 5;
+}
+.starter-approach__image img{
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+@media (min-width: 782px){
+  .starter-approach > .starter-approach__media{ align-self: stretch; }
+  .starter-approach__image{
+    aspect-ratio: auto;
+    height: 100%;
+  }
+}
+
+
+/* Eyebrow label + chip */
+.kicker{
+  font-size:13px; font-weight:700; letter-spacing:.14em;
+  text-transform:uppercase; color:var(--wp--preset--color--accent);
+}
+.chip{
+  display:inline-flex; align-items:center; gap:9px;
+  background:var(--wp--preset--color--accent-tint);
+  color:var(--wp--preset--color--accent-hover);
+  font-size:13px; font-weight:600; padding:8px 16px;
+  border-radius:var(--r-pill);
+}
+.chip::before{
+  content:""; width:7px; height:7px; border-radius:50%;
+  background:var(--wp--preset--color--accent);
+}
+
+/* Pill buttons (utility; block button restyles arrive in Plan 2) */
+.btn{
+  display:inline-flex; align-items:center; gap:9px;
+  font-weight:700; font-size:.98rem; padding:16px 26px;
+  border-radius:var(--r-pill); border:1.5px solid transparent;
+  text-decoration:none; cursor:pointer;
+  transition:background-color .15s ease, color .15s ease, border-color .15s ease;
+}
+.btn--primary{ background:var(--wp--preset--color--accent); color:#fff; }
+.btn--primary:hover{ background:var(--wp--preset--color--accent-hover); color:#fff; }
+.btn--ghost{
+  background:var(--wp--preset--color--surface);
+  color:var(--wp--preset--color--foreground);
+  border-color:var(--wp--preset--color--border);
+}
+.btn--ghost:hover{ border-color:var(--wp--preset--color--accent); color:var(--wp--preset--color--accent); }
+.btn--light{ background:#fff; color:var(--wp--preset--color--accent-hover); }
+.btn:focus-visible{ outline:2px solid var(--wp--preset--color--accent); outline-offset:3px; }
+
+/* Phosphor icon sizing (color via currentColor) */
+.i{ width:1em; height:1em; display:inline-block; vertical-align:-0.14em;
+    fill:currentColor; flex:none; }
+.btn .i{ width:18px; height:18px; vertical-align:0; }
+
+/* Entry animations — gated behind .anim (set pre-paint), reduced-motion safe */
+.anim [data-reveal]{
+  opacity:0; transform:translateY(22px);
+  transition:opacity .7s cubic-bezier(.16,1,.3,1),
+             transform .7s cubic-bezier(.16,1,.3,1);
+  will-change:opacity, transform;
+}
+.anim [data-reveal].is-in{ opacity:1; transform:none; }
+@media (prefers-reduced-motion: reduce){
+  .anim [data-reveal]{ opacity:1 !important; transform:none !important; transition:none; }
+}
+
+/* Brand row (header/footer site-logo wrapper) + header polish */
+.brand{ display:flex; align-items:center; gap:10px; }
+/* layer a frosted backdrop on the (already sticky, theme.json) header */
+header.site-header{
+  background:color-mix(in srgb, var(--wp--preset--color--surface) 86%, transparent);
+  backdrop-filter:blur(10px);
+  -webkit-backdrop-filter:blur(10px);
+}
+/* Header layout: the alignwide group uses justify-content:space-between
+   with three children (brand, nav, CTA). The nav must size to its
+   content so space-between can distribute the slack — explicitly
+   flex:0 0 auto, since WP's default for a navigation block inside a
+   header flex container can otherwise behave as flex:1.
+   IMPORTANT: target `nav.wp-block-navigation` specifically — the inner
+   <ul class="wp-block-navigation__container"> also carries the bare
+   `wp-block-navigation` class, so an unqualified selector would match
+   the ul too. */
+.site-header nav.wp-block-navigation{ flex:0 0 auto; min-width:0; }
+/* Double the gap between menu items only (the <ul> inherits the nav's
+   spacing--30 by default; bumping it here doesn't disturb the gap used
+   between spacers/ul/buttons at the content layer above). */
+.site-header .wp-block-navigation__container{ gap:calc(var(--wp--preset--spacing--30) * 2); }

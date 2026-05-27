@@ -2,36 +2,32 @@
 /**
  * Brand settings storage and accessor.
  *
- * @package Starter
+ * @package Pediment
  */
 
-namespace Starter;
+namespace Pediment;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
 final class Brand {
-	public const OPTION = 'starter_theme_brand';
+	public const OPTION = 'pediment_theme_brand';
 
-	private const DEFAULTS = array(
-		'brand_name'    => '',
-		'brand_tagline' => '',
-		'voice_tone'    => '',
-		'logo_id'       => 0,
-		'og_image_id'   => 0,
-		'contact_email' => '',
-		'phone'         => '',
-		'address'       => '',
-		'social_links'  => array(),
-	);
+	private static function defaults(): array {
+		$defaults = array();
+		foreach ( BrandRegistry::fields() as $key => $def ) {
+			$defaults[ $key ] = $def['default'] ?? '';
+		}
+		return $defaults;
+	}
 
 	public static function all(): array {
 		$stored = get_option( self::OPTION, array() );
 		if ( ! is_array( $stored ) ) {
 			$stored = array();
 		}
-		return array_merge( self::DEFAULTS, $stored );
+		return array_merge( self::defaults(), $stored );
 	}
 
 	/**

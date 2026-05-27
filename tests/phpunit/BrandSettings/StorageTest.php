@@ -1,6 +1,6 @@
 <?php
 
-use Starter\Brand;
+use Pediment\Brand;
 
 class StorageTest extends WP_UnitTestCase {
 	public function set_up(): void {
@@ -37,5 +37,24 @@ class StorageTest extends WP_UnitTestCase {
 		$links = Brand::get( 'social_links' );
 		$this->assertCount( 1, $links );
 		$this->assertSame( 'twitter', $links[0]['platform'] );
+	}
+
+	public function test_all_includes_filter_added_defaults() {
+		$cb = static function ( $fields ) {
+			$fields['legal_page_id'] = array(
+				'label'   => 'Legal page',
+				'section' => 'identity',
+				'type'    => 'integer',
+				'default' => 42,
+			);
+			return $fields;
+		};
+		add_filter( 'pediment_brand_fields', $cb );
+
+		$all = \Pediment\Brand::all();
+		$this->assertArrayHasKey( 'legal_page_id', $all );
+		$this->assertSame( 42, $all['legal_page_id'] );
+
+		remove_filter( 'pediment_brand_fields', $cb );
 	}
 }

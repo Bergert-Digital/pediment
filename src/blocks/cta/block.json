@@ -1,11 +1,11 @@
 {
 	"$schema": "https://schemas.wp.org/trunk/block.json",
 	"apiVersion": 3,
-	"name": "starter/cta",
+	"name": "pediment/cta",
 	"title": "Call to Action",
-	"category": "starter",
+	"category": "pediment",
 	"description": "Inline call-to-action with title, body, and one or two buttons.",
-	"textdomain": "starter",
+	"textdomain": "pediment",
 	"supports": { "html": false, "align": [ "wide" ] },
 	"attributes": {
 		"title": { "type": "string", "default": "" },
@@ -16,6 +16,7 @@
 		"secondaryUrl": { "type": "string", "default": "" }
 	},
 	"editorScript": "file:./index.js",
-	"style": "file:./style-index.css",
+	"editorStyle": "file:./style-index.css",
+  "style": "file:./style-index.css",
 	"render": "file:./render.php"
 }

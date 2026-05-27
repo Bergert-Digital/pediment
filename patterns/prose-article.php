@@ -1,12 +1,15 @@
 <?php
 /**
  * Title: Prose article
- * Slug: starter/prose-article
- * Categories: starter
+ * Slug: pediment/prose-article
+ * Categories: pediment
+ * Description: Article-style long-form layout: heading, paragraph, subheading.
+ * Keywords: article, prose, blog post, long form, writing
+ * Viewport Width: 720
  */
 // phpcs:ignoreFile -- block pattern content
 ?>
-<!-- wp:starter/prose -->
+<!-- wp:pediment/prose -->
     <!-- wp:heading {"level":2} --><h2>Section heading</h2><!-- /wp:heading -->
     <!-- wp:paragraph --><p>Opening paragraph that frames the piece. One or two sentences that tell the reader why this matters and what they'll learn.</p><!-- /wp:paragraph -->
     <!-- wp:paragraph --><p>Continue the thread. Concrete examples beat abstractions. Cite numbers when you have them.</p><!-- /wp:paragraph -->
@@ -17,10 +20,10 @@
         <!-- wp:list-item --><li>Another point.</li><!-- /wp:list-item -->
         <!-- wp:list-item --><li>One more.</li><!-- /wp:list-item -->
     </ul><!-- /wp:list -->
-<!-- /wp:starter/prose -->
+<!-- /wp:pediment/prose -->
 
-<!-- wp:starter/pull-quote {"quote":"A memorable line from the piece — short, specific, and quotable.","citation":"Author"} /-->
+<!-- wp:pediment/pull-quote {"quote":"A memorable line from the piece — short, specific, and quotable.","citation":"Author"} /-->
 
-<!-- wp:starter/prose -->
+<!-- wp:pediment/prose -->
     <!-- wp:paragraph --><p>Closing thought. Reaffirm the why, and point the reader at the next step.</p><!-- /wp:paragraph -->
-<!-- /wp:starter/prose -->
+<!-- /wp:pediment/prose -->

@@ -2,35 +2,40 @@
 /**
  * Contact form REST endpoint + CPT + cron cleanup.
  *
- * @package Starter
+ * @package Pediment
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-const STARTER_CONTACT_NAMESPACE = 'starter/v1';
-const STARTER_CONTACT_ROUTE     = '/contact';
-const STARTER_CONTACT_CPT       = 'contact_submission';
-const STARTER_CONTACT_MIN_AGE   = 5;
-const STARTER_CONTACT_CRON_HOOK = 'starter_contact_cleanup';
+const PEDIMENT_CONTACT_NAMESPACE = 'pediment/v1';
+const PEDIMENT_CONTACT_ROUTE     = '/contact';
+const PEDIMENT_CONTACT_CPT       = 'contact_submission';
+const PEDIMENT_CONTACT_MIN_AGE   = 5;
+const PEDIMENT_CONTACT_CRON_HOOK = 'pediment_contact_cleanup';
 
 add_action(
 	'rest_api_init',
 	function () {
 		register_rest_route(
-			STARTER_CONTACT_NAMESPACE,
-			STARTER_CONTACT_ROUTE,
+			PEDIMENT_CONTACT_NAMESPACE,
+			PEDIMENT_CONTACT_ROUTE,
 			array(
 				'methods'             => 'POST',
+				// Public by design: this is an anonymous contact form. CSRF protection
+				// via WP nonces would require either a logged-in session or a
+				// page-rendered token + server-side verification — neither makes sense
+				// for a marketing site's contact form. Anti-spam relies on the
+				// honeypot (`hp_field`) and time-trap (`_t`) in the callback.
 				'permission_callback' => '__return_true',
-				'callback'            => 'starter_contact_handle_submission',
+				'callback'            => 'pediment_contact_handle_submission',
 			)
 		);
 	}
 );
 
-function starter_contact_handle_submission( WP_REST_Request $request ) {
+function pediment_contact_handle_submission( WP_REST_Request $request ) {
 	$name     = trim( (string) $request->get_param( 'name' ) );
 	$email    = trim( (string) $request->get_param( 'email' ) );
 	$phone    = trim( (string) $request->get_param( 'phone' ) );
@@ -40,30 +45,30 @@ function starter_contact_handle_submission( WP_REST_Request $request ) {
 	$t        = is_numeric( $t_raw ) ? (int) $t_raw : 0;
 
 	if ( '' !== $hp_field ) {
-		return new WP_Error( 'starter_spam', __( 'Submission rejected.', 'starter' ), array( 'status' => 400 ) );
+		return new WP_Error( 'pediment_spam', __( 'Submission rejected.', 'pediment' ), array( 'status' => 400 ) );
 	}
 	$now = time();
-	if ( $t <= 0 || $t > $now || ( $now - $t ) < STARTER_CONTACT_MIN_AGE ) {
-		return new WP_Error( 'starter_spam', __( 'Submission rejected.', 'starter' ), array( 'status' => 400 ) );
+	if ( $t <= 0 || $t > $now || ( $now - $t ) < PEDIMENT_CONTACT_MIN_AGE ) {
+		return new WP_Error( 'pediment_spam', __( 'Submission rejected.', 'pediment' ), array( 'status' => 400 ) );
 	}
 
 	$errors = array();
 	if ( '' === $name ) {
-		$errors['name'] = __( 'Name is required.', 'starter' );
+		$errors['name'] = __( 'Name is required.', 'pediment' );
 	}
 	if ( '' === $email ) {
-		$errors['email'] = __( 'Email is required.', 'starter' );
+		$errors['email'] = __( 'Email is required.', 'pediment' );
 	} elseif ( ! is_email( $email ) ) {
-		$errors['email'] = __( 'Email is invalid.', 'starter' );
+		$errors['email'] = __( 'Email is invalid.', 'pediment' );
 	}
 	if ( '' === $message ) {
-		$errors['message'] = __( 'Message is required.', 'starter' );
+		$errors['message'] = __( 'Message is required.', 'pediment' );
 	}
 
 	if ( ! empty( $errors ) ) {
 		return new WP_Error(
-			'starter_validation',
-			__( 'Validation failed.', 'starter' ),
+			'pediment_validation',
+			__( 'Validation failed.', 'pediment' ),
 			array(
 				'status' => 400,
 				'errors' => $errors,
@@ -72,7 +77,7 @@ function starter_contact_handle_submission( WP_REST_Request $request ) {
 	}
 
 	do_action(
-		'starter_contact_submitted',
+		'pediment_contact_submitted',
 		array(
 			'name'    => $name,
 			'email'   => $email,
@@ -88,17 +93,17 @@ function starter_contact_handle_submission( WP_REST_Request $request ) {
 add_action(
 	'init',
 	function () {
-		if ( post_type_exists( STARTER_CONTACT_CPT ) ) {
+		if ( post_type_exists( PEDIMENT_CONTACT_CPT ) ) {
 			return;
 		}
 		register_post_type(
-			STARTER_CONTACT_CPT,
+			PEDIMENT_CONTACT_CPT,
 			array(
-				'label'               => __( 'Contact submissions', 'starter' ),
+				'label'               => __( 'Contact submissions', 'pediment' ),
 				'labels'              => array(
-					'name'          => __( 'Contact submissions', 'starter' ),
-					'singular_name' => __( 'Contact submission', 'starter' ),
-					'menu_name'     => __( 'Contact submissions', 'starter' ),
+					'name'          => __( 'Contact submissions', 'pediment' ),
+					'singular_name' => __( 'Contact submission', 'pediment' ),
+					'menu_name'     => __( 'Contact submissions', 'pediment' ),
 				),
 				'public'              => false,
 				'exclude_from_search' => true,
@@ -120,9 +125,9 @@ add_action(
 	}
 );
 
-add_action( 'starter_contact_submitted', 'starter_contact_persist_submission', 10, 2 );
+add_action( 'pediment_contact_submitted', 'pediment_contact_persist_submission', 10, 2 );
 
-function starter_contact_persist_submission( array $payload, $request ): void {
+function pediment_contact_persist_submission( array $payload, $request ): void {
 	$name    = (string) ( $payload['name'] ?? '' );
 	$email   = (string) ( $payload['email'] ?? '' );
 	$phone   = (string) ( $payload['phone'] ?? '' );
@@ -130,7 +135,7 @@ function starter_contact_persist_submission( array $payload, $request ): void {
 
 	$post_id = wp_insert_post(
 		array(
-			'post_type'    => STARTER_CONTACT_CPT,
+			'post_type'    => PEDIMENT_CONTACT_CPT,
 			'post_status'  => 'publish',
 			'post_title'   => sprintf( '%s <%s>', $name, $email ),
 			'post_content' => $message,
@@ -149,20 +154,20 @@ function starter_contact_persist_submission( array $payload, $request ): void {
 }
 
 add_filter(
-	'manage_' . STARTER_CONTACT_CPT . '_posts_columns',
+	'manage_' . PEDIMENT_CONTACT_CPT . '_posts_columns',
 	function ( array $cols ) {
 		$cols = array(
 			'cb'    => $cols['cb'] ?? '',
-			'title' => __( 'From', 'starter' ),
-			'email' => __( 'Email', 'starter' ),
-			'date'  => __( 'Submitted', 'starter' ),
+			'title' => __( 'From', 'pediment' ),
+			'email' => __( 'Email', 'pediment' ),
+			'date'  => __( 'Submitted', 'pediment' ),
 		);
 		return $cols;
 	}
 );
 
 add_action(
-	'manage_' . STARTER_CONTACT_CPT . '_posts_custom_column',
+	'manage_' . PEDIMENT_CONTACT_CPT . '_posts_custom_column',
 	function ( $col, $post_id ) {
 		if ( 'email' === $col ) {
 			echo esc_html( (string) get_post_meta( $post_id, '_email', true ) );
@@ -172,10 +177,10 @@ add_action(
 	2
 );
 
-add_action( 'starter_contact_submitted', 'starter_contact_send_notification', 20, 2 );
+add_action( 'pediment_contact_submitted', 'pediment_contact_send_notification', 20, 2 );
 
-function starter_contact_send_notification( array $payload, $request ): void {
-	$brand_name = (string) \Starter\Brand::get( 'brand_name', get_bloginfo( 'name' ) );
+function pediment_contact_send_notification( array $payload, $request ): void {
+	$brand_name = (string) \Pediment\Brand::get( 'brand_name', get_bloginfo( 'name' ) );
 
 	$recipient = '';
 	if ( $request instanceof WP_REST_Request ) {
@@ -185,7 +190,7 @@ function starter_contact_send_notification( array $payload, $request ): void {
 		}
 	}
 	if ( '' === $recipient ) {
-		$recipient = (string) \Starter\Brand::get( 'contact_email', get_option( 'admin_email' ) );
+		$recipient = (string) \Pediment\Brand::get( 'contact_email', get_option( 'admin_email' ) );
 	}
 	if ( '' === $recipient ) {
 		return;
@@ -198,7 +203,7 @@ function starter_contact_send_notification( array $payload, $request ): void {
 
 	$subject = sprintf(
 		/* translators: %s: brand name */
-		__( '[%s] New contact form submission', 'starter' ),
+		__( '[%s] New contact form submission', 'pediment' ),
 		$brand_name
 	);
 
@@ -217,14 +222,14 @@ function starter_contact_send_notification( array $payload, $request ): void {
 	wp_mail( $recipient, $subject, $body, $headers );
 }
 
-add_action( STARTER_CONTACT_CRON_HOOK, 'starter_contact_cleanup' );
+add_action( PEDIMENT_CONTACT_CRON_HOOK, 'pediment_contact_cleanup' );
 
-function starter_contact_cleanup(): void {
+function pediment_contact_cleanup(): void {
 	$cutoff_gmt = gmdate( 'Y-m-d H:i:s', strtotime( '-90 days' ) );
 
 	$stale = get_posts(
 		array(
-			'post_type'      => STARTER_CONTACT_CPT,
+			'post_type'      => PEDIMENT_CONTACT_CPT,
 			'post_status'    => 'any',
 			'posts_per_page' => 200,
 			'fields'         => 'ids',
@@ -241,12 +246,12 @@ function starter_contact_cleanup(): void {
 	}
 }
 
-function starter_contact_schedule_cleanup(): void {
-	if ( ! wp_next_scheduled( STARTER_CONTACT_CRON_HOOK ) ) {
-		wp_schedule_event( time() + HOUR_IN_SECONDS, 'daily', STARTER_CONTACT_CRON_HOOK );
+function pediment_contact_schedule_cleanup(): void {
+	if ( ! wp_next_scheduled( PEDIMENT_CONTACT_CRON_HOOK ) ) {
+		wp_schedule_event( time() + HOUR_IN_SECONDS, 'daily', PEDIMENT_CONTACT_CRON_HOOK );
 	}
 }
 
-function starter_contact_unschedule_cleanup(): void {
-	wp_clear_scheduled_hook( STARTER_CONTACT_CRON_HOOK );
+function pediment_contact_unschedule_cleanup(): void {
+	wp_clear_scheduled_hook( PEDIMENT_CONTACT_CRON_HOOK );
 }

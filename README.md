@@ -1,4 +1,4 @@
-# Starter Theme
+# Pediment
 
 A forkable WordPress block theme for client websites. Sibling to the Payload Starter.
 
@@ -17,7 +17,7 @@ Requires Docker + Node 20+ + Composer.
 
 ```bash
 git clone <repo>
-cd wp-starter-theme
+cd pediment
 composer install
 npm install
 npm run build
@@ -37,10 +37,10 @@ Open http://localhost:8888 for the front-end, or http://localhost:8888/wp-admin 
 If this is the very first boot of wp-env, run these once to make the theme usable:
 
 ```bash
-npx wp-env run cli wp theme activate wp-starter-theme
+npx wp-env run cli wp theme activate pediment
 npx wp-env run cli wp rewrite structure "/%postname%/"
 npx wp-env run cli wp rewrite flush --hard
-npx wp-env run cli wp starter-theme seed   # optional: 4 sample pages + Brand defaults
+npx wp-env run cli wp pediment seed   # optional: 4 sample pages + Brand defaults
 ```
 
 Stop with `npm run env:stop`.
@@ -56,12 +56,12 @@ Stop with `npm run env:stop`.
 | `npm run lint:js`                                | ESLint on src/                                   |
 | `composer lint`                                  | PHPCS (WP standards + custom color sniff)        |
 | `npm run e2e`                                    | Playwright against http://localhost:8888         |
-| `npx wp-env run cli wp starter-theme seed`       | Populate Brand defaults + 4 sample pages         |
+| `npx wp-env run cli wp pediment seed`       | Populate Brand defaults + 4 sample pages         |
 
 ### Run PHPUnit
 
 ```bash
-npx wp-env run tests-wordpress --env-cwd=wp-content/themes/wp-starter-theme ./vendor/bin/phpunit
+npx wp-env run tests-wordpress --env-cwd=wp-content/themes/pediment ./vendor/bin/phpunit
 ```
 
 ## Deployment
@@ -78,7 +78,7 @@ If you put Cloudflare proxy mode in front of the site, **bypass it for `/wp-json
 
 ## Forking for a new client
 
-This theme is the foundation; per-client customization happens in a child theme (see `wp-client-template/` / Plan C). The starter never edits client-owned files, and the child theme never edits starter files. Updates flow via `composer update bergert/wp-starter-theme`.
+This theme is the foundation; per-client customization happens in a child theme (see `wp-client-template/` / Plan C). The starter never edits client-owned files, and the child theme never edits starter files. Updates flow via `composer update bergert/pediment`.
 
 ## Architecture
 

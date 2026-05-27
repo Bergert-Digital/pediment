@@ -1,6 +1,6 @@
 <?php
 /**
- * Server-side render for starter/image-caption.
+ * Server-side render for pediment/image-caption.
  *
  * @var array $attributes
  */

@@ -1,6 +1,6 @@
 <?php
 /**
- * Server-side render for starter/faq.
+ * Server-side render for pediment/faq.
  *
  * @var array  $attributes
  * @var string $content

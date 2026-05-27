@@ -5,7 +5,7 @@
  * Use theme.json CSS custom properties instead: var(--wp--preset--color--*).
  */
 
-namespace Starter\Sniffs;
+namespace Pediment\Sniffs;
 
 use PHP_CodeSniffer\Sniffs\Sniff;
 use PHP_CodeSniffer\Files\File;

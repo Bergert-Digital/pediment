@@ -16,13 +16,13 @@ class MailTest extends WP_UnitTestCase {
 			2
 		);
 
-		\Starter\Brand::set( 'contact_email', 'owner@example.com' );
-		\Starter\Brand::set( 'brand_name', 'Acme Co' );
+		\Pediment\Brand::set( 'contact_email', 'owner@example.com' );
+		\Pediment\Brand::set( 'brand_name', 'Acme Co' );
 	}
 
 	public function test_sends_mail_to_brand_email_by_default() {
 		do_action(
-			'starter_contact_submitted',
+			'pediment_contact_submitted',
 			array(
 				'name'    => 'Bob',
 				'email'   => 'bob@example.com',
@@ -42,11 +42,11 @@ class MailTest extends WP_UnitTestCase {
 	}
 
 	public function test_recipient_override_via_request_data() {
-		$request = new WP_REST_Request( 'POST', '/starter/v1/contact' );
+		$request = new WP_REST_Request( 'POST', '/pediment/v1/contact' );
 		$request->set_param( '_recipient_override', 'other@example.com' );
 
 		do_action(
-			'starter_contact_submitted',
+			'pediment_contact_submitted',
 			array(
 				'name'    => 'B',
 				'email'   => 'b@b.com',

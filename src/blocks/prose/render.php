@@ -1,6 +1,6 @@
 <?php
 /**
- * Server-side render for starter/prose.
+ * Server-side render for pediment/prose.
  *
  * @var array  $attributes
  * @var string $content

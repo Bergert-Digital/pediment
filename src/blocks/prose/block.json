@@ -1,11 +1,11 @@
 {
 	"$schema": "https://schemas.wp.org/trunk/block.json",
 	"apiVersion": 3,
-	"name": "starter/prose",
+	"name": "pediment/prose",
 	"title": "Prose",
-	"category": "starter",
+	"category": "pediment",
 	"description": "Long-form prose with constrained content width and typographic defaults. Contains paragraphs, headings, and lists.",
-	"textdomain": "starter",
+	"textdomain": "pediment",
 	"supports": {
 		"html": false,
 		"align": [ "wide" ],
@@ -16,6 +16,7 @@
 	},
 	"attributes": {},
 	"editorScript": "file:./index.js",
-	"style": "file:./style-index.css",
+	"editorStyle": "file:./style-index.css",
+  "style": "file:./style-index.css",
 	"render": "file:./render.php"
 }

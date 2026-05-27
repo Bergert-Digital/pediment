@@ -1,0 +1,76 @@
+/* Editor-only. The block is display-only in the canvas (ServerSideRender of
+   render.php); all editing happens in the Inspector sidebar form. The
+   front-end panel is position:absolute + [hidden] and is revealed by the
+   Interactivity runtime, which does NOT execute in the editor — so reveal it
+   with CSS :hover/:focus for a look-only preview. Accepts the documented
+   absolute-overlay clipping / hover-flicker caveat. */
+.starter-mega-menu__panel,
+.starter-mega-menu__panel[hidden] {
+  display: none;
+}
+
+.starter-mega-menu:hover .starter-mega-menu__panel,
+.starter-mega-menu__trigger:hover + .starter-mega-menu__panel,
+.starter-mega-menu__trigger:focus + .starter-mega-menu__panel,
+.starter-mega-menu__panel.is-preview-open {
+  display: grid;
+}
+
+/* Keep the preview as an absolute overlay (front-end behaviour) so it
+   doesn't push sibling nav items in the parent flex row to a new row.
+   Offset top to clear Gutenberg's floating block toolbar (~44px). */
+.starter-mega-menu__panel.is-preview-open {
+  top: calc(100% + 3rem);
+}
+
+.starter-mega-menu__trigger {
+  font-weight: 600;
+  cursor: default;
+}
+
+/* Sidebar form structure (Inspector controls). */
+.starter-mega-form__section {
+  & + & {
+    margin-top: 0.75rem;
+  }
+}
+
+.starter-mega-form__section-label {
+  margin: 0 0 0.5rem;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  opacity: 0.7;
+}
+
+.starter-mega-form__divider {
+  margin: 1rem 0;
+  border: 0;
+  border-top: 1px solid color-mix(in srgb, var(--wp--preset--color--foreground) 10%, transparent);
+}
+
+.starter-mega-form__link {
+  padding: 0.75rem;
+  margin-bottom: 0.75rem;
+  border: 1px solid color-mix(in srgb, var(--wp--preset--color--foreground) 8%, transparent);
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--wp--preset--color--foreground) 1.5%, transparent);
+}
+
+.starter-mega-form__toolbar {
+  display: flex;
+  gap: 0.25rem;
+  align-items: center;
+  justify-content: flex-end;
+  margin-top: 0.5rem;
+
+  &--column {
+    justify-content: space-between;
+  }
+}
+
+.starter-mega-form__add {
+  width: 100%;
+  justify-content: center;
+}

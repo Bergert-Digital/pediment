@@ -1,0 +1,14 @@
+{
+	"folders": [
+		{
+			"path": "."
+		},
+		{
+			"path": "../pediment-ai"
+		},
+		{
+			"path": "../pediment-child-theme"
+		}
+	],
+	"settings": {}
+}
