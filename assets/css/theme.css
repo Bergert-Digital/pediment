@@ -142,26 +142,3 @@ header.site-header{
    spacing--30 by default; bumping it here doesn't disturb the gap used
    between spacers/ul/buttons at the content layer above). */
 .site-header .wp-block-navigation__container{ gap:calc(var(--wp--preset--spacing--30) * 2); }
-
-/* Top nav links: pediment-mockup uses --muted by default with --ink on
-   hover. WP core ships `.wp-block-navigation .wp-block-navigation-item__content.wp-block-navigation-item__content{color:inherit}`
-   (specificity 0,3,0) which beats theme.json's elements.link rule —
-   match the doubled class to land at 0,3,1, and declare hover/focus
-   with the same selector since `:hover` alone won't out-specify it. */
-.wp-block-navigation a.wp-block-navigation-item__content.wp-block-navigation-item__content{
-  color:var(--wp--preset--color--foreground-muted);
-  transition:color .15s ease;
-}
-.wp-block-navigation a.wp-block-navigation-item__content.wp-block-navigation-item__content:hover,
-.wp-block-navigation a.wp-block-navigation-item__content.wp-block-navigation-item__content:focus-visible{
-  color:var(--wp--preset--color--foreground);
-}
-/* Active nav link = accent. WP 6.7 core ships a doubled-class
-   `.wp-block-navigation .wp-block-navigation-item__content.wp-block-navigation-item__content{color:inherit}`
-   (specificity 0,3,0) that defeats theme.json's `a[aria-current="page"]`
-   (0,2,1). Re-assert the accent with a selector that out-specifies it
-   (0,3,1) — no !important needed. */
-.wp-block-navigation a[aria-current="page"].wp-block-navigation-item__content,
-.wp-block-navigation .current-menu-item > a.wp-block-navigation-item__content{
-  color:var(--wp--preset--color--accent);
-}
