@@ -1,0 +1,49 @@
+{
+  "$schema": "https://schemas.wp.org/trunk/block.json",
+  "apiVersion": 3,
+  "name": "pediment/section-head",
+  "title": "Section Head",
+  "category": "pediment",
+  "description": "Eyebrow + headline + lead intro for a section/band. Use at align:wide above content blocks.",
+  "textdomain": "pediment",
+  "supports": {
+    "html": false,
+    "align": [
+      "wide"
+    ]
+  },
+  "attributes": {
+    "eyebrow": {
+      "type": "string",
+      "default": ""
+    },
+    "headline": {
+      "type": "string",
+      "default": ""
+    },
+    "lead": {
+      "type": "string",
+      "default": ""
+    },
+    "alignment": {
+      "type": "string",
+      "default": "start",
+      "enum": [
+        "start",
+        "center"
+      ]
+    },
+    "level": {
+      "type": "number",
+      "default": 2,
+      "enum": [
+        2,
+        3
+      ]
+    }
+  },
+  "editorScript": "file:./index.js",
+  "editorStyle": "file:./style-index.css",
+  "style": "file:./style-index.css",
+  "render": "file:./render.php"
+}
