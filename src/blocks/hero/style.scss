@@ -135,10 +135,10 @@
     aspect-ratio: 5 / 6;
     max-height: calc(100svh - 260px);
     background: var(--wp--preset--color--primary);
-    /* When max-height clamps the figure and aspect-ratio shrinks its width
-       below the grid column's width (common at short editor viewports),
-       hug the column's right edge instead of left-aligning by default. */
-    justify-self: end;
+    /* Fill the grid track so the figure has a definite width even when no
+       image is set — .starter-hero__glass is position:absolute and the
+       figure would otherwise collapse to 0×0. */
+    width: 100%;
   }
   .starter-hero__img {
     width: 100%;
