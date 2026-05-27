@@ -1,0 +1,95 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to release (e.g. 0.1.3, no leading v)'
+        required: true
+        type: string
+      ref:
+        description: 'Source branch or commit to release from'
+        required: false
+        type: string
+        default: 'main'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate version input
+        env:
+          VERSION: ${{ inputs.version }}
+        run: |
+          if ! [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[A-Za-z0-9.-]+)?$ ]]; then
+            echo "::error::version must look like 0.1.3 or 0.1.3-rc.1 (got '$VERSION')"
+            exit 1
+          fi
+
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref }}
+          fetch-depth: 0
+
+      - name: Ensure tag does not already exist
+        env:
+          VERSION: ${{ inputs.version }}
+        run: |
+          TAG="v$VERSION"
+          if git ls-remote --exit-code --tags origin "refs/tags/$TAG" >/dev/null 2>&1; then
+            echo "::error::tag $TAG already exists on origin"
+            exit 1
+          fi
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - name: Build JS bundle
+        run: |
+          npm ci
+          npm run build
+
+      - name: Patch version metadata in release commit
+        env:
+          VERSION: ${{ inputs.version }}
+        run: |
+          sed -i -E "s/^(Version:[[:space:]]+).+$/\1$VERSION/" style.css
+          sed -i -E "s/(define\([[:space:]]*'PEDIMENT_THEME_VERSION',[[:space:]]*')[^']*('[[:space:]]*\))/\1$VERSION\2/" functions.php
+          node -e "const f='package.json';const p=require('./'+f);p.version=process.env.VERSION;require('fs').writeFileSync(f,JSON.stringify(p,null,2)+'\n');"
+          grep -E "^Version:" style.css
+          grep "PEDIMENT_THEME_VERSION" functions.php
+          grep '"version"' package.json
+
+      - name: Create release commit and push tag
+        env:
+          VERSION: ${{ inputs.version }}
+        run: |
+          TAG="v$VERSION"
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -f build
+          git add style.css functions.php package.json
+          git commit -m "build: artifacts for $TAG"
+          git tag -a "$TAG" -m "Release $TAG"
+          git push origin "refs/tags/$TAG"
+
+      - name: Build distributable zip
+        env:
+          VERSION: ${{ inputs.version }}
+        run: |
+          STAGE="$(mktemp -d)/pediment"
+          mkdir -p "$STAGE"
+          rsync -a --exclude-from=.distignore ./ "$STAGE/"
+          ( cd "$(dirname "$STAGE")" && zip -rq "$GITHUB_WORKSPACE/pediment-$VERSION.zip" pediment )
+          unzip -l "pediment-$VERSION.zip" | tail -5
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ inputs.version }}
+        run: gh release create "v$VERSION" --title "v$VERSION" --generate-notes "pediment-$VERSION.zip"
