@@ -13,7 +13,7 @@ if ( ! defined( 'PEDIMENT_THEME_DIR' ) ) {
 	define( 'PEDIMENT_THEME_DIR', __DIR__ );
 }
 if ( ! defined( 'PEDIMENT_THEME_VERSION' ) ) {
-	define( 'PEDIMENT_THEME_VERSION', '0.1.0' );
+	define( 'PEDIMENT_THEME_VERSION', '0.1.2' );
 }
 
 require_once __DIR__ . '/inc/BrandRegistry.php';
