@@ -12,7 +12,7 @@ class SubmissionTest extends WP_UnitTestCase {
 	}
 
 	private function submit( array $body ): WP_REST_Response {
-		$request = new WP_REST_Request( 'POST', '/starter/v1/contact' );
+		$request = new WP_REST_Request( 'POST', '/pediment/v1/contact' );
 		foreach ( $body as $k => $v ) {
 			$request->set_param( $k, $v );
 		}

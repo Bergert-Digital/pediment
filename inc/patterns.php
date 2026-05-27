@@ -4,7 +4,7 @@
  * by WordPress from the theme patterns/ directory (each file has a header
  * with Title/Slug/Categories).
  *
- * @package Starter
+ * @package Pediment
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -16,11 +16,11 @@ add_action(
 	function () {
 		$cats      = WP_Block_Pattern_Categories_Registry::get_instance()->get_all_registered();
 		$cat_slugs = wp_list_pluck( $cats, 'name' );
-		if ( ! in_array( 'starter', $cat_slugs, true ) ) {
+		if ( ! in_array( 'pediment', $cat_slugs, true ) ) {
 			register_block_pattern_category(
-				'starter',
+				'pediment',
 				array(
-					'label' => __( 'Starter', 'starter' ),
+					'label' => __( 'Pediment', 'pediment' ),
 				)
 			);
 		}

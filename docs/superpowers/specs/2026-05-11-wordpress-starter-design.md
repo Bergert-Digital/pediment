@@ -136,7 +136,7 @@ All under `starter/*` namespace.
 
 | Block | Notes |
 |---|---|
-| `starter/hero` | Variants via `variant` attribute: `default \| split \| centered \| media-bg`. Attributes: `headline`, `subheadline`, `ctaText`, `ctaUrl`, `mediaId`, `variant`. |
+| `starter/hero` | Variants via `variant` attribute: `default \| centered \| media-bg`. Attributes: `headline`, `subheadline`, `ctaText`, `ctaUrl`, `mediaId`, `variant`. |
 | `starter/cta` | Title, body, primary button, optional secondary button. |
 | `starter/faq` | Container with inner blocks. Allowed child: `starter/faq-item`. |
 | `starter/faq-item` | Question + answer (rich text). Accordion behavior on render. |

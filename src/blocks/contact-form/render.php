@@ -1,6 +1,6 @@
 <?php
 /**
- * Server-side render for starter/contact-form.
+ * Server-side render for pediment/contact-form.
  *
  * @var array $attributes
  */
@@ -11,11 +11,10 @@ $success_message = isset( $attributes['successMessage'] ) ? (string) $attributes
 
 $wrapper = get_block_wrapper_attributes(
 	array(
-		'class'           => 'starter-contact-form',
-		'data-success'    => $success_message,
-		'data-recipient'  => $recipient,
-		'data-rest-url'   => esc_url_raw( rest_url( 'starter/v1/contact' ) ),
-		'data-rest-nonce' => wp_create_nonce( 'wp_rest' ),
+		'class'          => 'starter-contact-form',
+		'data-success'   => $success_message,
+		'data-recipient' => $recipient,
+		'data-rest-url'  => esc_url_raw( rest_url( 'pediment/v1/contact' ) ),
 	)
 );
 
@@ -23,23 +22,24 @@ $timestamp = time();
 
 ob_start();
 ?>
+<?php // $wrapper is pre-escaped by get_block_wrapper_attributes(); echoing as-is. ?>
 <form <?php echo $wrapper; // phpcs:ignore WordPress.Security.EscapeOutput ?>>
 	<label class="starter-contact-form__field">
-		<span><?php esc_html_e( 'Name', 'starter' ); ?></span>
+		<span><?php esc_html_e( 'Name', 'pediment' ); ?></span>
 		<input type="text" name="name" required />
 	</label>
 	<label class="starter-contact-form__field">
-		<span><?php esc_html_e( 'Email', 'starter' ); ?></span>
+		<span><?php esc_html_e( 'Email', 'pediment' ); ?></span>
 		<input type="email" name="email" required />
 	</label>
 	<?php if ( $include_phone ) : ?>
 		<label class="starter-contact-form__field">
-			<span><?php esc_html_e( 'Phone', 'starter' ); ?></span>
+			<span><?php esc_html_e( 'Phone', 'pediment' ); ?></span>
 			<input type="tel" name="phone" />
 		</label>
 	<?php endif; ?>
 	<label class="starter-contact-form__field">
-		<span><?php esc_html_e( 'Message', 'starter' ); ?></span>
+		<span><?php esc_html_e( 'Message', 'pediment' ); ?></span>
 		<textarea name="message" rows="5" required></textarea>
 	</label>
 
@@ -48,7 +48,7 @@ ob_start();
 	</div>
 	<input type="hidden" name="_t" value="<?php echo esc_attr( (string) $timestamp ); ?>" />
 
-	<button type="submit" class="starter-contact-form__submit"><?php esc_html_e( 'Send', 'starter' ); ?></button>
+	<button type="submit" class="starter-contact-form__submit"><?php esc_html_e( 'Send', 'pediment' ); ?></button>
 
 	<p class="starter-contact-form__status" role="status" hidden></p>
 </form>

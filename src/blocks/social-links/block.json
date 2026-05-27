@@ -1,0 +1,15 @@
+{
+  "$schema": "https://schemas.wp.org/trunk/block.json",
+  "apiVersion": 3,
+  "name": "pediment/social-links",
+  "title": "Social Links",
+  "category": "pediment",
+  "description": "Renders the social links configured in Settings → Brand Settings. Hides itself when none are configured.",
+  "textdomain": "pediment",
+  "supports": { "html": false, "align": [ "wide" ] },
+  "attributes": {},
+  "editorScript": "file:./index.js",
+  "editorStyle": "file:./style-index.css",
+  "style": "file:./style-index.css",
+  "render": "file:./render.php"
+}

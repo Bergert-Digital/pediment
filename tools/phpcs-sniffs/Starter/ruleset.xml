@@ -1,5 +1,0 @@
-<?xml version="1.0"?>
-<ruleset name="Starter">
-    <description>Starter Theme custom sniffs.</description>
-    <rule ref="./Sniffs/NoColorLiteralSniff.php"/>
-</ruleset>

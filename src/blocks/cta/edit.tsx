@@ -26,7 +26,7 @@ export default function Edit( {
 	return (
 		<>
 			<InspectorControls>
-				<PanelBody title={ __( 'CTA links', 'starter' ) }>
+				<PanelBody title={ __( 'CTA links', 'pediment' ) }>
 					<TextControl
 						label="Primary URL"
 						value={ attributes.primaryUrl }
@@ -44,28 +44,41 @@ export default function Edit( {
 			<div { ...blockProps }>
 				<RichText
 					tagName="h2"
+					className="starter-cta__title"
 					value={ attributes.title }
 					onChange={ ( v ) => setAttributes( { title: v } ) }
-					placeholder={ __( 'Title…', 'starter' ) }
+					placeholder={ __( 'Title…', 'pediment' ) }
 				/>
 				<RichText
 					tagName="p"
+					className="starter-cta__body"
 					value={ attributes.body }
 					onChange={ ( v ) => setAttributes( { body: v } ) }
-					placeholder={ __( 'Body…', 'starter' ) }
+					placeholder={ __( 'Body…', 'pediment' ) }
 				/>
-				<RichText
-					tagName="span"
-					value={ attributes.primaryText }
-					onChange={ ( v ) => setAttributes( { primaryText: v } ) }
-					placeholder={ __( 'Primary CTA…', 'starter' ) }
-				/>
-				<RichText
-					tagName="span"
-					value={ attributes.secondaryText }
-					onChange={ ( v ) => setAttributes( { secondaryText: v } ) }
-					placeholder={ __( 'Secondary CTA (optional)…', 'starter' ) }
-				/>
+				<div className="starter-cta__actions">
+					<RichText
+						tagName="div"
+						className="starter-cta__btn starter-cta__btn--primary"
+						value={ attributes.primaryText }
+						onChange={ ( v ) =>
+							setAttributes( { primaryText: v } )
+						}
+						placeholder={ __( 'Primary CTA…', 'pediment' ) }
+					/>
+					<RichText
+						tagName="div"
+						className="starter-cta__btn starter-cta__btn--secondary"
+						value={ attributes.secondaryText }
+						onChange={ ( v ) =>
+							setAttributes( { secondaryText: v } )
+						}
+						placeholder={ __(
+							'Secondary CTA (optional)…',
+							'pediment'
+						) }
+					/>
+				</div>
 			</div>
 		</>
 	);

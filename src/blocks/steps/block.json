@@ -1,0 +1,15 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "pediment/steps",
+	"title": "Steps",
+	"category": "pediment",
+	"description": "An ordered list of numbered steps. Contains Step child blocks.",
+	"textdomain": "pediment",
+	"supports": { "html": false, "align": [ "wide" ] },
+	"attributes": {},
+	"editorScript": "file:./index.js",
+	"editorStyle": "file:./style-index.css",
+	"style": "file:./style-index.css",
+	"render": "file:./render.php"
+}

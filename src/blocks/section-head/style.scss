@@ -1,0 +1,42 @@
+// The outer wrapper rides at alignwide (parent constrained band centers it at
+// wide-size). The __inner element carries the column constraint. No !important
+// because we're not fighting WordPress's auto-centering — we let it do its job
+// on the outer, and constrain the inner ourselves.
+
+.starter-section-head {
+  margin-bottom: var(--head-gap, clamp(40px, 5vw, 60px));
+
+  &__inner {
+    max-width: 600px;
+  }
+
+  &.is-alignment-start &__inner {
+    margin-inline: 0 auto;
+  }
+
+  &.is-alignment-center &__inner {
+    max-width: 620px;
+    margin-inline: auto;
+    text-align: center;
+  }
+
+  &__eyebrow {
+    margin: 0;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--wp--preset--color--accent);
+  }
+
+  &__headline {
+    margin: 14px 0 0;
+  }
+
+  &__lead {
+    margin: 16px 0 0;
+    font-size: 1.15rem;
+    color: var(--wp--preset--color--foreground-muted);
+    line-height: 1.6;
+  }
+}

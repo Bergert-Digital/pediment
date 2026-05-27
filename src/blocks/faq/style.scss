@@ -1,20 +1,15 @@
 .starter-faq {
   display: flex;
   flex-direction: column;
-  gap: var(--wp--preset--spacing--10);
-  padding: var(--wp--preset--spacing--40) 0;
+  gap: 14px;
 }
 
 .starter-faq-item {
+  background: var(--wp--preset--color--surface-elevated);
   border: 1px solid var(--wp--preset--color--border);
-  border-radius: 0.5rem;
-  background: var(--wp--preset--color--surface);
-  transition: border-color 150ms ease, box-shadow 150ms ease;
-
-  &:hover {
-    border-color: var(--wp--preset--color--border-strong);
-    box-shadow: var(--wp--preset--shadow--subtle);
-  }
+  border-radius: 16px;
+  overflow: hidden;
+  transition: border-color .18s ease, box-shadow .18s ease;
 
   &[open] {
     border-color: var(--wp--preset--color--border-strong);
@@ -24,35 +19,51 @@
   &__question {
     list-style: none;
     cursor: pointer;
-    padding: var(--wp--preset--spacing--30) var(--wp--preset--spacing--40);
-    font-weight: 600;
-    color: var(--wp--preset--color--text);
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: var(--wp--preset--spacing--20);
+    gap: 20px;
+    padding: 22px 24px;
+    font-weight: 700;
+    font-size: 1.02rem;
+    color: var(--wp--preset--color--foreground);
 
     &::-webkit-details-marker { display: none; }
+  }
 
-    &::after {
-      content: "";
-      width: 0.625rem;
-      height: 0.625rem;
-      border-right: 2px solid var(--wp--preset--color--text-muted);
-      border-bottom: 2px solid var(--wp--preset--color--text-muted);
-      transform: rotate(45deg);
-      transition: transform 200ms ease;
-      flex-shrink: 0;
+  &__toggle {
+    flex: none;
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    background: var(--wp--preset--color--primary);
+    color: var(--wp--preset--color--surface);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform .2s ease, background-color .2s ease;
+
+    .i {
+      width: 15px;
+      height: 15px;
+      fill: currentColor;
     }
   }
 
-  &[open] &__question::after {
-    transform: rotate(225deg);
+  &[open] &__question {
+    color: var(--wp--preset--color--accent-hover);
+
+    .starter-faq-item__toggle {
+      background-color: var(--wp--preset--color--accent);
+      transform: rotate(180deg);
+    }
   }
 
   &__answer {
-    padding: 0 var(--wp--preset--spacing--40) var(--wp--preset--spacing--30);
-    color: var(--wp--preset--color--text-muted);
+    padding: 0 24px 24px;
+    color: var(--wp--preset--color--foreground-muted);
     line-height: 1.65;
+    font-size: .98rem;
+    max-width: 62ch;
   }
 }

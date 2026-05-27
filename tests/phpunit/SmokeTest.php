@@ -5,7 +5,7 @@ class SmokeTest extends WP_UnitTestCase {
 		$this->assertTrue( function_exists( 'wp_get_theme' ) );
 	}
 
-	public function test_starter_theme_is_active() {
-		$this->assertSame( 'wp-starter-theme', wp_get_theme()->get_stylesheet() );
+	public function test_pediment_theme_is_active() {
+		$this->assertSame( 'pediment', wp_get_theme()->get_stylesheet() );
 	}
 }

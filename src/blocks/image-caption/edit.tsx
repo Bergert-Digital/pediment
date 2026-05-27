@@ -30,16 +30,16 @@ export default function Edit( {
 	return (
 		<>
 			<InspectorControls>
-				<PanelBody title={ __( 'Image', 'starter' ) }>
+				<PanelBody title={ __( 'Image', 'pediment' ) }>
 					<TextControl
-						label={ __( 'Alt text override', 'starter' ) }
+						label={ __( 'Alt text override', 'pediment' ) }
 						value={ attributes.altOverride }
 						onChange={ ( v ) =>
 							setAttributes( { altOverride: v } )
 						}
 						help={ __(
 							'Leave empty to use the media library alt text.',
-							'starter'
+							'pediment'
 						) }
 					/>
 				</PanelBody>
@@ -57,9 +57,10 @@ export default function Edit( {
 								type="button"
 								className="starter-image-caption__replace"
 								onClick={ open }
-								aria-label={ __( 'Replace image', 'starter' ) }
+								aria-label={ __( 'Replace image', 'pediment' ) }
 							>
 								<img
+									className="starter-image-caption__img"
 									src={ ( media as any ).source_url }
 									alt={
 										attributes.altOverride ||
@@ -70,16 +71,17 @@ export default function Edit( {
 							</button>
 						) : (
 							<Button variant="primary" onClick={ open }>
-								{ __( 'Pick image', 'starter' ) }
+								{ __( 'Pick image', 'pediment' ) }
 							</Button>
 						)
 					}
 				/>
 				<RichText
 					tagName="figcaption"
+					className="starter-image-caption__caption"
 					value={ attributes.caption }
 					onChange={ ( v ) => setAttributes( { caption: v } ) }
-					placeholder={ __( 'Caption (optional)…', 'starter' ) }
+					placeholder={ __( 'Caption (optional)…', 'pediment' ) }
 				/>
 			</figure>
 		</>

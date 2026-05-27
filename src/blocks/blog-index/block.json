@@ -1,17 +1,20 @@
 {
 	"$schema": "https://schemas.wp.org/trunk/block.json",
 	"apiVersion": 3,
-	"name": "starter/blog-index",
+	"name": "pediment/blog-index",
 	"title": "Blog Index",
-	"category": "starter",
-	"description": "A server-rendered list of recent posts, optionally filtered by category slug.",
-	"textdomain": "starter",
+	"category": "pediment",
+	"description": "Recent posts as Insight cards with featured image, category badge, and an optional presentational category filter.",
+	"textdomain": "pediment",
 	"supports": { "html": false, "align": [ "wide" ] },
 	"attributes": {
 		"count": { "type": "number", "default": 6 },
-		"categorySlug": { "type": "string", "default": "" }
+		"categorySlug": { "type": "string", "default": "" },
+		"showFilter": { "type": "boolean", "default": true }
 	},
 	"editorScript": "file:./index.js",
+	"editorStyle": "file:./style-index.css",
 	"style": "file:./style-index.css",
+	"viewScript": "file:./view.js",
 	"render": "file:./render.php"
 }

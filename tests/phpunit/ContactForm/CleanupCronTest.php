@@ -12,7 +12,7 @@ class CleanupCronTest extends WP_UnitTestCase {
 
 		$old_id = wp_insert_post(
 			array(
-				'post_type'     => STARTER_CONTACT_CPT,
+				'post_type'     => PEDIMENT_CONTACT_CPT,
 				'post_status'   => 'publish',
 				'post_title'    => 'old',
 				'post_date'     => $old_date,
@@ -21,7 +21,7 @@ class CleanupCronTest extends WP_UnitTestCase {
 		);
 		$new_id = wp_insert_post(
 			array(
-				'post_type'     => STARTER_CONTACT_CPT,
+				'post_type'     => PEDIMENT_CONTACT_CPT,
 				'post_status'   => 'publish',
 				'post_title'    => 'new',
 				'post_date'     => $new_date,
@@ -29,7 +29,7 @@ class CleanupCronTest extends WP_UnitTestCase {
 			)
 		);
 
-		starter_contact_cleanup();
+		pediment_contact_cleanup();
 
 		$this->assertNull( get_post( $old_id ) );
 		$this->assertNotNull( get_post( $new_id ) );
@@ -38,8 +38,8 @@ class CleanupCronTest extends WP_UnitTestCase {
 	}
 
 	public function test_cron_is_scheduled_after_activation_hook() {
-		starter_contact_schedule_cleanup();
-		$this->assertNotFalse( wp_next_scheduled( STARTER_CONTACT_CRON_HOOK ) );
-		wp_clear_scheduled_hook( STARTER_CONTACT_CRON_HOOK );
+		pediment_contact_schedule_cleanup();
+		$this->assertNotFalse( wp_next_scheduled( PEDIMENT_CONTACT_CRON_HOOK ) );
+		wp_clear_scheduled_hook( PEDIMENT_CONTACT_CRON_HOOK );
 	}
 }

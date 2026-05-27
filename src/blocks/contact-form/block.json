@@ -1,11 +1,11 @@
 {
 	"$schema": "https://schemas.wp.org/trunk/block.json",
 	"apiVersion": 3,
-	"name": "starter/contact-form",
+	"name": "pediment/contact-form",
 	"title": "Contact Form",
-	"category": "starter",
+	"category": "pediment",
 	"description": "A contact form with name, email, message (and optional phone). Submissions are stored privately and emailed to the configured recipient.",
-	"textdomain": "starter",
+	"textdomain": "pediment",
 	"supports": { "html": false, "align": [ "wide" ] },
 	"attributes": {
 		"includePhone": { "type": "boolean", "default": false },
@@ -16,6 +16,8 @@
 		}
 	},
 	"editorScript": "file:./index.js",
+	"editorStyle": "file:./style-index.css",
 	"style": "file:./style-index.css",
+	"viewScript": "file:./view.js",
 	"render": "file:./render.php"
 }

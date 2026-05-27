@@ -1,25 +1,33 @@
 {
 	"$schema": "https://schemas.wp.org/trunk/block.json",
 	"apiVersion": 3,
-	"name": "starter/hero",
+	"name": "pediment/hero",
 	"title": "Hero",
-	"category": "starter",
-	"description": "A page-opening hero with headline, subheadline, and primary CTA. Variants: default, split, centered, media-bg.",
-	"textdomain": "starter",
+	"category": "pediment",
+	"description": "A page-opening hero with headline, subheadline, and primary CTA. Variants: default, centered, media-bg, stat-card.",
+	"textdomain": "pediment",
 	"supports": { "html": false, "align": [ "wide", "full" ] },
 	"attributes": {
 		"variant": {
 			"type": "string",
 			"default": "default",
-			"enum": [ "default", "split", "centered", "media-bg" ]
+			"enum": [ "default", "centered", "media-bg", "stat-card" ]
 		},
 		"headline": { "type": "string", "default": "" },
 		"subheadline": { "type": "string", "default": "" },
 		"ctaText": { "type": "string", "default": "" },
 		"ctaUrl": { "type": "string", "default": "" },
+		"secondaryText": { "type": "string", "default": "" },
+		"secondaryUrl": { "type": "string", "default": "" },
+		"eyebrow": { "type": "string", "default": "" },
+		"ticks": { "type": "array", "default": [] },
+		"statValue": { "type": "string", "default": "" },
+		"statText": { "type": "string", "default": "" },
+		"metrics": { "type": "array", "default": [] },
 		"mediaId": { "type": "number", "default": 0 }
 	},
 	"editorScript": "file:./index.js",
-	"style": "file:./style-index.css",
+	"editorStyle": "file:./style-index.css",
+  "style": "file:./style-index.css",
 	"render": "file:./render.php"
 }

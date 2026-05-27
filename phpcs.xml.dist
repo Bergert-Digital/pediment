@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
-<ruleset name="Starter Theme">
-  <description>Coding standards for wp-starter-theme.</description>
+<ruleset name="Pediment">
+  <description>Coding standards for Pediment.</description>
 
   <file>functions.php</file>
   <file>inc/</file>
@@ -31,5 +31,5 @@
   <config name="testVersion" value="8.1-"/>
   <rule ref="PHPCompatibilityWP"/>
 
-  <rule ref="./tools/phpcs-sniffs/Starter/ruleset.xml"/>
+  <rule ref="./tools/phpcs-sniffs/Pediment/ruleset.xml"/>
 </ruleset>

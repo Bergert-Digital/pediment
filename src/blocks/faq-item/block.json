@@ -1,12 +1,12 @@
 {
 	"$schema": "https://schemas.wp.org/trunk/block.json",
 	"apiVersion": 3,
-	"name": "starter/faq-item",
+	"name": "pediment/faq-item",
 	"title": "FAQ Item",
-	"category": "starter",
+	"category": "pediment",
 	"description": "A single question and answer in an FAQ list.",
-	"parent": [ "starter/faq" ],
-	"textdomain": "starter",
+	"parent": [ "pediment/faq" ],
+	"textdomain": "pediment",
 	"supports": { "html": false, "inserter": false },
 	"attributes": {
 		"question": { "type": "string", "default": "" },

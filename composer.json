@@ -1,6 +1,6 @@
 {
-  "name": "bergert/wp-starter-theme",
-  "description": "Starter WordPress block theme",
+  "name": "bergert/pediment",
+  "description": "Pediment WordPress block theme",
   "type": "wordpress-theme",
   "license": "GPL-2.0-or-later",
   "require": {

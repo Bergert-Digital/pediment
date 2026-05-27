@@ -2,11 +2,11 @@
 
 class AutoLoaderTest extends WP_UnitTestCase {
 	public function test_loader_function_exists() {
-		$this->assertTrue( function_exists( 'starter_register_blocks' ) );
+		$this->assertTrue( function_exists( 'pediment_register_blocks' ) );
 	}
 
 	public function test_loader_handles_missing_build_dir_gracefully() {
-		starter_register_blocks( '/nonexistent/path' );
+		pediment_register_blocks( '/nonexistent/path' );
 		$this->assertTrue( true );
 	}
 
@@ -18,7 +18,7 @@ class AutoLoaderTest extends WP_UnitTestCase {
 			wp_json_encode(
 				array(
 					'apiVersion' => 3,
-					'name'       => 'starter/dummy',
+					'name'       => 'pediment/dummy',
 					'title'      => 'Dummy',
 					'category'   => 'design',
 					'attributes' => array( 'text' => array( 'type' => 'string', 'default' => '' ) ),
@@ -26,11 +26,11 @@ class AutoLoaderTest extends WP_UnitTestCase {
 			)
 		);
 
-		starter_register_blocks( $tmp );
+		pediment_register_blocks( $tmp );
 
 		$registry = WP_Block_Type_Registry::get_instance();
-		$this->assertTrue( $registry->is_registered( 'starter/dummy' ) );
+		$this->assertTrue( $registry->is_registered( 'pediment/dummy' ) );
 
-		$registry->unregister( 'starter/dummy' );
+		$registry->unregister( 'pediment/dummy' );
 	}
 }

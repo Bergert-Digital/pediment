@@ -18,7 +18,7 @@
 
   &__field span {
     font-size: var(--wp--preset--font-size--sm);
-    color: var(--wp--preset--color--text);
+    color: var(--wp--preset--color--foreground);
     font-weight: 600;
   }
 
@@ -28,7 +28,7 @@
     border: 1px solid var(--wp--preset--color--border);
     border-radius: 0.5rem;
     font: inherit;
-    color: var(--wp--preset--color--text);
+    color: var(--wp--preset--color--foreground);
     background: var(--wp--preset--color--surface);
     transition: border-color 150ms ease, box-shadow 150ms ease;
 
@@ -39,7 +39,7 @@
     }
 
     &::placeholder {
-      color: var(--wp--preset--color--text-muted);
+      color: var(--wp--preset--color--foreground-muted);
     }
   }
 
@@ -92,6 +92,6 @@
   }
 
   &__status[data-state="error"]   {
-    color: var(--wp--preset--color--text);
+    color: var(--wp--preset--color--foreground);
   }
 }

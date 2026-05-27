@@ -1,11 +1,11 @@
 {
 	"$schema": "https://schemas.wp.org/trunk/block.json",
 	"apiVersion": 3,
-	"name": "starter/image-caption",
+	"name": "pediment/image-caption",
 	"title": "Image with caption",
-	"category": "starter",
+	"category": "pediment",
 	"description": "A figure block with image, optional caption, and optional alt-text override.",
-	"textdomain": "starter",
+	"textdomain": "pediment",
 	"supports": { "html": false, "align": [ "wide", "full" ] },
 	"attributes": {
 		"mediaId": { "type": "number", "default": 0 },
@@ -13,6 +13,7 @@
 		"altOverride": { "type": "string", "default": "" }
 	},
 	"editorScript": "file:./index.js",
-	"style": "file:./style-index.css",
+	"editorStyle": "file:./style-index.css",
+  "style": "file:./style-index.css",
 	"render": "file:./render.php"
 }

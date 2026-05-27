@@ -5,8 +5,9 @@ const CONTACT_SLUG = 'e2e-contact';
 const HONEYPOT_SLUG = 'e2e-honeypot';
 
 test('contact form submission shows success and creates a submission row', async ({ page }) => {
+  test.slow();
   deletePageBySlug(CONTACT_SLUG);
-  const url = createPageWithContent(CONTACT_SLUG, 'Contact test', '<!-- wp:starter/contact-form /-->');
+  const url = createPageWithContent(CONTACT_SLUG, 'Contact test', '<!-- wp:pediment/contact-form /-->');
 
   await page.goto(url);
   await page.fill('input[name="name"]', 'Alice E2E');
@@ -27,8 +28,9 @@ test('contact form submission shows success and creates a submission row', async
 });
 
 test('honeypot triggers rejection (silent)', async ({ page }) => {
+  test.slow();
   deletePageBySlug(HONEYPOT_SLUG);
-  const url = createPageWithContent(HONEYPOT_SLUG, 'Honeypot test', '<!-- wp:starter/contact-form /-->');
+  const url = createPageWithContent(HONEYPOT_SLUG, 'Honeypot test', '<!-- wp:pediment/contact-form /-->');
 
   await page.goto(url);
   await page.fill('input[name="name"]', 'Bot');

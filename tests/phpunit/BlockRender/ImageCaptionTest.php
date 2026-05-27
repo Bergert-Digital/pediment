@@ -8,7 +8,7 @@ class ImageCaptionTest extends WP_UnitTestCase {
 
 		$html = do_blocks(
 			sprintf(
-				'<!-- wp:starter/image-caption {"mediaId":%d,"caption":"Beautiful canola","altOverride":"Yellow flowers"} /-->',
+				'<!-- wp:pediment/image-caption {"mediaId":%d,"caption":"Beautiful canola","altOverride":"Yellow flowers"} /-->',
 				$attachment_id
 			)
 		);
@@ -20,7 +20,7 @@ class ImageCaptionTest extends WP_UnitTestCase {
 	}
 
 	public function test_returns_empty_when_no_media() {
-		$html = do_blocks( '<!-- wp:starter/image-caption {"mediaId":0,"caption":"x"} /-->' );
+		$html = do_blocks( '<!-- wp:pediment/image-caption {"mediaId":0,"caption":"x"} /-->' );
 		$this->assertStringNotContainsString( '<figure', $html );
 	}
 }

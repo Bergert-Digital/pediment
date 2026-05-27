@@ -1,17 +1,22 @@
 {
 	"$schema": "https://schemas.wp.org/trunk/block.json",
 	"apiVersion": 3,
-	"name": "starter/pull-quote",
+	"name": "pediment/pull-quote",
 	"title": "Pull Quote",
-	"category": "starter",
-	"description": "An emphasized quotation with optional citation.",
-	"textdomain": "starter",
+	"category": "pediment",
+	"description": "An emphasized quotation, optionally rendered as a testimonial with avatar, author name, and role.",
+	"textdomain": "pediment",
 	"supports": { "html": false, "align": [ "wide" ] },
 	"attributes": {
+		"variant": { "type": "string", "enum": [ "default", "testimonial" ], "default": "default" },
 		"quote": { "type": "string", "default": "" },
-		"citation": { "type": "string", "default": "" }
+		"citation": { "type": "string", "default": "" },
+		"authorName": { "type": "string", "default": "" },
+		"authorRole": { "type": "string", "default": "" },
+		"avatarId": { "type": "integer", "default": 0 }
 	},
 	"editorScript": "file:./index.js",
+	"editorStyle": "file:./style-index.css",
 	"style": "file:./style-index.css",
 	"render": "file:./render.php"
 }

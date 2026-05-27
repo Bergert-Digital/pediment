@@ -3,8 +3,8 @@
 class CptTest extends WP_UnitTestCase {
 	public function test_cpt_is_registered_after_init() {
 		do_action( 'init' );
-		$this->assertTrue( post_type_exists( STARTER_CONTACT_CPT ) );
-		$pt = get_post_type_object( STARTER_CONTACT_CPT );
+		$this->assertTrue( post_type_exists( PEDIMENT_CONTACT_CPT ) );
+		$pt = get_post_type_object( PEDIMENT_CONTACT_CPT );
 		$this->assertFalse( $pt->public );
 		$this->assertTrue( $pt->show_ui );
 	}
@@ -13,7 +13,7 @@ class CptTest extends WP_UnitTestCase {
 		do_action( 'init' );
 
 		do_action(
-			'starter_contact_submitted',
+			'pediment_contact_submitted',
 			array(
 				'name'    => 'Alice',
 				'email'   => 'alice@example.com',
@@ -25,7 +25,7 @@ class CptTest extends WP_UnitTestCase {
 
 		$posts = get_posts(
 			array(
-				'post_type'   => STARTER_CONTACT_CPT,
+				'post_type'   => PEDIMENT_CONTACT_CPT,
 				'numberposts' => -1,
 				'post_status' => 'any',
 			)
