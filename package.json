@@ -1,6 +1,6 @@
 {
   "name": "pediment",
-  "version": "0.1.0",
+  "version": "0.1.4",
   "private": true,
   "scripts": {
     "start": "WP_EXPERIMENTAL_MODULES=true wp-scripts start --webpack-src-dir=src/blocks --output-path=build/blocks",
