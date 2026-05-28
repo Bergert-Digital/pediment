@@ -11,7 +11,7 @@
     "format": "wp-scripts format src/",
     "test:js": "wp-scripts test-unit-js",
     "e2e": "playwright test",
-    "env:start": "wp-env start",
+    "env:start": "node tools/check-folder-name.mjs && wp-env start",
     "env:stop": "wp-env stop"
   },
   "devDependencies": {
