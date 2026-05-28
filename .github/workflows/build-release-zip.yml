@@ -1,0 +1,67 @@
+name: Build release zip
+
+# Reusable workflow: checks out a tag, builds the JS bundle, patches the
+# version into style.css + package.json, packs pediment.zip via rsync +
+# .distignore, and uploads it to the matching GitHub Release.
+#
+# Called from release-please.yml (automatic on release-please-published
+# tags) and release.yml (workflow_dispatch fallback for re-attaching).
+
+on:
+  workflow_call:
+    inputs:
+      tag:
+        description: 'Release tag to build pediment.zip for (e.g. v0.2.0)'
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  attach-zip:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tag }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - name: Build JS bundle
+        run: |
+          npm ci
+          npm run build
+
+      - name: Patch version into style.css and package.json
+        env:
+          TAG: ${{ inputs.tag }}
+        run: |
+          VERSION="${TAG#v}"
+          sed -i -E "s/^(Version:[[:space:]]+).+$/\1$VERSION/" style.css
+          VERSION="$VERSION" node -e "const p=require('./package.json');p.version=process.env.VERSION;require('fs').writeFileSync('package.json',JSON.stringify(p,null,2)+'\n');"
+          grep -E "^Version:" style.css
+          grep '"version"' package.json
+
+      # Asset filename is intentionally version-less. wp-env derives both the
+      # cache-dir name and the mounted theme slug from the URL basename (after
+      # stripping trailing numeric segments), so `pediment-X.Y.Z.zip` would be
+      # served as `wp-content/themes/pediment-X/`, breaking child themes that
+      # `Template: pediment`. The version still travels in the URL path
+      # (`/releases/download/v<X.Y.Z>/pediment.zip`).
+      - name: Build distributable zip
+        run: |
+          STAGE="$(mktemp -d)/pediment"
+          mkdir -p "$STAGE"
+          rsync -a --exclude-from=.distignore ./ "$STAGE/"
+          ( cd "$(dirname "$STAGE")" && zip -rq "$GITHUB_WORKSPACE/pediment.zip" pediment )
+          unzip -l "pediment.zip" | tail -5
+
+      - name: Upload zip to GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ inputs.tag }}
+        run: gh release upload "$TAG" pediment.zip --clobber
