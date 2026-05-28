@@ -129,12 +129,17 @@ function pediment_seed_run( bool $force = false ): void {
 	pediment_seed_header_template_part();
 
 	// Without pretty permalinks the seeded /about/, /blog/, /contact/ URLs 404.
-	// Default WP installs ship with the plain `?p=ID` structure; switch to
-	// /%postname%/ and flush so the nav links the seed paints actually resolve.
+	// Default WP installs ship with `?p=ID`; switch to /%postname%/ and force a
+	// hard flush so .htaccess is rewritten. WP-CLI's SAPI is not 'apache', so
+	// got_mod_rewrite() returns false and save_mod_rewrite_rules() bails on the
+	// file write — the got_rewrite filter override is the same trick wp-cli
+	// itself uses for `rewrite flush --hard`. The DB rules are useless without
+	// the .htaccess file Apache reads for path-based requests.
 	if ( '' === (string) get_option( 'permalink_structure', '' ) ) {
 		update_option( 'permalink_structure', '/%postname%/' );
-		flush_rewrite_rules();
 	}
+	add_filter( 'got_rewrite', '__return_true' );
+	flush_rewrite_rules();
 }
 
 /**
