@@ -23,6 +23,14 @@ npm install
 npm run build
 ```
 
+> **Folder naming:** the project directory name becomes the WordPress theme
+> stylesheet identifier (via `get_stylesheet()`). The Site Editor builds
+> template-part edit URLs as `?p=<stylesheet>//<slug>&canvas=edit`, and that
+> URL breaks if `<stylesheet>` contains whitespace — Edit on a template or
+> template part lands on an empty editor. Forks should use a
+> lowercase-hyphenated name (e.g. `my-client-site`, not `My Client Site`).
+> `npm run env:start` aborts if the folder name contains whitespace.
+
 ### Running the dev server
 
 Two commands in two terminals:
