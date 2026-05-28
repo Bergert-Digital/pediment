@@ -135,8 +135,14 @@ function pediment_seed_run( bool $force = false ): void {
 	// file write — the got_rewrite filter override is the same trick wp-cli
 	// itself uses for `rewrite flush --hard`. The DB rules are useless without
 	// the .htaccess file Apache reads for path-based requests.
+	//
+	// Use WP_Rewrite::set_permalink_structure() rather than update_option():
+	// flush_rules() → mod_rewrite_rules() guards on $wp_rewrite->using_permalinks(),
+	// which reads the singleton's instance property — not the DB option. A bare
+	// update_option() leaves the singleton stale from boot-time init, so the
+	// guard short-circuits and .htaccess is not written on the first call.
 	if ( '' === (string) get_option( 'permalink_structure', '' ) ) {
-		update_option( 'permalink_structure', '/%postname%/' );
+		$GLOBALS['wp_rewrite']->set_permalink_structure( '/%postname%/' );
 	}
 	add_filter( 'got_rewrite', '__return_true' );
 	flush_rewrite_rules();
