@@ -1,17 +1,16 @@
 name: Release asset
 
-# Builds the distributable pediment.zip and attaches it to a GitHub Release.
-# Fires when release-please (or any other actor) publishes a release; also
-# exposes a workflow_dispatch fallback for manually re-uploading the zip
-# against an existing tag (e.g. if the first attach failed).
+# Manual fallback for re-uploading pediment.zip against an existing tag —
+# e.g. if the chained attach-zip job inside release-please.yml failed on
+# the first try. The normal path is for that job to run automatically when
+# release-please publishes a release; this workflow is only the escape
+# hatch. See release-please.yml for why this is not on `release: published`.
 
 on:
-  release:
-    types: [published]
   workflow_dispatch:
     inputs:
       tag:
-        description: 'Existing release tag to (re-)attach pediment.zip to (e.g. v0.1.5)'
+        description: 'Existing release tag to (re-)attach pediment.zip to (e.g. v0.2.0)'
         required: true
         type: string
 
@@ -19,62 +18,7 @@ permissions:
   contents: write
 
 jobs:
-  attach-zip:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Resolve tag
-        id: tag
-        env:
-          EVENT_TAG: ${{ github.event.release.tag_name }}
-          INPUT_TAG: ${{ inputs.tag }}
-        run: |
-          TAG="${EVENT_TAG:-$INPUT_TAG}"
-          if [ -z "$TAG" ]; then
-            echo "::error::no tag resolved from release event or workflow input"
-            exit 1
-          fi
-          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
-          echo "version=${TAG#v}" >> "$GITHUB_OUTPUT"
-
-      - uses: actions/checkout@v4
-        with:
-          ref: ${{ steps.tag.outputs.tag }}
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: npm
-
-      - name: Build JS bundle
-        run: |
-          npm ci
-          npm run build
-
-      - name: Patch version into style.css and package.json
-        env:
-          VERSION: ${{ steps.tag.outputs.version }}
-        run: |
-          sed -i -E "s/^(Version:[[:space:]]+).+$/\1$VERSION/" style.css
-          node -e "const p=require('./package.json');p.version=process.env.VERSION;require('fs').writeFileSync('package.json',JSON.stringify(p,null,2)+'\n');"
-          grep -E "^Version:" style.css
-          grep '"version"' package.json
-
-      # Asset filename is intentionally version-less. wp-env derives both the
-      # cache-dir name and the mounted theme slug from the URL basename (after
-      # stripping trailing numeric segments), so `pediment-X.Y.Z.zip` would be
-      # served as `wp-content/themes/pediment-X/`, breaking child themes that
-      # `Template: pediment`. The version still travels in the URL path
-      # (`/releases/download/v<X.Y.Z>/pediment.zip`).
-      - name: Build distributable zip
-        run: |
-          STAGE="$(mktemp -d)/pediment"
-          mkdir -p "$STAGE"
-          rsync -a --exclude-from=.distignore ./ "$STAGE/"
-          ( cd "$(dirname "$STAGE")" && zip -rq "$GITHUB_WORKSPACE/pediment.zip" pediment )
-          unzip -l "pediment.zip" | tail -5
-
-      - name: Upload zip to GitHub Release
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          TAG: ${{ steps.tag.outputs.tag }}
-        run: gh release upload "$TAG" pediment.zip --clobber
+  call:
+    uses: ./.github/workflows/build-release-zip.yml
+    with:
+      tag: ${{ inputs.tag }}
