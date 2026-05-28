@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.2.1](https://github.com/Bergert-Digital/Pediment/compare/v0.2.0...v0.2.1) (2026-05-28)
+
+
+### Bug Fixes
+
+* **seed:** refresh $wp_rewrite singleton before flushing rules ([3bfa37e](https://github.com/Bergert-Digital/Pediment/commit/3bfa37e911a500af1fd31d120f87a40d830a494a))
+* **seed:** refresh $wp_rewrite singleton before flushing rules ([#11](https://github.com/Bergert-Digital/Pediment/issues/11)) ([c532ffe](https://github.com/Bergert-Digital/Pediment/commit/c532ffe4e15ce17dfab939a64e74869ffa1c8f7c))
+
 ## [0.2.0](https://github.com/Bergert-Digital/Pediment/compare/v0.1.5...v0.2.0) (2026-05-28)
 
 
