@@ -1,0 +1,24 @@
+name: Release Please
+
+# Opens (and keeps updating) a Release PR on every push to main, computing
+# the next semver from conventional-commit prefixes (feat → minor, fix →
+# patch, BREAKING CHANGE / feat! → major). Merging the Release PR creates
+# the tag + GitHub Release; the `Release asset` workflow then attaches
+# pediment.zip to that release.
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  release-please:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: googleapis/release-please-action@v4
+        with:
+          config-file: release-please-config.json
+          manifest-file: .release-please-manifest.json
