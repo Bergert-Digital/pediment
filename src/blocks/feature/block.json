@@ -4,28 +4,12 @@
 	"name": "pediment/feature",
 	"title": "Feature",
 	"category": "pediment",
-	"description": "A single icon + title + text + optional link card. Allowed icons: arrow-right, article, bank, caret-down, check-circle, gear, microphone, monitor-play, seal-check, stack, trend-up.",
+	"description": "A single icon + title + text + optional link card.",
 	"parent": [ "pediment/feature-grid" ],
 	"textdomain": "pediment",
 	"supports": { "html": false, "inserter": false },
 	"attributes": {
-		"icon": {
-			"type": "string",
-			"default": "trend-up",
-			"enum": [
-				"arrow-right",
-				"article",
-				"bank",
-				"caret-down",
-				"check-circle",
-				"gear",
-				"microphone",
-				"monitor-play",
-				"seal-check",
-				"stack",
-				"trend-up"
-			]
-		},
+		"icon": { "type": "string", "default": "trend-up" },
 		"title": { "type": "string", "default": "" },
 		"text": { "type": "string", "default": "" },
 		"linkText": { "type": "string", "default": "" },
