@@ -47,3 +47,19 @@ function pediment_icon( $name, $extra_class = '' ) {
 		$map[ $slug ] // Theme-controlled trusted markup (same trust model as the old sprite).
 	);
 }
+
+/**
+ * Expose the icon catalog JSON URL to the block editor so the IconPicker
+ * component can lazy-fetch the full slug → markup map on first use.
+ */
+add_action(
+	'enqueue_block_editor_assets',
+	function () {
+		$url = get_theme_file_uri( 'assets/icons/phosphor-icons.json' );
+		wp_add_inline_script(
+			'wp-blocks',
+			'window.pedimentIcons = ' . wp_json_encode( array( 'catalogUrl' => $url ) ) . ';',
+			'after'
+		);
+	}
+);
