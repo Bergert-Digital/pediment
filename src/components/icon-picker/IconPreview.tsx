@@ -1,7 +1,7 @@
 import { useState, useEffect } from '@wordpress/element';
 import { getCatalog } from './catalog';
 
-/**
+/*
  * Render a single icon inline by slug, using the cached editor catalog.
  * Renders nothing until the catalog has loaded or if the slug is unknown.
  */
