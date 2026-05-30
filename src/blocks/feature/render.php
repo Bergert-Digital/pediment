@@ -31,7 +31,7 @@ ob_start();
 	<?php if ( '' !== $link_text && '' !== $link_url ) : ?>
 		<a class="starter-feature__more" href="<?php echo esc_url( $link_url ); ?>">
 			<span><?php echo wp_kses_post( $link_text ); ?></span>
-			<svg class="i" aria-hidden="true" focusable="false"><use href="#ph-arrow-right"></use></svg>
+			<?php echo pediment_icon( 'arrow-right' ); // phpcs:ignore WordPress.Security.EscapeOutput -- theme-controlled icon markup ?>
 		</a>
 	<?php endif; ?>
 </div>
