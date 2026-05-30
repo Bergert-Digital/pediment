@@ -20,7 +20,7 @@ ob_start();
 ?>
 <div <?php echo $wrapper; // phpcs:ignore WordPress.Security.EscapeOutput ?>>
 	<?php if ( '' !== $icon && function_exists( 'pediment_icon' ) ) : ?>
-		<span class="starter-feature__ic"><?php echo pediment_icon( $icon ); // phpcs:ignore WordPress.Security.EscapeOutput -- theme-controlled sprite ?></span>
+		<span class="starter-feature__ic"><?php echo pediment_icon( $icon ); // phpcs:ignore WordPress.Security.EscapeOutput -- theme-controlled icon markup ?></span>
 	<?php endif; ?>
 	<?php if ( '' !== $feature_title ) : ?>
 		<h3 class="starter-feature__title"><?php echo wp_kses_post( $feature_title ); ?></h3>
