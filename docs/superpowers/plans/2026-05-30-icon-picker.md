@@ -336,15 +336,15 @@ with:
 
 > The MegaMenu test uses `'icon' => 'tag'`; confirm `tag` exists in the catalog (`php -r '$m=require "assets/icons/phosphor-icons.php"; var_dump(isset($m["tag"]));'` → `true`). It is a standard Phosphor regular icon.
 
-- [ ] **Step 2: Run the three render tests to verify they now fail**
+- [ ] **Step 2: Run the render tests to verify they now fail**
 
 Run:
 ```bash
 npx wp-env run tests-wordpress --env-cwd=wp-content/themes/pediment vendor/bin/phpunit --filter 'FeatureGridTest|BlogIndexTest|MegaMenuTest'
 ```
-Expected: FAIL — `feature/render.php` and the mega/blog renders still emit `#ph-` for the consumers fixed below (FeatureGrid/Blog actually pass already since they go through `pediment_icon`, but feature's "more" arrow and hero are raw). Note which assertions fail; the data-icon assertions for icons routed through `pediment_icon()` should already pass after Task 2.
+Expected: At least `BlogIndexTest::test_card_has_permalink_link_meta_and_readmore` FAILS — the blog-index "Read more" arrow is a raw `<use>` (fixed in Step 4), so `data-icon="arrow-right"` is not present yet. FeatureGrid and MegaMenu icons route through `pediment_icon()`, so their updated `data-icon` assertions should already PASS after Task 2. Note exactly which assertions fail.
 
-> Rationale: `feature-grid`, `blog-index`, and `mega-menu` column icons already call `pediment_icon()`, so their `data-icon` assertions pass once Task 2 landed. This step mainly confirms the updated assertions match the new output. The raw `<use>` sites fixed below are the "more" arrow in `feature/render.php` and the tick in `hero/render.php`.
+> Rationale: feature-grid feature icons and mega-menu column icons already call `pediment_icon()`, so their `data-icon` assertions pass once Task 2 landed — this step just confirms the updated assertions match the new output. The raw `<use>` sites fixed in Steps 3–6 are the "more" arrow in `feature/render.php`, the "Read more" arrow in `blog-index/render.php`, the caret in `faq-item/render.php`, and the tick in `hero/render.php`.
 
 - [ ] **Step 3: Fix the raw `<use>` in `feature/render.php`**
 
