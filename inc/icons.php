@@ -49,8 +49,11 @@ function pediment_icon( $name, $extra_class = '' ) {
 }
 
 /**
- * Expose the icon catalog JSON URL to the block editor so the IconPicker
- * component can lazy-fetch the full slug → markup map on first use.
+ * Block-editor assets for the shared IconPicker component:
+ *  - expose the catalog JSON URL so it can lazy-fetch the slug → markup map;
+ *  - load the picker's editor-only stylesheet (the picker UI renders in the
+ *    admin document, not the canvas iframe, so add_editor_style cannot reach
+ *    it).
  */
 add_action(
 	'enqueue_block_editor_assets',
@@ -60,6 +63,14 @@ add_action(
 			'wp-blocks',
 			'window.pedimentIcons = ' . wp_json_encode( array( 'catalogUrl' => $url ) ) . ';',
 			'after'
+		);
+
+		$css = 'assets/css/icon-picker-editor.css';
+		wp_enqueue_style(
+			'pediment-icon-picker-editor',
+			get_theme_file_uri( $css ),
+			array( 'wp-edit-blocks' ),
+			(string) filemtime( get_theme_file_path( $css ) )
 		);
 	}
 );
