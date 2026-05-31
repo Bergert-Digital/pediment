@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 // Reads Phosphor core's icon metadata and emits the icon-meta.json contract:
 //   { "<slug>": { "c": ["<category>", …], "t": ["<tag>", …] }, … }
 // Only slugs that have a regular-weight SVG are included (set intersection),
@@ -28,8 +29,10 @@ for ( const icon of icons ) {
 	if ( ! valid.has( icon.name ) ) {
 		continue;
 	}
-	const tags = ( icon.tags || [] ).filter( ( t ) => t !== '*new*' );
-	out[ icon.name ] = { c: [ ...icon.categories ], t: tags };
+	out[ icon.name ] = {
+		c: ( icon.categories || [] ),
+		t: ( icon.tags || [] ).filter( ( t ) => t !== '*new*' ),
+	};
 }
 
 process.stdout.write( JSON.stringify( out ) );

@@ -1,14 +1,21 @@
+#!/usr/bin/env node
 // Validates the committed icon data against the swap contract. Offline; no network.
 //   - icon-meta.json keys must be a subset of icon-markup.json keys
 //   - icon-set.json must have a viewBox string and an svgAttrs object
 import { readFileSync } from 'node:fs';
 
-const dir = 'assets/icons/';
-const read = ( name ) => JSON.parse( readFileSync( dir + name, 'utf8' ) );
+const dir = new URL( '../assets/icons/', import.meta.url );
+const read = ( name ) => JSON.parse( readFileSync( new URL( name, dir ), 'utf8' ) );
 
-const markup = read( 'icon-markup.json' );
-const meta = read( 'icon-meta.json' );
-const set = read( 'icon-set.json' );
+let markup, meta, set;
+try {
+	markup = read( 'icon-markup.json' );
+	meta = read( 'icon-meta.json' );
+	set = read( 'icon-set.json' );
+} catch ( err ) {
+	console.error( `✗ cannot read icon data: ${ err.message }` );
+	process.exit( 1 );
+}
 
 const markupKeys = new Set( Object.keys( markup ) );
 const stray = Object.keys( meta ).filter( ( k ) => ! markupKeys.has( k ) );

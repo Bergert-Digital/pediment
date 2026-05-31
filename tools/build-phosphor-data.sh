@@ -59,6 +59,4 @@ cat > "$OUT_SET" <<JSON
 {"name":"phosphor","version":"${VER}","viewBox":"0 0 256 256","svgAttrs":{"fill":"currentColor"},"license":"MIT"}
 JSON
 
-echo "wrote $OUT_META and $OUT_SET"
-
 echo "wrote $OUT_PHP, $OUT_JSON, $OUT_META, $OUT_SET ($count icons)"
