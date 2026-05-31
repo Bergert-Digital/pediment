@@ -122,3 +122,14 @@
 	font-size: 11px;
 	color: var( --wp-components-color-foreground-muted, #757575 );
 }
+
+.pediment-icon-picker__sentinel {
+	grid-column: 1 / -1;
+	height: 1px;
+}
+
+.pediment-icon-picker__count {
+	margin: 4px 0 0;
+	font-size: 11px;
+	opacity: 0.7;
+}

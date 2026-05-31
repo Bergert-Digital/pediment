@@ -1,27 +1,29 @@
-import { __, sprintf } from '@wordpress/i18n';
+import { __, _n, sprintf } from '@wordpress/i18n';
 import {
 	Button,
 	Dropdown,
 	SearchControl,
+	SelectControl,
 	Spinner,
 	Notice,
 } from '@wordpress/components';
-import { useState, useEffect, useMemo } from '@wordpress/element';
+import { useState, useEffect, useMemo, useRef } from '@wordpress/element';
 import { filterIcons } from './filter';
-import { getCatalog, type IconData } from './catalog';
+import { categoriesFromMeta, categoryLabel } from './categories';
+import { getCatalog, type IconData, type IconSet } from './catalog';
 
-// Cap how many icons render with no active search, so opening the popover does
-// not mount ~1,500 DOM nodes at once. A search narrows below this instantly.
-const NO_QUERY_LIMIT = 150;
+// How many icons to add to the grid each time the scroll sentinel appears.
+const CHUNK = 120;
 
-function IconGlyph( { markup }: { markup: string } ) {
+function IconGlyph( { markup, set }: { markup: string; set: IconSet } ) {
 	return (
 		<svg
-			viewBox="0 0 256 256"
+			viewBox={ set.viewBox }
 			width={ 24 }
 			height={ 24 }
 			aria-hidden="true"
 			focusable="false"
+			{ ...set.svgAttrs }
 			dangerouslySetInnerHTML={ { __html: markup } }
 		/>
 	);
@@ -39,6 +41,8 @@ export default function IconPicker( {
 	const [ catalog, setCatalog ] = useState< IconData | null >( null );
 	const [ error, setError ] = useState< string | null >( null );
 	const [ query, setQuery ] = useState( '' );
+	const [ category, setCategory ] = useState( '' );
+	const [ visibleCount, setVisibleCount ] = useState( CHUNK );
 
 	useEffect( () => {
 		let active = true;
@@ -56,12 +60,40 @@ export default function IconPicker( {
 		() => ( catalog ? Object.keys( catalog.markup ) : [] ),
 		[ catalog ]
 	);
-	const matches = useMemo(
-		() => filterIcons( allSlugs, query ),
-		[ allSlugs, query ]
+	const categories = useMemo(
+		() => categoriesFromMeta( catalog?.meta ?? null ),
+		[ catalog ]
 	);
-	const truncated = ! query.trim() && matches.length > NO_QUERY_LIMIT;
-	const visible = truncated ? matches.slice( 0, NO_QUERY_LIMIT ) : matches;
+	const matches = useMemo(
+		() => filterIcons( allSlugs, query, category, catalog?.meta ?? null ),
+		[ allSlugs, query, category, catalog ]
+	);
+
+	// Reset the progressive window whenever the filter changes.
+	useEffect( () => {
+		setVisibleCount( CHUNK );
+	}, [ query, category ] );
+
+	const visible = matches.slice( 0, visibleCount );
+	const hasMore = visibleCount < matches.length;
+
+	const sentinelRef = useRef< HTMLDivElement | null >( null );
+	useEffect( () => {
+		if ( ! hasMore ) {
+			return;
+		}
+		const el = sentinelRef.current;
+		if ( ! el ) {
+			return;
+		}
+		const observer = new IntersectionObserver( ( entries ) => {
+			if ( entries.some( ( e ) => e.isIntersecting ) ) {
+				setVisibleCount( ( c ) => c + CHUNK );
+			}
+		} );
+		observer.observe( el );
+		return () => observer.disconnect();
+	}, [ hasMore, matches ] );
 
 	const currentMarkup =
 		catalog && value ? catalog.markup[ value ] : undefined;
@@ -86,8 +118,11 @@ export default function IconPicker( {
 						aria-expanded={ isOpen }
 						className="pediment-icon-picker__toggle"
 					>
-						{ currentMarkup ? (
-							<IconGlyph markup={ currentMarkup } />
+						{ currentMarkup && catalog ? (
+							<IconGlyph
+								markup={ currentMarkup }
+								set={ catalog.set }
+							/>
 						) : null }
 						<span>{ value || __( 'Choose…', 'pediment' ) }</span>
 					</Button>
@@ -102,6 +137,27 @@ export default function IconPicker( {
 						{ ! catalog && ! error && <Spinner /> }
 						{ catalog && (
 							<>
+								{ categories.length > 0 && (
+									<SelectControl
+										label={ __( 'Category', 'pediment' ) }
+										value={ category }
+										options={ [
+											{
+												label: __(
+													'All categories',
+													'pediment'
+												),
+												value: '',
+											},
+											...categories.map( ( c ) => ( {
+												label: categoryLabel( c ),
+												value: c,
+											} ) ),
+										] }
+										onChange={ setCategory }
+										__nextHasNoMarginBottom
+									/>
+								) }
 								<SearchControl
 									value={ query }
 									onChange={ setQuery }
@@ -133,24 +189,34 @@ export default function IconPicker( {
 												markup={
 													catalog.markup[ slug ]
 												}
+												set={ catalog.set }
 											/>
 										</Button>
 									) ) }
+									{ hasMore && (
+										<div
+											ref={ sentinelRef }
+											className="pediment-icon-picker__sentinel"
+											aria-hidden="true"
+										/>
+									) }
 								</div>
 								{ matches.length === 0 && (
 									<p className="pediment-icon-picker__empty">
 										{ __( 'No icons match.', 'pediment' ) }
 									</p>
 								) }
-								{ truncated && (
-									<p className="pediment-icon-picker__hint">
+								{ matches.length > 0 && (
+									<p className="pediment-icon-picker__count">
 										{ sprintf(
-											/* translators: %d: number of icons shown. */
-											__(
-												'Showing first %d. Search to narrow.',
+											/* translators: %d: number of matching icons. */
+											_n(
+												'%d icon',
+												'%d icons',
+												matches.length,
 												'pediment'
 											),
-											NO_QUERY_LIMIT
+											matches.length
 										) }
 									</p>
 								) }
