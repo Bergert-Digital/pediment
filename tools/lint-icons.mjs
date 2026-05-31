@@ -34,5 +34,5 @@ if ( typeof set.viewBox !== 'string' || typeof set.svgAttrs !== 'object' || set.
 }
 
 console.log(
-	`✓ icons ok: ${ markupKeys.size } markup, ${ Object.keys( meta ).length } meta, set ${ set.name }@${ set.version }`
+	`✓ icons ok: ${ markupKeys.size } markup, ${ Object.keys( meta ).length } meta, set ${ set.name ?? 'set' }@${ set.version ?? '?' }`
 );

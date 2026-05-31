@@ -14,7 +14,7 @@ export function categoriesFromMeta(
 	}
 	const set = new Set< string >();
 	for ( const slug in meta ) {
-		for ( const category of meta[ slug ].c ) {
+		for ( const category of meta[ slug ].c ?? [] ) {
 			set.add( category );
 		}
 	}
