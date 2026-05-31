@@ -8,7 +8,7 @@ import {
 } from '@wordpress/components';
 import { useState, useEffect, useMemo } from '@wordpress/element';
 import { filterIcons } from './filter';
-import { getCatalog, type Catalog } from './catalog';
+import { getCatalog, type IconData } from './catalog';
 
 // Cap how many icons render with no active search, so opening the popover does
 // not mount ~1,500 DOM nodes at once. A search narrows below this instantly.
@@ -36,7 +36,7 @@ export default function IconPicker( {
 	onChange: ( slug: string ) => void;
 	label?: string;
 } ) {
-	const [ catalog, setCatalog ] = useState< Catalog | null >( null );
+	const [ catalog, setCatalog ] = useState< IconData | null >( null );
 	const [ error, setError ] = useState< string | null >( null );
 	const [ query, setQuery ] = useState( '' );
 
@@ -53,7 +53,7 @@ export default function IconPicker( {
 	}, [ catalog ] );
 
 	const allSlugs = useMemo(
-		() => ( catalog ? Object.keys( catalog ) : [] ),
+		() => ( catalog ? Object.keys( catalog.markup ) : [] ),
 		[ catalog ]
 	);
 	const matches = useMemo(
@@ -63,7 +63,8 @@ export default function IconPicker( {
 	const truncated = ! query.trim() && matches.length > NO_QUERY_LIMIT;
 	const visible = truncated ? matches.slice( 0, NO_QUERY_LIMIT ) : matches;
 
-	const currentMarkup = catalog && value ? catalog[ value ] : undefined;
+	const currentMarkup =
+		catalog && value ? catalog.markup[ value ] : undefined;
 
 	return (
 		<div className="pediment-icon-picker">
@@ -129,7 +130,9 @@ export default function IconPicker( {
 											onClick={ () => onChange( slug ) }
 										>
 											<IconGlyph
-												markup={ catalog[ slug ] }
+												markup={
+													catalog.markup[ slug ]
+												}
 											/>
 										</Button>
 									) ) }
