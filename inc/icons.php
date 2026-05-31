@@ -1,6 +1,6 @@
 <?php
 /**
- * Phosphor icon helper.
+ * Inline icon helper.
  *
  * Icons are rendered inline from a generated slug → SVG-markup map
  * (assets/icons/icon-markup.php), produced by tools/build-phosphor-data.sh.
@@ -61,9 +61,9 @@ function pediment_icon_set(): array {
 }
 
 /**
- * Return an inline SVG for a Phosphor icon slug.
+ * Return an inline SVG for an icon slug.
  *
- * @param string $name        Phosphor icon slug (without the ph- prefix).
+ * @param string $name        Icon slug.
  * @param string $extra_class Optional extra CSS class.
  * @return string Safe HTML, or '' if the slug is unknown.
  */
@@ -80,7 +80,7 @@ function pediment_icon( $name, $extra_class = '' ) {
 	$attrs .= sprintf( ' viewBox="%s"', esc_attr( $set['viewBox'] ) );
 	foreach ( $set['svgAttrs'] as $key => $value ) {
 		$key = preg_replace( '/[^a-z0-9-]/', '', strtolower( (string) $key ) );
-		if ( '' === $key ) {
+		if ( '' === $key || ! is_scalar( $value ) ) {
 			continue;
 		}
 		$attrs .= sprintf( ' %s="%s"', $key, esc_attr( (string) $value ) );

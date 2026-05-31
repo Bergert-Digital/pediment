@@ -1,5 +1,13 @@
 <?php
+/**
+ * Tests for the inline icon helper.
+ *
+ * @package Pediment
+ */
 
+/**
+ * @covers ::pediment_icon
+ */
 class IconsTest extends WP_UnitTestCase {
 	public function test_pediment_icon_returns_inline_svg_with_data_icon() {
 		$html = pediment_icon( 'arrow-right' );
