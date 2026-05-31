@@ -78,6 +78,7 @@ export default function IconPicker( {
 	const hasMore = visibleCount < matches.length;
 
 	const sentinelRef = useRef< HTMLDivElement | null >( null );
+	const gridRef = useRef< HTMLDivElement | null >( null );
 	useEffect( () => {
 		if ( ! hasMore ) {
 			return;
@@ -86,14 +87,17 @@ export default function IconPicker( {
 		if ( ! el ) {
 			return;
 		}
-		const observer = new IntersectionObserver( ( entries ) => {
-			if ( entries.some( ( e ) => e.isIntersecting ) ) {
-				setVisibleCount( ( c ) => c + CHUNK );
-			}
-		} );
+		const observer = new IntersectionObserver(
+			( entries ) => {
+				if ( entries.some( ( e ) => e.isIntersecting ) ) {
+					setVisibleCount( ( c ) => c + CHUNK );
+				}
+			},
+			{ root: gridRef.current, rootMargin: '200px' }
+		);
 		observer.observe( el );
 		return () => observer.disconnect();
-	}, [ hasMore, matches ] );
+	}, [ hasMore ] );
 
 	const currentMarkup =
 		catalog && value ? catalog.markup[ value ] : undefined;
@@ -168,6 +172,7 @@ export default function IconPicker( {
 									__nextHasNoMarginBottom
 								/>
 								<div
+									ref={ gridRef }
 									className="pediment-icon-picker__grid"
 									role="listbox"
 									aria-label={ __( 'Icons', 'pediment' ) }
