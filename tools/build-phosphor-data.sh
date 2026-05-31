@@ -4,8 +4,10 @@
 set -euo pipefail
 
 VER="2.1.1"
-OUT_PHP="assets/icons/phosphor-icons.php"
-OUT_JSON="assets/icons/phosphor-icons.json"
+OUT_PHP="assets/icons/icon-markup.php"
+OUT_JSON="assets/icons/icon-markup.json"
+OUT_META="assets/icons/icon-meta.json"
+OUT_SET="assets/icons/icon-set.json"
 
 tmp="$(mktemp -d)"
 trap 'rm -rf "$tmp"' EXIT
@@ -50,4 +52,13 @@ done
 
 printf '{%s}\n' "$json_body" > "$OUT_JSON"
 
-echo "wrote $OUT_PHP and $OUT_JSON ($count icons, $(wc -c < "$OUT_JSON") JSON bytes)"
+echo "Extracting category/tag metadata…"
+node tools/extract-icon-meta.mjs "$tmp/package" "$src" > "$OUT_META"
+
+cat > "$OUT_SET" <<JSON
+{"name":"phosphor","version":"${VER}","viewBox":"0 0 256 256","svgAttrs":{"fill":"currentColor"},"license":"MIT"}
+JSON
+
+echo "wrote $OUT_META and $OUT_SET"
+
+echo "wrote $OUT_PHP, $OUT_JSON, $OUT_META, $OUT_SET ($count icons)"
