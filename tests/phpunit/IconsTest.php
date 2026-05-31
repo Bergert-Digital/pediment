@@ -38,4 +38,35 @@ class IconsTest extends WP_UnitTestCase {
 		$this->assertArrayHasKey( 'trend-up', $map );
 		$this->assertArrayHasKey( 'gear', $map );
 	}
+
+	public function test_pediment_icon_applies_manifest_svg_attrs() {
+		// Phosphor manifest carries fill="currentColor" on the wrapper.
+		$html = pediment_icon( 'arrow-right' );
+		$this->assertStringContainsString( 'fill="currentColor"', $html );
+	}
+
+	public function test_pediment_icon_renders_a_swapped_stroke_set() {
+		// A different icon set (e.g. Lucide) is expressed purely through the
+		// manifest: a 24x24 viewBox and stroke-based svgAttrs. No code change.
+		$filter = static function () {
+			return array(
+				'viewBox'  => '0 0 24 24',
+				'svgAttrs' => array(
+					'fill'           => 'none',
+					'stroke'         => 'currentColor',
+					'stroke-width'   => '2',
+					'stroke-linecap' => 'round',
+				),
+			);
+		};
+		add_filter( 'pediment_icon_set', $filter );
+		$html = pediment_icon( 'arrow-right' );
+		remove_filter( 'pediment_icon_set', $filter );
+
+		$this->assertStringContainsString( 'viewBox="0 0 24 24"', $html );
+		$this->assertStringContainsString( 'fill="none"', $html );
+		$this->assertStringContainsString( 'stroke="currentColor"', $html );
+		$this->assertStringContainsString( 'stroke-width="2"', $html );
+		$this->assertStringContainsString( 'stroke-linecap="round"', $html );
+	}
 }
