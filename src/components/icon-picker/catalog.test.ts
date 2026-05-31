@@ -60,3 +60,19 @@ it( 'rejects when the markup fetch fails', async () => {
 	mockFetch( {}, [ '/markup.json' ] );
 	await expect( getCatalog() ).rejects.toThrow();
 } );
+
+it( 'allows a retry after the markup fetch fails', async () => {
+	mockFetch( {}, [ '/markup.json' ] );
+	await expect( getCatalog() ).rejects.toThrow();
+
+	mockFetch( {
+		'/markup.json': { gear: '<path/>' },
+		'/meta.json': { gear: { c: [ 'system' ], t: [ 'settings' ] } },
+		'/set.json': {
+			viewBox: '0 0 256 256',
+			svgAttrs: { fill: 'currentColor' },
+		},
+	} );
+	const data = await getCatalog();
+	expect( data.markup.gear ).toBe( '<path/>' );
+} );
