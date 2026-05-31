@@ -24,7 +24,7 @@ export default function IconPreview( {
 		return () => {
 			active = false;
 		};
-	}, [ slug ] );
+	}, [] );
 
 	const markup = data?.markup[ slug ];
 	if ( ! markup || ! data ) {
