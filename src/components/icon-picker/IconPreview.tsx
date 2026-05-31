@@ -1,9 +1,11 @@
 import { useState, useEffect } from '@wordpress/element';
-import { getCatalog } from './catalog';
+import { getCatalog, type IconData } from './catalog';
 
 /*
  * Render a single icon inline by slug, using the cached editor catalog.
- * Renders nothing until the catalog has loaded or if the slug is unknown.
+ * The wrapper viewBox + presentation attributes come from the set manifest,
+ * so stroke-based sets render correctly. Renders nothing until the catalog
+ * has loaded or if the slug is unknown.
  */
 export default function IconPreview( {
 	slug,
@@ -12,28 +14,30 @@ export default function IconPreview( {
 	slug: string;
 	className?: string;
 } ) {
-	const [ markup, setMarkup ] = useState< string | undefined >( undefined );
+	const [ data, setData ] = useState< IconData | undefined >( undefined );
 
 	useEffect( () => {
 		let active = true;
 		getCatalog()
-			.then( ( cat ) => active && setMarkup( cat[ slug ] ) )
-			.catch( () => active && setMarkup( undefined ) );
+			.then( ( d ) => active && setData( d ) )
+			.catch( () => active && setData( undefined ) );
 		return () => {
 			active = false;
 		};
 	}, [ slug ] );
 
-	if ( ! markup ) {
+	const markup = data?.markup[ slug ];
+	if ( ! markup || ! data ) {
 		return null;
 	}
 	return (
 		<svg
 			className={ className }
-			viewBox="0 0 256 256"
+			viewBox={ data.set.viewBox }
 			data-icon={ slug }
 			aria-hidden="true"
 			focusable="false"
+			{ ...data.set.svgAttrs }
 			dangerouslySetInnerHTML={ { __html: markup } }
 		/>
 	);
