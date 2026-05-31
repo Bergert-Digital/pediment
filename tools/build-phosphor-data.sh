@@ -1,6 +1,20 @@
 #!/usr/bin/env bash
-# Regenerates assets/icons/phosphor-icons.{php,json} from Phosphor core
-# (regular weight, MIT). Run manually when bumping the Phosphor version.
+# Reference builder for the icon-set data contract. Regenerates four committed
+# files under assets/icons/ from Phosphor core (regular weight, MIT):
+#
+#   icon-markup.php   — return array( 'slug' => '<inner svg>' ); read by PHP render
+#   icon-markup.json  — { "slug": "<inner svg>" };            read by the editor grid
+#   icon-meta.json    — { "slug": { "c": [cats], "t": [tags] } };  OPTIONAL (search + categories)
+#   icon-set.json     — { name, version, viewBox, svgAttrs, license };  render manifest
+#
+# To swap icon sets: write a builder that emits these four files in these shapes.
+# No theme code changes are needed — pediment_icon() and the IconPicker read only
+# this contract. icon-meta.json is optional (the picker degrades to slug-only
+# search with no category filter when it is absent). svgAttrs must carry every
+# presentation attribute the wrapper <svg> needs (fill for filled sets;
+# stroke/stroke-width/… for stroke sets like Lucide).
+#
+# Run manually when bumping the Phosphor version or swapping the set.
 set -euo pipefail
 
 VER="2.1.1"
