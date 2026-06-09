@@ -46,9 +46,21 @@ final class Page {
 		$store = new OptionsStore();
 		$out   = $store->all();
 
+		// This callback must be idempotent: WordPress runs the sanitize_option
+		// filter TWICE when the option is first created — update_option() delegates
+		// to add_option(), which sanitizes the already-sanitized value again. On
+		// that second pass $input carries api_key_encrypted but no plaintext
+		// api_key, so carry the encrypted value through or the key is dropped on
+		// the very first save.
+		if ( isset( $input['api_key_encrypted'] ) && '' !== (string) $input['api_key_encrypted'] ) {
+			$out['api_key_encrypted'] = (string) $input['api_key_encrypted'];
+		}
+
+		// A freshly submitted plaintext key wins. Fold it in via withApiKey()
+		// rather than setApiKey(): the latter would update_option() this same
+		// option from inside its own sanitize_callback, re-entering this method.
 		if ( isset( $input['api_key'] ) && '' !== (string) $input['api_key'] ) {
-			$store->setApiKey( (string) $input['api_key'] );
-			$out = $store->all();
+			$out = $store->withApiKey( $out, (string) $input['api_key'] );
 		}
 		if ( isset( $input['model_compose'] ) ) {
 			$out['model_compose'] = sanitize_text_field( (string) $input['model_compose'] );
