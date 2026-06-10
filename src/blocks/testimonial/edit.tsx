@@ -35,7 +35,10 @@ export default function Edit( {
 							<Button variant="secondary" onClick={ open }>
 								{ attributes.avatarId
 									? __( 'Replace avatar', 'pediment' )
-									: __( 'Pick avatar (optional)', 'pediment' ) }
+									: __(
+											'Pick avatar (optional)',
+											'pediment'
+									  ) }
 							</Button>
 						) }
 					/>
@@ -58,14 +61,18 @@ export default function Edit( {
 							tagName="b"
 							className="starter-testimonial__name"
 							value={ attributes.authorName }
-							onChange={ ( v ) => setAttributes( { authorName: v } ) }
+							onChange={ ( v ) =>
+								setAttributes( { authorName: v } )
+							}
 							placeholder={ __( 'Name…', 'pediment' ) }
 						/>
 						<RichText
 							tagName="span"
 							className="starter-testimonial__role"
 							value={ attributes.authorRole }
-							onChange={ ( v ) => setAttributes( { authorRole: v } ) }
+							onChange={ ( v ) =>
+								setAttributes( { authorRole: v } )
+							}
 							placeholder={ __( 'Role, Company…', 'pediment' ) }
 						/>
 					</div>

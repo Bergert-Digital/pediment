@@ -7,7 +7,9 @@ const TEMPLATE: [ string, Record< string, unknown > ][] = [
 ];
 
 export default function Edit() {
-	const blockProps = useBlockProps( { className: 'starter-testimonial-grid' } );
+	const blockProps = useBlockProps( {
+		className: 'starter-testimonial-grid',
+	} );
 	const innerProps = useInnerBlocksProps( blockProps, {
 		allowedBlocks: ALLOWED,
 		template: TEMPLATE,
