@@ -71,4 +71,37 @@ class TestimonialGridTest extends WP_UnitTestCase {
 			$this->assertArrayHasKey( $attr, $data['attributes'] );
 		}
 	}
+
+	public function test_grid_wraps_three_testimonial_cards() {
+		$html = do_blocks(
+			'<!-- wp:pediment/testimonial-grid -->' .
+			'<!-- wp:pediment/testimonial {"quote":"First quote.","authorName":"Aa Bb","authorRole":"CEO, One"} /-->' .
+			'<!-- wp:pediment/testimonial {"quote":"Second quote.","authorName":"Cc Dd","authorRole":"CTO, Two"} /-->' .
+			'<!-- wp:pediment/testimonial {"quote":"Third quote.","authorName":"Ee Ff","authorRole":"COO, Three"} /-->' .
+			'<!-- /wp:pediment/testimonial-grid -->'
+		);
+		$this->assertStringContainsString( 'starter-testimonial-grid', $html );
+		$this->assertSame( 3, substr_count( $html, 'starter-testimonial__quote' ) );
+		$this->assertStringContainsString( 'First quote.', $html );
+		$this->assertStringContainsString( 'Second quote.', $html );
+		$this->assertStringContainsString( 'Third quote.', $html );
+	}
+
+	public function test_grid_skips_empty_quote_child() {
+		$html = do_blocks(
+			'<!-- wp:pediment/testimonial-grid -->' .
+			'<!-- wp:pediment/testimonial {"quote":"Kept."} /-->' .
+			'<!-- wp:pediment/testimonial {"quote":""} /-->' .
+			'<!-- /wp:pediment/testimonial-grid -->'
+		);
+		$this->assertSame( 1, substr_count( $html, 'starter-testimonial__quote' ) );
+		$this->assertStringContainsString( 'Kept.', $html );
+	}
+
+	public function test_grid_block_json_description_mentions_testimonial() {
+		$path = dirname( __DIR__, 3 ) . '/src/blocks/testimonial-grid/block.json';
+		$data = json_decode( file_get_contents( $path ), true );
+		$this->assertStringContainsStringIgnoringCase( 'testimonial', (string) $data['description'] );
+		$this->assertContains( 'wide', $data['supports']['align'] );
+	}
 }

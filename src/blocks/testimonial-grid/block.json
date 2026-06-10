@@ -1,0 +1,15 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "pediment/testimonial-grid",
+	"title": "Testimonial Grid",
+	"category": "pediment",
+	"description": "A responsive grid of customer testimonial cards. Use for 'what our clients say' / Kundenstimmen sections. Contains Testimonial child blocks.",
+	"textdomain": "pediment",
+	"supports": { "html": false, "align": [ "wide", "full" ] },
+	"attributes": {},
+	"editorScript": "file:./index.js",
+	"editorStyle": "file:./style-index.css",
+	"style": "file:./style-index.css",
+	"render": "file:./render.php"
+}
