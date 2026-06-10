@@ -4,8 +4,8 @@
  * Slug: pediment/pediment-landing
  * Categories: pediment
  * Block Types: core/post-content
- * Description: Full Pediment landing page — hero, services, process, stats, pull quote, FAQ, CTA, and insights bands.
- * Keywords: landing, home, full page, services, process, stats, quote
+ * Description: Full Pediment landing page — hero, services, process, stats, testimonials, FAQ, CTA, and insights bands.
+ * Keywords: landing, home, full page, services, process, stats, testimonials
  * Viewport Width: 1400
  */
 // phpcs:ignoreFile -- block pattern content
@@ -77,7 +77,10 @@
 
 <!-- wp:group {"align":"full","className":"starter-band is-style-band-surface","style":{"spacing":{"margin":{"top":"0","bottom":"0"}}},"layout":{"type":"constrained"}} -->
 <div class="wp-block-group alignfull starter-band is-style-band-surface is-layout-constrained wp-block-group-is-layout-constrained" style="margin-top:0;margin-bottom:0">
-<!-- wp:pediment/pull-quote {"align":"wide","quote":"A short, specific endorsement written in the customer's own words.","citation":"A. Customer, Title, Company"} /-->
+<!-- wp:pediment/testimonial-grid {"align":"wide"} -->
+<!-- wp:pediment/testimonial {"quote":"A short, specific endorsement written in the customer's own words.","authorName":"A. Customer","authorRole":"Title, Company"} /-->
+<!-- wp:pediment/testimonial {"quote":"A second endorsement that speaks to a different strength or outcome.","authorName":"B. Client","authorRole":"Title, Company"} /-->
+<!-- /wp:pediment/testimonial-grid -->
 </div>
 <!-- /wp:group -->
 

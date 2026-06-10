@@ -81,11 +81,11 @@ const CONTRACTS: BlockContract[] = [
 		],
 	},
 	{
-		name: 'pediment/pull-quote (testimonial variant)',
+		name: 'pediment/testimonial-grid',
 		selectors: [
-			'.starter-pull-quote',
-			'.starter-pull-quote.is-variant-testimonial',
-			'.starter-pull-quote__quote',
+			'.starter-testimonial-grid',
+			'.starter-testimonial',
+			'.starter-testimonial__quote',
 		],
 	},
 ];
