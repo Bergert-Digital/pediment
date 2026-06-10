@@ -100,9 +100,10 @@ Byline logic:
   `background: var(--wp--preset--color--accent)`, white text, centered, weight 700.
 - `.starter-testimonial__name`: weight 700, `foreground`. `.starter-testimonial__role`:
   `foreground-muted`, ~0.9rem.
-- Dark band override: `.is-style-band-navy .starter-testimonial` → quote/name use
-  `surface` color, role uses `--wp--custom--color--text-on-dark` (same pattern as
-  `pull-quote`).
+- **No dark-band text override** (corrected from earlier draft): unlike `pull-quote`,
+  testimonial cards carry their own `surface` background, so they stay light-with-dark-text
+  even on a `.is-style-band-navy` band. A `pull-quote`-style override would put light text on
+  a light card — a bug. The card just sits on the band as-is.
 
 Count behavior with the 2-up grid: 4 → 2×2, 3 → 2 + 1 (orphan left-aligned, acceptable),
 2 → side-by-side, 1 → single card. No special-casing.
