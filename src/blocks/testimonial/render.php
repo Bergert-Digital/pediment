@@ -22,7 +22,7 @@ $initials = '';
 if ( '' !== $author_name ) {
 	$words = preg_split( '/\s+/', trim( wp_strip_all_tags( $author_name ) ) );
 	foreach ( array_slice( $words, 0, 2 ) as $word ) {
-		$first = function_exists( 'mb_substr' ) ? mb_substr( $word, 0, 1 ) : substr( $word, 0, 1 );
+		$first     = function_exists( 'mb_substr' ) ? mb_substr( $word, 0, 1 ) : substr( $word, 0, 1 );
 		$initials .= function_exists( 'mb_strtoupper' ) ? mb_strtoupper( $first ) : strtoupper( $first );
 	}
 }
