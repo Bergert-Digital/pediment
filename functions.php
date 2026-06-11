@@ -33,9 +33,7 @@ if ( file_exists( __DIR__ . '/vendor/autoload.php' ) ) {
 	require_once __DIR__ . '/vendor/autoload.php';
 }
 require_once __DIR__ . '/inc/ThemeUpdater.php';
-if ( is_admin() ) {
-	\Pediment\ThemeUpdater::register();
-}
+\Pediment\ThemeUpdater::register();
 
 add_action(
 	'wp_enqueue_scripts',

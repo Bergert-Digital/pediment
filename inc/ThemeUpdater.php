@@ -9,6 +9,8 @@
  * @package Pediment
  */
 
+declare(strict_types=1);
+
 namespace Pediment;
 
 use YahnisElsts\PluginUpdateChecker\v5\PucFactory;
