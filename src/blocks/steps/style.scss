@@ -1,8 +1,13 @@
 .starter-steps {
   counter-reset: starter-step;
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   gap: 22px;
+  align-items: start;
+}
+
+@media (max-width: 781px) {
+  .starter-steps { grid-template-columns: 1fr; }
 }
 
 .starter-step {
