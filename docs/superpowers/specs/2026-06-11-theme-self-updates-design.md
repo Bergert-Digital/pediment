@@ -51,8 +51,9 @@ zip**; **no custom button** (standard WP update flow).
 
 1. **`composer.json`**
    - Add to `require`: `"yahnis-elsts/plugin-update-checker": "^5.7"`.
-   - Add a PSR-4 `autoload` block mapping the theme namespace to `inc/`
-     (parent: `Pediment\\` → `inc/`; child: a dedicated namespace, e.g. `PedimentChild\\` → `inc/`).
+   - No PSR-4 `autoload` block needed: `functions.php` `require_once`s `inc/ThemeUpdater.php`
+     directly (matching the themes' existing manual-require convention) and only relies on
+     `vendor/autoload.php` to load PUC itself.
 
 2. **`inc/ThemeUpdater.php`** — a near-verbatim copy of the plugin's `Updater.php`:
    - `PucFactory::buildUpdateChecker(REPO_URL, get_stylesheet_directory() . '/style.css', SLUG)`
