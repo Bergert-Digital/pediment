@@ -13,7 +13,7 @@
 			"default": "default",
 			"enum": [ "default", "centered", "media-bg", "stat-card" ]
 		},
-		"headline": { "type": "string", "default": "" },
+		"headline": { "type": "string", "default": "", "required": true },
 		"subheadline": { "type": "string", "default": "" },
 		"ctaText": { "type": "string", "default": "" },
 		"ctaUrl": { "type": "string", "default": "" },

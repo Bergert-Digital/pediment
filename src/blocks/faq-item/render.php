@@ -19,7 +19,7 @@ ob_start();
 	<summary class="starter-faq-item__question">
 		<?php echo wp_kses_post( $question ); ?>
 		<span class="starter-faq-item__toggle" aria-hidden="true">
-			<svg class="i" aria-hidden="true" focusable="false"><use href="#ph-caret-down"></use></svg>
+			<?php echo pediment_icon( 'caret-down' ); // phpcs:ignore WordPress.Security.EscapeOutput -- theme-controlled icon markup ?>
 		</span>
 	</summary>
 	<div class="starter-faq-item__answer"><?php echo wp_kses_post( $answer ); ?></div>

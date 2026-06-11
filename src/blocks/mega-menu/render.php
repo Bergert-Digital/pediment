@@ -95,7 +95,7 @@ ob_start();
 						<p class="starter-mega-column__heading">
 						<?php
 						if ( $has_icon ) {
-							echo pediment_icon( $c_icon, 'starter-mega-column__icon' ); // phpcs:ignore WordPress.Security.EscapeOutput -- theme-controlled sprite SVG
+							echo pediment_icon( $c_icon, 'starter-mega-column__icon' ); // phpcs:ignore WordPress.Security.EscapeOutput -- theme-controlled icon markup
 						}
 							echo wp_kses_post( $heading );
 						?>

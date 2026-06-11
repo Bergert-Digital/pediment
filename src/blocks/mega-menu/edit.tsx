@@ -13,6 +13,8 @@ import {
 	ToggleControl,
 	Button,
 } from '@wordpress/components';
+import IconPicker from '../../components/icon-picker';
+import IconPreview from '../../components/icon-picker/IconPreview';
 
 type Link = { label: string; url: string; description: string };
 type Column = { heading: string; icon: string; links: Link[] };
@@ -143,15 +145,8 @@ export default function Edit( {
 									updateColumn( ci, { heading } )
 								}
 							/>
-							<TextControl
-								label={ __(
-									'Icon (Phosphor name)',
-									'pediment'
-								) }
-								help={ __(
-									'Available: arrow-right, article, bank, caret-down, check-circle, gear, microphone, monitor-play, seal-check, stack, trend-up. Add more in assets/icons/phosphor-sprite.svg.',
-									'pediment'
-								) }
+							<IconPicker
+								label={ __( 'Icon', 'pediment' ) }
 								value={ column.icon ?? '' }
 								onChange={ ( icon ) =>
 									updateColumn( ci, { icon } )
@@ -356,18 +351,10 @@ export default function Edit( {
 									{ ( hasHeading || hasIcon ) && (
 										<p className="starter-mega-column__heading">
 											{ hasIcon && (
-												<svg
+												<IconPreview
+													slug={ colIcon }
 													className="i starter-mega-column__icon"
-													width="24"
-													height="24"
-													viewBox="0 0 256 256"
-													aria-hidden="true"
-													focusable="false"
-												>
-													<use
-														href={ `#ph-${ colIcon }` }
-													/>
-												</svg>
+												/>
 											) }
 											{ column.heading }
 										</p>

@@ -1,0 +1,55 @@
+<?php
+/**
+ * GitHub-release auto-updates for the Pediment parent theme.
+ *
+ * Points Plugin Update Checker at the public GitHub repo's releases so theme
+ * updates arrive through wp-admin's normal one-click flow (Dashboard → Updates
+ * / Appearance → Themes) instead of manual zip uploads.
+ *
+ * @package Pediment
+ */
+
+declare(strict_types=1);
+
+namespace Pediment;
+
+use YahnisElsts\PluginUpdateChecker\v5\PucFactory;
+
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
+
+final class ThemeUpdater {
+	/** Public repo whose GitHub Releases drive theme updates. */
+	private const REPO_URL = 'https://github.com/Bergert-Digital/pediment/';
+
+	/**
+	 * Wire the update checker to this repo's GitHub releases.
+	 */
+	public static function register(): void {
+		if ( ! class_exists( PucFactory::class ) ) {
+			return;
+		}
+
+		// get_template_directory(): always the parent theme dir, even when a
+		// child theme is the active stylesheet.
+		$checker = PucFactory::buildUpdateChecker(
+			self::REPO_URL,
+			get_template_directory() . '/style.css',
+			'pediment'
+		);
+
+		// Fallback branch for reading the version header if a release is ever absent.
+		if ( method_exists( $checker, 'setBranch' ) ) {
+			$checker->setBranch( 'main' );
+		}
+
+		// Install the built release asset (pediment.zip) rather than GitHub's
+		// auto-generated "Source code" zip, which has the wrong folder name and
+		// ships no vendor/ autoloader.
+		$api = $checker->getVcsApi();
+		if ( method_exists( $api, 'enableReleaseAssets' ) ) {
+			$api->enableReleaseAssets( '/pediment\.zip$/' );
+		}
+	}
+}

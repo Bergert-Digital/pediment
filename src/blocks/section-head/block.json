@@ -9,9 +9,9 @@
 	"supports": { "html": false, "align": [ "wide" ] },
 	"attributes": {
 		"eyebrow":   { "type": "string", "default": "" },
-		"headline":  { "type": "string", "default": "" },
+		"headline":  { "type": "string", "default": "", "required": true },
 		"lead":      { "type": "string", "default": "" },
-		"alignment": { "type": "string", "default": "start", "enum": [ "start", "center" ] },
+		"alignment": { "type": "string", "default": "center", "enum": [ "start", "center" ] },
 		"level":     { "type": "number", "default": 2, "enum": [ 2, 3 ] }
 	},
 	"editorScript": "file:./index.js",

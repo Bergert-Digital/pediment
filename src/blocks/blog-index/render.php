@@ -98,7 +98,7 @@ ob_start();
 						<p class="starter-blog-index__excerpt"><?php echo esc_html( $card['excerpt'] ); ?></p>
 						<a class="starter-blog-index__readmore" href="<?php echo esc_url( $card['permalink'] ); ?>" aria-label="<?php echo esc_attr( sprintf( /* translators: %s: post title */ __( 'Read more: %s', 'pediment' ), $card['title'] ) ); ?>">
 							<?php esc_html_e( 'Read more', 'pediment' ); ?>
-							<svg class="i" aria-hidden="true" focusable="false"><use href="#ph-arrow-right"></use></svg>
+							<?php echo pediment_icon( 'arrow-right' ); // phpcs:ignore WordPress.Security.EscapeOutput -- theme-controlled icon markup ?>
 						</a>
 					</div>
 				</li>

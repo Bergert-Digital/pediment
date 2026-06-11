@@ -8,6 +8,7 @@
     "lint:js": "wp-scripts lint-js src/",
     "lint:blocks": "node tools/lint-blocks.mjs",
     "lint:colors": "node tools/lint-colors.mjs",
+    "lint:icons": "node tools/lint-icons.mjs",
     "format": "wp-scripts format src/",
     "test:js": "wp-scripts test-unit-js",
     "e2e": "playwright test",

@@ -58,7 +58,7 @@ if ( 'stat-card' === $variant ) {
 			<?php if ( ! empty( $ticks ) ) : ?>
 				<ul class="starter-hero__ticks">
 					<?php foreach ( $ticks as $tick ) : ?>
-						<li class="starter-hero__tick"><svg class="starter-hero__tick-icon" aria-hidden="true" focusable="false"><use href="#ph-check-circle"></use></svg><?php echo wp_kses_post( (string) $tick ); ?></li>
+						<li class="starter-hero__tick"><?php echo pediment_icon( 'check-circle', 'starter-hero__tick-icon' ); // phpcs:ignore WordPress.Security.EscapeOutput -- theme-controlled icon markup ?><?php echo wp_kses_post( (string) $tick ); ?></li>
 					<?php endforeach; ?>
 				</ul>
 			<?php endif; ?>

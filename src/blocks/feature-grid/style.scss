@@ -13,6 +13,7 @@
   border: 1px solid var(--wp--preset--color--border);
   border-radius: var(--r-lg, 20px);
   padding: 32px;
+  text-align: center;
   transition: box-shadow .18s ease, transform .18s ease, border-color .18s ease;
 
   &:hover {
@@ -30,7 +31,7 @@
     border-radius: 12px;
     background: var(--wp--preset--color--accent-tint);
     color: var(--wp--preset--color--accent);
-    margin-bottom: 20px;
+    margin: 0 auto 20px;
   }
   &__ic .i { width: 22px; height: 22px; }
 

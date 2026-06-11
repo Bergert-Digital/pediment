@@ -5,8 +5,9 @@
 	"title": "Stat",
 	"category": "pediment",
 	"description": "A prominent number or short value with a label and optional context line.",
+	"parent": [ "pediment/stat-grid" ],
 	"textdomain": "pediment",
-	"supports": { "html": false },
+	"supports": { "html": false, "inserter": false },
 	"attributes": {
 		"value": { "type": "string", "default": "" },
 		"label": { "type": "string", "default": "" },

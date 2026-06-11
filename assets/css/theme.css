@@ -22,6 +22,20 @@
   padding-block: var(--section);
   padding-inline: var(--wp--style--root--padding-left);
 }
+/* The composer wraps each section in a full-bleed group (.starter-section) and
+   marks wide content with .alignwide — but it leaves the group in flow layout,
+   where .alignwide is inert and content runs edge to edge. Contain the band
+   ourselves the way a constrained layout would: plain content at content-size,
+   .alignwide at wide-size, .alignfull stays full. Widths come from theme.json,
+   so this tracks each pediment variation instead of pinning a fixed pixel band. */
+.starter-section > *:not(.alignwide):not(.alignfull){
+  max-width: var(--wp--style--global--content-size, 720px);
+  margin-inline: auto;
+}
+.starter-section > .alignwide{
+  max-width: var(--wp--style--global--wide-size, 1200px);
+  margin-inline: auto;
+}
 /* Mockup mapping: --bg #FFFFFF, --surface #F5F8FC, --navy #0A1B33.
    Most bands are plain white; only the Steps/approach band is tinted;
    only the Stats band is navy full-bleed. The CTA band is white — the
@@ -66,6 +80,18 @@
   }
 }
 
+
+/* Editor-only: the post-title field pinned to the top of the editing canvas
+   inherits the theme's h1 typography and renders as a hero-sized heading.
+   Pages don't print a title at all (page.html has no wp:post-title), so on
+   those it's pure editor chrome; shrink it to read as a label. Safe for posts
+   too — `.editor-post-title` is the editing input inside the editor iframe and
+   never exists on the frontend (the rendered block uses `.wp-block-post-title`),
+   so real post titles keep their full size. */
+.editor-post-title{
+  font-size: clamp(1.4rem, 2.4vw, 1.9rem);
+  line-height: 1.2;
+}
 
 /* Eyebrow label + chip */
 .kicker{

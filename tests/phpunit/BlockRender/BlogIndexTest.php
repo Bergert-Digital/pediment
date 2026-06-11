@@ -154,7 +154,7 @@ class BlogIndexTest extends WP_UnitTestCase {
 		$this->assertStringContainsString( 'Short summary here.', $html );
 		$this->assertStringContainsString( 'starter-blog-index__readmore', $html );
 		$this->assertStringContainsString( esc_url( get_permalink( $post_id ) ), $html );
-		$this->assertStringContainsString( '#ph-arrow-right', $html );
+		$this->assertStringContainsString( 'data-icon="arrow-right"', $html );
 
 		wp_delete_post( $post_id, true );
 	}

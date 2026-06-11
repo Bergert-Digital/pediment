@@ -5,6 +5,8 @@ import {
 	InspectorControls,
 } from '@wordpress/block-editor';
 import { PanelBody, TextControl } from '@wordpress/components';
+import IconPicker from '../../components/icon-picker';
+import IconPreview from '../../components/icon-picker/IconPreview';
 
 type Attrs = {
 	icon: string;
@@ -26,11 +28,10 @@ export default function Edit( {
 		<>
 			<InspectorControls>
 				<PanelBody title={ __( 'Feature', 'pediment' ) }>
-					<TextControl
-						label={ __( 'Phosphor icon name', 'pediment' ) }
+					<IconPicker
+						label={ __( 'Icon', 'pediment' ) }
 						value={ attributes.icon }
-						onChange={ ( v ) => setAttributes( { icon: v } ) }
-						help={ __( 'e.g. trend-up, gear, stack', 'pediment' ) }
+						onChange={ ( icon ) => setAttributes( { icon } ) }
 					/>
 					<TextControl
 						label={ __( 'Link URL', 'pediment' ) }
@@ -42,17 +43,7 @@ export default function Edit( {
 			<div { ...blockProps }>
 				<div className="starter-feature__ic" aria-hidden="true">
 					{ attributes.icon && (
-						<svg
-							className="i"
-							aria-hidden="true"
-							focusable={ false }
-						>
-							<use
-								href={ `#ph-${ attributes.icon
-									.toLowerCase()
-									.replace( /[^a-z0-9-]/g, '' ) }` }
-							/>
-						</svg>
+						<IconPreview slug={ attributes.icon } />
 					) }
 				</div>
 				<RichText

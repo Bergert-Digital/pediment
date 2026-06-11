@@ -13,8 +13,8 @@ class FeatureGridTest extends WP_UnitTestCase {
 		$this->assertStringContainsString( 'Ops', $html );
 		$this->assertStringContainsString( 'Digital', $html );
 		$this->assertStringContainsString( 'href="/ops"', $html );
-		$this->assertStringContainsString( 'href="#ph-gear"', $html );
-		$this->assertStringContainsString( 'href="#ph-stack"', $html );
+		$this->assertStringContainsString( 'data-icon="gear"', $html );
+		$this->assertStringContainsString( 'data-icon="stack"', $html );
 	}
 
 	public function test_feature_omits_link_when_url_missing() {

@@ -1,0 +1,73 @@
+.starter-testimonial {
+  display: flex;
+  flex-direction: column;
+  background: var(--wp--preset--color--surface);
+  border: 1px solid var(--wp--preset--color--border);
+  border-radius: var(--r-lg, 20px);
+  padding: 28px 30px;
+  transition: box-shadow .18s ease, transform .18s ease, border-color .18s ease;
+
+  &:hover {
+    box-shadow: var(--wp--preset--shadow--subtle);
+    transform: translateY(-3px);
+    border-color: var(--wp--preset--color--border-strong);
+  }
+
+  &__mark {
+    color: var(--wp--preset--color--accent);
+    font-size: 2.6rem;
+    font-weight: 800;
+    line-height: .6;
+    height: .7em;
+  }
+
+  &__quote {
+    margin: 8px 0 18px;
+    border: 0;
+    padding: 0;
+    font-size: clamp(1.05rem, 1.4vw, 1.2rem);
+    font-weight: 600;
+    line-height: 1.5;
+    color: var(--wp--preset--color--foreground);
+  }
+
+  &__by {
+    margin-top: auto;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  &__avatar,
+  &__initials {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    flex: none;
+  }
+
+  &__avatar { object-fit: cover; }
+
+  &__initials {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--wp--preset--color--accent);
+    color: var(--wp--preset--color--surface);
+    font-weight: 700;
+    font-size: .85rem;
+    letter-spacing: .02em;
+  }
+
+  &__meta { display: flex; flex-direction: column; }
+
+  &__name {
+    font-weight: 700;
+    color: var(--wp--preset--color--foreground);
+  }
+
+  &__role {
+    color: var(--wp--preset--color--foreground-muted);
+    font-size: .9rem;
+  }
+}

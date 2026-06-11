@@ -18,13 +18,18 @@ test.describe('landing layout (1440×900)', () => {
     expect(box.w).toBeLessThanOrEqual(1200);
   });
 
-  test('testimonial: pull-quote bounding box ≤ 900px wide', async ({ page }) => {
+  test('testimonial: grid is alignwide and shows two cards', async ({ page }) => {
     await page.goto('/');
-    const quote = page.locator('.starter-pull-quote.is-variant-testimonial').first();
-    await quote.scrollIntoViewIfNeeded();
-    const w = await quote.evaluate((el) => Math.round(el.getBoundingClientRect().width));
-    // Mockup is 880px; allow 20px slack for the gutter rounding.
-    expect(w).toBeLessThanOrEqual(900);
+    const grid = page.locator('.starter-testimonial-grid').first();
+    await grid.scrollIntoViewIfNeeded();
+    const gw = await grid.evaluate((el) => Math.round(el.getBoundingClientRect().width));
+    // alignwide → ≤ wide-size (1200px).
+    expect(gw).toBeLessThanOrEqual(1200);
+    const cards = grid.locator('.starter-testimonial');
+    await expect(cards).toHaveCount(2);
+    // 2-up grid: each card is narrower than the whole grid.
+    const c0 = await cards.nth(0).evaluate((el) => Math.round(el.getBoundingClientRect().width));
+    expect(c0).toBeLessThan(gw);
   });
 
   test('services: section-head and feature-grid share the same left edge', async ({ page }) => {

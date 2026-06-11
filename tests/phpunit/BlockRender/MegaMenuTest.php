@@ -32,7 +32,7 @@ class MegaMenuTest extends WP_UnitTestCase {
 		$this->assertStringContainsString( '<svg', $html );
 		// The icon must live inside the heading paragraph, not in the link.
 		$this->assertMatchesRegularExpression(
-			'/<p class="starter-mega-column__heading">[^<]*<svg[^<]*<use[^<]*ph-tag/',
+			'/<p class="starter-mega-column__heading">[^<]*<svg[^>]*data-icon="tag"/',
 			$html
 		);
 	}
