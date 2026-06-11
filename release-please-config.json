@@ -1,5 +1,6 @@
 {
   "$schema": "https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json",
+  "bootstrap-sha": "87d692772163164a8c29eec5fd75b1bd6704c86c",
   "packages": {
     ".": {
       "package-name": "pediment-ai",
