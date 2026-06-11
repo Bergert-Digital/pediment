@@ -1,5 +1,54 @@
 # Changelog
 
+## [0.3.0](https://github.com/Bergert-Digital/Pediment/compare/v0.2.1...v0.3.0) (2026-06-11)
+
+
+### Features
+
+* **blocks:** add pediment/testimonial child block ([62327ea](https://github.com/Bergert-Digital/Pediment/commit/62327eac537d2f04a3790f2efca90b03511f0ff9))
+* **blocks:** add pediment/testimonial-grid parent block ([6c9e3fe](https://github.com/Bergert-Digital/Pediment/commit/6c9e3fe3c2c6aaecef8c388bef1a003cd2567bb2))
+* **blocks:** constrain attribute schemas for AI generation ([35d91bd](https://github.com/Bergert-Digital/Pediment/commit/35d91bd1c262dd0e2c11499d62bc3e296d8fe2c9))
+* **feature:** use IconPicker; drop icon enum and text input ([9a6a391](https://github.com/Bergert-Digital/Pediment/commit/9a6a3914051fa3c2ac25cf879d9e8ebfd49b35fe))
+* icon picker, testimonial/stat-grid blocks, theme self-updates ([#14](https://github.com/Bergert-Digital/Pediment/issues/14)) ([40b7606](https://github.com/Bergert-Digital/Pediment/commit/40b760613fcccd18d2bf9fd4219feb090b8e441f))
+* **icons:** add shared IconPicker editor component ([de58b39](https://github.com/Bergert-Digital/Pediment/commit/de58b39f6c4dcaf4d725ff8d9f93b816c0ddf5fc))
+* **icons:** catalog loads {markup, meta, set} bundle; manifest-driven preview ([c51db5e](https://github.com/Bergert-Digital/Pediment/commit/c51db5e8ce124f3841f61dd356e648d8d3b455bf))
+* **icons:** category filter + progressive scroll in the IconPicker ([64380a1](https://github.com/Bergert-Digital/Pediment/commit/64380a1a2fe534acfbdb1a3314e38b77f305f28f))
+* **icons:** derive category list + display labels from meta ([f0c7054](https://github.com/Bergert-Digital/Pediment/commit/f0c705419df89011be76074ac1e58997fc5fa4ed))
+* **icons:** drive svg viewBox/attrs from icon-set manifest (set-agnostic render) ([4b45279](https://github.com/Bergert-Digital/Pediment/commit/4b45279dd63d3c749f5089b500a8240e1c6d1b28))
+* **icons:** expose catalog JSON url to the block editor ([3fab6e5](https://github.com/Bergert-Digital/Pediment/commit/3fab6e5b4642bbaf4f6c9ff6ff0e1571cd722b6d))
+* **icons:** filter by category and match tags, not just slugs ([c21e90c](https://github.com/Bergert-Digital/Pediment/commit/c21e90c72d157e0818b2fc94200db6ccbe417346))
+* **icons:** generate full Phosphor catalog data files ([8c4eac6](https://github.com/Bergert-Digital/Pediment/commit/8c4eac6ce82dbc3b8ca60af758228abce7234c12))
+* **icons:** generate icon-meta + icon-set manifest; rename data to icon-markup.* ([c8c6d78](https://github.com/Bergert-Digital/Pediment/commit/c8c6d78fb7d5009d1762384f2f12f9ab61785fe9))
+* **icons:** render icons inline from generated map; drop sprite use ([7923bb6](https://github.com/Bergert-Digital/Pediment/commit/7923bb672c3d91a4ad777c5f33145020da604f72))
+* **icons:** style the IconPicker editor control ([ebd9f6a](https://github.com/Bergert-Digital/Pediment/commit/ebd9f6a5f0e8dd9bbc2435221d11fb31ee00dfaf))
+* **mega-menu:** use IconPicker for column icons ([10472ab](https://github.com/Bergert-Digital/Pediment/commit/10472ab224bbe3fe7ec1c2ddf887f47f304e34c7))
+* **patterns:** landing page uses testimonial-grid; update pattern + e2e tests ([413019e](https://github.com/Bergert-Digital/Pediment/commit/413019eaf5d93a521d66c3eae6da5bedeeebde43))
+* **stat-grid:** add stat-grid container, lock stat to it ([7b689a3](https://github.com/Bergert-Digital/Pediment/commit/7b689a374b14f13d92c3e746dfec118e88d68e1d))
+* **updates:** add ThemeUpdater wiring PUC to GitHub releases ([036d7fc](https://github.com/Bergert-Digital/Pediment/commit/036d7fc5a181064cb8b18c2f31014be7bd847302))
+* **updates:** bootstrap ThemeUpdater + add Update URI header ([cdabf09](https://github.com/Bergert-Digital/Pediment/commit/cdabf098493f49b2ac66bb812d75188e3c2af0a7))
+
+
+### Bug Fixes
+
+* **icons:** cwd-independent lint, CI wiring, shebangs, tidy build script ([07e2c09](https://github.com/Bergert-Digital/Pediment/commit/07e2c0909159055413d60eaae6a1098207642641))
+* **icons:** drop JSDoc block from IconPreview to satisfy lint:js ([900dd94](https://github.com/Bergert-Digital/Pediment/commit/900dd946130ba56a860eda38f26d0949e5200505))
+* **icons:** route remaining icon output through pediment_icon() ([49ad93a](https://github.com/Bergert-Digital/Pediment/commit/49ad93a0d1d84ec4aec54fbf7c607508988a806e))
+* **icons:** scope IconPicker observer to grid; drop dead hint CSS ([cd7821b](https://github.com/Bergert-Digital/Pediment/commit/cd7821b6c4aa9734297f42a03a7982c97f708728))
+* **icons:** use WordPress blue for IconPicker hover, keep glyph white ([77705ec](https://github.com/Bergert-Digital/Pediment/commit/77705ec294e010b22ed413b8b2d5dbf5c5834850))
+* **section-head:** use padding so header gap survives layout reset ([48d21dd](https://github.com/Bergert-Digital/Pediment/commit/48d21dd3b2bf2bd2f7b4b8d0553de4e68a9f05e9))
+* **steps:** lay steps out in a responsive grid ([6cd6b15](https://github.com/Bergert-Digital/Pediment/commit/6cd6b152987e85db94041c1acc779895e8aef3cf))
+* **testimonial:** use surface token for initials; align render.php assignments ([823aa7e](https://github.com/Bergert-Digital/Pediment/commit/823aa7ebc2e3c04b0c50a50b4860b95452ec1750))
+* **theme:** contain AI-composed sections to theme widths ([e53f644](https://github.com/Bergert-Digital/Pediment/commit/e53f6449a178f0d4f3700dfa1b348328aa1e931e))
+* **updates:** register updater unconditionally; add strict_types ([8328aa0](https://github.com/Bergert-Digital/Pediment/commit/8328aa06eb757c97d3555918603a3e54224e2936))
+
+
+### Refactors
+
+* **icons:** defensive category guard + graceful lint summary for foreign sets ([2250b51](https://github.com/Bergert-Digital/Pediment/commit/2250b51faab9b6a2f3f7449564e3ac40d4bdc43e))
+* **icons:** fetch-once effect dep in IconPreview; test retry-after-error ([82f04db](https://github.com/Bergert-Digital/Pediment/commit/82f04db406ddb161850c89586c8f53630a2206aa))
+* **icons:** harden svgAttrs guard, de-Phosphor docblocks, add test file docblock ([a5016c9](https://github.com/Bergert-Digital/Pediment/commit/a5016c9f67aba289e2fef60d1bc40245d72f3c9c))
+* **pull-quote:** remove testimonial variant; testimonial-grid owns testimonials ([adfd65b](https://github.com/Bergert-Digital/Pediment/commit/adfd65b76cb1eb0f8ec7f02cbf0a4dba3d327fd7))
+
 ## [0.2.1](https://github.com/Bergert-Digital/Pediment/compare/v0.2.0...v0.2.1) (2026-05-28)
 
 
