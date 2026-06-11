@@ -1,0 +1,9 @@
+.starter-testimonial-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 22px;
+}
+
+@media (max-width: 781px) {
+  .starter-testimonial-grid { grid-template-columns: 1fr; }
+}

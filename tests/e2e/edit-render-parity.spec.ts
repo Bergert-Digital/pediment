@@ -81,11 +81,11 @@ const CONTRACTS: BlockContract[] = [
 		],
 	},
 	{
-		name: 'pediment/pull-quote (testimonial variant)',
+		name: 'pediment/testimonial-grid',
 		selectors: [
-			'.starter-pull-quote',
-			'.starter-pull-quote.is-variant-testimonial',
-			'.starter-pull-quote__quote',
+			'.starter-testimonial-grid',
+			'.starter-testimonial',
+			'.starter-testimonial__quote',
 		],
 	},
 ];
@@ -113,7 +113,7 @@ async function collectEditorSelectors(
 	await page.goto( `/wp-admin/post.php?post=${ postId }&action=edit`, {
 		waitUntil: 'domcontentloaded',
 	} );
-	// Editor iframe + sprite injection settle within ~5s on a warm server;
+	// Editor iframe + block hydration settle within ~5s on a warm server;
 	// add buffer for slower CI.
 	await page.waitForFunction(
 		() => {

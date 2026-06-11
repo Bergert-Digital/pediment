@@ -1,17 +1,24 @@
 .starter-steps {
   counter-reset: starter-step;
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   gap: 22px;
+  align-items: start;
+}
+
+@media (max-width: 781px) {
+  .starter-steps { grid-template-columns: 1fr; }
 }
 
 .starter-step {
   display: grid;
-  grid-template-columns: auto 1fr;
-  gap: 18px;
+  grid-template-columns: 1fr;
+  gap: 16px;
+  text-align: center;
   counter-increment: starter-step;
 
   &__num {
+    justify-self: center;
     width: 36px;
     height: 36px;
     border: 1px solid var(--wp--preset--color--border);

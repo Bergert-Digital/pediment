@@ -4,8 +4,8 @@
  * Slug: pediment/pediment-landing
  * Categories: pediment
  * Block Types: core/post-content
- * Description: Full Pediment landing page — hero, services, process, stats, testimonial, FAQ, CTA, and insights bands.
- * Keywords: landing, home, full page, services, process, stats, testimonial
+ * Description: Full Pediment landing page — hero, services, process, stats, testimonials, FAQ, CTA, and insights bands.
+ * Keywords: landing, home, full page, services, process, stats, testimonials
  * Viewport Width: 1400
  */
 // phpcs:ignoreFile -- block pattern content
@@ -56,28 +56,21 @@
 
 <!-- wp:group {"align":"full","className":"starter-band is-style-band-navy","style":{"spacing":{"margin":{"top":"0","bottom":"0"}}},"layout":{"type":"constrained"}} -->
 <div class="wp-block-group alignfull starter-band is-style-band-navy is-layout-constrained wp-block-group-is-layout-constrained" style="margin-top:0;margin-bottom:0">
-<!-- wp:columns {"align":"wide"} -->
-<div class="wp-block-columns alignwide">
-<!-- wp:column -->
-<div class="wp-block-column"><!-- wp:pediment/stat {"value":"120+","label":"Projects shipped"} /--></div>
-<!-- /wp:column -->
-<!-- wp:column -->
-<div class="wp-block-column"><!-- wp:pediment/stat {"value":"18","label":"Countries"} /--></div>
-<!-- /wp:column -->
-<!-- wp:column -->
-<div class="wp-block-column"><!-- wp:pediment/stat {"value":"30","label":"Avg. years experience"} /--></div>
-<!-- /wp:column -->
-<!-- wp:column -->
-<div class="wp-block-column"><!-- wp:pediment/stat {"value":"94%","label":"Repeat clients"} /--></div>
-<!-- /wp:column -->
-</div>
-<!-- /wp:columns -->
+<!-- wp:pediment/stat-grid {"align":"wide"} -->
+<!-- wp:pediment/stat {"value":"120+","label":"Projects shipped"} /-->
+<!-- wp:pediment/stat {"value":"18","label":"Countries"} /-->
+<!-- wp:pediment/stat {"value":"30","label":"Avg. years experience"} /-->
+<!-- wp:pediment/stat {"value":"94%","label":"Repeat clients"} /-->
+<!-- /wp:pediment/stat-grid -->
 </div>
 <!-- /wp:group -->
 
 <!-- wp:group {"align":"full","className":"starter-band is-style-band-surface","style":{"spacing":{"margin":{"top":"0","bottom":"0"}}},"layout":{"type":"constrained"}} -->
 <div class="wp-block-group alignfull starter-band is-style-band-surface is-layout-constrained wp-block-group-is-layout-constrained" style="margin-top:0;margin-bottom:0">
-<!-- wp:pediment/pull-quote {"variant":"testimonial","align":"wide","quote":"A short, specific endorsement written in the customer's own words.","authorName":"A. Customer","authorRole":"Title, Company"} /-->
+<!-- wp:pediment/testimonial-grid {"align":"wide"} -->
+<!-- wp:pediment/testimonial {"quote":"A short, specific endorsement written in the customer's own words.","authorName":"A. Customer","authorRole":"Title, Company"} /-->
+<!-- wp:pediment/testimonial {"quote":"A second endorsement that speaks to a different strength or outcome.","authorName":"B. Client","authorRole":"Title, Company"} /-->
+<!-- /wp:pediment/testimonial-grid -->
 </div>
 <!-- /wp:group -->
 

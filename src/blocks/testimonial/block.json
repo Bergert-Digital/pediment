@@ -1,0 +1,21 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "pediment/testimonial",
+	"title": "Testimonial",
+	"category": "pediment",
+	"description": "A single customer testimonial card: quote, author name, role, and optional avatar.",
+	"parent": [ "pediment/testimonial-grid" ],
+	"textdomain": "pediment",
+	"supports": { "html": false, "inserter": false },
+	"attributes": {
+		"quote": { "type": "string", "default": "" },
+		"authorName": { "type": "string", "default": "" },
+		"authorRole": { "type": "string", "default": "" },
+		"avatarId": { "type": "integer", "default": 0 }
+	},
+	"editorScript": "file:./index.js",
+	"editorStyle": "file:./style-index.css",
+	"style": "file:./style-index.css",
+	"render": "file:./render.php"
+}

@@ -1,0 +1,15 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "pediment/stat-grid",
+	"title": "Stat Grid",
+	"category": "pediment",
+	"description": "A responsive row of key figures. Use for a 'numbers & facts' / Zahlen & Fakten / stats section. Contains Stat child blocks laid out side by side.",
+	"textdomain": "pediment",
+	"supports": { "html": false, "align": [ "wide", "full" ] },
+	"attributes": {},
+	"editorScript": "file:./index.js",
+	"editorStyle": "file:./style-index.css",
+	"style": "file:./style-index.css",
+	"render": "file:./render.php"
+}

@@ -19,7 +19,6 @@ require_once __DIR__ . '/inc/register-blocks.php';
 require_once __DIR__ . '/inc/icons.php';
 require_once __DIR__ . '/inc/block-styles.php';
 require_once __DIR__ . '/inc/hero-variants.php';
-require_once __DIR__ . '/inc/pull-quote-variants.php';
 require_once __DIR__ . '/inc/brand-settings.php';
 require_once __DIR__ . '/inc/contact-form.php';
 require_once __DIR__ . '/inc/patterns.php';
@@ -28,6 +27,13 @@ require_once __DIR__ . '/inc/seed.php';
 require_once __DIR__ . '/inc/nav-active.php';
 require_once __DIR__ . '/inc/nav-seed.php';
 require_once __DIR__ . '/inc/mega-menu.php';
+
+// One-click theme updates from GitHub Releases (no manual zip uploads).
+if ( file_exists( __DIR__ . '/vendor/autoload.php' ) ) {
+	require_once __DIR__ . '/vendor/autoload.php';
+}
+require_once __DIR__ . '/inc/ThemeUpdater.php';
+\Pediment\ThemeUpdater::register();
 
 add_action(
 	'wp_enqueue_scripts',

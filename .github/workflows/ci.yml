@@ -3,7 +3,7 @@ name: CI
 on:
   pull_request:
   push:
-    branches: [main]
+    branches: [main, development]
 
 jobs:
   phpcs:
@@ -39,6 +39,7 @@ jobs:
       - run: npm ci
       - run: npm run lint:blocks
       - run: npm run lint:colors
+      - run: npm run lint:icons
       - run: npm run lint:js
 
   phpunit:

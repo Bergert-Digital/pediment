@@ -1,0 +1,134 @@
+/**
+ * Editor-only styles for the shared IconPicker component
+ * (src/components/icon-picker). Loaded via enqueue_block_editor_assets in
+ * inc/icons.php. Scoped entirely under .pediment-icon-picker so it cannot
+ * leak into block content or other inspector controls.
+ */
+
+.pediment-icon-picker {
+	margin-bottom: 16px;
+}
+
+.pediment-icon-picker__label {
+	display: block;
+	margin-bottom: 4px;
+	font-size: 11px;
+	font-weight: 500;
+	line-height: 1.4;
+	text-transform: uppercase;
+	color: var( --wp-components-color-foreground, #1e1e1e );
+}
+
+/* Trigger button: current glyph + slug, full width to match other controls. */
+.pediment-icon-picker__dropdown {
+	display: block;
+}
+
+.pediment-icon-picker__toggle.components-button {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	width: 100%;
+	height: auto;
+	min-height: 36px;
+	justify-content: flex-start;
+	padding: 6px 8px;
+}
+
+.pediment-icon-picker__toggle svg {
+	flex: 0 0 auto;
+	width: 24px;
+	height: 24px;
+	fill: currentColor;
+}
+
+.pediment-icon-picker__toggle span {
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+/* Popover body. */
+.pediment-icon-picker__content {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	width: 280px;
+	max-width: 80vw;
+	padding: 8px;
+}
+
+.pediment-icon-picker__content .components-spinner {
+	margin: 16px auto;
+}
+
+/* The searchable grid. */
+.pediment-icon-picker__grid {
+	display: grid;
+	grid-template-columns: repeat( 6, 1fr );
+	gap: 2px;
+	max-height: 264px;
+	overflow-y: auto;
+	padding: 2px;
+}
+
+.pediment-icon-picker__cell.components-button {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 100%;
+	height: 40px;
+	min-width: 0;
+	padding: 0;
+	border-radius: 2px;
+	color: var( --wp-components-color-foreground, #1e1e1e );
+}
+
+.pediment-icon-picker__cell svg {
+	width: 22px;
+	height: 22px;
+	fill: currentColor;
+	pointer-events: none;
+}
+
+/*
+ * Standard WordPress blue for hover/selected. The compound
+ * `.components-button.pediment-icon-picker__cell` selector outranks
+ * WordPress's own `.components-button:not(:disabled):hover` rule, which
+ * would otherwise reset the text colour and leave the glyph dark.
+ */
+.components-button.pediment-icon-picker__cell:hover,
+.components-button.pediment-icon-picker__cell:focus,
+.components-button.pediment-icon-picker__cell.is-selected {
+	background: #007cba;
+	color: #fff;
+}
+
+.components-button.pediment-icon-picker__cell:hover svg,
+.components-button.pediment-icon-picker__cell:focus svg,
+.components-button.pediment-icon-picker__cell.is-selected svg {
+	fill: #fff;
+}
+
+.components-button.pediment-icon-picker__cell.is-selected {
+	box-shadow: inset 0 0 0 1px #007cba;
+}
+
+/* Empty state. */
+.pediment-icon-picker__empty {
+	margin: 0;
+	padding: 4px 2px 0;
+	font-size: 11px;
+	color: var( --wp-components-color-foreground-muted, #757575 );
+}
+
+.pediment-icon-picker__sentinel {
+	grid-column: 1 / -1;
+	height: 1px;
+}
+
+.pediment-icon-picker__count {
+	margin: 4px 0 0;
+	font-size: 11px;
+	opacity: 0.7;
+}

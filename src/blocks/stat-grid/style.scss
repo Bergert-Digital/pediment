@@ -1,0 +1,10 @@
+.starter-stat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: var(--wp--preset--spacing--30);
+  align-items: start;
+}
+
+@media (max-width: 781px) {
+  .starter-stat-grid { grid-template-columns: 1fr; }
+}
