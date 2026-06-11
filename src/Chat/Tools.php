@@ -35,7 +35,10 @@ final class Tools {
 			'properties' => [
 				'name'        => [ 'type' => 'string', 'enum' => array_keys( $this->blockSchema ) ],
 				'attributes'  => [ 'type' => 'object' ],
-				'innerBlocks' => [ 'type' => 'array' ],
+				'innerBlocks' => [
+					'type'        => 'array',
+					'description' => 'Nested child blocks for a container block, each {name, attributes, innerBlocks?}. Populate this when inserting a container so its children are created together — there is no way to add children to a container after it exists.',
+				],
 			],
 			'required'   => [ 'name', 'attributes' ],
 		];
@@ -60,7 +63,7 @@ final class Tools {
 			$blockSchema['allOf'] = $conditionals;
 		}
 
-		return [
+		$blockTools = [
 			[
 				'name'         => 'insert_block',
 				'description'  => 'Insert a new block into the post. Use after_client_id+position to place it; use position=end+after_client_id=null to append.',
@@ -119,6 +122,74 @@ final class Tools {
 				],
 			],
 		];
+
+		// Anthropic-hosted server tools: let the model read the live web so it can
+		// build a page from a reference URL or look one up by name. These execute
+		// on Anthropic's side — no input_schema, no client-side dispatch. web_fetch
+		// may only retrieve URLs already present in the conversation (or surfaced by
+		// web_search), which is exactly the "base this page on <url>" flow.
+		$webTools = [
+			[
+				'type'     => 'web_search_20260209',
+				'name'     => 'web_search',
+				'max_uses' => 5,
+			],
+			[
+				'type'     => 'web_fetch_20260209',
+				'name'     => 'web_fetch',
+				'max_uses' => 5,
+			],
+		];
+
+		/**
+		 * Filter the Anthropic server-side web tools offered to the model.
+		 *
+		 * Return an empty array to switch off web access entirely, or add
+		 * `allowed_domains` / `blocked_domains` to bound what web_fetch may retrieve.
+		 * web_fetch can pull arbitrary user-supplied URLs into context, so restrict
+		 * it when the editor handles untrusted input alongside sensitive data.
+		 *
+		 * @param array<int,array<string,mixed>> $webTools Default web tool definitions.
+		 */
+		$webTools = (array) apply_filters( 'pediment_ai_web_tools', $webTools );
+
+		return array_merge( $blockTools, $webTools );
+	}
+
+	/**
+	 * JSON escape bodies the model sometimes emits with the leading backslash dropped —
+	 * e.g. it transcribes "&" from a fetched page as literal "u0026". Each maps the
+	 * orphaned body back to the character it was meant to be. Limited to the HTML-significant
+	 * set produced by JSON_HEX_* so ordinary prose ("u1234", "Ubuntu") is never touched.
+	 */
+	private const ORPHAN_ESCAPES = [
+		'u0026' => '&',
+		'u003c' => '<',
+		'u003e' => '>',
+		'u0022' => '"',
+		'u0027' => "'",
+	];
+
+	/**
+	 * Recursively repair orphaned JSON unicode-escape bodies in every string the model
+	 * supplied (block content and attribute values, nested children included), before the
+	 * text lands in the tree. clientIds and positions are hex/enum and never match.
+	 *
+	 * @param mixed $value
+	 * @return mixed
+	 */
+	private function repairOrphanEscapes( mixed $value ): mixed {
+		if ( is_string( $value ) ) {
+			return preg_replace_callback(
+				'/u00(?:26|3[ce]|22|27)/i',
+				static fn( array $m ): string => self::ORPHAN_ESCAPES[ strtolower( $m[0] ) ],
+				$value
+			);
+		}
+		if ( is_array( $value ) ) {
+			return array_map( [ $this, 'repairOrphanEscapes' ], $value );
+		}
+		return $value;
 	}
 
 	/**
@@ -128,6 +199,7 @@ final class Tools {
 	 * @return array{content:mixed, is_error?:bool}
 	 */
 	public function apply( VirtualTree $tree, string $tool, array $input ): array {
+		$input = $this->repairOrphanEscapes( $input );
 		switch ( $tool ) {
 			case 'insert_block':
 				return $this->applyInsert( $tree, $input );

@@ -26,12 +26,34 @@ final class PromptBuilder {
 		$lines[] = 'Mutation tool calls are applied at the end of your turn — you do not see the post change between calls. The synthetic tool_result you receive for inserts contains the new client_id; use it for subsequent calls in the same turn that reference the inserted block.';
 		$lines[] = 'Write naturally and concisely in your prose. Do not over-explain. Do not apologize. If you are not changing the post, simply answer the question.';
 		$lines[] = '';
-		$lines[] = 'Page structure: compose a page as a sequence of distinct sections. Wrap each section\'s blocks in a core/group with attributes {"tagName":"section","className":"starter-section"}. Do not emit a flat list of top-level paragraphs or headings — group them into their section. If you do not wrap a section in a group, place a core/separator between sections.';
+		$lines[] = 'You can read the live web. When the user gives a URL or asks you to base the page on a specific website, call web_fetch to retrieve it. When they name a page or site without a URL, call web_search to find it, then web_fetch the best result. Ground the blocks you build in the fetched content — mirror its structure, copy, and tone instead of inventing placeholder text. You may only fetch URLs that appear in the conversation or in search results.';
 		$lines[] = '';
-		$lines[] = 'Available blocks (use these — do not invent block names):';
+		$lines[] = 'Page structure: compose a page as a sequence of distinct sections. Wrap each section\'s blocks in a full-width core/group that uses the theme\'s constrained layout: attributes {"tagName":"section","align":"full","className":"starter-section","layout":{"type":"constrained"}}. The constrained layout spans the full width while centering inner content at the theme\'s content width — never use layout type "default" (flow), which overrides the theme\'s width settings and makes content run edge to edge. For blocks that should fill the wider band (multi-column grids, stat or feature rows, wide media), set "align":"wide" so they pick up the theme\'s wide width. Do not assume fixed pixel widths — rely on the active theme\'s content/wide sizes. Do not emit a flat list of top-level paragraphs or headings — group them into their section.';
+		$lines[] = '';
+		$lines[] = 'Testimonials: for a customer-quote / "what clients say" / Kundenstimmen section, emit one pediment/testimonial-grid (align "wide") containing pediment/testimonial children (quote + authorName + authorRole), not a stack of pediment/pull-quote blocks. Use pediment/pull-quote only for a single standalone highlighted quote.';
+		$lines[] = '';
+		$lines[] = 'Stats: for a key-figures / "numbers & facts" / Zahlen & Fakten section, emit one pediment/stat-grid (align "wide") containing pediment/stat children (value + label + optional context), so the figures sit side by side. Never emit bare pediment/stat blocks stacked on their own or wrapped in core/columns.';
+		$lines[] = '';
+		$lines[] = 'Available blocks (use these — do not invent block names). A line tagged [contains: …] is a container: build it in ONE insert_block call with each child placed in block.innerBlocks (every child is {name, attributes}). You cannot add children to a container after it exists — there is no insert-into-parent operation. A line tagged [child of: …] may only appear nested inside that parent; never insert it on its own (it is rejected).';
 		foreach ( $this->blockSchema as $name => $info ) {
 			$description = isset( $info['description'] ) ? (string) $info['description'] : '';
-			$lines[]     = '' !== $description ? "- {$name} — {$description}" : "- {$name}";
+			$line        = '' !== $description ? "- {$name} — {$description}" : "- {$name}";
+
+			$children = isset( $info['allowedChildBlocks'] ) && is_array( $info['allowedChildBlocks'] )
+				? array_values( array_unique( $info['allowedChildBlocks'] ) )
+				: [];
+			if ( ! empty( $children ) ) {
+				$line .= ' [contains: ' . implode( ', ', $children ) . ' — nest these in innerBlocks]';
+			}
+
+			$parents = isset( $info['requiresParent'] ) && is_array( $info['requiresParent'] )
+				? array_values( $info['requiresParent'] )
+				: [];
+			if ( ! empty( $parents ) ) {
+				$line .= ' [child of: ' . implode( ', ', $parents ) . ' — never insert on its own]';
+			}
+
+			$lines[] = $line;
 		}
 		$prompt = implode( "\n", $lines );
 
