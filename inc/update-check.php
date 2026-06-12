@@ -20,17 +20,29 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * Update checkers registered by the parent and (when active) child theme.
  *
- * Each entry: array{slug: string, name: string, checker: object}. Empty when
- * the updaters are disabled (local environments) or PUC is not installed.
+ * Each entry: array{slug: string, name: string, checker: object}. Entries
+ * missing any of those keys are dropped. Empty when the updaters are disabled
+ * (local environments) or PUC is not installed.
  *
- * @return array[] Checker entries.
+ * @return array[] Validated checker entries.
  */
 function pediment_update_checkers(): array {
 	$checkers = apply_filters( 'pediment_update_checkers', array() );
 	if ( ! is_array( $checkers ) ) {
 		return array();
 	}
-	return array_values( array_filter( $checkers, 'is_array' ) );
+	return array_values(
+		array_filter(
+			$checkers,
+			static function ( $entry ): bool {
+				return is_array( $entry )
+					&& isset( $entry['slug'], $entry['name'], $entry['checker'] )
+					&& is_string( $entry['slug'] )
+					&& is_string( $entry['name'] )
+					&& is_object( $entry['checker'] );
+			}
+		)
+	);
 }
 
 /**

@@ -66,6 +66,23 @@ class UpdateCheckTest extends WP_UnitTestCase {
 		$this->assertSame( 'pediment', $checkers[0]['slug'] );
 	}
 
+	public function test_update_checkers_drops_malformed_entries() {
+		$valid = $this->entry( $this->fake_checker() );
+		add_filter(
+			'pediment_update_checkers',
+			static function ( array $checkers ) use ( $valid ): array {
+				$checkers[] = 'not-an-array';
+				$checkers[] = array( 'slug' => 'no-checker-key', 'name' => 'Broken' );
+				$checkers[] = array( 'slug' => 'pediment', 'name' => 'Pediment', 'checker' => 'not-an-object' );
+				$checkers[] = $valid;
+				return $checkers;
+			}
+		);
+		$checkers = pediment_update_checkers();
+		$this->assertCount( 1, $checkers );
+		$this->assertSame( 'pediment', $checkers[0]['slug'] );
+	}
+
 	public function test_run_update_check_reports_available_update() {
 		$result = pediment_run_update_check(
 			$this->entry( $this->fake_checker( (object) array( 'version' => '9.9.9' ) ) )
