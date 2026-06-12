@@ -1,5 +1,29 @@
 # Changelog
 
+## [0.4.0](https://github.com/Bergert-Digital/Pediment/compare/v0.3.0...v0.4.0) (2026-06-12)
+
+
+### Features
+
+* **theme:** add screenshot.png preview image ([ac7683e](https://github.com/Bergert-Digital/Pediment/commit/ac7683e82bf3ec85224390e5b03e7fb2326d9087))
+* **updates:** admin notice reporting manual check results ([5786513](https://github.com/Bergert-Digital/Pediment/commit/57865132b5963f53b70b340d96e94f5ad6e121e0))
+* **updates:** admin-post handler for manual update checks ([ca08a78](https://github.com/Bergert-Digital/Pediment/commit/ca08a7865120cb21738b11250856b61b32f0d250))
+* **updates:** core logic for manual theme update checks ([873f8ab](https://github.com/Bergert-Digital/Pediment/commit/873f8ab60edf36ce74d12baf9f86d446e53ce50c))
+* **updates:** expose parent PUC checker via pediment_update_checkers ([aa19661](https://github.com/Bergert-Digital/Pediment/commit/aa1966181f35546b206859b606c646cece81ae6e))
+* **updates:** manual "Check for theme updates" button on Updates screen ([#18](https://github.com/Bergert-Digital/Pediment/issues/18)) ([c314d69](https://github.com/Bergert-Digital/Pediment/commit/c314d6990ef2365d7a600d6f3a779c9465e7d83c))
+* **updates:** render check-for-updates section on Updates screen ([408d427](https://github.com/Bergert-Digital/Pediment/commit/408d427cc88f1bb13f7ae5a5002e617c69bafd23))
+
+
+### Bug Fixes
+
+* **patterns:** stop pattern picker modal on new page creation ([ada6e67](https://github.com/Bergert-Digital/Pediment/commit/ada6e67f8888856642d53fa50861b1f72ce68bbc))
+* **updates:** validate checker entry shape in pediment_update_checkers ([23f9178](https://github.com/Bergert-Digital/Pediment/commit/23f91782713b5f8da6b52ac2836ab5a320e17d00))
+
+
+### Refactors
+
+* **updates:** co-locate notice hook with callback, complete file header ([20bce95](https://github.com/Bergert-Digital/Pediment/commit/20bce95b0ead1246cc1d02d3b000adfc0700a38f))
+
 ## [0.3.0](https://github.com/Bergert-Digital/Pediment/compare/v0.2.1...v0.3.0) (2026-06-11)
 
 
