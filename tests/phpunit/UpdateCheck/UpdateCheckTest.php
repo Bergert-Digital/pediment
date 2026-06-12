@@ -127,9 +127,62 @@ class UpdateCheckTest extends WP_UnitTestCase {
 		$this->assertStringContainsString( 'Pediment', $html );
 		$this->assertStringContainsString( 'not checked yet', $html );
 		$this->assertStringContainsString( 'admin-post.php', $html );
+		$this->assertStringContainsString( '_wpnonce', $html );
+	}
+
+	public function test_section_renders_last_checked_time() {
+		wp_set_current_user( self::factory()->user->create( array( 'role' => 'administrator' ) ) );
+		$entry = $this->entry( $this->fake_checker( null, array(), time() - HOUR_IN_SECONDS ) );
+		add_filter(
+			'pediment_update_checkers',
+			static function ( array $checkers ) use ( $entry ): array {
+				$checkers[] = $entry;
+				return $checkers;
+			}
+		);
+		ob_start();
+		pediment_render_update_check_section();
+		$html = ob_get_clean();
+		$this->assertStringContainsString( 'last checked', $html );
+		$this->assertStringNotContainsString( 'not checked yet', $html );
 	}
 
 	public function test_section_is_hooked_to_core_upgrade_preamble() {
 		$this->assertNotFalse( has_action( 'core_upgrade_preamble', 'pediment_render_update_check_section' ) );
+	}
+
+	public function test_store_results_writes_transient_for_current_user() {
+		wp_set_current_user( self::factory()->user->create( array( 'role' => 'administrator' ) ) );
+		$this->register_fake_checker( (object) array( 'version' => '9.9.9' ) );
+		pediment_store_update_check_results();
+		$results = get_transient( 'pediment_update_check_' . get_current_user_id() );
+		$this->assertIsArray( $results );
+		$this->assertCount( 1, $results );
+		$this->assertSame( 'update', $results[0]['status'] );
+		$this->assertSame( '9.9.9', $results[0]['new_version'] );
+	}
+
+	public function test_store_results_writes_no_transient_without_checkers() {
+		wp_set_current_user( self::factory()->user->create( array( 'role' => 'administrator' ) ) );
+		pediment_store_update_check_results();
+		$this->assertFalse( get_transient( 'pediment_update_check_' . get_current_user_id() ) );
+	}
+
+	public function test_handler_dies_on_invalid_nonce() {
+		wp_set_current_user( self::factory()->user->create( array( 'role' => 'administrator' ) ) );
+		$_REQUEST['_wpnonce'] = 'invalid';
+		$this->expectException( 'WPDieException' );
+		pediment_handle_update_check();
+	}
+
+	public function test_handler_dies_without_capability() {
+		wp_set_current_user( self::factory()->user->create( array( 'role' => 'subscriber' ) ) );
+		$_REQUEST['_wpnonce'] = wp_create_nonce( 'pediment_check_theme_updates' );
+		$this->expectException( 'WPDieException' );
+		pediment_handle_update_check();
+	}
+
+	public function test_handler_is_hooked_to_admin_post() {
+		$this->assertNotFalse( has_action( 'admin_post_pediment_check_theme_updates', 'pediment_handle_update_check' ) );
 	}
 }
