@@ -185,4 +185,79 @@ class UpdateCheckTest extends WP_UnitTestCase {
 	public function test_handler_is_hooked_to_admin_post() {
 		$this->assertNotFalse( has_action( 'admin_post_pediment_check_theme_updates', 'pediment_handle_update_check' ) );
 	}
+
+	private function seed_results( array $results ): void {
+		set_transient( 'pediment_update_check_' . get_current_user_id(), $results, MINUTE_IN_SECONDS );
+	}
+
+	public function test_notice_renders_results_once_on_update_core_screen() {
+		wp_set_current_user( self::factory()->user->create( array( 'role' => 'administrator' ) ) );
+		set_current_screen( 'update-core' );
+		$this->seed_results(
+			array(
+				array(
+					'name'        => 'Pediment',
+					'status'      => 'update',
+					'installed'   => '0.3.0',
+					'new_version' => '9.9.9',
+				),
+				array(
+					'name'        => 'Pediment Child',
+					'status'      => 'current',
+					'installed'   => '0.2.1',
+					'new_version' => '',
+				),
+			)
+		);
+		ob_start();
+		pediment_update_check_notice();
+		$html = ob_get_clean();
+		$this->assertStringContainsString( 'update 9.9.9 available', $html );
+		$this->assertStringContainsString( 'up to date (0.2.1)', $html );
+		$this->assertStringContainsString( 'notice-success', $html );
+		$this->assertFalse( get_transient( 'pediment_update_check_' . get_current_user_id() ), 'Transient must be deleted after rendering.' );
+	}
+
+	public function test_notice_uses_warning_class_when_a_check_failed() {
+		wp_set_current_user( self::factory()->user->create( array( 'role' => 'administrator' ) ) );
+		set_current_screen( 'update-core' );
+		$this->seed_results(
+			array(
+				array(
+					'name'        => 'Pediment',
+					'status'      => 'error',
+					'installed'   => '0.3.0',
+					'new_version' => '',
+				),
+			)
+		);
+		ob_start();
+		pediment_update_check_notice();
+		$html = ob_get_clean();
+		$this->assertStringContainsString( 'update check failed', $html );
+		$this->assertStringContainsString( 'notice-warning', $html );
+	}
+
+	public function test_notice_is_silent_on_other_screens_and_keeps_transient() {
+		wp_set_current_user( self::factory()->user->create( array( 'role' => 'administrator' ) ) );
+		set_current_screen( 'dashboard' );
+		$this->seed_results(
+			array(
+				array(
+					'name'        => 'Pediment',
+					'status'      => 'current',
+					'installed'   => '0.3.0',
+					'new_version' => '',
+				),
+			)
+		);
+		ob_start();
+		pediment_update_check_notice();
+		$this->assertSame( '', ob_get_clean() );
+		$this->assertIsArray( get_transient( 'pediment_update_check_' . get_current_user_id() ) );
+	}
+
+	public function test_notice_is_hooked_to_admin_notices() {
+		$this->assertNotFalse( has_action( 'admin_notices', 'pediment_update_check_notice' ) );
+	}
 }
