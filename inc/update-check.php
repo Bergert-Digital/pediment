@@ -99,3 +99,33 @@ function pediment_render_update_check_section(): void {
 	submit_button( __( 'Check for theme updates', 'pediment' ), 'secondary', 'pediment-check-updates', false );
 	echo '</form>';
 }
+
+/**
+ * Run every registered checker and stash per-theme results for the notice.
+ */
+function pediment_store_update_check_results(): void {
+	$results = array();
+	foreach ( pediment_update_checkers() as $entry ) {
+		$results[] = pediment_run_update_check( $entry );
+	}
+	if ( array() !== $results ) {
+		set_transient( 'pediment_update_check_' . get_current_user_id(), $results, MINUTE_IN_SECONDS );
+	}
+}
+
+add_action( 'admin_post_pediment_check_theme_updates', 'pediment_handle_update_check' );
+
+/**
+ * Handle the button submission: verify intent, check, redirect back.
+ */
+function pediment_handle_update_check(): void {
+	check_admin_referer( 'pediment_check_theme_updates' );
+	if ( ! current_user_can( 'update_themes' ) ) {
+		wp_die( esc_html__( 'Sorry, you are not allowed to update themes for this site.', 'pediment' ) );
+	}
+
+	pediment_store_update_check_results();
+
+	wp_safe_redirect( self_admin_url( 'update-core.php' ) );
+	exit;
+}
