@@ -31,6 +31,14 @@ final class ThemeUpdater {
 			return;
 		}
 
+		// Skip update checks in local/dev environments (wp-env, CI). There is no
+		// point hitting the GitHub API on every admin load there, and the
+		// synchronous check slows the block editor. Real client sites default to
+		// the 'production' environment type.
+		if ( function_exists( 'wp_get_environment_type' ) && 'local' === wp_get_environment_type() ) {
+			return;
+		}
+
 		// get_template_directory(): always the parent theme dir, even when a
 		// child theme is the active stylesheet.
 		$checker = PucFactory::buildUpdateChecker(
