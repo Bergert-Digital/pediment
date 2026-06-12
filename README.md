@@ -75,10 +75,10 @@ npx wp-env run tests-wordpress --env-cwd=wp-content/themes/pediment ./vendor/bin
 
 ## Deployment
 
-This theme is designed to be installed via Composer in a [Bedrock](https://roots.io/bedrock/)-based client site (see Plan C / `wp-client-template`). It works on any WP host that supports custom themes; tested specifically on:
+This theme installs like any standard WordPress theme — upload the release zip (Appearance → Themes → Add New → Upload). After the first install, updates arrive one-click through the normal wp-admin Updates screen via GitHub Releases. It works on any WP host that supports custom themes; tested specifically on:
 
 - **Hetzner Cloud / Hetzner Robot** — full control, works out of the box. Set `max_execution_time ≥ 60s` (the AI plugin's polling endpoints accommodate background jobs; the theme itself has no long-running requests).
-- **Hetzner Webhosting** — works. Composer install via SSH or a pre-deploy CI step. Verify cron is enabled in their panel (Action Scheduler in the AI plugin depends on it; the theme's own daily contact-submission cleanup also needs it).
+- **Hetzner Webhosting** — works. Verify cron is enabled in their panel (Action Scheduler in the AI plugin depends on it; the theme's own daily contact-submission cleanup also needs it).
 - **Kinsta / WP Engine / SpinupWP** — work for the theme; restrictions only affect the AI plugin's long-running requests.
 
 ### Cloudflare note
@@ -87,7 +87,7 @@ If you put Cloudflare proxy mode in front of the site, **bypass it for `/wp-json
 
 ## Forking for a new client
 
-This theme is the foundation; per-client customization happens in a child theme (see `wp-client-template/` / Plan C). The starter never edits client-owned files, and the child theme never edits starter files. Updates flow via `composer update bergert/pediment`.
+This theme is the foundation; per-client customization happens in a child theme (see the `pediment-child-theme` repo). The starter never edits client-owned files, and the child theme never edits starter files. Updates flow through the wp-admin Updates screen via GitHub Releases.
 
 ## Architecture
 

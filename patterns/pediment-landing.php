@@ -3,7 +3,6 @@
  * Title: Pediment Landing
  * Slug: pediment/pediment-landing
  * Categories: pediment
- * Block Types: core/post-content
  * Description: Full Pediment landing page — hero, services, process, stats, testimonials, FAQ, CTA, and insights bands.
  * Keywords: landing, home, full page, services, process, stats, testimonials
  * Viewport Width: 1400
