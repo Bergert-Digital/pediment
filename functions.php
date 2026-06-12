@@ -34,6 +34,7 @@ if ( file_exists( __DIR__ . '/vendor/autoload.php' ) ) {
 }
 require_once __DIR__ . '/inc/ThemeUpdater.php';
 \Pediment\ThemeUpdater::register();
+require_once __DIR__ . '/inc/update-check.php';
 
 add_action(
 	'wp_enqueue_scripts',
