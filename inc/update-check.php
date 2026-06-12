@@ -114,6 +114,7 @@ function pediment_store_update_check_results(): void {
 }
 
 add_action( 'admin_post_pediment_check_theme_updates', 'pediment_handle_update_check' );
+add_action( 'admin_notices', 'pediment_update_check_notice' );
 
 /**
  * Handle the button submission: verify intent, check, redirect back.
@@ -121,11 +122,48 @@ add_action( 'admin_post_pediment_check_theme_updates', 'pediment_handle_update_c
 function pediment_handle_update_check(): void {
 	check_admin_referer( 'pediment_check_theme_updates' );
 	if ( ! current_user_can( 'update_themes' ) ) {
-		wp_die( esc_html__( 'Sorry, you are not allowed to update themes for this site.', 'pediment' ) );
+		wp_die( esc_html__( 'Sorry, you are not allowed to update themes for this site.', 'pediment' ), 403 );
 	}
 
 	pediment_store_update_check_results();
 
 	wp_safe_redirect( self_admin_url( 'update-core.php' ) );
 	exit;
+}
+
+/**
+ * Show the stored per-theme results once, on the Updates screen only.
+ */
+function pediment_update_check_notice(): void {
+	$screen = function_exists( 'get_current_screen' ) ? get_current_screen() : null;
+	if ( null === $screen || 'update-core' !== $screen->id ) {
+		return;
+	}
+
+	$key     = 'pediment_update_check_' . get_current_user_id();
+	$results = get_transient( $key );
+	if ( ! is_array( $results ) || array() === $results ) {
+		return;
+	}
+	delete_transient( $key );
+
+	$lines     = array();
+	$has_error = false;
+	foreach ( $results as $result ) {
+		if ( 'update' === $result['status'] ) {
+			/* translators: 1: theme name, 2: new version number. */
+			$lines[] = sprintf( __( '%1$s: update %2$s available.', 'pediment' ), $result['name'], $result['new_version'] );
+		} elseif ( 'current' === $result['status'] ) {
+			/* translators: 1: theme name, 2: installed version number. */
+			$lines[] = sprintf( __( '%1$s: up to date (%2$s).', 'pediment' ), $result['name'], $result['installed'] );
+		} else {
+			$has_error = true;
+			/* translators: %s: theme name. */
+			$lines[] = sprintf( __( '%s: update check failed — could not reach the update server.', 'pediment' ), $result['name'] );
+		}
+	}
+
+	echo '<div class="notice ' . ( $has_error ? 'notice-warning' : 'notice-success' ) . ' is-dismissible"><p>';
+	echo wp_kses( implode( '<br />', array_map( 'esc_html', $lines ) ), array( 'br' => array() ) );
+	echo '</p></div>';
 }
