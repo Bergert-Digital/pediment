@@ -59,5 +59,19 @@ final class ThemeUpdater {
 		if ( method_exists( $api, 'enableReleaseAssets' ) ) {
 			$api->enableReleaseAssets( '/pediment\.zip$/' );
 		}
+
+		// Expose the checker so inc/update-check.php can offer a manual
+		// "Check for theme updates" button on Dashboard → Updates.
+		add_filter(
+			'pediment_update_checkers',
+			static function ( array $checkers ) use ( $checker ): array {
+				$checkers[] = array(
+					'slug'    => 'pediment',
+					'name'    => 'Pediment',
+					'checker' => $checker,
+				);
+				return $checkers;
+			}
+		);
 	}
 }
