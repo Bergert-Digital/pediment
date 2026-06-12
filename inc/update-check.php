@@ -64,3 +64,38 @@ function pediment_run_update_check( array $entry ): array {
 
 	return $result;
 }
+
+add_action( 'core_upgrade_preamble', 'pediment_render_update_check_section' );
+
+/**
+ * Render the "Theme Updates" section at the bottom of Dashboard → Updates.
+ */
+function pediment_render_update_check_section(): void {
+	$checkers = pediment_update_checkers();
+	if ( array() === $checkers || ! current_user_can( 'update_themes' ) ) {
+		return;
+	}
+
+	echo '<h2>' . esc_html__( 'Theme Updates', 'pediment' ) . '</h2>';
+	echo '<p>' . esc_html__( 'Check GitHub for new releases of the Pediment themes. Updates found here appear in the Themes list above.', 'pediment' ) . '</p>';
+	echo '<ul>';
+	foreach ( $checkers as $entry ) {
+		$theme   = wp_get_theme( $entry['slug'] );
+		$version = $theme->exists() ? (string) $theme->get( 'Version' ) : '';
+		$last    = (int) $entry['checker']->getUpdateState()->getLastCheck();
+		if ( $last > 0 ) {
+			/* translators: %s: human-readable time difference, e.g. "3 hours". */
+			$checked = sprintf( __( 'last checked %s ago', 'pediment' ), human_time_diff( $last ) );
+		} else {
+			$checked = __( 'not checked yet', 'pediment' );
+		}
+		echo '<li><strong>' . esc_html( $entry['name'] ) . '</strong> ' . esc_html( $version ) . ' (' . esc_html( $checked ) . ')</li>';
+	}
+	echo '</ul>';
+
+	echo '<form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '">';
+	echo '<input type="hidden" name="action" value="pediment_check_theme_updates" />';
+	wp_nonce_field( 'pediment_check_theme_updates' );
+	submit_button( __( 'Check for theme updates', 'pediment' ), 'secondary', 'pediment-check-updates', false );
+	echo '</form>';
+}

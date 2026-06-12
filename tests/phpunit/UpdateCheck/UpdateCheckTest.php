@@ -101,4 +101,35 @@ class UpdateCheckTest extends WP_UnitTestCase {
 		$result = pediment_run_update_check( $this->entry( $checker ) );
 		$this->assertSame( 'error', $result['status'] );
 	}
+
+	public function test_section_renders_nothing_without_checkers() {
+		wp_set_current_user( self::factory()->user->create( array( 'role' => 'administrator' ) ) );
+		ob_start();
+		pediment_render_update_check_section();
+		$this->assertSame( '', ob_get_clean() );
+	}
+
+	public function test_section_renders_nothing_without_capability() {
+		wp_set_current_user( self::factory()->user->create( array( 'role' => 'subscriber' ) ) );
+		$this->register_fake_checker();
+		ob_start();
+		pediment_render_update_check_section();
+		$this->assertSame( '', ob_get_clean() );
+	}
+
+	public function test_section_renders_button_for_admins() {
+		wp_set_current_user( self::factory()->user->create( array( 'role' => 'administrator' ) ) );
+		$this->register_fake_checker();
+		ob_start();
+		pediment_render_update_check_section();
+		$html = ob_get_clean();
+		$this->assertStringContainsString( 'pediment_check_theme_updates', $html );
+		$this->assertStringContainsString( 'Pediment', $html );
+		$this->assertStringContainsString( 'not checked yet', $html );
+		$this->assertStringContainsString( 'admin-post.php', $html );
+	}
+
+	public function test_section_is_hooked_to_core_upgrade_preamble() {
+		$this->assertNotFalse( has_action( 'core_upgrade_preamble', 'pediment_render_update_check_section' ) );
+	}
 }
