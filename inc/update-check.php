@@ -5,7 +5,8 @@
  * WordPress offers no per-theme re-check UI on the Updates screen, and Plugin
  * Update Checker's built-in manual-check link exists for plugins only. This
  * file renders a small section via the documented core_upgrade_preamble hook
- * and forces a cache-bypassing PUC check for every registered Pediment theme.
+ * and forces a cache-bypassing PUC check for every registered Pediment theme,
+ * reporting the results in a one-shot admin notice.
  *
  * @package Pediment
  */
@@ -114,7 +115,6 @@ function pediment_store_update_check_results(): void {
 }
 
 add_action( 'admin_post_pediment_check_theme_updates', 'pediment_handle_update_check' );
-add_action( 'admin_notices', 'pediment_update_check_notice' );
 
 /**
  * Handle the button submission: verify intent, check, redirect back.
@@ -130,6 +130,8 @@ function pediment_handle_update_check(): void {
 	wp_safe_redirect( self_admin_url( 'update-core.php' ) );
 	exit;
 }
+
+add_action( 'admin_notices', 'pediment_update_check_notice' );
 
 /**
  * Show the stored per-theme results once, on the Updates screen only.
