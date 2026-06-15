@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.3.2](https://github.com/Bergert-Digital/Pediment-AI/compare/v0.3.1...v0.3.2) (2026-06-12)
+
+
+### Bug Fixes
+
+* **editor:** place/move AI sections by resolving nested target ids ([#14](https://github.com/Bergert-Digital/Pediment-AI/issues/14)) ([fa27353](https://github.com/Bergert-Digital/Pediment-AI/commit/fa27353f663c93782a1c4576ffc288df5693cc75))
+* **editor:** resolve nested targets when inserting/moving blocks ([2a87775](https://github.com/Bergert-Digital/Pediment-AI/commit/2a87775fcfc8e03746fe763dce44cc958f0aee7d))
+
 ## [0.3.1](https://github.com/Bergert-Digital/Pediment-AI/compare/v0.3.0...v0.3.1) (2026-06-12)
 
 
