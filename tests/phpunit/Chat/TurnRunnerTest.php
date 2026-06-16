@@ -448,6 +448,48 @@ class TurnRunnerTest extends \WP_UnitTestCase {
 		$this->assertCount( 1, $msg['tool_calls'] );
 	}
 
+	public function test_web_fetch_error_code_is_recorded_for_diagnosis(): void {
+		$conv    = $this->store->getOrCreate( 1, 1 );
+		$turn_id = $this->store->startAssistantTurn( $conv['id'] );
+
+		// Anthropic's server-side web_fetch can fail to retrieve an origin its egress
+		// cannot reach (url_not_accessible) even when the page is reachable from this
+		// host. The model only paraphrases that in prose; the runner must persist the
+		// raw error_code so the failure is diagnosable after the fact.
+		$provider = new class implements \PedimentAi\Anthropic\ProviderInterface {
+			public function messages( array $args ) { return new \WP_Error( 'unused', 'unused' ); }
+			public function stream_messages( array $args ) {
+				return ( static function () {
+					yield [ 'type' => 'content_block_start', 'content_block' => [ 'type' => 'server_tool_use', 'id' => 'srv_fetch', 'name' => 'web_fetch' ] ];
+					yield [ 'type' => 'content_block_delta', 'delta' => [ 'type' => 'input_json_delta', 'partial_json' => '{"url":"https://www.example.com/unser-angebot/"}' ] ];
+					yield [ 'type' => 'content_block_stop' ];
+					yield [ 'type' => 'content_block_start', 'content_block' => [ 'type' => 'web_fetch_tool_result', 'tool_use_id' => 'srv_fetch', 'content' => [ 'type' => 'web_fetch_tool_result_error', 'error_code' => 'url_not_accessible' ] ] ];
+					yield [ 'type' => 'content_block_stop' ];
+					yield [ 'type' => 'content_block_start', 'content_block' => [ 'type' => 'text' ] ];
+					yield [ 'type' => 'content_block_delta', 'delta' => [ 'type' => 'text_delta', 'text' => 'I could not reach that page.' ] ];
+					yield [ 'type' => 'content_block_stop' ];
+					yield [ 'type' => 'message_delta', 'delta' => [ 'stop_reason' => 'end_turn' ] ];
+				} )();
+			}
+		};
+
+		$runner = new TurnRunner( $this->store, $this->tools, $this->prompts, $provider, 'claude-sonnet-4-6' );
+		$runner->run(
+			turn_id:        $turn_id,
+			tree:           new VirtualTree( [] ),
+			history:        [],
+			selectedId:     null,
+			currentUserMsg: 'rebuild this page from https://www.example.com/unser-angebot/'
+		);
+
+		$msg = $this->store->getMessage( $turn_id );
+		$this->assertCount( 1, $msg['tool_calls'], 'the web_fetch error must be recorded as a tool call' );
+		$call = $msg['tool_calls'][0];
+		$this->assertTrue( ! empty( $call['is_error'] ) );
+		$this->assertSame( 'web_fetch_tool_result', $call['tool'] );
+		$this->assertSame( 'url_not_accessible', $call['output']['error_code'] );
+	}
+
 	public function test_narration_across_rounds_is_separated_by_a_blank_line(): void {
 		$conv    = $this->store->getOrCreate( 1, 1 );
 		$turn_id = $this->store->startAssistantTurn( $conv['id'] );

@@ -220,6 +220,20 @@ final class TurnRunner {
 						];
 						$current_server_tu = null;
 					} elseif ( null !== $current_result ) {
+						// Server-side fetch/search can fail (e.g. web_fetch returns
+						// `url_not_accessible` when Anthropic's egress cannot retrieve the
+						// origin — distinct from anything reachable via wp_remote_get on this
+						// host). The model only paraphrases that in prose, so record the raw
+						// error_code; otherwise the failure is undiagnosable after the fact.
+						$server_err = self::serverToolResultError( $current_result );
+						if ( null !== $server_err ) {
+							$this->store->recordToolCall( $turn_id, [
+								'tool'     => (string) ( $current_result['type'] ?? 'server_tool' ),
+								'input'    => null,
+								'output'   => [ 'error_code' => $server_err ],
+								'is_error' => true,
+							] );
+						}
 						// Echo the fetch/search result block verbatim so the retrieved page
 						// stays in context across the remaining loop iterations.
 						$assistantContent[] = $current_result;
@@ -289,5 +303,25 @@ final class TurnRunner {
 
 		// Iteration cap.
 		$this->store->fail( $turn_id, 'iteration_limit', 'Reached maximum tool-use iterations.' );
+	}
+
+	/**
+	 * Extracts the error_code from a server-side tool result block, if it failed.
+	 *
+	 * Server-side web_search / web_fetch results arrive as a `*_tool_result` block whose
+	 * `content` is either the payload (array of results, or a fetched-page object)
+	 * or, on failure, a `{type: "..._tool_result_error", error_code: "..."}` object.
+	 * Successful results carry no `error_code`; the code_execution result emitted by
+	 * web_fetch's dynamic filtering reports failure via `return_code`, not here.
+	 *
+	 * @param array<string,mixed> $block A `*_tool_result` content block.
+	 * @return string|null The error_code, or null when the block did not error.
+	 */
+	private static function serverToolResultError( array $block ): ?string {
+		$content = $block['content'] ?? null;
+		if ( is_array( $content ) && isset( $content['error_code'] ) && is_string( $content['error_code'] ) ) {
+			return $content['error_code'];
+		}
+		return null;
 	}
 }
