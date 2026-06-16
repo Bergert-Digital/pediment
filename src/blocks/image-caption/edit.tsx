@@ -3,9 +3,10 @@ import {
 	useBlockProps,
 	RichText,
 	MediaUpload,
+	MediaPlaceholder,
 	InspectorControls,
 } from '@wordpress/block-editor';
-import { PanelBody, TextControl, Button } from '@wordpress/components';
+import { PanelBody, TextControl } from '@wordpress/components';
 import { useSelect } from '@wordpress/data';
 
 type Attrs = { mediaId: number; caption: string; altOverride: string };
@@ -45,14 +46,14 @@ export default function Edit( {
 				</PanelBody>
 			</InspectorControls>
 			<figure { ...blockProps }>
-				<MediaUpload
-					allowedTypes={ [ 'image' ] }
-					value={ attributes.mediaId }
-					onSelect={ ( m: any ) =>
-						setAttributes( { mediaId: m.id } )
-					}
-					render={ ( { open }: { open: () => void } ) =>
-						media ? (
+				{ media ? (
+					<MediaUpload
+						allowedTypes={ [ 'image' ] }
+						value={ attributes.mediaId }
+						onSelect={ ( m: any ) =>
+							setAttributes( { mediaId: m.id } )
+						}
+						render={ ( { open }: { open: () => void } ) => (
 							<button
 								type="button"
 								className="starter-image-caption__replace"
@@ -69,13 +70,19 @@ export default function Edit( {
 									}
 								/>
 							</button>
-						) : (
-							<Button variant="primary" onClick={ open }>
-								{ __( 'Pick image', 'pediment' ) }
-							</Button>
-						)
-					}
-				/>
+						) }
+					/>
+				) : (
+					<MediaPlaceholder
+						icon="format-image"
+						labels={ { title: __( 'Image', 'pediment' ) } }
+						allowedTypes={ [ 'image' ] }
+						accept="image/*"
+						onSelect={ ( m: any ) =>
+							setAttributes( { mediaId: m.id } )
+						}
+					/>
+				) }
 				<RichText
 					tagName="figcaption"
 					className="starter-image-caption__caption"
