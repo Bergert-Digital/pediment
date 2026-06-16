@@ -25,6 +25,7 @@ const ALLOWED = [
 	'core/list',
 	'core/list-item',
 	'core/separator',
+	'core/buttons',
 ];
 
 const TEMPLATE: [ string, Record< string, unknown > ][] = [
