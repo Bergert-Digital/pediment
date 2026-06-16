@@ -1,5 +1,26 @@
 # Changelog
 
+## [0.5.0](https://github.com/Bergert-Digital/Pediment/compare/v0.4.0...v0.5.0) (2026-06-16)
+
+
+### Features
+
+* **blocks:** add inserter previews to Pediment blocks ([a65221c](https://github.com/Bergert-Digital/Pediment/commit/a65221ccaa4d8a1f12e13bd07b194273524e381e))
+* **blocks:** add pediment/media-text block for copy beside an image ([fce5d9d](https://github.com/Bergert-Digital/Pediment/commit/fce5d9de9e1edb12417ca024de5b05a24e608592))
+* **blocks:** media-text block plus editor alignment & inserter UX ([#19](https://github.com/Bergert-Digital/Pediment/issues/19)) ([b16ed88](https://github.com/Bergert-Digital/Pediment/commit/b16ed8886c0b470fdc630d1d578737b06426a6c0))
+* **editor:** default Row and Grid group variations to wide alignment ([a55bcbb](https://github.com/Bergert-Digital/Pediment/commit/a55bcbbcd2362ff97cb13223fcc797abb7a2d574))
+* **feature-grid:** center orphan rows and lay out 4 items as 2+2 ([dbdbecf](https://github.com/Bergert-Digital/Pediment/commit/dbdbecf1a8fae06b68730615e2be6594687d8368))
+* **media-text:** allow buttons inside the text column ([64732f1](https://github.com/Bergert-Digital/Pediment/commit/64732f150996e7ae126ebf36cc92afafb3f286ec))
+* **media-text:** show a placeholder slot when no image is set ([0784f68](https://github.com/Bergert-Digital/Pediment/commit/0784f681d487a1311d1ba5faaf06b6581f15c413))
+* **section-head:** add optional max-width override ([c0cc339](https://github.com/Bergert-Digital/Pediment/commit/c0cc3393e74d296d2c141c573c8229f63c1f811f))
+
+
+### Bug Fixes
+
+* **image-caption:** use MediaPlaceholder for empty state ([c96a11c](https://github.com/Bergert-Digital/Pediment/commit/c96a11c8576c19f32cdda40781bef6eda4133f59))
+* **media-text:** persist inner blocks so the copy survives save ([bd91108](https://github.com/Bergert-Digital/Pediment/commit/bd911088d0fe4ec9e930cdc59da9d32894d0d06f))
+* **section-head:** make width follow block alignment instead of a fixed cap ([e7e4652](https://github.com/Bergert-Digital/Pediment/commit/e7e4652abe7eb3264c55d95d03cb680877ffed89))
+
 ## [0.4.0](https://github.com/Bergert-Digital/Pediment/compare/v0.3.0...v0.4.0) (2026-06-12)
 
 
