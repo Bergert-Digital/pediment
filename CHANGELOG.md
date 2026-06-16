@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.5.1](https://github.com/Bergert-Digital/Pediment/compare/v0.5.0...v0.5.1) (2026-06-16)
+
+
+### Bug Fixes
+
+* **release:** bump style.css version header so prod detects updates ([#21](https://github.com/Bergert-Digital/Pediment/issues/21)) ([9c9af20](https://github.com/Bergert-Digital/Pediment/commit/9c9af20cda491a27141018eafefb007a78393d17))
+* **release:** let release-please bump the style.css version header ([0195d5f](https://github.com/Bergert-Digital/Pediment/commit/0195d5fe6005b1483c8ac3a5422f17477170fb36))
+
 ## [0.5.0](https://github.com/Bergert-Digital/Pediment/compare/v0.4.0...v0.5.0) (2026-06-16)
 
 
