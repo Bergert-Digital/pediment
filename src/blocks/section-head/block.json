@@ -12,7 +12,8 @@
 		"headline":  { "type": "string", "default": "", "required": true },
 		"lead":      { "type": "string", "default": "" },
 		"alignment": { "type": "string", "default": "center", "enum": [ "start", "center" ] },
-		"level":     { "type": "number", "default": 2, "enum": [ 2, 3 ] }
+		"level":     { "type": "number", "default": 2, "enum": [ 2, 3 ] },
+		"maxWidth":  { "type": "string", "default": "" }
 	},
 	"example": {
 		"attributes": {

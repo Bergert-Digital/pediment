@@ -10,6 +10,8 @@ import {
 	__experimentalToggleGroupControl as ToggleGroupControl,
 	// eslint-disable-next-line @wordpress/no-unsafe-wp-apis -- see above
 	__experimentalToggleGroupControlOption as ToggleGroupControlOption,
+	// eslint-disable-next-line @wordpress/no-unsafe-wp-apis -- UnitControl still experimental in v28
+	__experimentalUnitControl as UnitControl,
 } from '@wordpress/components';
 
 type Attrs = {
@@ -18,6 +20,7 @@ type Attrs = {
 	lead: string;
 	alignment: 'start' | 'center';
 	level: 2 | 3;
+	maxWidth: string;
 };
 
 export default function Edit( {
@@ -66,10 +69,33 @@ export default function Edit( {
 						<ToggleGroupControlOption value="2" label="H2" />
 						<ToggleGroupControlOption value="3" label="H3" />
 					</ToggleGroupControl>
+					<UnitControl
+						label={ __( 'Max width', 'pediment' ) }
+						help={ __(
+							'Leave empty to follow the block’s alignment.',
+							'pediment'
+						) }
+						value={ attributes.maxWidth }
+						units={ [
+							{ value: 'px', label: 'px' },
+							{ value: 'rem', label: 'rem' },
+							{ value: '%', label: '%' },
+						] }
+						onChange={ ( v ) =>
+							setAttributes( { maxWidth: v ?? '' } )
+						}
+					/>
 				</PanelBody>
 			</InspectorControls>
 			<div { ...blockProps }>
-				<div className="starter-section-head__inner">
+				<div
+					className="starter-section-head__inner"
+					style={
+						attributes.maxWidth
+							? { maxWidth: attributes.maxWidth }
+							: undefined
+					}
+				>
 					<RichText
 						tagName="p"
 						className="starter-section-head__eyebrow"
