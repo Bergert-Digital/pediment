@@ -15,6 +15,26 @@
 		}
 	},
 	"attributes": {},
+	"example": {
+		"innerBlocks": [
+			{
+				"name": "core/heading",
+				"attributes": { "level": 2, "content": "Über uns" }
+			},
+			{
+				"name": "core/paragraph",
+				"attributes": {
+					"content": "Wir sind ein Team aus Strateginnen und Machern, das Unternehmen bei nachhaltigem Wachstum begleitet."
+				}
+			},
+			{
+				"name": "core/paragraph",
+				"attributes": {
+					"content": "Unser Anspruch: klare Konzepte, saubere Umsetzung und messbare Ergebnisse."
+				}
+			}
+		]
+	},
 	"editorScript": "file:./index.js",
 	"editorStyle": "file:./style-index.css",
   "style": "file:./style-index.css",

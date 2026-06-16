@@ -11,6 +11,12 @@
 		"quote": { "type": "string", "default": "" },
 		"citation": { "type": "string", "default": "" }
 	},
+	"example": {
+		"attributes": {
+			"quote": "Die Zusammenarbeit hat unser Geschäft grundlegend verändert.",
+			"citation": "Maria Schmidt, Geschäftsführerin"
+		}
+	},
 	"editorScript": "file:./index.js",
 	"editorStyle": "file:./style-index.css",
 	"style": "file:./style-index.css",
