@@ -1,0 +1,60 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "pediment/media-text",
+	"title": "Media & Text",
+	"category": "pediment",
+	"description": "A section that pairs a column of copy with an image side by side. Put the heading, paragraphs and lists in innerBlocks; set mediaPosition to left or right.",
+	"textdomain": "pediment",
+	"supports": { "html": false, "align": [ "wide", "full" ] },
+	"attributes": {
+		"mediaId": { "type": "number", "default": 0 },
+		"altOverride": { "type": "string", "default": "" },
+		"mediaPosition": { "type": "string", "default": "right" }
+	},
+	"variations": [
+		{
+			"name": "media-right",
+			"title": "Media & Text (image right)",
+			"description": "Copy on the left, image on the right.",
+			"isDefault": true,
+			"attributes": { "mediaPosition": "right" },
+			"isActive": [ "mediaPosition" ],
+			"scope": [ "inserter", "transform" ]
+		},
+		{
+			"name": "media-left",
+			"title": "Media & Text (image left)",
+			"description": "Image on the left, copy on the right.",
+			"attributes": { "mediaPosition": "left" },
+			"isActive": [ "mediaPosition" ],
+			"scope": [ "inserter", "transform" ]
+		}
+	],
+	"example": {
+		"attributes": { "mediaPosition": "right" },
+		"innerBlocks": [
+			{
+				"name": "core/heading",
+				"attributes": { "level": 2, "content": "Wachstumskrisen bewältigen" }
+			},
+			{
+				"name": "core/paragraph",
+				"attributes": {
+					"content": "Dein Geschäft stagniert? Hol dir starke Partner an deine Seite."
+				}
+			},
+			{
+				"name": "core/list",
+				"innerBlocks": [
+					{ "name": "core/list-item", "attributes": { "content": "Prozesse und Abläufe analysieren" } },
+					{ "name": "core/list-item", "attributes": { "content": "Wachstumsschwellen überwinden" } }
+				]
+			}
+		]
+	},
+	"editorScript": "file:./index.js",
+	"editorStyle": "file:./style-index.css",
+	"style": "file:./style-index.css",
+	"render": "file:./render.php"
+}
