@@ -86,6 +86,20 @@ final class SchemaBuilder {
 	];
 
 	/**
+	 * Content-column containers whose children are core blocks (which never declare a
+	 * `parent`, so the parent→child derivation below cannot discover them). Without an
+	 * explicit child list these get no [contains: …] hint in the prompt and the empty
+	 * container guard never fires, so the model emits them empty — a media-text with no
+	 * text, a prose with no copy. Declaring the children fixes both.
+	 *
+	 * @var array<string,array<int,string>>
+	 */
+	private const CONTENT_CONTAINERS = [
+		'pediment/media-text' => [ 'core/heading', 'core/paragraph', 'core/list', 'core/separator', 'core/buttons' ],
+		'pediment/prose'      => [ 'core/heading', 'core/paragraph', 'core/list', 'core/separator' ],
+	];
+
+	/**
 	 * Build the schema, using the cached version if available.
 	 *
 	 * @param bool $forceFresh Skip the transient cache.
@@ -170,6 +184,20 @@ final class SchemaBuilder {
 			// block inside an existing container — children must be nested at insert time).
 			$blocks[ $name ]['requiresParent'] = array_values( (array) $info['onlyAllowedAsChildOf'] );
 			unset( $blocks[ $name ]['onlyAllowedAsChildOf'] );
+		}
+
+		// Declare the core children of the content-column containers (only the ones that
+		// are actually registered). Restricts to children that exist in this schema so the
+		// prompt hint and validator never name a block the model cannot insert.
+		foreach ( self::CONTENT_CONTAINERS as $container => $children ) {
+			if ( ! isset( $blocks[ $container ] ) ) {
+				continue;
+			}
+			$allowed = array_values( array_filter( $children, static fn( $c ) => isset( $blocks[ $c ] ) ) );
+			if ( ! empty( $allowed ) ) {
+				$blocks[ $container ]['allowedChildBlocks'] = $allowed;
+				$blocks[ $container ]['allowsInnerBlocks']  = true;
+			}
 		}
 
 		$schema = [ 'blocks' => $blocks ];
