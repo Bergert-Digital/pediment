@@ -30,11 +30,19 @@ $wrapper = get_block_wrapper_attributes(
 ob_start();
 ?>
 <div <?php echo $wrapper; // phpcs:ignore WordPress.Security.EscapeOutput ?>>
-	<?php if ( '' !== $img_html ) : ?>
-		<figure class="starter-media-text__media">
+	<figure class="starter-media-text__media">
+		<?php if ( '' !== $img_html ) : ?>
 			<?php echo $img_html; // phpcs:ignore WordPress.Security.EscapeOutput -- pre-escaped by wp_get_attachment_image ?>
-		</figure>
-	<?php endif; ?>
+		<?php else : ?>
+			<span class="starter-media-text__placeholder" aria-hidden="true">
+				<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+					<rect x="3" y="3" width="18" height="18" rx="2" />
+					<circle cx="8.5" cy="8.5" r="1.5" />
+					<path d="M21 15l-5-5L5 21" />
+				</svg>
+			</span>
+		<?php endif; ?>
+	</figure>
 	<div class="starter-media-text__body">
 		<?php echo $content; // phpcs:ignore WordPress.Security.EscapeOutput -- inner blocks pre-rendered ?>
 	</div>

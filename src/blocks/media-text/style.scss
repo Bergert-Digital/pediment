@@ -20,6 +20,24 @@
     box-shadow: var(--wp--preset--shadow--medium);
   }
 
+  // Front-end stand-in shown until an image is uploaded, so the two-column
+  // layout (and the image-side toggle) stays meaningful on the live page.
+  &__placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    aspect-ratio: 4 / 3;
+    border-radius: 0.75rem;
+    background: var(--wp--preset--color--accent-tint);
+    color: var(--wp--preset--color--foreground-muted);
+
+    svg {
+      width: 2.75rem;
+      height: 2.75rem;
+    }
+  }
+
   &__replace {
     display: block;
     padding: 0;
