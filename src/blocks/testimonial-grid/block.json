@@ -8,6 +8,27 @@
 	"textdomain": "pediment",
 	"supports": { "html": false, "align": [ "wide", "full" ] },
 	"attributes": {},
+	"example": {
+		"innerBlocks": [
+			{
+				"name": "pediment/testimonial",
+				"attributes": {
+					"quote": "Ein Partner, der mitdenkt und zuverlässig liefert.",
+					"authorName": "Maria Schmidt",
+					"authorRole": "Geschäftsführerin, Muster GmbH"
+				}
+			},
+			{
+				"name": "pediment/testimonial",
+				"attributes": {
+					"quote": "Professionell, schnell und immer auf Augenhöhe.",
+					"authorName": "Thomas Krause",
+					"authorRole": "Marketingleiter, Beispiel AG"
+				}
+			}
+		],
+		"viewportWidth": 1280
+	},
 	"editorScript": "file:./index.js",
 	"editorStyle": "file:./style-index.css",
 	"style": "file:./style-index.css",
