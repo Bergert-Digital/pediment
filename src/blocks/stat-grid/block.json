@@ -8,6 +8,34 @@
 	"textdomain": "pediment",
 	"supports": { "html": false, "align": [ "wide", "full" ] },
 	"attributes": {},
+	"example": {
+		"innerBlocks": [
+			{
+				"name": "pediment/stat",
+				"attributes": {
+					"value": "98%",
+					"label": "Kundenzufriedenheit",
+					"context": "über alle Projekte"
+				}
+			},
+			{
+				"name": "pediment/stat",
+				"attributes": {
+					"value": "150+",
+					"label": "Projekte",
+					"context": "erfolgreich umgesetzt"
+				}
+			},
+			{
+				"name": "pediment/stat",
+				"attributes": {
+					"value": "12",
+					"label": "Jahre Erfahrung"
+				}
+			}
+		],
+		"viewportWidth": 1280
+	},
 	"editorScript": "file:./index.js",
 	"editorStyle": "file:./style-index.css",
 	"style": "file:./style-index.css",

@@ -26,6 +26,16 @@
 		"metrics": { "type": "array", "default": [] },
 		"mediaId": { "type": "number", "default": 0 }
 	},
+	"example": {
+		"attributes": {
+			"variant": "default",
+			"headline": "Strategische Beratung für nachhaltiges Wachstum",
+			"subheadline": "Wir begleiten Unternehmen von der ersten Idee bis zur erfolgreichen Umsetzung.",
+			"ctaText": "Jetzt Termin vereinbaren",
+			"ctaUrl": "#"
+		},
+		"viewportWidth": 1280
+	},
 	"editorScript": "file:./index.js",
 	"editorStyle": "file:./style-index.css",
   "style": "file:./style-index.css",

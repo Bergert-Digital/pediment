@@ -10,6 +10,11 @@
 	"attributes": {
 		"caption": { "type": "string", "default": "" }
 	},
+	"example": {
+		"attributes": {
+			"caption": "Vertraut von führenden Unternehmen"
+		}
+	},
 	"editorScript": "file:./index.js",
 	"editorStyle": "file:./style-index.css",
 	"style": "file:./style-index.css",

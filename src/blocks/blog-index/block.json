@@ -12,6 +12,13 @@
 		"categorySlug": { "type": "string", "default": "" },
 		"showFilter": { "type": "boolean", "default": true }
 	},
+	"example": {
+		"attributes": {
+			"count": 3,
+			"showFilter": false
+		},
+		"viewportWidth": 1280
+	},
 	"editorScript": "file:./index.js",
 	"editorStyle": "file:./style-index.css",
 	"style": "file:./style-index.css",

@@ -1,7 +1,8 @@
-// The outer wrapper rides at alignwide (parent constrained band centers it at
-// wide-size). The __inner element carries the column constraint. No !important
-// because we're not fighting WordPress's auto-centering — we let it do its job
-// on the outer, and constrain the inner ourselves.
+// The __inner measure follows the block's *alignment* (the toolbar Align
+// control), not a fixed cap. WordPress sizes the outer wrapper to content-size
+// by default and to wide-size at `alignwide`; the inner mirrors that via the
+// same global layout vars, so toggling Wide actually widens the head. The vars
+// also keep it sensible if the block is dropped outside a constrained band.
 
 .starter-section-head {
   // WordPress's constrained-layout gap rule resets `margin-block-end: 0` on every
@@ -10,7 +11,11 @@
   padding-bottom: var(--head-gap, clamp(40px, 5vw, 64px));
 
   &__inner {
-    max-width: 600px;
+    max-width: var(--wp--style--global--content-size);
+  }
+
+  &.alignwide &__inner {
+    max-width: var(--wp--style--global--wide-size);
   }
 
   &.is-alignment-start &__inner {
@@ -18,7 +23,6 @@
   }
 
   &.is-alignment-center &__inner {
-    max-width: 620px;
     margin-inline: auto;
     text-align: center;
   }

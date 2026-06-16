@@ -8,6 +8,24 @@
 	"textdomain": "pediment",
 	"supports": { "html": false, "align": [ "wide" ] },
 	"attributes": {},
+	"example": {
+		"innerBlocks": [
+			{
+				"name": "pediment/faq-item",
+				"attributes": {
+					"question": "Wie läuft die Zusammenarbeit ab?",
+					"answer": "Wir starten mit einem unverbindlichen Erstgespräch und entwickeln daraus einen konkreten Fahrplan."
+				}
+			},
+			{
+				"name": "pediment/faq-item",
+				"attributes": {
+					"question": "Was kostet ein Projekt?",
+					"answer": "Die Kosten richten sich nach Umfang und Zielen — Sie erhalten vorab ein transparentes Angebot."
+				}
+			}
+		]
+	},
 	"editorScript": "file:./index.js",
 	"editorStyle": "file:./style-index.css",
   "style": "file:./style-index.css",
