@@ -6,11 +6,7 @@ import {
 	MediaPlaceholder,
 	InspectorControls,
 } from '@wordpress/block-editor';
-import {
-	PanelBody,
-	TextControl,
-	ToggleControl,
-} from '@wordpress/components';
+import { PanelBody, TextControl, ToggleControl } from '@wordpress/components';
 import { useSelect } from '@wordpress/data';
 
 type Attrs = {
