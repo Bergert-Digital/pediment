@@ -1,11 +1,29 @@
 .starter-feature-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 22px;
+  --fg-gap: 22px;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--fg-gap);
+}
+
+// Default: up to 3 per row. Full rows fill edge-to-edge; a leftover
+// row (e.g. 5 → 3 + 2) is centred instead of left-aligned.
+.starter-feature-grid > .starter-feature {
+  flex: 0 1 calc((100% - 2 * var(--fg-gap)) / 3);
+  max-width: calc((100% - 2 * var(--fg-gap)) / 3);
+}
+
+// Exactly 4 items read better as 2 + 2 than 3 + 1.
+.starter-feature-grid:has(> .starter-feature:nth-child(4):last-child) > .starter-feature {
+  flex-basis: calc((100% - var(--fg-gap)) / 2);
+  max-width: calc((100% - var(--fg-gap)) / 2);
 }
 
 @media (max-width: 781px) {
-  .starter-feature-grid { grid-template-columns: 1fr; }
+  .starter-feature-grid > .starter-feature {
+    flex-basis: 100%;
+    max-width: 100%;
+  }
 }
 
 .starter-feature {
