@@ -12,6 +12,12 @@ $alignment = isset( $attributes['alignment'] ) && 'center' === $attributes['alig
 $level     = isset( $attributes['level'] ) && 3 === (int) $attributes['level'] ? 3 : 2;
 $h_tag     = 'h' . $level;
 
+// Optional per-instance width override. safecss_filter_attr drops anything that
+// is not a legitimate CSS declaration, so a bad value yields an empty string.
+$max_width   = isset( $attributes['maxWidth'] ) ? (string) $attributes['maxWidth'] : '';
+$inner_style = '' !== $max_width ? safecss_filter_attr( 'max-width:' . $max_width ) : '';
+$inner_attr  = '' !== $inner_style ? ' style="' . esc_attr( $inner_style ) . '"' : '';
+
 $wrapper = get_block_wrapper_attributes(
 	array(
 		'class' => 'starter-section-head is-alignment-' . $alignment,
@@ -21,7 +27,7 @@ $wrapper = get_block_wrapper_attributes(
 ob_start();
 ?>
 <div <?php echo $wrapper; // phpcs:ignore WordPress.Security.EscapeOutput ?>>
-	<div class="starter-section-head__inner">
+	<div class="starter-section-head__inner"<?php echo $inner_attr; // phpcs:ignore WordPress.Security.EscapeOutput -- value built from safecss_filter_attr + esc_attr ?>>
 		<?php
 		if ( '' !== $eyebrow ) :
 			?>

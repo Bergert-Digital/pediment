@@ -12,7 +12,17 @@
 		"headline":  { "type": "string", "default": "", "required": true },
 		"lead":      { "type": "string", "default": "" },
 		"alignment": { "type": "string", "default": "center", "enum": [ "start", "center" ] },
-		"level":     { "type": "number", "default": 2, "enum": [ 2, 3 ] }
+		"level":     { "type": "number", "default": 2, "enum": [ 2, 3 ] },
+		"maxWidth":  { "type": "string", "default": "" }
+	},
+	"example": {
+		"attributes": {
+			"eyebrow": "Unsere Leistungen",
+			"headline": "Alles aus einer Hand",
+			"lead": "Von der Strategie bis zur Umsetzung begleiten wir Sie auf dem gesamten Weg.",
+			"alignment": "center",
+			"level": 2
+		}
 	},
 	"editorScript": "file:./index.js",
 	"editorStyle": "file:./style-index.css",

@@ -69,4 +69,21 @@ class SectionHeadTest extends WP_UnitTestCase {
 		$html = $this->render( array( 'headline' => 'X' ) );
 		$this->assertStringContainsString( '<div class="starter-section-head__inner">', $html );
 	}
+
+	public function test_max_width_emits_inline_style() {
+		$html = $this->render( array( 'headline' => 'X', 'maxWidth' => '500px' ) );
+		$this->assertStringContainsString( 'class="starter-section-head__inner" style="', $html );
+		$this->assertStringContainsString( 'max-width:500px', $html );
+	}
+
+	public function test_empty_max_width_omits_inline_style() {
+		$html = $this->render( array( 'headline' => 'X', 'maxWidth' => '' ) );
+		$this->assertStringContainsString( '<div class="starter-section-head__inner">', $html );
+	}
+
+	public function test_unsafe_max_width_is_dropped() {
+		$html = $this->render( array( 'headline' => 'X', 'maxWidth' => 'javascript:alert(1)' ) );
+		$this->assertStringContainsString( '<div class="starter-section-head__inner">', $html );
+		$this->assertStringNotContainsString( 'javascript', $html );
+	}
 }

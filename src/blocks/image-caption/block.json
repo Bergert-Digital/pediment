@@ -12,6 +12,11 @@
 		"caption": { "type": "string", "default": "" },
 		"altOverride": { "type": "string", "default": "" }
 	},
+	"example": {
+		"attributes": {
+			"caption": "Bildunterschrift zur Veranschaulichung"
+		}
+	},
 	"editorScript": "file:./index.js",
 	"editorStyle": "file:./style-index.css",
   "style": "file:./style-index.css",

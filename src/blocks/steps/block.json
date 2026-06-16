@@ -8,6 +8,31 @@
 	"textdomain": "pediment",
 	"supports": { "html": false, "align": [ "wide" ] },
 	"attributes": {},
+	"example": {
+		"innerBlocks": [
+			{
+				"name": "pediment/step",
+				"attributes": {
+					"title": "Analyse",
+					"text": "Wir verstehen Ihre Ziele und Rahmenbedingungen."
+				}
+			},
+			{
+				"name": "pediment/step",
+				"attributes": {
+					"title": "Konzept",
+					"text": "Gemeinsam entwickeln wir die passende Strategie."
+				}
+			},
+			{
+				"name": "pediment/step",
+				"attributes": {
+					"title": "Umsetzung",
+					"text": "Wir bringen die Lösung zuverlässig auf die Straße."
+				}
+			}
+		]
+	},
 	"editorScript": "file:./index.js",
 	"editorStyle": "file:./style-index.css",
 	"style": "file:./style-index.css",
