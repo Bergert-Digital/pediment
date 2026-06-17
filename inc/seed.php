@@ -445,6 +445,31 @@ function pediment_seed_ensure_logo_dimensions( int $attach_id ): void {
 }
 
 /**
+ * One-time migration: backfill SVG dimensions on the live Custom Logo.
+ *
+ * Sites seeded before dimension metadata existed (e.g. production databases
+ * imported from an older seed) carry a dimensionless SVG logo that renders on
+ * the front end but is invisible/unselectable in the Site Editor. Seeding only
+ * runs via WP-CLI, which admin-only hosts cannot reach, so this runs on
+ * `admin_init` instead — a theme update is enough to heal the logo.
+ *
+ * Guarded by an option so it queries the attachment at most once per site.
+ */
+function pediment_migrate_logo_svg_dimensions(): void {
+	if ( get_option( 'pediment_logo_svg_dims_migrated' ) ) {
+		return;
+	}
+
+	$logo_id = (int) get_theme_mod( 'custom_logo', 0 );
+	if ( $logo_id > 0 && 'image/svg+xml' === get_post_mime_type( $logo_id ) ) {
+		pediment_seed_ensure_logo_dimensions( $logo_id );
+	}
+
+	update_option( 'pediment_logo_svg_dims_migrated', '1' );
+}
+add_action( 'admin_init', 'pediment_migrate_logo_svg_dimensions' );
+
+/**
  * Read the intrinsic pixel dimensions of an SVG file.
  *
  * Prefers the root `<svg>` element's numeric width/height attributes and falls
