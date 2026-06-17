@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.5.2](https://github.com/Bergert-Digital/Pediment/compare/v0.5.1...v0.5.2) (2026-06-17)
+
+
+### Bug Fixes
+
+* make seeded SVG logo render and self-heal in the Site Editor ([#23](https://github.com/Bergert-Digital/Pediment/issues/23)) ([89389c6](https://github.com/Bergert-Digital/Pediment/commit/89389c6150380d901b62aca2d4706c40c279ec1a))
+* **seed:** self-heal dimensionless SVG logo on admin_init ([f8ac87e](https://github.com/Bergert-Digital/Pediment/commit/f8ac87e44bd45b44797999ef92c9af3bd7e1c520))
+* **seed:** store SVG dimensions on demo logo so it renders in the editor ([5e88862](https://github.com/Bergert-Digital/Pediment/commit/5e88862514793d9a52302640db9ae73485e280a8))
+
 ## [0.5.1](https://github.com/Bergert-Digital/Pediment/compare/v0.5.0...v0.5.1) (2026-06-16)
 
 
