@@ -155,4 +155,68 @@ class ValidatorTest extends \WP_UnitTestCase {
 		$this->assertNotEmpty( $errors );
 		$this->assertStringContainsString( 'pediment/faq-item', implode( ' ', $errors ) );
 	}
+
+	private function columnsSchema(): array {
+		return [
+			'core/columns' => [
+				'description'        => 'Columns',
+				'attributes'         => [],
+				'allowsInnerBlocks'  => true,
+				'allowedChildBlocks' => [ 'core/column' ],
+			],
+			'core/column' => [
+				'description'       => 'Column',
+				'attributes'        => [],
+				'allowsInnerBlocks' => true,
+				'requiresParent'    => [ 'core/columns' ],
+			],
+			'core/paragraph' => [
+				'description' => 'Paragraph',
+				'attributes'  => [ 'content' => [ 'type' => 'string' ] ],
+				'allowsInnerBlocks' => false,
+			],
+		];
+	}
+
+	public function test_rejects_top_level_column(): void {
+		$errors = ( new Validator( $this->columnsSchema() ) )->validateNode(
+			[ 'name' => 'core/column', 'attributes' => [], 'innerBlocks' => [] ]
+		);
+		$this->assertNotEmpty( $errors, 'A bare top-level core/column must be rejected.' );
+		$joined = implode( ' ', $errors );
+		$this->assertStringContainsString( 'core/column', $joined );
+		$this->assertStringContainsString( 'core/columns', $joined );
+	}
+
+	public function test_rejects_empty_columns_container(): void {
+		$errors = ( new Validator( $this->columnsSchema() ) )->validateNode(
+			[ 'name' => 'core/columns', 'attributes' => [], 'innerBlocks' => [] ]
+		);
+		$this->assertNotEmpty( $errors, 'An empty core/columns must be rejected.' );
+		$this->assertStringContainsString( 'core/column', implode( ' ', $errors ) );
+	}
+
+	public function test_accepts_columns_with_columns_holding_content(): void {
+		$errors = ( new Validator( $this->columnsSchema() ) )->validateNode( [
+			'name'        => 'core/columns',
+			'attributes'  => [],
+			'innerBlocks' => [
+				[
+					'name'        => 'core/column',
+					'attributes'  => [],
+					'innerBlocks' => [
+						[ 'name' => 'core/paragraph', 'attributes' => [ 'content' => 'Left' ], 'innerBlocks' => [] ],
+					],
+				],
+				[
+					'name'        => 'core/column',
+					'attributes'  => [],
+					'innerBlocks' => [
+						[ 'name' => 'core/paragraph', 'attributes' => [ 'content' => 'Right' ], 'innerBlocks' => [] ],
+					],
+				],
+			],
+		] );
+		$this->assertSame( [], $errors, 'A populated columns/column/content tree must validate clean.' );
+	}
 }

@@ -83,6 +83,18 @@ final class SchemaBuilder {
 			],
 			'allowsInnerBlocks' => true,
 		],
+		'core/columns' => [
+			'description'        => 'A horizontal row of columns — use for multi-column section layouts the library has no dedicated block for (feature/benefit grids, comparison rows, card rows, logo walls). Holds core/column children. Set "align":"wide" so the row uses the theme\'s wide width.',
+			'attributes'         => [],
+			'allowsInnerBlocks'  => true,
+			'allowedChildBlocks' => [ 'core/column' ],
+		],
+		'core/column' => [
+			'description'       => 'A single column inside core/columns. Put this column\'s content (core/heading, core/paragraph, core/list, core/image, core/buttons, or a nested core/group) in its innerBlocks.',
+			'attributes'        => [],
+			'allowsInnerBlocks' => true,
+			'requiresParent'    => [ 'core/columns' ],
+		],
 	];
 
 	/**
