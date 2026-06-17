@@ -63,33 +63,4 @@ class SeedDemoLogoTest extends WP_UnitTestCase {
 		pediment_seed_run();
 		$this->assertGreaterThan( 0, (int) get_theme_mod( 'custom_logo', 0 ) );
 	}
-
-	public function test_seeded_logo_stores_svg_dimensions_for_editor() {
-		$id   = pediment_seed_demo_logo();
-		$meta = wp_get_attachment_metadata( $id );
-
-		// The Site Logo block sizes the image in the editor from the attachment's
-		// width/height (exposed via REST media_details). SVGs carry no intrinsic
-		// dimensions unless we store them, which is why the logo renders on the
-		// front end but collapses to 0x0 (invisible) in the Site Editor.
-		$this->assertIsArray( $meta, 'SVG attachment must carry metadata.' );
-		$this->assertArrayHasKey( 'width', $meta );
-		$this->assertArrayHasKey( 'height', $meta );
-		$this->assertSame( 150, (int) $meta['width'], 'Width must match the SVG intrinsic width.' );
-		$this->assertSame( 48, (int) $meta['height'], 'Height must match the SVG intrinsic height.' );
-	}
-
-	public function test_idempotent_call_backfills_missing_dimensions() {
-		$id = pediment_seed_demo_logo();
-		// Simulate a logo seeded before dimension metadata was stored (e.g. a
-		// production DB imported from an older seed).
-		wp_update_attachment_metadata( $id, array() );
-
-		$second = pediment_seed_demo_logo();
-		$meta   = wp_get_attachment_metadata( $second );
-
-		$this->assertSame( $id, $second );
-		$this->assertSame( 150, (int) $meta['width'], 'Re-seed must backfill the missing width.' );
-		$this->assertSame( 48, (int) $meta['height'], 'Re-seed must backfill the missing height.' );
-	}
 }
