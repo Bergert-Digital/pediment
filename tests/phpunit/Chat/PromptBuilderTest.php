@@ -92,6 +92,20 @@ class PromptBuilderTest extends \WP_UnitTestCase {
 		$this->assertStringNotContainsString( '"type":"default"', $prompt );
 	}
 
+	public function test_system_prompt_explains_composition_from_primitives(): void {
+		$pb     = new PromptBuilder( [ 'core/group' => [ 'description' => 'A section container.' ] ] );
+		$prompt = $pb->systemPrompt();
+
+		// Bespoke-first: prefer a purpose-built pediment block when one fits.
+		$this->assertStringContainsStringIgnoringCase( 'purpose-built pediment block', $prompt );
+		// Fallback toolkit: compose from columns when the library has no block.
+		$this->assertStringContainsString( 'core/columns', $prompt );
+		$this->assertStringContainsString( 'core/column', $prompt );
+		$this->assertStringContainsString( 'pediment/section-head', $prompt );
+		// Let the theme style it — no custom color/spacing on composed blocks.
+		$this->assertStringContainsStringIgnoringCase( 'rely on the theme', $prompt );
+	}
+
 	public function test_system_prompt_is_filterable(): void {
 		$cb = static function ( $prompt, $schema ) {
 			return $prompt . "\n\nAcme brand voice: confident and concise.";
