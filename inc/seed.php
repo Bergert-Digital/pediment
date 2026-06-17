@@ -362,6 +362,10 @@ function pediment_seed_demo_logo(): int {
 		if ( (int) get_theme_mod( 'custom_logo', 0 ) !== $id ) {
 			set_theme_mod( 'custom_logo', $id );
 		}
+		// Backfill dimensions for logos seeded before this metadata existed
+		// (e.g. a production DB imported from an older seed) so the Site Logo
+		// block can size and display the SVG in the Site Editor.
+		pediment_seed_ensure_logo_dimensions( $id );
 		return $id;
 	}
 
@@ -398,9 +402,119 @@ function pediment_seed_demo_logo(): int {
 	}
 
 	update_post_meta( (int) $attach_id, '_pediment_seed_demo_logo', '1' );
+	pediment_seed_ensure_logo_dimensions( (int) $attach_id );
 	set_theme_mod( 'custom_logo', (int) $attach_id );
 
 	return (int) $attach_id;
+}
+
+/**
+ * Ensure an SVG logo attachment records width/height in its metadata.
+ *
+ * WordPress generates no metadata for SVG uploads, so `media_details` comes
+ * back empty over REST. The Site Logo block derives its display size from those
+ * dimensions, so without them the SVG renders fine on the front end (the
+ * `<img>` carries the block's `width`) but collapses to 0x0 in the Site Editor —
+ * making the logo look "stuck" and impossible to select or remove. Storing the
+ * intrinsic dimensions makes the logo visible and editable in the editor.
+ *
+ * Idempotent: returns early when dimensions are already present.
+ *
+ * @param int $attach_id Attachment ID.
+ */
+function pediment_seed_ensure_logo_dimensions( int $attach_id ): void {
+	$meta = wp_get_attachment_metadata( $attach_id );
+	if ( is_array( $meta ) && ! empty( $meta['width'] ) && ! empty( $meta['height'] ) ) {
+		return;
+	}
+
+	$file = get_attached_file( $attach_id );
+	if ( ! $file ) {
+		return;
+	}
+
+	$dims = pediment_seed_svg_dimensions( (string) $file );
+	if ( empty( $dims ) ) {
+		return;
+	}
+
+	$meta           = is_array( $meta ) ? $meta : array();
+	$meta['width']  = $dims['width'];
+	$meta['height'] = $dims['height'];
+	wp_update_attachment_metadata( $attach_id, $meta );
+}
+
+/**
+ * One-time migration: backfill SVG dimensions on the live Custom Logo.
+ *
+ * Sites seeded before dimension metadata existed (e.g. production databases
+ * imported from an older seed) carry a dimensionless SVG logo that renders on
+ * the front end but is invisible/unselectable in the Site Editor. Seeding only
+ * runs via WP-CLI, which admin-only hosts cannot reach, so this runs on
+ * `admin_init` instead — a theme update is enough to heal the logo.
+ *
+ * Guarded by an option so it queries the attachment at most once per site.
+ */
+function pediment_migrate_logo_svg_dimensions(): void {
+	if ( get_option( 'pediment_logo_svg_dims_migrated' ) ) {
+		return;
+	}
+
+	$logo_id = (int) get_theme_mod( 'custom_logo', 0 );
+	if ( $logo_id > 0 && 'image/svg+xml' === get_post_mime_type( $logo_id ) ) {
+		pediment_seed_ensure_logo_dimensions( $logo_id );
+	}
+
+	update_option( 'pediment_logo_svg_dims_migrated', '1' );
+}
+add_action( 'admin_init', 'pediment_migrate_logo_svg_dimensions' );
+
+/**
+ * Read the intrinsic pixel dimensions of an SVG file.
+ *
+ * Prefers the root `<svg>` element's numeric width/height attributes and falls
+ * back to the viewBox's width/height. Returns an empty array when neither
+ * yields usable dimensions.
+ *
+ * @param string $file Absolute path to the SVG file.
+ * @return array{width:int,height:int}|array{} Dimensions, or empty on failure.
+ */
+function pediment_seed_svg_dimensions( string $file ): array {
+	if ( ! is_readable( $file ) ) {
+		return array();
+	}
+
+	$svg = (string) file_get_contents( $file );
+	if ( '' === $svg || ! preg_match( '/<svg\b[^>]*>/i', $svg, $tag ) ) {
+		return array();
+	}
+	$open = $tag[0];
+
+	$read = static function ( string $attr ) use ( $open ): float {
+		if ( preg_match( '/\b' . $attr . '\s*=\s*["\']\s*([0-9.]+)/i', $open, $m ) ) {
+			return (float) $m[1];
+		}
+		return 0.0;
+	};
+
+	$width  = $read( 'width' );
+	$height = $read( 'height' );
+
+	if ( $width <= 0 || $height <= 0 ) {
+		if ( preg_match( '/\bviewBox\s*=\s*["\']\s*[-0-9.]+\s+[-0-9.]+\s+([0-9.]+)\s+([0-9.]+)/i', $open, $vb ) ) {
+			$width  = (float) $vb[1];
+			$height = (float) $vb[2];
+		}
+	}
+
+	if ( $width <= 0 || $height <= 0 ) {
+		return array();
+	}
+
+	return array(
+		'width'  => (int) round( $width ),
+		'height' => (int) round( $height ),
+	);
 }
 
 /**
