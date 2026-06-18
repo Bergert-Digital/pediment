@@ -49,4 +49,33 @@ class MegaMenuTest extends WP_UnitTestCase {
 		$html = $this->render( '{"label":"","columns":[]}' );
 		$this->assertStringContainsString( 'aria-label="Menu"', $html );
 	}
+
+	public function test_applies_preset_text_color_to_wrapper() {
+		$html = $this->render( '{"label":"Products","columns":[],"textColor":"accent"}' );
+		$this->assertMatchesRegularExpression(
+			'/<div class="[^"]*\bstarter-mega-menu\b[^"]*\bhas-text-color\b[^"]*\bhas-accent-color\b[^"]*"/',
+			$html
+		);
+	}
+
+	public function test_applies_custom_text_color_inline_style_to_wrapper() {
+		$html = $this->render( '{"label":"Products","columns":[],"style":{"color":{"text":"#ff0000"}}}' );
+		$this->assertMatchesRegularExpression(
+			'/<div class="[^"]*\bstarter-mega-menu\b[^"]*"[^>]*\bstyle="[^"]*color:\s*#ff0000/',
+			$html
+		);
+	}
+
+	public function test_applies_preset_font_size_class_to_wrapper() {
+		$html = $this->render( '{"label":"Products","columns":[],"fontSize":"sm"}' );
+		$this->assertStringContainsString( 'has-sm-font-size', $html );
+	}
+
+	public function test_applies_custom_font_size_inline_style_to_wrapper() {
+		// The wrapper carries the custom size as an inline font-size. WordPress
+		// fluid typography may wrap the value in a clamp(), so assert the size
+		// appears inside a font-size declaration rather than matching exactly.
+		$html = $this->render( '{"label":"Products","columns":[],"style":{"typography":{"fontSize":"2rem"}}}' );
+		$this->assertMatchesRegularExpression( '/\bstyle="[^"]*font-size:[^";]*2rem/', $html );
+	}
 }

@@ -37,9 +37,31 @@ $wrapper_classes = array( 'wp-block-starter-mega-menu', 'starter-mega-menu' );
 if ( ! empty( $attributes['className'] ) ) {
 	$wrapper_classes[] = (string) $attributes['className'];
 }
+
+// Apply the color/typography block supports the user sets in the editor.
+// get_block_wrapper_attributes() can't be used here (see note above), but the
+// per-feature helpers take explicit args and don't touch the WP_Block_Supports
+// static-state machine that crashes on the wp_navigation admin path. The
+// serialized classes/styles land on the wrapper; style.scss makes the trigger
+// button inherit them.
+$wrapper_styles = '';
+if ( isset( $block ) && $block instanceof WP_Block && $block->block_type ) {
+	$color = wp_apply_colors_support( $block->block_type, $attributes );
+	$typo  = wp_apply_typography_support( $block->block_type, $attributes );
+	foreach ( array( $color, $typo ) as $support ) {
+		if ( ! empty( $support['class'] ) ) {
+			$wrapper_classes[] = (string) $support['class'];
+		}
+		if ( ! empty( $support['style'] ) ) {
+			$wrapper_styles .= (string) $support['style'];
+		}
+	}
+}
+
 $wrapper = sprintf(
-	'class="%s" data-wp-interactive="pediment/mega-menu" data-wp-context="%s" data-wp-init="callbacks.init" data-wp-on--focusout="actions.onFocusOut" data-wp-on--mouseenter="actions.onPointerEnter" data-wp-on--mouseleave="actions.onPointerLeave"',
+	'class="%s"%s data-wp-interactive="pediment/mega-menu" data-wp-context="%s" data-wp-init="callbacks.init" data-wp-on--focusout="actions.onFocusOut" data-wp-on--mouseenter="actions.onPointerEnter" data-wp-on--mouseleave="actions.onPointerLeave"',
 	esc_attr( implode( ' ', $wrapper_classes ) ),
+	'' !== $wrapper_styles ? ' style="' . esc_attr( $wrapper_styles ) . '"' : '',
 	esc_attr( '{ "isOpen": false }' )
 );
 
