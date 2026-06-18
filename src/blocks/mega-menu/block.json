@@ -7,20 +7,7 @@
 	"description": "A mega-menu dropdown for the navigation: columns of icon links.",
 	"parent": [ "core/navigation" ],
 	"textdomain": "pediment",
-	"supports": {
-		"html": false,
-		"reusable": false,
-		"color": { "text": true, "background": true },
-		"typography": {
-			"fontSize": true,
-			"lineHeight": true,
-			"__experimentalFontStyle": true,
-			"__experimentalFontWeight": true,
-			"__experimentalTextTransform": true,
-			"__experimentalLetterSpacing": true,
-			"__experimentalDefaultControls": { "fontSize": true }
-		}
-	},
+	"supports": { "html": false, "reusable": false },
 	"attributes": {
 		"label": { "type": "string", "default": "" },
 		"columns": { "type": "array", "default": [] }
