@@ -1,26 +1,27 @@
 .starter-mega-menu {
   position: relative;
-  /* Default trigger color lives on the wrapper, not the button, so the
-     color/typography block supports (serialized onto this wrapper by
-     render.php) cascade into the trigger. The button inherits both color
-     and font below, so anything set in the editor wins over this default. */
-  color: var(--wp--preset--color--foreground-muted);
+  /* No resting color on the wrapper: it inherits the Navigation block's text
+     color, so the trigger tracks its sibling nav links (foreground by default,
+     or whatever Text color is set on the Navigation block in the editor). A
+     color set on the mega-menu block itself still wins — render.php serializes
+     it onto this wrapper, overriding the inherited value. */
 
   &__trigger {
     background: none;
     border: 0;
     padding: 0;
-    /* Inherit the wrapper's color/typography — the editor-set block supports
-       land there, and this keeps the trigger in sync with them. */
+    /* Inherit color + typography from the wrapper (and thus the Navigation
+       block) so the trigger matches its sibling nav links. */
     font: inherit;
     color: inherit;
     cursor: pointer;
     transition: color 0.15s ease;
 
+    /* Match the sibling nav-link hover/focus colour (accent). */
     &:hover,
     &:focus-visible,
     &[aria-expanded="true"] {
-      color: var(--wp--preset--color--foreground);
+      color: var(--wp--preset--color--accent);
     }
   }
 
