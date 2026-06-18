@@ -1,5 +1,23 @@
 # Changelog
 
+## [0.6.0](https://github.com/Bergert-Digital/Pediment/compare/v0.5.2...v0.6.0) (2026-06-18)
+
+
+### Features
+
+* **mega-menu:** honor editor color & typography on the trigger ([6906b89](https://github.com/Bergert-Digital/Pediment/commit/6906b89f55ff2985fe486b45786bd5a9c3cc2c1e))
+* **mega-menu:** trigger follows Navigation block text color ([#26](https://github.com/Bergert-Digital/Pediment/issues/26)) ([0fe8174](https://github.com/Bergert-Digital/Pediment/commit/0fe817480374f316f334bf9915ab88c65ee2e9ed))
+
+
+### Bug Fixes
+
+* **mega-menu:** inherit nav text color on trigger ([a44d5db](https://github.com/Bergert-Digital/Pediment/commit/a44d5dbe82515f4762c6a19cacf9c5785c271902))
+
+
+### Refactors
+
+* **mega-menu:** drop the trigger's own color/typography supports ([c6f1e23](https://github.com/Bergert-Digital/Pediment/commit/c6f1e2343fbcea11bc8980df6fd40e10a4ba45eb))
+
 ## [0.5.2](https://github.com/Bergert-Digital/Pediment/compare/v0.5.1...v0.5.2) (2026-06-17)
 
 
