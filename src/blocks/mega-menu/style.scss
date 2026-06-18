@@ -1,16 +1,19 @@
 .starter-mega-menu {
   position: relative;
+  /* Default trigger color lives on the wrapper, not the button, so the
+     color/typography block supports (serialized onto this wrapper by
+     render.php) cascade into the trigger. The button inherits both color
+     and font below, so anything set in the editor wins over this default. */
+  color: var(--wp--preset--color--foreground-muted);
 
   &__trigger {
     background: none;
     border: 0;
     padding: 0;
+    /* Inherit the wrapper's color/typography — the editor-set block supports
+       land there, and this keeps the trigger in sync with them. */
     font: inherit;
-    /* Match sibling nav links: muted by default, ink on hover/open.
-       The trigger isn't a .wp-block-navigation-item__content, so it
-       doesn't inherit the doubled-class color override applied in
-       assets/css/theme.css. */
-    color: var(--wp--preset--color--foreground-muted);
+    color: inherit;
     cursor: pointer;
     transition: color 0.15s ease;
 
@@ -22,6 +25,11 @@
   }
 
   &__panel {
+    /* Insulate the dropdown from the trigger's typography: block-supports
+       font-size lands on the wrapper, but the panel keeps its own base size
+       (matching the nav default) so setting the trigger size doesn't balloon
+       the link labels while the heading/description stay fixed. */
+    font-size: var(--wp--preset--font-size--sm);
     position: absolute;
     left: 50%;
     top: calc(100% + 0.75rem);
