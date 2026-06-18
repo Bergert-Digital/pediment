@@ -37,6 +37,7 @@ $wrapper_classes = array( 'wp-block-starter-mega-menu', 'starter-mega-menu' );
 if ( ! empty( $attributes['className'] ) ) {
 	$wrapper_classes[] = (string) $attributes['className'];
 }
+
 $wrapper = sprintf(
 	'class="%s" data-wp-interactive="pediment/mega-menu" data-wp-context="%s" data-wp-init="callbacks.init" data-wp-on--focusout="actions.onFocusOut" data-wp-on--mouseenter="actions.onPointerEnter" data-wp-on--mouseleave="actions.onPointerLeave"',
 	esc_attr( implode( ' ', $wrapper_classes ) ),
