@@ -68,8 +68,8 @@ Blocks auto-register from `build/blocks/<name>/` via
 
 Image + placeholder markup reuses `media-text/render.php`'s approach (alt override,
 `large` size, inline SVG fallback so the layout stays meaningful before an image is
-set). The `index` in `data-wp-context` is a placeholder `0`; the real per-slide
-index is assigned client-side by DOM order in `view.ts` `init` (see Interactivity).
+set). The slide is a context-free template — it carries no per-slide directives; the
+parent's `view.ts` drives active state imperatively by DOM order (see Interactivity).
 
 ### `slider/render.php`
 
@@ -78,31 +78,42 @@ index is assigned client-side by DOM order in `view.ts` `init` (see Interactivit
          style="--slide-panel-bg:{color}; --slide-panel-fg:{light|dark token}"
          data-wp-interactive="pediment/slider"
          data-wp-context='{"active":0,"count":N}'
-         role="group" aria-roledescription="carousel">
+         data-wp-init="callbacks.init"
+         data-wp-watch="callbacks.render"
+         data-wp-on--keydown="actions.onKeydown"
+         role="group" aria-roledescription="carousel" tabindex="-1">
   <div class="starter-slider__track">{$content = rendered slides}</div>
   <button class="starter-slider__arrow starter-slider__arrow--prev"
           aria-label="Vorherige Folie" data-wp-on--click="actions.prev">‹</button>
   <button class="starter-slider__arrow starter-slider__arrow--next"
           aria-label="Nächste Folie" data-wp-on--click="actions.next">›</button>
   <div class="starter-slider__dots" role="tablist" aria-label="Folien">
-    {N dot <button>s, each with data-wp-context index, aria-label "Folie i von N"}
+    {N dot <button class="starter-slider__dot" data-index="i"
+       data-wp-on--click="actions.goTo" aria-label="Gehe zu Folie i">}
   </div>
-  <p class="screen-reader-text" aria-live="polite" data-wp-text="state.liveLabel"></p>
+  <p class="starter-slider__live screen-reader-text" aria-live="polite"></p>
 </section>
 ```
 
-- Slide count `N` = `count( $block->parsed_block['innerBlocks'] )`.
-- Dots generated server-side (one `<button>` per slide). Each dot carries its
-  index via `data-wp-context='{"index":i}'`, binds active/`aria-selected` state,
-  and `data-wp-on--click="actions.goTo"`.
+- Slide count `N` = `count( $block->inner_blocks )` (or the parsed inner-block list).
+- Dots generated server-side (one `<button>` per slide), each with a `data-index`
+  HTML attribute and `data-wp-on--click="actions.goTo"`.
 
-**Slide indexing — decision:** indices are assigned client-side by DOM order in the
-`view.ts` `init` callback. Neither `slide/render.php` nor the dots need PHP to know
-their position; `init` walks the slider's `.starter-slide` children in order and
-seeds each slide's context `index` (and verifies the dot order matches). This avoids
-any cross-block / request-scoped PHP state and keeps `slide/render.php` a pure,
-context-free template. DOM order is the source of truth, which is exactly what the
-visual order is.
+**Active-state model — decision:** active/inactive is driven **imperatively by DOM
+order**, not per-slide reactive context. The slider root's `callbacks.render`
+(wired via `data-wp-watch`, so it re-runs whenever `context.active` changes) walks
+`.starter-slide` and `.starter-slider__dot` children in document order and toggles
+`is-active` / `aria-hidden` on the slide at `active` and `is-current` /
+`aria-selected` / `aria-current` on the matching dot, and writes
+`"{active+1} / {N}"` into the `.starter-slider__live` region. This keeps
+`slide/render.php` a pure, context-free template and makes DOM order the single
+source of truth — exactly the visual order. No per-slide `data-wp-context`/`index`
+is needed; `goTo` reads the clicked dot's `data-index`.
+
+**Progressive enhancement:** `callbacks.init` adds an `is-enhanced` class to the
+slider root. CSS only stacks slides / hides controls when `.is-enhanced` is present,
+so without JS the slides render as a readable vertical stack of cards (and the
+non-functional arrows/dots stay hidden).
 
 ### Panel color & text contrast
 
@@ -121,11 +132,12 @@ the panel, outer corners following the card).
 
 - `.starter-slider`: un-clipped outer wrapper — positioning context for the
   overlaid arrows and the dots row below the card. No rounding/overflow itself.
-- `.starter-slider__track`: the **card** — slides stacked in the same grid cell;
-  only `.starter-slide.is-active` is visible (fade via `opacity`/`visibility`).
-  Carries the **`--r-panel` rounding + `box-shadow: var(--wp--preset--shadow--medium)`**
-  and `overflow: hidden` so the full-bleed image and panel clip to the rounded
-  corners.
+- `.starter-slider__track`: the **card** — carries the **`--r-panel` rounding +
+  `box-shadow: var(--wp--preset--shadow--medium)`** and `overflow: hidden` so the
+  full-bleed image and panel clip to the rounded corners. Only when the root is
+  `.is-enhanced` (JS present) are slides stacked in the same grid cell with only
+  `.starter-slide.is-active` visible (fade via `opacity`/`visibility`); without JS
+  the slides flow as a vertical stack of cards.
 - `.starter-slide`: `display: grid; grid-template-columns: 1fr 1fr;
   align-items: stretch` (both halves full height). `.is-media-left` /
   `.is-media-right` on the parent control image `order`. Panel uses
@@ -143,29 +155,34 @@ the panel, outer corners following the card).
 - Arrows: pill/circle buttons using theme tokens; `:focus-visible` outline.
   Absolutely positioned on `.starter-slider` (the un-clipped wrapper), vertically
   centered, overlaid near the card's left/right edges — so they're never clipped by
-  the card's `overflow: hidden`.
-- Dots: small round buttons centered in a row below the card; active dot filled
-  with accent.
+  the card's `overflow: hidden`. Hidden unless `.is-enhanced`.
+- Dots: small round buttons centered in a row below the card; `.is-current` dot
+  filled with accent. Hidden unless `.is-enhanced`.
 - **No color literals** — only theme presets / CSS vars (satisfies `lint:colors`).
 
 ## Interactivity (`slider/view.ts`, WordPress Interactivity API)
 
-Same stack as `mega-menu`'s `view.ts`.
+Same stack as `mega-menu`'s `view.ts` (`@wordpress/interactivity`).
 
-- Store `pediment/slider`. Parent context `{ active, count }`; slides/dots carry
-  their own `{ index }`.
-- Actions:
+- Store `pediment/slider`. Root context `{ active, count }` only — no per-slide or
+  per-dot context.
+- Actions (mutate `context.active`; the `data-wp-watch` render callback reacts):
   - `next()` — `active = (active + 1) % count` (wrap-around).
   - `prev()` — `active = (active - 1 + count) % count`.
-  - `goTo()` — set `active` to the clicked dot's `index`.
-- State (derived):
-  - `isActive` — slide's `index === parent.active`.
-  - `isCurrentDot` — dot's `index === parent.active` (drives active class +
-    `aria-selected`/`aria-current`).
-  - `liveLabel` — `"Folie {active+1} von {count}"` for the polite live region.
-- Keyboard: ArrowLeft / ArrowRight move when focus is within the slider (handled in
-  an `init` callback document/root listener scoped to the slider root). Arrows and
-  dots are real `<button>`s, so Tab + Enter/Space work natively.
+  - `goTo()` — `active = Number(getElement().ref.dataset.index)` (clicked dot's
+    `data-index`), clamped into range.
+  - `onKeydown(event)` — ArrowRight → `next()`, ArrowLeft → `prev()`; ignore other
+    keys. Bound on the root via `data-wp-on--keydown`, so it fires when focus is
+    anywhere within the slider.
+- Callbacks:
+  - `init()` — add `is-enhanced` to the root, then call the shared `render` logic
+    for the initial paint.
+  - `render()` — wired via `data-wp-watch`; reads `context.active`, then walks
+    `.starter-slide` and `.starter-slider__dot` children in DOM order and applies
+    `is-active`/`aria-hidden` to the active slide, `is-current`/`aria-selected`/
+    `aria-current` to the active dot, and writes `"{active+1} / {count}"` into
+    `.starter-slider__live`.
+- Arrows and dots are real `<button>`s, so Tab + Enter/Space work natively.
 - No autoplay (per decision) — no timers, no `prefers-reduced-motion` handling
   required.
 
