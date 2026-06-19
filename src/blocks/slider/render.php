@@ -57,22 +57,18 @@ $wrapper = get_block_wrapper_attributes(
 	)
 );
 
+$context = wp_json_encode(
+	array(
+		'active' => 0,
+		'count'  => $count,
+	)
+);
+
 ob_start();
 ?>
 <section <?php echo $wrapper; // phpcs:ignore WordPress.Security.EscapeOutput ?>
 	data-wp-interactive="pediment/slider"
-	data-wp-context='
-	<?php
-	echo esc_attr(
-		wp_json_encode(
-			array(
-				'active' => 0,
-				'count'  => $count,
-			)
-		)
-	);
-	?>
-	'
+	data-wp-context='<?php echo esc_attr( $context ); ?>'
 	data-wp-init="callbacks.init"
 	data-wp-watch="callbacks.render"
 	data-wp-on--keydown="actions.onKeydown"
