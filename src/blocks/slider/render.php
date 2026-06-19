@@ -76,14 +76,14 @@ ob_start();
 	<div class="starter-slider__track">
 		<?php echo $content; // phpcs:ignore WordPress.Security.EscapeOutput -- inner blocks pre-rendered ?>
 	</div>
+	<?php if ( $count > 1 ) : ?>
 	<button type="button" class="starter-slider__arrow starter-slider__arrow--prev" aria-label="<?php esc_attr_e( 'Vorherige Folie', 'pediment' ); ?>" data-wp-on--click="actions.prev">
 		<span aria-hidden="true">&lsaquo;</span>
 	</button>
 	<button type="button" class="starter-slider__arrow starter-slider__arrow--next" aria-label="<?php esc_attr_e( 'Nächste Folie', 'pediment' ); ?>" data-wp-on--click="actions.next">
 		<span aria-hidden="true">&rsaquo;</span>
 	</button>
-	<?php if ( $count > 1 ) : ?>
-		<div class="starter-slider__pagination" role="tablist" aria-label="<?php esc_attr_e( 'Folien', 'pediment' ); ?>">
+		<div class="starter-slider__pagination" role="group" aria-label="<?php esc_attr_e( 'Folien', 'pediment' ); ?>">
 			<?php for ( $i = 0; $i < $count; $i++ ) : ?>
 				<button type="button" class="starter-slider__dot" data-index="<?php echo esc_attr( (string) $i ); ?>" data-wp-on--click="actions.goTo" aria-label="<?php echo esc_attr( sprintf( /* translators: %d: slide number */ __( 'Gehe zu Folie %d', 'pediment' ), $i + 1 ) ); ?>"></button>
 			<?php endfor; ?>

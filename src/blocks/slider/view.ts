@@ -20,12 +20,12 @@ const paint = ( root: HTMLElement, active: number ) => {
 		const on = i === active;
 		slide.classList.toggle( 'is-active', on );
 		slide.setAttribute( 'aria-hidden', on ? 'false' : 'true' );
+		slide.toggleAttribute( 'inert', ! on );
 	} );
 
 	dots.forEach( ( dot, i ) => {
 		const on = i === active;
 		dot.classList.toggle( 'is-current', on );
-		dot.setAttribute( 'aria-selected', on ? 'true' : 'false' );
 		if ( on ) {
 			dot.setAttribute( 'aria-current', 'true' );
 		} else {
@@ -57,8 +57,10 @@ const { actions } = store( 'pediment/slider', {
 		},
 		onKeydown( event: KeyboardEvent ) {
 			if ( event.key === 'ArrowRight' ) {
+				event.preventDefault();
 				actions.next();
 			} else if ( event.key === 'ArrowLeft' ) {
+				event.preventDefault();
 				actions.prev();
 			}
 		},
