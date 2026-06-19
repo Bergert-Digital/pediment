@@ -1,0 +1,70 @@
+.starter-slide {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  align-items: stretch;
+
+  &__media {
+    margin: 0;
+    position: relative;
+  }
+
+  &__img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    aspect-ratio: 4 / 3;
+    object-fit: cover;
+  }
+
+  &__replace {
+    display: block;
+    padding: 0;
+    border: 0;
+    background: none;
+    cursor: pointer;
+    width: 100%;
+    height: 100%;
+  }
+
+  // Front-end stand-in shown until an image is uploaded.
+  &__placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    aspect-ratio: 4 / 3;
+    background: var(--wp--preset--color--accent-tint);
+    color: var(--wp--preset--color--foreground-muted);
+
+    svg {
+      width: 2.75rem;
+      height: 2.75rem;
+    }
+  }
+
+  &__panel {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: var(--wp--preset--spacing--20);
+    padding: clamp(28px, 4vw, 56px);
+    background: var(--slide-panel-bg, var(--wp--preset--color--primary));
+    color: var(--slide-panel-fg, var(--wp--preset--color--surface));
+
+    > :first-child { margin-top: 0; }
+    > :last-child { margin-bottom: 0; }
+
+    // Headings inherit the computed panel foreground.
+    h1, h2, h3, h4, h5, h6 { color: inherit; }
+  }
+}
+
+@media (max-width: 781px) {
+  .starter-slide {
+    grid-template-columns: 1fr;
+
+    &__img,
+    &__placeholder { aspect-ratio: 16 / 9; }
+  }
+}

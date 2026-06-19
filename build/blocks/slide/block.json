@@ -1,0 +1,31 @@
+{
+  "$schema": "https://schemas.wp.org/trunk/block.json",
+  "apiVersion": 3,
+  "name": "pediment/slide",
+  "title": "Slide",
+  "category": "pediment",
+  "description": "A single slide: a full-bleed image beside a colored content panel. Used inside a Slider.",
+  "parent": [
+    "pediment/slider"
+  ],
+  "textdomain": "pediment",
+  "supports": {
+    "html": false,
+    "inserter": false,
+    "reusable": false
+  },
+  "attributes": {
+    "mediaId": {
+      "type": "number",
+      "default": 0
+    },
+    "altOverride": {
+      "type": "string",
+      "default": ""
+    }
+  },
+  "editorScript": "file:./index.js",
+  "editorStyle": "file:./style-index.css",
+  "style": "file:./style-index.css",
+  "render": "file:./render.php"
+}
