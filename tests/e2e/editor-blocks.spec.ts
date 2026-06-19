@@ -11,6 +11,7 @@ const BLOCKS_TO_VERIFY: Array<{ name: string; cls: string; markup: string }> = [
   { name: 'stat',         cls: 'starter-stat',         markup: '<!-- wp:pediment/stat {"value":"V","label":"L"} /-->' },
   { name: 'blog-index',   cls: 'starter-blog-index',   markup: '<!-- wp:pediment/blog-index {"count":3} /-->' },
   { name: 'contact-form', cls: 'starter-contact-form', markup: '<!-- wp:pediment/contact-form /-->' },
+  { name: 'slider', cls: 'starter-slider', markup: '<!-- wp:pediment/slider --><!-- wp:pediment/slide --><!-- wp:paragraph --><p>x</p><!-- /wp:paragraph --><!-- /wp:pediment/slide --><!-- /wp:pediment/slider -->' },
 ];
 
 const SLUG = 'e2e-block-kitchen-sink';
