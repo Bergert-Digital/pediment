@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.7.0](https://github.com/Bergert-Digital/Pediment/compare/v0.6.0...v0.7.0) (2026-06-19)
+
+
+### Features
+
+* single post template + retire manual update-check panel ([#30](https://github.com/Bergert-Digital/Pediment/issues/30)) ([25d6232](https://github.com/Bergert-Digital/Pediment/commit/25d62322c21e94e7db972f2ab4770a6e9b082506))
+* **single:** proper single post template with editorial masthead ([#29](https://github.com/Bergert-Digital/Pediment/issues/29)) ([88fa9fd](https://github.com/Bergert-Digital/Pediment/commit/88fa9fd5a9c7bcfeb138ebdc0f99c413288246b5))
+
+
+### Refactors
+
+* **updates:** retire manual "Check for theme updates" panel ([#28](https://github.com/Bergert-Digital/Pediment/issues/28)) ([c6b6742](https://github.com/Bergert-Digital/Pediment/commit/c6b67423652c3de364dd211197c2ade9c05e7134))
+
 ## [0.6.0](https://github.com/Bergert-Digital/Pediment/compare/v0.5.2...v0.6.0) (2026-06-18)
 
 
