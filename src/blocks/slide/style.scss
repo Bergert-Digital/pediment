@@ -60,11 +60,25 @@
   }
 }
 
+// Image side. The `is-media-*` modifier lives on the `.starter-slider` ancestor.
+// Default (is-media-left) keeps DOM order — image left, panel right — so only the
+// flipped case needs rules: put the panel first (left) and the media second (right).
+.starter-slider.is-media-right {
+  .starter-slide__panel { order: 1; }
+  .starter-slide__media { order: 2; }
+}
+
 @media (max-width: 781px) {
   .starter-slide {
     grid-template-columns: 1fr;
 
     &__img,
     &__placeholder { aspect-ratio: 16 / 9; }
+  }
+
+  // Single column: always stack image on top, regardless of the desktop side.
+  .starter-slider.is-media-right {
+    .starter-slide__media { order: -1; }
+    .starter-slide__panel { order: 0; }
   }
 }

@@ -12,6 +12,25 @@ const slider = ( page: Page ) => page.locator( '.starter-slider' );
 const activeHeading = ( page: Page ) =>
 	page.locator( '.starter-slide.is-active h2' );
 
+// Left edges of the active slide's image column and panel — used to assert the
+// image-side toggle actually flips the layout (not just sets a class).
+async function activeMediaPanelX(
+	page: Page
+): Promise< { mediaX: number; panelX: number } > {
+	const media = await page
+		.locator( '.starter-slide.is-active .starter-slide__media' )
+		.first()
+		.boundingBox();
+	const panel = await page
+		.locator( '.starter-slide.is-active .starter-slide__panel' )
+		.first()
+		.boundingBox();
+	if ( ! media || ! panel ) {
+		throw new Error( 'active slide media/panel not found' );
+	}
+	return { mediaX: media.x, panelX: panel.x };
+}
+
 test.describe( 'image/content slider', () => {
 	test.beforeAll( () => {
 		deletePageBySlug( SLUG );
@@ -30,6 +49,10 @@ test.describe( 'image/content slider', () => {
 
 		await expect( slider( page ) ).toHaveClass( /is-enhanced/ );
 		await expect( activeHeading( page ) ).toHaveText( 'Slide 1' );
+
+		// Default (is-media-left): image column sits to the left of the panel.
+		const { mediaX, panelX } = await activeMediaPanelX( page );
+		expect( mediaX ).toBeLessThan( panelX );
 
 		await slider( page ).locator( '.starter-slider__arrow--next' ).click();
 		await expect( activeHeading( page ) ).toHaveText( 'Slide 2' );
@@ -91,5 +114,10 @@ test.describe( 'image/content slider', () => {
 			'background-color',
 			'rgb(14, 116, 144)'
 		);
+
+		// is-media-right must actually flip the layout: the image column sits to
+		// the RIGHT of the panel (regression guard — a class alone is not enough).
+		const { mediaX, panelX } = await activeMediaPanelX( page );
+		expect( mediaX ).toBeGreaterThan( panelX );
 	} );
 } );
