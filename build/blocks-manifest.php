@@ -779,6 +779,78 @@ return array(
 		'style' => 'file:./style-index.css',
 		'render' => 'file:./render.php'
 	),
+	'slider' => array(
+		'$schema' => 'https://schemas.wp.org/trunk/block.json',
+		'apiVersion' => 3,
+		'name' => 'pediment/slider',
+		'title' => 'Slider',
+		'category' => 'pediment',
+		'description' => 'An image/content slider: one slide at a time, each pairing a full-bleed image with a colored content panel. Contains Slide child blocks.',
+		'textdomain' => 'pediment',
+		'supports' => array(
+			'html' => false,
+			'align' => array(
+				'wide',
+				'full'
+			)
+		),
+		'attributes' => array(
+			'mediaPosition' => array(
+				'type' => 'string',
+				'default' => 'left'
+			),
+			'panelColor' => array(
+				'type' => 'string',
+				'default' => '#0A1B33'
+			)
+		),
+		'example' => array(
+			'innerBlocks' => array(
+				array(
+					'name' => 'pediment/slide',
+					'innerBlocks' => array(
+						array(
+							'name' => 'core/heading',
+							'attributes' => array(
+								'level' => 2,
+								'content' => 'Lebenslanges Lernen'
+							)
+						),
+						array(
+							'name' => 'core/paragraph',
+							'attributes' => array(
+								'content' => 'Wir bringen unser eigenes Organismus immer auf den neuesten Stand.'
+							)
+						)
+					)
+				),
+				array(
+					'name' => 'pediment/slide',
+					'innerBlocks' => array(
+						array(
+							'name' => 'core/heading',
+							'attributes' => array(
+								'level' => 2,
+								'content' => 'Gemeinsam wachsen'
+							)
+						),
+						array(
+							'name' => 'core/paragraph',
+							'attributes' => array(
+								'content' => 'Tägliche Team-Updates und ein intensiver Austausch.'
+							)
+						)
+					)
+				)
+			),
+			'viewportWidth' => 1280
+		),
+		'editorScript' => 'file:./index.js',
+		'editorStyle' => 'file:./style-index.css',
+		'style' => 'file:./style-index.css',
+		'viewScriptModule' => 'file:./view.js',
+		'render' => 'file:./render.php'
+	),
 	'social-links' => array(
 		'$schema' => 'https://schemas.wp.org/trunk/block.json',
 		'apiVersion' => 3,

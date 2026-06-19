@@ -1,0 +1,72 @@
+{
+  "$schema": "https://schemas.wp.org/trunk/block.json",
+  "apiVersion": 3,
+  "name": "pediment/slider",
+  "title": "Slider",
+  "category": "pediment",
+  "description": "An image/content slider: one slide at a time, each pairing a full-bleed image with a colored content panel. Contains Slide child blocks.",
+  "textdomain": "pediment",
+  "supports": {
+    "html": false,
+    "align": [
+      "wide",
+      "full"
+    ]
+  },
+  "attributes": {
+    "mediaPosition": {
+      "type": "string",
+      "default": "left"
+    },
+    "panelColor": {
+      "type": "string",
+      "default": "#0A1B33"
+    }
+  },
+  "example": {
+    "innerBlocks": [
+      {
+        "name": "pediment/slide",
+        "innerBlocks": [
+          {
+            "name": "core/heading",
+            "attributes": {
+              "level": 2,
+              "content": "Lebenslanges Lernen"
+            }
+          },
+          {
+            "name": "core/paragraph",
+            "attributes": {
+              "content": "Wir bringen unser eigenes Organismus immer auf den neuesten Stand."
+            }
+          }
+        ]
+      },
+      {
+        "name": "pediment/slide",
+        "innerBlocks": [
+          {
+            "name": "core/heading",
+            "attributes": {
+              "level": 2,
+              "content": "Gemeinsam wachsen"
+            }
+          },
+          {
+            "name": "core/paragraph",
+            "attributes": {
+              "content": "Tägliche Team-Updates und ein intensiver Austausch."
+            }
+          }
+        ]
+      }
+    ],
+    "viewportWidth": 1280
+  },
+  "editorScript": "file:./index.js",
+  "editorStyle": "file:./style-index.css",
+  "style": "file:./style-index.css",
+  "viewScriptModule": "file:./view.js",
+  "render": "file:./render.php"
+}
