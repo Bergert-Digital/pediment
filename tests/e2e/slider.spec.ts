@@ -15,9 +15,11 @@ const activeHeading = ( page: Page ) =>
 test.describe( 'image/content slider', () => {
 	test.beforeAll( () => {
 		deletePageBySlug( SLUG );
+		deletePageBySlug( SLUG + '-color' );
 	} );
 	test.afterAll( () => {
 		deletePageBySlug( SLUG );
+		deletePageBySlug( SLUG + '-color' );
 	} );
 
 	test( 'enhances, shows first slide, and next/prev wrap around', async ( {
@@ -69,5 +71,25 @@ test.describe( 'image/content slider', () => {
 		await expect( activeHeading( page ) ).toHaveText( 'Slide 2' );
 		await page.keyboard.press( 'ArrowLeft' );
 		await expect( activeHeading( page ) ).toHaveText( 'Slide 1' );
+	} );
+
+	test( 'panel color and image side apply on the front end', async ( {
+		page,
+	} ) => {
+		const markup = `<!-- wp:pediment/slider {"mediaPosition":"right","panelColor":"#0E7490"} -->${ SLIDE(
+			1
+		) }${ SLIDE( 2 ) }<!-- /wp:pediment/slider -->`;
+		const url = createPageWithContent( SLUG + '-color', 'Slider', markup );
+		await page.goto( url );
+
+		await expect( slider( page ) ).toHaveClass( /is-media-right/ );
+		const panel = page
+			.locator( '.starter-slide.is-active .starter-slide__panel' )
+			.first();
+		// --slide-panel-bg cascades to the panel background.
+		await expect( panel ).toHaveCSS(
+			'background-color',
+			'rgb(14, 116, 144)'
+		);
 	} );
 } );

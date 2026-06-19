@@ -71,4 +71,19 @@ class SliderTest extends WP_UnitTestCase {
 		$this->assertStringContainsString( 'is-media-right', $html );
 		$this->assertStringNotContainsString( 'is-media-left', $html );
 	}
+
+	public function test_slider_applies_panel_color_to_css_var() {
+		$html = $this->slider( '{"panelColor":"#0E7490"}' );
+		$this->assertStringContainsString( '--slide-panel-bg:#0E7490', $html );
+	}
+
+	public function test_dark_panel_gets_light_text_token() {
+		$html = $this->slider( '{"panelColor":"#0A1B33"}' );
+		$this->assertStringContainsString( '--slide-panel-fg:var(--wp--preset--color--surface)', $html );
+	}
+
+	public function test_light_panel_gets_dark_text_token() {
+		$html = $this->slider( '{"panelColor":"#E1F1F6"}' );
+		$this->assertStringContainsString( '--slide-panel-fg:var(--wp--preset--color--foreground)', $html );
+	}
 }

@@ -1,4 +1,11 @@
-import { useBlockProps, useInnerBlocksProps } from '@wordpress/block-editor';
+import { __ } from '@wordpress/i18n';
+import {
+	useBlockProps,
+	useInnerBlocksProps,
+	InspectorControls,
+	PanelColorSettings,
+} from '@wordpress/block-editor';
+import { PanelBody, ToggleControl } from '@wordpress/components';
 
 type Attrs = {
 	mediaPosition: string;
@@ -13,6 +20,7 @@ const TEMPLATE: [ string, Record< string, unknown > ][] = [
 
 export default function Edit( {
 	attributes,
+	setAttributes,
 }: {
 	attributes: Attrs;
 	setAttributes: ( a: Partial< Attrs > ) => void;
@@ -31,5 +39,40 @@ export default function Edit( {
 		templateLock: false,
 		orientation: 'vertical',
 	} );
-	return <section { ...innerProps } />;
+
+	return (
+		<>
+			<InspectorControls>
+				<PanelBody title={ __( 'Layout', 'pediment' ) }>
+					<ToggleControl
+						label={ __( 'Image on the left', 'pediment' ) }
+						checked={ position === 'left' }
+						onChange={ ( v ) =>
+							setAttributes( {
+								mediaPosition: v ? 'left' : 'right',
+							} )
+						}
+						help={ __(
+							'Off places the image on the right of every slide.',
+							'pediment'
+						) }
+					/>
+				</PanelBody>
+			</InspectorControls>
+			<InspectorControls group="color">
+				<PanelColorSettings
+					title={ __( 'Panel', 'pediment' ) }
+					colorSettings={ [
+						{
+							value: attributes.panelColor,
+							onChange: ( c?: string ) =>
+								setAttributes( { panelColor: c || '#0A1B33' } ),
+							label: __( 'Panel background', 'pediment' ),
+						},
+					] }
+				/>
+			</InspectorControls>
+			<section { ...innerProps } />
+		</>
+	);
 }
