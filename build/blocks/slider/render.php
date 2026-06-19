@@ -34,7 +34,7 @@ if ( ! function_exists( 'pediment_slider_panel_fg' ) ) {
 }
 
 $position = ( isset( $attributes['mediaPosition'] ) && 'right' === $attributes['mediaPosition'] ) ? 'right' : 'left';
-$bg       = isset( $attributes['panelColor'] ) ? (string) $attributes['panelColor'] : '#0A1B33';
+$bg       = isset( $attributes['panelColor'] ) ? (string) $attributes['panelColor'] : 'var(--wp--preset--color--primary)';
 
 /**
  * Pick a readable foreground token for a panel background. Parses a #hex color,
@@ -61,7 +61,18 @@ ob_start();
 ?>
 <section <?php echo $wrapper; // phpcs:ignore WordPress.Security.EscapeOutput ?>
 	data-wp-interactive="pediment/slider"
-	data-wp-context='<?php echo esc_attr( wp_json_encode( array( 'active' => 0, 'count' => $count ) ) ); ?>'
+	data-wp-context='
+	<?php
+	echo esc_attr(
+		wp_json_encode(
+			array(
+				'active' => 0,
+				'count'  => $count,
+			)
+		)
+	);
+	?>
+	'
 	data-wp-init="callbacks.init"
 	data-wp-watch="callbacks.render"
 	data-wp-on--keydown="actions.onKeydown"
