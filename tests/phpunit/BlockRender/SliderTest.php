@@ -118,4 +118,18 @@ class SliderTest extends WP_UnitTestCase {
 		$this->assertStringContainsString( 'starter-slider', $html );
 		$this->assertStringNotContainsString( 'starter-slide__panel', $html );
 	}
+
+	public function test_whitespace_only_fields_are_omitted() {
+		$html = $this->slider(
+			array(
+				'slides' => array(
+					array( 'eyebrow' => '   ', 'heading' => 'H', 'body' => "  \n ", 'buttonText' => ' ', 'buttonUrl' => '/x' ),
+				),
+			)
+		);
+		$this->assertStringNotContainsString( 'starter-slide__eyebrow', $html );
+		$this->assertStringNotContainsString( 'starter-slide__body', $html );
+		$this->assertStringNotContainsString( 'starter-slide__button', $html );
+		$this->assertStringContainsString( '<h2 class="starter-slide__heading">H</h2>', $html );
+	}
 }

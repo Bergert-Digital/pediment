@@ -282,7 +282,7 @@ export default function Edit( {
 									commit(
 										slides.filter( ( _, idx ) => idx !== i )
 									);
-									setActive( 0 );
+									setActive( Math.max( 0, i - 1 ) );
 								} }
 							>
 								{ __( 'Remove slide', 'pediment' ) }
@@ -404,6 +404,11 @@ export default function Edit( {
 								</div>
 							</>
 						) }
+						<p className="starter-slider__count">
+							{ `${ __( 'Slide', 'pediment' ) } ${
+								activeIndex + 1
+							} / ${ slides.length }` }
+						</p>
 					</>
 				) }
 			</div>

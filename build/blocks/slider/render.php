@@ -103,16 +103,16 @@ ob_start();
 					<?php endif; ?>
 				</figure>
 				<div class="starter-slide__panel">
-					<?php if ( '' !== $eyebrow ) : ?>
+					<?php if ( '' !== trim( $eyebrow ) ) : ?>
 						<p class="starter-slide__eyebrow"><?php echo esc_html( $eyebrow ); ?></p>
 					<?php endif; ?>
-					<?php if ( '' !== $heading ) : ?>
+					<?php if ( '' !== trim( $heading ) ) : ?>
 						<h2 class="starter-slide__heading"><?php echo esc_html( $heading ); ?></h2>
 					<?php endif; ?>
-					<?php if ( '' !== $body ) : ?>
+					<?php if ( '' !== trim( $body ) ) : ?>
 						<p class="starter-slide__body"><?php echo nl2br( esc_html( $body ) ); // phpcs:ignore WordPress.Security.EscapeOutput -- esc_html escaped; nl2br only inserts <br /> ?></p>
 					<?php endif; ?>
-					<?php if ( '' !== $btn_text && '' !== $btn_url ) : ?>
+					<?php if ( '' !== trim( $btn_text ) && '' !== trim( $btn_url ) ) : ?>
 						<a class="starter-slide__button" href="<?php echo esc_url( $btn_url ); ?>"><?php echo esc_html( $btn_text ); ?></a>
 					<?php endif; ?>
 				</div>
