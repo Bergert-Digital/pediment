@@ -64,6 +64,7 @@ ob_start();
 	data-wp-on--keydown="actions.onKeydown"
 	role="group" aria-roledescription="carousel" tabindex="-1">
 	<div class="starter-slider__track">
+		<div class="starter-slider__rail">
 		<?php
 		foreach ( $slides as $slide ) :
 			$media_id     = isset( $slide['mediaId'] ) ? (int) $slide['mediaId'] : 0;
@@ -82,8 +83,11 @@ ob_start();
 					'large',
 					false,
 					array(
-						'alt'   => $alt,
-						'class' => 'starter-slide__img',
+						'alt'     => $alt,
+						'class'   => 'starter-slide__img',
+						// Eager-load so sliding to a slide never reveals a blank
+						// frame while a lazy image fetches.
+						'loading' => 'eager',
 					)
 				);
 			}
@@ -120,6 +124,7 @@ ob_start();
 			<?php
 		endforeach;
 		?>
+		</div>
 	</div>
 	<?php if ( $count > 1 ) : ?>
 	<button type="button" class="starter-slider__arrow starter-slider__arrow--prev" aria-label="<?php esc_attr_e( 'Vorherige Folie', 'pediment' ); ?>" data-wp-on--click="actions.prev">

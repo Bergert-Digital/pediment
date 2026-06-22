@@ -92,32 +92,33 @@
     color: var(--wp--preset--color--foreground-muted);
   }
 
-  // --- Enhanced (front-end JS active): one-at-a-time carousel ---
-  &.is-enhanced {
-    .starter-slider__arrow { display: flex; }
-    .starter-slider__pagination { display: flex; }
-
-    .starter-slide {
-      grid-area: 1 / 1;
-      opacity: 0;
-      visibility: hidden;
-      transition: opacity .35s ease;
-
-      &.is-active {
-        opacity: 1;
-        visibility: visible;
-      }
-    }
-
-    .starter-slider__track { display: grid; }
-  }
-
-  // --- Editor preview: only the active slide is rendered, so no stacking is
-  //     needed; just reveal the (display-only) controls. is-editor is set by
-  //     edit.tsx and never appears on the front end. ---
+  // --- Enhanced (front-end JS) / editor preview: a one-at-a-time carousel ---
+  // The slides become a horizontal flex rail; view.ts / edit.tsx translate the
+  // rail so the active slide fills the overflow-hidden card. Without JS (no
+  // is-enhanced / is-editor) the rail is a plain block and the slides stack
+  // vertically as a readable fallback.
+  &.is-enhanced,
   &.is-editor {
     .starter-slider__arrow { display: flex; }
     .starter-slider__pagination { display: flex; }
+
+    .starter-slider__rail {
+      display: flex;
+      transition: transform 0.45s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .starter-slide {
+      flex: 0 0 100%;
+      min-width: 0;
+    }
+  }
+
+  // Respect users who prefer reduced motion: switch instantly, no sliding.
+  @media (prefers-reduced-motion: reduce) {
+    &.is-enhanced .starter-slider__rail,
+    &.is-editor .starter-slider__rail {
+      transition: none;
+    }
   }
 }
 

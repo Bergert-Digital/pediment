@@ -33,6 +33,12 @@ const paint = ( root: HTMLElement, active: number ) => {
 		}
 	} );
 
+	// Slide the rail horizontally so the active slide fills the card.
+	const rail = root.querySelector< HTMLElement >( '.starter-slider__rail' );
+	if ( rail ) {
+		rail.style.transform = `translateX(${ -active * 100 }%)`;
+	}
+
 	const live = root.querySelector< HTMLElement >( '.starter-slider__live' );
 	if ( live ) {
 		live.textContent = `${ active + 1 } / ${ slides.length }`;

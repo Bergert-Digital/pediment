@@ -118,8 +118,6 @@ export default function Edit( {
 		},
 	} );
 
-	const current = slides[ activeIndex ];
-
 	return (
 		<>
 			<InspectorControls>
@@ -316,33 +314,51 @@ export default function Edit( {
 				) : (
 					<>
 						<div className="starter-slider__track">
-							<div className="starter-slide is-active">
-								<figure className="starter-slide__media">
-									<SlideImage slide={ current } />
-								</figure>
-								<div className="starter-slide__panel">
-									{ has( current.eyebrow ) && (
-										<p className="starter-slide__eyebrow">
-											{ current.eyebrow }
-										</p>
-									) }
-									{ has( current.heading ) && (
-										<h2 className="starter-slide__heading">
-											{ current.heading }
-										</h2>
-									) }
-									{ has( current.body ) && (
-										<p className="starter-slide__body">
-											{ current.body }
-										</p>
-									) }
-									{ has( current.buttonText ) &&
-										has( current.buttonUrl ) && (
-											<span className="starter-slide__button">
-												{ current.buttonText }
-											</span>
-										) }
-								</div>
+							<div
+								className="starter-slider__rail"
+								style={ {
+									transform: `translateX(${
+										-activeIndex * 100
+									}%)`,
+								} }
+							>
+								{ slides.map( ( slide, i ) => (
+									<div
+										key={ i }
+										className={
+											i === activeIndex
+												? 'starter-slide is-active'
+												: 'starter-slide'
+										}
+									>
+										<figure className="starter-slide__media">
+											<SlideImage slide={ slide } />
+										</figure>
+										<div className="starter-slide__panel">
+											{ has( slide.eyebrow ) && (
+												<p className="starter-slide__eyebrow">
+													{ slide.eyebrow }
+												</p>
+											) }
+											{ has( slide.heading ) && (
+												<h2 className="starter-slide__heading">
+													{ slide.heading }
+												</h2>
+											) }
+											{ has( slide.body ) && (
+												<p className="starter-slide__body">
+													{ slide.body }
+												</p>
+											) }
+											{ has( slide.buttonText ) &&
+												has( slide.buttonUrl ) && (
+													<span className="starter-slide__button">
+														{ slide.buttonText }
+													</span>
+												) }
+										</div>
+									</div>
+								) ) }
 							</div>
 						</div>
 						{ slides.length > 1 && (
