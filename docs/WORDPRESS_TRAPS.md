@@ -63,6 +63,19 @@ biting.
 
 ---
 
+## Layout containers zero the last child's bottom margin
+
+**Symptom.** A closing block before the footer computes `margin-bottom: 0` even after a
+class rule sets bottom spacing, so the footer butts directly against the last line.
+**Cause.** WordPress layout CSS normalizes block margins inside constrained/flow
+containers, including the last child's block-end margin.
+**Fix.** Put the closing gutter on padding instead of bottom margin. See
+[assets/css/theme.css](../assets/css/theme.css) `.back-to-blog`.
+**Catch it early.** Measure the gap from the last article block to the footer at
+375 / 768 / 1440 px; also inspect computed `marginBottom` on the last child.
+
+---
+
 ## `theme.json` `styles.spacing.padding` must be set, or root padding variables are empty
 
 **Symptom.** `--wp--style--root--padding-left` resolves to an empty string at the document
