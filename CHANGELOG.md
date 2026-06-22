@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.8.0](https://github.com/Bergert-Digital/pediment/compare/v0.7.0...v0.8.0) (2026-06-22)
+
+
+### Features
+
+* image/content slider block ([#33](https://github.com/Bergert-Digital/pediment/issues/33)) ([3d1c8ea](https://github.com/Bergert-Digital/pediment/commit/3d1c8eaa05b0fe59bb6f2ceb70a8df8ad4d6a572))
+
 ## [0.7.0](https://github.com/Bergert-Digital/Pediment/compare/v0.6.0...v0.7.0) (2026-06-19)
 
 
