@@ -122,7 +122,10 @@
 }
 .starter-single-content{ margin-block-start:0; }
 /* Single-post "back to blog" link spacing below the article body. */
-.back-to-blog{ margin-top:var(--wp--preset--spacing--40); }
+.back-to-blog{
+  margin-block-start:clamp(32px, 4vw, 48px);
+  margin-block-end:clamp(64px, 7vw, 96px);
+}
 .chip{
   display:inline-flex; align-items:center; gap:9px;
   background:var(--wp--preset--color--accent-tint);
