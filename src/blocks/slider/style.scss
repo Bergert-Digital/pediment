@@ -1,0 +1,230 @@
+.starter-slider {
+  position: relative;
+  margin: var(--wp--preset--spacing--50) 0;
+
+  &__track {
+    border-radius: var(--r-panel, 28px);
+    box-shadow: var(--wp--preset--shadow--medium);
+    overflow: hidden;
+  }
+
+  // Controls are inert without JS — reveal them only once enhanced (front end)
+  // or in the editor preview (is-editor, set by edit.tsx).
+  &__arrow,
+  &__pagination { display: none; }
+
+  &__arrow {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 2;
+    width: 44px;
+    height: 44px;
+    border-radius: var(--r-pill, 999px);
+    border: 1.5px solid var(--wp--preset--color--border-strong);
+    background: var(--wp--preset--color--surface);
+    color: var(--wp--preset--color--foreground);
+    font-size: 1.5rem;
+    line-height: 1;
+    cursor: pointer;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    transition: background-color .15s ease, color .15s ease;
+
+    &:hover {
+      background: var(--wp--preset--color--accent);
+      color: var(--wp--preset--color--surface);
+      border-color: var(--wp--preset--color--accent);
+    }
+
+    &:focus-visible {
+      outline: 2px solid var(--wp--preset--color--accent);
+      outline-offset: 2px;
+    }
+
+    &--prev { left: 14px; }
+    &--next { right: 14px; }
+  }
+
+  &__pagination {
+    margin-top: var(--wp--preset--spacing--20);
+    justify-content: center;
+    gap: 10px;
+  }
+
+  &__dot {
+    width: 10px;
+    height: 10px;
+    padding: 0;
+    border-radius: var(--r-pill, 999px);
+    border: 0;
+    background: var(--wp--preset--color--border-strong);
+    cursor: pointer;
+    transition: background-color .15s ease, transform .15s ease;
+
+    &:hover { background: var(--wp--preset--color--accent-hover); }
+
+    &.is-current {
+      background: var(--wp--preset--color--accent);
+      transform: scale(1.25);
+    }
+
+    &:focus-visible {
+      outline: 2px solid var(--wp--preset--color--accent);
+      outline-offset: 2px;
+    }
+  }
+
+  // Empty-state placeholder shown in the editor when there are no slides yet.
+  &__empty {
+    padding: var(--wp--preset--spacing--40);
+    text-align: center;
+    border: 1px dashed var(--wp--preset--color--border-strong);
+    border-radius: var(--r-panel, 28px);
+    color: var(--wp--preset--color--foreground-muted);
+  }
+
+  &__count {
+    margin: var(--wp--preset--spacing--10, 0.5rem) 0 0;
+    text-align: center;
+    font-size: 0.75rem;
+    color: var(--wp--preset--color--foreground-muted);
+  }
+
+  // --- Enhanced (front-end JS) / editor preview: a one-at-a-time carousel ---
+  // The slides become a horizontal flex rail; view.ts / edit.tsx translate the
+  // rail so the active slide fills the overflow-hidden card. Without JS (no
+  // is-enhanced / is-editor) the rail is a plain block and the slides stack
+  // vertically as a readable fallback.
+  &.is-enhanced,
+  &.is-editor {
+    .starter-slider__arrow { display: flex; }
+    .starter-slider__pagination { display: flex; }
+
+    .starter-slider__rail {
+      display: flex;
+      transition: transform 0.45s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .starter-slide {
+      flex: 0 0 100%;
+      min-width: 0;
+    }
+  }
+
+  // Respect users who prefer reduced motion: switch instantly, no sliding.
+  @media (prefers-reduced-motion: reduce) {
+    &.is-enhanced .starter-slider__rail,
+    &.is-editor .starter-slider__rail {
+      transition: none;
+    }
+  }
+}
+
+// Slide layout (formerly in the deleted slide block's stylesheet).
+.starter-slide {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  align-items: stretch;
+
+  &__media {
+    margin: 0;
+    position: relative;
+  }
+
+  &__img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    aspect-ratio: 4 / 3;
+    object-fit: cover;
+  }
+
+  // Front-end stand-in shown until an image is set.
+  &__placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    aspect-ratio: 4 / 3;
+    background: var(--wp--preset--color--accent-tint);
+    color: var(--wp--preset--color--foreground-muted);
+
+    svg {
+      width: 2.75rem;
+      height: 2.75rem;
+    }
+  }
+
+  &__panel {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: var(--wp--preset--spacing--20);
+    padding: clamp(28px, 4vw, 56px);
+    background: var(--slide-panel-bg, var(--wp--preset--color--primary));
+    color: var(--slide-panel-fg, var(--wp--preset--color--surface));
+  }
+
+  &__eyebrow {
+    margin: 0;
+    font-size: 0.8125rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  &__heading {
+    margin: 0;
+    color: inherit;
+  }
+
+  &__body {
+    margin: 0;
+  }
+
+  &__button {
+    align-self: flex-start;
+    display: inline-flex;
+    align-items: center;
+    padding: 12px 22px;
+    border-radius: var(--r-pill, 999px);
+    background: var(--slide-panel-fg, var(--wp--preset--color--surface));
+    color: var(--slide-panel-bg, var(--wp--preset--color--primary));
+    text-decoration: none;
+    font-weight: 700;
+    transition: opacity .15s ease;
+
+    &:hover { opacity: 0.9; }
+
+    &:focus-visible {
+      outline: 2px solid var(--slide-panel-fg, var(--wp--preset--color--surface));
+      outline-offset: 2px;
+    }
+  }
+}
+
+// Image side. The `is-media-*` modifier lives on the `.starter-slider` ancestor.
+// Default (is-media-left) keeps DOM order — image left, panel right — so only the
+// flipped case needs rules: panel first (left), media second (right).
+.starter-slider.is-media-right {
+  .starter-slide__panel { order: 1; }
+  .starter-slide__media { order: 2; }
+}
+
+@media (max-width: 781px) {
+  .starter-slide {
+    grid-template-columns: 1fr;
+
+    &__img,
+    &__placeholder { aspect-ratio: 16 / 9; }
+  }
+
+  // Single column: always stack image on top, regardless of the desktop side.
+  .starter-slider.is-media-right {
+    .starter-slide__media { order: -1; }
+    .starter-slide__panel { order: 0; }
+  }
+}
