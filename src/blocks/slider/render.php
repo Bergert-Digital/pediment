@@ -2,8 +2,7 @@
 /**
  * Server-side render for pediment/slider.
  *
- * @var array    $attributes
- * @var WP_Block $block
+ * @var array $attributes
  */
 
 if ( ! function_exists( 'pediment_slider_panel_fg' ) ) {
