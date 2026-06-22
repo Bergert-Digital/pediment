@@ -111,6 +111,9 @@
   margin-inline:auto;
   margin-block-start:0;
   margin-block-end:clamp(40px, 5vw, 64px);
+  border-radius:var(--r-lg, 20px);
+  overflow:hidden;
+  box-shadow:var(--wp--preset--shadow--medium);
 }
 .wp-block-post-featured-image.starter-single-featured img{
   display:block;
