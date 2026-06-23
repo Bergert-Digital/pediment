@@ -16,3 +16,13 @@ Rolling log. /dev-cycle keeps only the most recent prior session entry plus the 
 
 ### Need a decision on
 _(none — awaiting user review of the scaffold before the first work cycle)_
+
+## Session 2026-06-22 — single post polish
+
+[14:47] ✅ Tightened the single-post template after screenshot review: the masthead keeps top padding but uses a smaller article-specific bottom pad, the featured image is capped below wide-size, and post content now uses a constrained layout so normal prose aligns to the reading column.
+
+### Planned next
+_(none)_
+
+### Need a decision on
+_(none)_

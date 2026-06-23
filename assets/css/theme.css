@@ -103,8 +103,29 @@
    instead of the kicker accent. */
 .wp-block-post-terms.kicker a{ color:inherit; text-decoration:none; }
 .wp-block-post-terms.kicker a:hover{ text-decoration:underline; }
+/* Single-post masthead/media rhythm. The shared starter-band padding is right
+   for landing sections, but too deep between an article title and its image. */
+.starter-single-masthead{ padding-bottom:clamp(48px, 5vw, 72px); }
+.wp-block-post-featured-image.starter-single-featured{
+  max-width:min(960px, calc(100vw - var(--wp--style--root--padding-left, 20px) - var(--wp--style--root--padding-right, 20px)));
+  margin-inline:auto;
+  margin-block-start:0;
+  margin-block-end:clamp(40px, 5vw, 64px);
+  border-radius:var(--r-lg, 20px);
+  overflow:hidden;
+  box-shadow:var(--wp--preset--shadow--medium);
+}
+.wp-block-post-featured-image.starter-single-featured img{
+  display:block;
+  width:100%;
+  object-fit:cover;
+}
+.starter-single-content{ margin-block-start:0; }
 /* Single-post "back to blog" link spacing below the article body. */
-.back-to-blog{ margin-top:var(--wp--preset--spacing--40); }
+.back-to-blog{
+  margin-block-start:clamp(32px, 4vw, 48px);
+  padding-block-end:clamp(64px, 7vw, 96px);
+}
 .chip{
   display:inline-flex; align-items:center; gap:9px;
   background:var(--wp--preset--color--accent-tint);
