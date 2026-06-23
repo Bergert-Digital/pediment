@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.8.1](https://github.com/Bergert-Digital/pediment/compare/v0.8.0...v0.8.1) (2026-06-23)
+
+
+### Bug Fixes
+
+* **single:** restore single-post masthead spacing & article polish ([#36](https://github.com/Bergert-Digital/pediment/issues/36)) ([1ec500a](https://github.com/Bergert-Digital/pediment/commit/1ec500af24de9188b81d7a1f6e63d8cd4ba687d1))
+
 ## [0.8.0](https://github.com/Bergert-Digital/pediment/compare/v0.7.0...v0.8.0) (2026-06-22)
 
 
