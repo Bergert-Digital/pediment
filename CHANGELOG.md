@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.9.0](https://github.com/Bergert-Digital/pediment/compare/v0.8.1...v0.9.0) (2026-06-24)
+
+
+### Features
+
+* add block translation config ([e1d5d67](https://github.com/Bergert-Digital/pediment/commit/e1d5d672ae24152cd8811a6185c2d8053bcbda18))
+
+
+### Bug Fixes
+
+* align lockfile with CI npm ([7dfaa69](https://github.com/Bergert-Digital/pediment/commit/7dfaa698cbc687aecdd17d8d4a3eed498af25e26))
+* sync package lock ([6e095b3](https://github.com/Bergert-Digital/pediment/commit/6e095b3f8ff6fa27e15958398972ad2a0fc4d3d9))
+
 ## [0.8.1](https://github.com/Bergert-Digital/pediment/compare/v0.8.0...v0.8.1) (2026-06-23)
 
 
