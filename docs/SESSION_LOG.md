@@ -4,25 +4,23 @@ Rolling log. /dev-cycle keeps only the most recent prior session entry plus the 
 
 ---
 
-## Session 2026-05-15 — scaffold
-
-[15:35] ✅ Scaffolded the /dev-cycle docs by inferring from the codebase: VISION, PRODUCT_SENSE, STANDARDS, BACKLOG, SESSION_LOG, and root AGENTS.md.
-[15:35] 🔍 Distribution direction (child-theme repo, zip pipelines, wp-client-template retirement, section rhythm) appears shipped; remaining work is verification + drift-hunting, captured in BACKLOG.
-[15:35] 🔍 Repo-name drift suspected: parent remote is `Bergert-Digital/WP-Starter` but `style.css` / docs reference `bergert/pediment` — flagged 🟡.
-
-### Planned next
-- Run the first real /dev-cycle: start with the 🟡 drift-hunt + doc-vs-code audit (cheap, no remote actions), then the empty-state sweep.
-- Defer the remote pipeline-validation item until the user is present to approve the throwaway release.
-
-### Need a decision on
-_(none — awaiting user review of the scaffold before the first work cycle)_
-
 ## Session 2026-06-22 — single post polish
 
 [14:47] ✅ Tightened the single-post template after screenshot review: the masthead keeps top padding but uses a smaller article-specific bottom pad, the featured image is capped below wide-size, and post content now uses a constrained layout so normal prose aligns to the reading column.
 
 ### Planned next
 _(none)_
+
+### Need a decision on
+_(none)_
+
+## Session 2026-06-23 — block translation config
+
+[17:05] ✅ Added root `wpml-config.xml` for Polylang Pro/WPML block translation support. It declares translatable text/link attributes for Pediment's custom content blocks, including wildcard paths for hero metrics/ticks, slider slides, and mega-menu columns/links.
+[17:05] 🔍 Root XML is not excluded by `.distignore`, so it should be included in parent theme release zips.
+
+### Planned next
+- Validate on staging with Polylang Pro + DeepL that parent-theme `wpml-config.xml` is discovered while a child theme is active, especially for wildcard array attributes in `hero`, `slider`, and `mega-menu`.
 
 ### Need a decision on
 _(none)_
