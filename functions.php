@@ -26,7 +26,6 @@ require_once __DIR__ . '/inc/patterns.php';
 
 require_once __DIR__ . '/inc/bootstrap.php';
 require_once __DIR__ . '/inc/nav-active.php';
-require_once __DIR__ . '/inc/nav-seed.php';
 require_once __DIR__ . '/inc/mega-menu.php';
 
 // One-click theme updates from GitHub Releases (no manual zip uploads).
