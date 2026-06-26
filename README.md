@@ -42,13 +42,20 @@ npm run start       # watches src/blocks/ and rebuilds on save
 
 Open http://localhost:8888 for the front-end, or http://localhost:8888/wp-admin (admin / `password`).
 
-If this is the very first boot of wp-env, run these once to make the theme usable:
+If this is the very first boot of wp-env, activate the theme once:
 
 ```bash
 npx wp-env run cli wp theme activate pediment
-npx wp-env run cli wp rewrite structure "/%postname%/"
-npx wp-env run cli wp rewrite flush --hard
-npx wp-env run cli wp pediment seed   # optional: 4 sample pages + Brand defaults
+```
+
+Activation runs the framework bootstrap — Brand defaults, an editable header
+template part, and pretty permalinks — so the site is usable immediately. The
+parent theme seeds **no** demo content. For sample pages/posts, install the
+child theme and run its seeder:
+
+```bash
+npx wp-env run cli wp pediment-child seed-demo
+npx wp-env run cli wp pediment-child seed
 ```
 
 Stop with `npm run env:stop`.
@@ -64,8 +71,9 @@ Stop with `npm run env:stop`.
 | `npm run lint:js`                                | ESLint on src/                                   |
 | `composer lint`                                  | PHPCS (WP standards + custom color sniff)        |
 | `npm run e2e`                                    | Playwright against http://localhost:8888         |
-| `npx wp-env run cli wp pediment seed`       | Populate Brand defaults + 4 sample pages         |
-| `npx wp-env run cli wp pediment seed --force` | Re-apply seeded page content (destructive: overwrites hand-edited /home/, /about/, /contact/, /blog/, /mega-demo/) |
+| `npx wp-env run cli wp theme activate pediment`  | Bootstrap the framework (Brand defaults, header part, permalinks); seeds no content |
+| `npx wp-env run cli wp pediment-child seed-demo` | Demo pages + sample posts (child theme)          |
+| `npx wp-env run cli wp pediment-child seed`      | Brand defaults only (child theme)                |
 
 ### Run PHPUnit
 
