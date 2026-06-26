@@ -25,7 +25,6 @@ require_once __DIR__ . '/inc/contact-form.php';
 require_once __DIR__ . '/inc/patterns.php';
 
 require_once __DIR__ . '/inc/bootstrap.php';
-require_once __DIR__ . '/inc/seed.php';
 require_once __DIR__ . '/inc/nav-active.php';
 require_once __DIR__ . '/inc/nav-seed.php';
 require_once __DIR__ . '/inc/mega-menu.php';
