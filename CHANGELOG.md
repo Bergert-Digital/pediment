@@ -1,5 +1,25 @@
 # Changelog
 
+## [1.0.0](https://github.com/Bergert-Digital/pediment/compare/v0.9.0...v1.0.0) (2026-06-26)
+
+
+### ⚠ BREAKING CHANGES
+
+* untangle content-seeding into the child theme ([#42](https://github.com/Bergert-Digital/pediment/issues/42))
+* the parent no longer seeds a default navigation entity; the child theme owns it.
+* `wp pediment seed` is removed. A freshly activated theme now bootstraps itself; demo content is seeded from the child theme.
+
+### Features
+
+* run framework bootstrap on activation (brand defaults, header part, permalinks) ([ceaeb4a](https://github.com/Bergert-Digital/pediment/commit/ceaeb4ab2448c3eb142679ea44eb90fca018afff))
+
+
+### Refactors
+
+* remove default-nav seeding (relocates to child theme) ([96ca091](https://github.com/Bergert-Digital/pediment/commit/96ca0911f03619101bc28c833d8da3b670fdb549))
+* remove wp pediment seed command, demo content, and demo tests ([c71b892](https://github.com/Bergert-Digital/pediment/commit/c71b892e1eb6bbb2ea21372dabdf714ef7d4f610))
+* untangle content-seeding into the child theme ([#42](https://github.com/Bergert-Digital/pediment/issues/42)) ([ed2d69d](https://github.com/Bergert-Digital/pediment/commit/ed2d69df631f0d906a1ecdd2194bb823b4fb42c8))
+
 ## [0.9.0](https://github.com/Bergert-Digital/pediment/compare/v0.8.1...v0.9.0) (2026-06-24)
 
 
