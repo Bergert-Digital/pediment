@@ -33,7 +33,7 @@ $pediment_timestamp = time();
 
 ob_start();
 ?>
-<form <?php echo $pediment_wrapper; // phpcs:ignore WordPress.Security.EscapeOutput ?>>
+<form novalidate <?php echo $pediment_wrapper; // phpcs:ignore WordPress.Security.EscapeOutput ?>>
 	<?php echo $content; // phpcs:ignore WordPress.Security.EscapeOutput -- inner field blocks escape their own output. ?>
 
 	<div class="pediment-form__hp" aria-hidden="true">
