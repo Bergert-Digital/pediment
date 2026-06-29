@@ -22,6 +22,18 @@ class BootstrapTest extends WP_UnitTestCase {
 		$this->assertNotSame( '', (string) \Pediment\Brand::get( 'brand_tagline', '' ) );
 	}
 
+	public function test_bootstrap_leaves_permalink_structure_untouched(): void {
+		// Bootstrap must not force pretty permalinks: in containerized installs
+		// that breaks REST (rest_url() -> /wp-json/ 404s). See pediment#47.
+		update_option( 'permalink_structure', '' );
+		pediment_bootstrap();
+		$this->assertSame(
+			'',
+			(string) get_option( 'permalink_structure' ),
+			'bootstrap must not change the site permalink structure'
+		);
+	}
+
 	public function test_bootstrap_is_idempotent(): void {
 		pediment_bootstrap();
 		pediment_bootstrap();
