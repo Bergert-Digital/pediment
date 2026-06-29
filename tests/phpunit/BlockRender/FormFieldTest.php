@@ -9,6 +9,11 @@ class FormFieldTest extends WP_UnitTestCase {
 		$this->assertStringContainsString( 'Full Name', $html );
 	}
 
+	public function test_name_falls_back_to_slugified_label() {
+		$html = do_blocks( '<!-- wp:pediment/form-field {"label":"Full Name"} /-->' );
+		$this->assertStringContainsString( 'name="full_name"', $html );
+	}
+
 	public function test_select_renders_options() {
 		$html = do_blocks( '<!-- wp:pediment/form-field {"fieldType":"select","label":"Plan","fieldName":"plan","options":[{"label":"Pro","value":"pro"}]} /-->' );
 		$this->assertStringContainsString( '<select', $html );
