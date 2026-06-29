@@ -47,6 +47,7 @@ class StorageTest extends \WP_UnitTestCase {
 
 		$id = $posts[0]->ID;
 		$this->assertSame( 'sales', get_post_meta( $id, '_destination', true ) );
+		$this->assertSame( 'pending', get_post_meta( $id, '_delivery_status', true ) );
 		$this->assertStringContainsString( 'alice@example.com', $posts[0]->post_content );
 
 		$stored = json_decode( (string) get_post_meta( $id, '_fields', true ), true );
