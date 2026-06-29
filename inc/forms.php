@@ -142,3 +142,111 @@ function pediment_form_validate( array $fields, array $values ): array {
 	}
 	return $errors;
 }
+
+/**
+ * Find the form in a post that matches the submitted key.
+ *
+ * @return array{fields:array<int,array<string,mixed>>,destination:string}|null
+ */
+function pediment_form_locate( int $post_id, string $form_key ) {
+	$post = get_post( $post_id );
+	if ( ! $post instanceof WP_Post ) {
+		return null;
+	}
+	foreach ( pediment_form_find_forms( parse_blocks( (string) $post->post_content ) ) as $form ) {
+		$inner  = isset( $form['innerBlocks'] ) && is_array( $form['innerBlocks'] ) ? $form['innerBlocks'] : array();
+		$fields = pediment_form_collect_fields( $inner );
+		if ( pediment_form_form_key( $fields ) === $form_key ) {
+			$attrs = isset( $form['attrs'] ) && is_array( $form['attrs'] ) ? $form['attrs'] : array();
+			return array(
+				'fields'      => $fields,
+				'destination' => isset( $attrs['destination'] ) ? (string) $attrs['destination'] : '',
+			);
+		}
+	}
+	return null;
+}
+
+add_action(
+	'rest_api_init',
+	function () {
+		register_rest_route(
+			PEDIMENT_FORM_NAMESPACE,
+			PEDIMENT_FORM_ROUTE,
+			array(
+				'methods'             => 'POST',
+				// Public by design (anonymous form). Anti-spam = honeypot + time-trap.
+				'permission_callback' => '__return_true',
+				'callback'            => 'pediment_form_handle_submission',
+			)
+		);
+	}
+);
+
+/**
+ * Handle a form submission via the REST API.
+ *
+ * @param WP_REST_Request $request Full request object.
+ * @return WP_REST_Response|WP_Error
+ */
+function pediment_form_handle_submission( WP_REST_Request $request ) {
+	$hp_field = (string) $request->get_param( 'hp_field' );
+	$t_raw    = $request->get_param( '_t' );
+	$t        = is_numeric( $t_raw ) ? (int) $t_raw : 0;
+	$post_id  = (int) $request->get_param( 'post_id' );
+	$form_key = (string) $request->get_param( 'form_key' );
+	$values   = $request->get_param( 'fields' );
+	$values   = is_array( $values ) ? $values : array();
+
+	if ( '' !== $hp_field ) {
+		return new WP_Error( 'pediment_spam', __( 'Submission rejected.', 'pediment' ), array( 'status' => 400 ) );
+	}
+	$now = time();
+	if ( $t <= 0 || $t > $now || ( $now - $t ) < PEDIMENT_FORM_MIN_AGE ) {
+		return new WP_Error( 'pediment_spam', __( 'Submission rejected.', 'pediment' ), array( 'status' => 400 ) );
+	}
+
+	$form = $post_id > 0 ? pediment_form_locate( $post_id, $form_key ) : null;
+	if ( null === $form ) {
+		return new WP_Error( 'pediment_unknown_form', __( 'Form not found.', 'pediment' ), array( 'status' => 400 ) );
+	}
+
+	$allowed = wp_list_pluck( $form['fields'], 'name' );
+	foreach ( array_keys( $values ) as $key ) {
+		if ( ! in_array( $key, $allowed, true ) ) {
+			return new WP_Error( 'pediment_unknown_field', __( 'Unknown field.', 'pediment' ), array( 'status' => 400 ) );
+		}
+	}
+
+	$errors = pediment_form_validate( $form['fields'], $values );
+	if ( ! empty( $errors ) ) {
+		return new WP_Error(
+			'pediment_validation',
+			__( 'Validation failed.', 'pediment' ),
+			array(
+				'status' => 400,
+				'errors' => $errors,
+			)
+		);
+	}
+
+	$collected = array();
+	foreach ( $form['fields'] as $field ) {
+		$name               = (string) $field['name'];
+		$collected[ $name ] = array(
+			'label' => (string) $field['label'],
+			'value' => isset( $values[ $name ] ) ? sanitize_textarea_field( (string) $values[ $name ] ) : '',
+		);
+	}
+
+	$submission = array(
+		'post_id'     => $post_id,
+		'form_key'    => $form_key,
+		'destination' => $form['destination'],
+		'fields'      => $collected,
+	);
+
+	do_action( 'pediment_form_submitted', $submission, $request );
+
+	return new WP_REST_Response( array( 'ok' => true ), 200 );
+}
