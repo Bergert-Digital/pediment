@@ -86,3 +86,6 @@ add_action(
 
 add_action( 'after_switch_theme', 'pediment_contact_schedule_cleanup' );
 add_action( 'switch_theme', 'pediment_contact_unschedule_cleanup' );
+
+add_action( 'after_switch_theme', 'pediment_form_schedule_cleanup' );
+add_action( 'switch_theme', 'pediment_form_unschedule_cleanup' );

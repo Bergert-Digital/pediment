@@ -117,3 +117,42 @@ add_action(
 	10,
 	2
 );
+
+add_action( PEDIMENT_FORM_CRON_HOOK, 'pediment_form_cleanup' );
+
+function pediment_form_cleanup(): void {
+	$days = (int) apply_filters( 'pediment_form_retention_days', 90 );
+	if ( $days <= 0 ) {
+		return;
+	}
+	$cutoff = gmdate( 'Y-m-d H:i:s', strtotime( '-' . $days . ' days' ) );
+
+	$stale = get_posts(
+		array(
+			'post_type'      => PEDIMENT_FORM_CPT,
+			'post_status'    => 'any',
+			'posts_per_page' => 200,
+			'fields'         => 'ids',
+			'date_query'     => array(
+				array(
+					'before'    => $cutoff,
+					'column'    => 'post_date_gmt',
+					'inclusive' => true,
+				),
+			),
+		)
+	);
+	foreach ( $stale as $post_id ) {
+		wp_delete_post( $post_id, true );
+	}
+}
+
+function pediment_form_schedule_cleanup(): void {
+	if ( ! wp_next_scheduled( PEDIMENT_FORM_CRON_HOOK ) ) {
+		wp_schedule_event( time() + HOUR_IN_SECONDS, 'daily', PEDIMENT_FORM_CRON_HOOK );
+	}
+}
+
+function pediment_form_unschedule_cleanup(): void {
+	wp_clear_scheduled_hook( PEDIMENT_FORM_CRON_HOOK );
+}
