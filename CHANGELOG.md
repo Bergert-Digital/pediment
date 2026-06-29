@@ -1,5 +1,20 @@
 # Changelog
 
+## [2.0.0](https://github.com/Bergert-Digital/pediment/compare/v1.0.0...v2.0.0) (2026-06-29)
+
+
+### ⚠ BREAKING CHANGES
+
+* constrain post-content layout on page & front-page templates ([#45](https://github.com/Bergert-Digital/pediment/issues/45))
+* constrain post-content layout on page & front-page templates ([#44](https://github.com/Bergert-Digital/pediment/issues/44))
+* Page and front-page content is now width-constrained. Blocks authored as bare full-width content will render at contentSize (720px) and must opt into align:wide / align:full for wider treatment. Child themes can drop manual width-cap wrappers (.wc-wrap or equivalent) for blocks inside page/front-page content.
+
+### Features
+
+* constrain post-content layout on page & front-page templates ([f9a7a7d](https://github.com/Bergert-Digital/pediment/commit/f9a7a7da9dd55c7b74808aaacfe9c76b695a9540))
+* constrain post-content layout on page & front-page templates ([#44](https://github.com/Bergert-Digital/pediment/issues/44)) ([c586661](https://github.com/Bergert-Digital/pediment/commit/c58666189c836562361fc2be71fd867edcff61b9))
+* constrain post-content layout on page & front-page templates ([#45](https://github.com/Bergert-Digital/pediment/issues/45)) ([91ea150](https://github.com/Bergert-Digital/pediment/commit/91ea150abb6267b48fc58f0a0d1182d6e396b837))
+
 ## [1.0.0](https://github.com/Bergert-Digital/pediment/compare/v0.9.0...v1.0.0) (2026-06-26)
 
 
