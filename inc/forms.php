@@ -17,6 +17,8 @@ const PEDIMENT_FORM_CRON_HOOK = 'pediment_form_cleanup';
 
 /**
  * Normalize a label into a stable machine field name.
+ *
+ * @param string $label The label to normalize.
  */
 function pediment_form_slug( string $label ): string {
 	$slug = str_replace( '-', '_', sanitize_title( $label ) );
@@ -64,7 +66,7 @@ function pediment_form_collect_fields( array $blocks ): array {
 /**
  * Stable 12-char key identifying a form by its field-name set.
  *
- * @param array<int,array<string,mixed>> $fields
+ * @param array<int,array<string,mixed>> $fields The field list.
  */
 function pediment_form_form_key( array $fields ): string {
 	$names = wp_list_pluck( $fields, 'name' );
@@ -74,7 +76,7 @@ function pediment_form_form_key( array $fields ): string {
 /**
  * Recursively collect every pediment/form parsed block.
  *
- * @param array<int,array<string,mixed>> $blocks
+ * @param array<int,array<string,mixed>> $blocks Parsed block list.
  * @return array<int,array<string,mixed>>
  */
 function pediment_form_find_forms( array $blocks ): array {
@@ -96,8 +98,8 @@ function pediment_form_find_forms( array $blocks ): array {
 /**
  * Validate submitted values against the derived field list.
  *
- * @param array<int,array<string,mixed>> $fields
- * @param array<string,mixed>            $values
+ * @param array<int,array<string,mixed>> $fields The field definitions.
+ * @param array<string,mixed>            $values The submitted values keyed by field name.
  * @return array<string,string> name => error message
  */
 function pediment_form_validate( array $fields, array $values ): array {
@@ -146,6 +148,8 @@ function pediment_form_validate( array $fields, array $values ): array {
 /**
  * Find the form in a post that matches the submitted key.
  *
+ * @param int    $post_id  The post ID to search.
+ * @param string $form_key The form key to match.
  * @return array{fields:array<int,array<string,mixed>>,destination:string}|null
  */
 function pediment_form_locate( int $post_id, string $form_key ) {
