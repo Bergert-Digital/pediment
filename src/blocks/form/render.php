@@ -22,7 +22,7 @@ $pediment_post_id  = (int) get_the_ID();
 $pediment_wrapper = get_block_wrapper_attributes(
 	array(
 		'class'         => 'pediment-form',
-		'data-success'  => $pediment_success,
+		'data-success'  => esc_attr( $pediment_success ),
 		'data-rest-url' => esc_url_raw( rest_url( PEDIMENT_FORM_NAMESPACE . PEDIMENT_FORM_ROUTE ) ),
 		'data-post-id'  => (string) $pediment_post_id,
 		'data-form-key' => $pediment_form_key,

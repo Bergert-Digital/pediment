@@ -29,7 +29,9 @@
 				fields: collectFields( form ),
 			};
 
-			submitBtn.disabled = true;
+			if ( submitBtn ) {
+				submitBtn.disabled = true;
+			}
 			clearErrors( form );
 			showStatus( statusEl, '', null );
 
@@ -44,7 +46,9 @@
 					} );
 				} )
 				.then( function ( out ) {
-					submitBtn.disabled = false;
+					if ( submitBtn ) {
+						submitBtn.disabled = false;
+					}
 					if ( out.res.ok && out.body && out.body.ok ) {
 						form.querySelectorAll(
 							'input,textarea,select,button'
@@ -66,7 +70,9 @@
 					showStatus( statusEl, msg, 'error' );
 				} )
 				.catch( function () {
-					submitBtn.disabled = false;
+					if ( submitBtn ) {
+						submitBtn.disabled = false;
+					}
 					showStatus(
 						statusEl,
 						'Network error. Please try again.',
