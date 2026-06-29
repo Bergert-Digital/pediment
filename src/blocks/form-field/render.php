@@ -57,9 +57,9 @@ ob_start();
 			<?php
 	endswitch;
 	?>
-	<?php if ( '' !== $pediment_help ) : ?>
-		<small class="pediment-form__help"><?php echo esc_html( $pediment_help ); ?></small>
-	<?php endif; ?>
 </label>
+<?php if ( '' !== $pediment_help ) : ?>
+	<small class="pediment-form__help"><?php echo esc_html( $pediment_help ); ?></small>
+<?php endif; ?>
 <?php
 echo ob_get_clean(); // phpcs:ignore WordPress.Security.EscapeOutput
