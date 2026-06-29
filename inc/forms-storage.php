@@ -57,8 +57,21 @@ function pediment_form_persist_submission( array $submission, $request ): void {
 		wp_date( 'Y-m-d H:i' )
 	);
 
+	$sanitized_fields = array();
+	foreach ( $fields as $key => $data ) {
+		$row = is_array( $data ) ? $data : array();
+		foreach ( $row as $field_key => $field_val ) {
+			if ( 'label' === $field_key ) {
+				$row[ $field_key ] = sanitize_text_field( (string) $field_val );
+			} elseif ( 'value' === $field_key ) {
+				$row[ $field_key ] = sanitize_textarea_field( (string) $field_val );
+			}
+		}
+		$sanitized_fields[ $key ] = $row;
+	}
+
 	$lines = array();
-	foreach ( $fields as $data ) {
+	foreach ( $sanitized_fields as $data ) {
 		$lines[] = sprintf( '%s: %s', (string) ( $data['label'] ?? '' ), (string) ( $data['value'] ?? '' ) );
 	}
 
@@ -75,9 +88,10 @@ function pediment_form_persist_submission( array $submission, $request ): void {
 		return;
 	}
 
-	update_post_meta( $new_id, '_fields', wp_json_encode( $fields ) );
+	update_post_meta( $new_id, '_fields', wp_json_encode( $sanitized_fields ) );
 	update_post_meta( $new_id, '_source_post_id', $post_id );
 	update_post_meta( $new_id, '_destination', sanitize_text_field( $destination ) );
+	update_post_meta( $new_id, '_delivery_status', 'pending' );
 }
 
 add_filter(
