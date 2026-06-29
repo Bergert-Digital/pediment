@@ -125,7 +125,11 @@ function pediment_form_cleanup(): void {
 	if ( $days <= 0 ) {
 		return;
 	}
-	$cutoff = gmdate( 'Y-m-d H:i:s', strtotime( '-' . $days . ' days' ) );
+	$ts = strtotime( '-' . $days . ' days' );
+	if ( false === $ts ) {
+		return;
+	}
+	$cutoff = gmdate( 'Y-m-d H:i:s', $ts );
 
 	$stale = get_posts(
 		array(
