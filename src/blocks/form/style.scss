@@ -1,0 +1,16 @@
+.pediment-form {
+	display: grid;
+	gap: var( --wp--preset--spacing--30, 1rem );
+}
+
+.pediment-form__hp {
+	position: absolute;
+	left: -9999px;
+	width: 1px;
+	height: 1px;
+	overflow: hidden;
+}
+
+.pediment-form__status[ data-state='error' ] {
+	font-weight: 600;
+}
