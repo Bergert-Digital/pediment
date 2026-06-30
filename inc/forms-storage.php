@@ -100,11 +100,38 @@ add_filter(
 		return array(
 			'cb'          => $cols['cb'] ?? '',
 			'title'       => __( 'Submission', 'pediment' ),
+			'fields'      => __( 'Details', 'pediment' ),
 			'destination' => __( 'Destination', 'pediment' ),
 			'date'        => __( 'Submitted', 'pediment' ),
 		);
 	}
 );
+
+/**
+ * Build a readable "label: value" summary of a submission's stored fields.
+ *
+ * @param int $post_id The form_submission post ID.
+ * @return string Plain-text summary (unescaped); empty when no fields stored.
+ */
+function pediment_form_fields_summary( int $post_id ): string {
+	$decoded = json_decode( (string) get_post_meta( $post_id, '_fields', true ), true );
+	if ( ! is_array( $decoded ) ) {
+		return '';
+	}
+	$parts = array();
+	foreach ( $decoded as $row ) {
+		if ( ! is_array( $row ) ) {
+			continue;
+		}
+		$label = trim( (string) ( $row['label'] ?? '' ) );
+		$value = trim( (string) ( $row['value'] ?? '' ) );
+		if ( '' === $label && '' === $value ) {
+			continue;
+		}
+		$parts[] = sprintf( '%s: %s', $label, $value );
+	}
+	return implode( ' · ', $parts );
+}
 
 add_action(
 	'manage_' . PEDIMENT_FORM_CPT . '_posts_custom_column',
@@ -112,6 +139,9 @@ add_action(
 		if ( 'destination' === $col ) {
 			$dest = (string) get_post_meta( $post_id, '_destination', true );
 			echo esc_html( '' !== $dest ? $dest : __( '(default)', 'pediment' ) );
+		} elseif ( 'fields' === $col ) {
+			$summary = pediment_form_fields_summary( (int) $post_id );
+			echo esc_html( '' !== $summary ? $summary : __( '—', 'pediment' ) );
 		}
 	},
 	10,
