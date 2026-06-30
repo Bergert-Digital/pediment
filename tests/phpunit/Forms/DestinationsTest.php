@@ -76,6 +76,14 @@ class DestinationsTest extends WP_UnitTestCase {
 		$this->assertSame( '', pediment_form_resolve_destination_id( '' ) );
 	}
 
+	public function test_unknown_meta_token_in_url_is_keyed_to_url() {
+		pediment_form_secret_set( 'brevo_api_key', 'sk' );
+		$d        = $this->valid_dest();
+		$d['url'] = 'https://api.brevo.com/{{ meta:bogus }}';
+		$errors   = pediment_form_validate_destination( $d );
+		$this->assertArrayHasKey( 'url', $errors );
+	}
+
 	public function test_accepts_body_that_decodes_to_json_null() {
 		$d                  = $this->valid_dest();
 		$d['body_template'] = 'null';
