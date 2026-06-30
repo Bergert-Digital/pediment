@@ -114,7 +114,7 @@ export default function Edit( {
 			} );
 
 	return (
-		<div { ...blockProps }>
+		<>
 			<InspectorControls>
 				<PanelBody title={ __( 'Field', 'pediment' ) }>
 					<SelectControl
@@ -171,17 +171,17 @@ export default function Edit( {
 				</PanelBody>
 			</InspectorControls>
 			{ /* eslint-disable-next-line jsx-a11y/label-has-associated-control */ }
-			<label className="pediment-form__label">
-				<span>
+			<label { ...blockProps }>
+				<span className="pediment-form__label">
 					{ label || __( 'Untitled field', 'pediment' ) }
 					{ required ? ' *' : '' }
 				</span>
 				{ renderPreview( fieldType, placeholder, options ) }
+				{ helpText && (
+					<small className="pediment-form__help">{ helpText }</small>
+				) }
 			</label>
-			{ helpText && (
-				<small className="pediment-form__help">{ helpText }</small>
-			) }
-		</div>
+		</>
 	);
 }
 
