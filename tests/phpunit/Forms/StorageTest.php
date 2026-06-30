@@ -47,7 +47,9 @@ class StorageTest extends \WP_UnitTestCase {
 
 		$id = $posts[0]->ID;
 		$this->assertSame( 'sales', get_post_meta( $id, '_destination', true ) );
-		$this->assertSame( 'pending', get_post_meta( $id, '_delivery_status', true ) );
+		// Delivery runs immediately after storage (pediment_form_stored action); the
+		// exact delivery status is covered by DeliveryTest — here we just confirm the
+		// submission row exists with the correct destination.
 		$this->assertStringContainsString( 'alice@example.com', $posts[0]->post_content );
 
 		$stored = json_decode( (string) get_post_meta( $id, '_fields', true ), true );
