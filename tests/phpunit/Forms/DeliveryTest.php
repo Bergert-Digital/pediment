@@ -102,4 +102,74 @@ class DeliveryTest extends WP_UnitTestCase {
 		$found = get_posts( array( 'post_type' => PEDIMENT_FORM_CPT, 'posts_per_page' => 1, 'fields' => 'ids' ) );
 		$this->assertSame( 'sent', get_post_meta( $found[0], '_delivery_status', true ) );
 	}
+
+	public function test_ssrf_blocked_at_send_makes_no_http_call() {
+		// Register a second destination whose URL contains a field token in the host position.
+		$existing = (array) get_option( PEDIMENT_FORM_DESTINATIONS_OPTION, array() );
+		update_option(
+			PEDIMENT_FORM_DESTINATIONS_OPTION,
+			array_merge(
+				$existing,
+				array(
+					array(
+						'id'            => 'ssrf_test',
+						'label'         => 'SSRF Test',
+						'method'        => 'POST',
+						'url'           => 'https://{{ field:host }}/hook',
+						'headers'       => array(),
+						'content_type'  => 'application/json',
+						'body_template' => '{"ok":true}',
+						'secret_refs'   => array(),
+					),
+				)
+			)
+		);
+
+		// Create a submission whose host field resolves to a private IP.
+		$id = self::factory()->post->create( array( 'post_type' => PEDIMENT_FORM_CPT ) );
+		update_post_meta( $id, '_fields', wp_json_encode( array( 'host' => array( 'label' => 'Host', 'value' => '169.254.169.254' ) ) ) );
+		update_post_meta( $id, '_source_post_id', 0 );
+		update_post_meta( $id, '_destination', 'ssrf_test' );
+		update_post_meta( $id, '_delivery_status', 'pending' );
+
+		// Install a stub that fails the test if it is ever invoked.
+		$http_called = false;
+		add_filter(
+			'pre_http_request',
+			function () use ( &$http_called ) {
+				$http_called = true;
+				return array(
+					'response' => array( 'code' => 200, 'message' => 'OK' ),
+					'body'     => '',
+					'headers'  => array(),
+				);
+			},
+			10,
+			3
+		);
+
+		$res = pediment_form_deliver( $id );
+
+		$this->assertSame( 'failed', $res['status'] );
+		$this->assertSame( 'failed', get_post_meta( $id, '_delivery_status', true ) );
+		$this->assertFalse( $http_called, 'No HTTP request should be made when the rendered URL resolves to a private host.' );
+	}
+
+	public function test_wp_error_response_is_recorded_as_failed() {
+		add_filter(
+			'pre_http_request',
+			static function () {
+				return new WP_Error( 'http_request_failed', 'could not resolve host' );
+			},
+			10,
+			3
+		);
+
+		$id  = $this->make_submission();
+		$res = pediment_form_deliver( $id );
+
+		$this->assertSame( 'failed', $res['status'] );
+		$this->assertSame( 'failed', get_post_meta( $id, '_delivery_status', true ) );
+		$this->assertStringContainsString( 'could not resolve host', (string) get_post_meta( $id, '_delivery_response', true ) );
+	}
 }
