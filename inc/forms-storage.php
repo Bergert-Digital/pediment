@@ -92,6 +92,12 @@ function pediment_form_persist_submission( array $submission, $request ): void {
 	update_post_meta( $new_id, '_source_post_id', $post_id );
 	update_post_meta( $new_id, '_destination', sanitize_text_field( $destination ) );
 	update_post_meta( $new_id, '_delivery_status', 'pending' );
+
+	/**
+	 * Fires after a submission is stored, carrying the stored post id so delivery
+	 * can record its result. Plan 2's delivery engine hooks this.
+	 */
+	do_action( 'pediment_form_stored', (int) $new_id, $submission );
 }
 
 add_filter(
