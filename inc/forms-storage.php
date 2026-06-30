@@ -9,6 +9,17 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+const PEDIMENT_FORM_RETENTION_OPTION = 'pediment_form_retention_days';
+
+/**
+ * Effective retention window in days (0 = keep forever). Saved setting first,
+ * then the long-standing filter.
+ */
+function pediment_form_retention_days(): int {
+	$days = (int) get_option( PEDIMENT_FORM_RETENTION_OPTION, 90 );
+	return (int) apply_filters( 'pediment_form_retention_days', $days );
+}
+
 add_action(
 	'init',
 	function () {
@@ -108,6 +119,7 @@ add_filter(
 			'title'       => __( 'Submission', 'pediment' ),
 			'fields'      => __( 'Details', 'pediment' ),
 			'destination' => __( 'Destination', 'pediment' ),
+			'delivery'    => __( 'Delivery', 'pediment' ),
 			'date'        => __( 'Submitted', 'pediment' ),
 		);
 	}
@@ -148,6 +160,20 @@ add_action(
 		} elseif ( 'fields' === $col ) {
 			$summary = pediment_form_fields_summary( (int) $post_id );
 			echo esc_html( '' !== $summary ? $summary : __( '—', 'pediment' ) );
+		} elseif ( 'delivery' === $col ) {
+			$status = (string) get_post_meta( $post_id, '_delivery_status', true );
+			$http   = (string) get_post_meta( $post_id, '_delivery_http_status', true );
+			$labels = array(
+				'sent'           => __( 'Sent', 'pediment' ),
+				'failed'         => __( 'Failed', 'pediment' ),
+				'pending'        => __( 'Pending', 'pediment' ),
+				'no_destination' => __( 'No destination', 'pediment' ),
+			);
+			$text   = $labels[ $status ] ?? ( '' !== $status ? $status : __( 'Pending', 'pediment' ) );
+			if ( '' !== $http && 'sent' !== $status ) {
+				$text .= ' (' . $http . ')';
+			}
+			echo esc_html( $text );
 		}
 	},
 	10,
@@ -157,7 +183,7 @@ add_action(
 add_action( PEDIMENT_FORM_CRON_HOOK, 'pediment_form_cleanup' );
 
 function pediment_form_cleanup(): void {
-	$days = (int) apply_filters( 'pediment_form_retention_days', 90 );
+	$days = pediment_form_retention_days();
 	if ( $days <= 0 ) {
 		return;
 	}
@@ -195,4 +221,44 @@ function pediment_form_schedule_cleanup(): void {
 
 function pediment_form_unschedule_cleanup(): void {
 	wp_clear_scheduled_hook( PEDIMENT_FORM_CRON_HOOK );
+}
+
+add_filter(
+	'post_row_actions',
+	function ( array $actions, WP_Post $post ): array {
+		if ( PEDIMENT_FORM_CPT !== $post->post_type || ! current_user_can( 'manage_options' ) ) {
+			return $actions;
+		}
+		if ( 'sent' === (string) get_post_meta( $post->ID, '_delivery_status', true ) ) {
+			return $actions;
+		}
+		$url                       = wp_nonce_url(
+			admin_url( 'admin-post.php?action=pediment_form_retry&submission=' . $post->ID ),
+			'pediment_form_retry_' . $post->ID
+		);
+		$actions['pediment_retry'] = sprintf(
+			'<a href="%s">%s</a>',
+			esc_url( $url ),
+			esc_html__( 'Retry delivery', 'pediment' )
+		);
+		return $actions;
+	},
+	10,
+	2
+);
+
+add_action( 'admin_post_pediment_form_retry', 'pediment_form_handle_retry' );
+
+/**
+ * Re-attempt delivery for a single submission from the admin list.
+ */
+function pediment_form_handle_retry(): void {
+	$id = isset( $_GET['submission'] ) ? absint( wp_unslash( $_GET['submission'] ) ) : 0;
+	if ( $id <= 0 || ! current_user_can( 'manage_options' ) ) {
+		wp_die( esc_html__( 'Not allowed.', 'pediment' ) );
+	}
+	check_admin_referer( 'pediment_form_retry_' . $id );
+	pediment_form_deliver( $id );
+	wp_safe_redirect( add_query_arg( array( 'post_type' => PEDIMENT_FORM_CPT ), admin_url( 'edit.php' ) ) );
+	exit;
 }
