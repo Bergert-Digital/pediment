@@ -12,6 +12,84 @@ if ( ! defined( 'ABSPATH' ) ) {
 const PEDIMENT_FORM_SETTINGS_PAGE = 'pediment-forms';
 
 /**
+ * Dry-run a destination: build a sample context, render the request, send it,
+ * and return a human-readable result — without writing any submission or option.
+ *
+ * @param array<string,mixed> $dest Clean destination record (from pediment_form_sanitize_destination).
+ * @return array{ok:bool,message:string}
+ */
+function pediment_form_test_destination( array $dest ): array {
+	// Collect every field token referenced across url, body template, and headers.
+	$fields    = array();
+	$scan_srcs = array_merge(
+		array( (string) ( $dest['url'] ?? '' ), (string) ( $dest['body_template'] ?? '' ) ),
+		array_values( (array) ( $dest['headers'] ?? array() ) )
+	);
+	foreach ( $scan_srcs as $hay ) {
+		foreach ( pediment_form_extract_tokens( (string) $hay ) as $tok ) {
+			if ( 'field' === $tok['type'] ) {
+				$fields[ $tok['name'] ] = 'sample';
+			}
+		}
+	}
+
+	$context = array(
+		'fields' => $fields,
+		'meta'   => array(
+			'post_id'      => '0',
+			'page_url'     => home_url( '/' ),
+			'submitted_at' => gmdate( 'Y-m-d\TH:i:s\Z' ),
+			'destination'  => (string) ( $dest['id'] ?? '' ),
+		),
+	);
+
+	$url = pediment_form_render_url( (string) ( $dest['url'] ?? '' ), $context );
+	if ( ! pediment_form_url_is_safe( $url ) ) {
+		return array(
+			'ok'      => false,
+			// translators: (no placeholders).
+			'message' => __( 'Test blocked: the destination URL is not HTTPS or resolves to a private host.', 'pediment' ),
+		);
+	}
+
+	$content_type = (string) ( $dest['content_type'] ?? 'application/json' );
+	$headers      = array( 'Content-Type' => $content_type );
+	foreach ( (array) ( $dest['headers'] ?? array() ) as $hk => $hv ) {
+		$headers[ (string) $hk ] = pediment_form_render_header_value( (string) $hv, $context );
+	}
+
+	$body = pediment_form_render_template( (string) ( $dest['body_template'] ?? '' ), $context, $content_type );
+
+	$response = wp_remote_request(
+		$url,
+		array(
+			'method'  => strtoupper( (string) ( $dest['method'] ?? 'POST' ) ),
+			'headers' => $headers,
+			'body'    => $body,
+			'timeout' => 15,
+		)
+	);
+
+	if ( is_wp_error( $response ) ) {
+		return array(
+			'ok'      => false,
+			// translators: %s: error message from the HTTP transport.
+			'message' => sprintf( __( 'Test request failed: %s', 'pediment' ), $response->get_error_message() ),
+		);
+	}
+
+	$code    = (int) wp_remote_retrieve_response_code( $response );
+	$snippet = substr( (string) wp_remote_retrieve_body( $response ), 0, 200 );
+	$ok      = ( $code >= 200 && $code < 300 );
+	// translators: 1: HTTP status code, 2: first 200 chars of response body.
+	$message = sprintf( __( 'Test response: HTTP %1$d — %2$s', 'pediment' ), $code, $snippet );
+	return array(
+		'ok'      => $ok,
+		'message' => $message,
+	);
+}
+
+/**
  * Normalize raw destination POST input into a clean record + validation errors.
  *
  * @param array<string,mixed> $raw Raw input (header_keys[]/header_values[] paired).
@@ -283,7 +361,10 @@ function pediment_form_render_settings_page(): void {
 					</td>
 				</tr>
 			</table>
-			<?php submit_button( __( 'Save destination', 'pediment' ) ); ?>
+			<p class="submit">
+				<?php submit_button( __( 'Save destination', 'pediment' ), 'primary', 'submit', false ); ?>
+				<button type="submit" name="pediment_form_test" value="1" class="button"><?php echo esc_html__( 'Send test', 'pediment' ); ?></button>
+			</p>
 		</form>
 	</div>
 	<?php
@@ -365,6 +446,7 @@ function pediment_form_handle_save_secret(): void {
 	$value = isset( $_POST['secret_value'] ) ? (string) wp_unslash( $_POST['secret_value'] ) : '';
 	if ( '' === $name || '' === $value ) {
 		pediment_form_settings_redirect( 'error', __( 'Secret name and value are required.', 'pediment' ) );
+		return;
 	}
 	pediment_form_secret_set( $name, $value );
 	pediment_form_settings_redirect( 'updated', __( 'Secret saved.', 'pediment' ) );
@@ -394,6 +476,12 @@ function pediment_form_handle_save_destination(): void {
 	$result = pediment_form_sanitize_destination( wp_unslash( $_POST ) );
 	if ( ! empty( $result['errors'] ) ) {
 		pediment_form_settings_redirect( 'error', implode( ' ', $result['errors'] ) );
+	}
+	// phpcs:ignore WordPress.Security.NonceVerification.Missing -- nonce already verified by check_admin_referer above.
+	if ( isset( $_POST['pediment_form_test'] ) ) {
+		$test = pediment_form_test_destination( $result['dest'] );
+		pediment_form_settings_redirect( $test['ok'] ? 'updated' : 'error', $test['message'] );
+		return;
 	}
 	pediment_form_save_destination( $result['dest'] );
 	pediment_form_settings_redirect( 'updated', __( 'Destination saved.', 'pediment' ) );
