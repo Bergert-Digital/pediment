@@ -71,4 +71,29 @@ class TemplateTest extends WP_UnitTestCase {
 		$this->assertContains( array( 'type' => 'secret', 'name' => 'api' ), $tokens );
 		$this->assertContains( array( 'type' => 'all_fields', 'name' => '' ), $tokens );
 	}
+
+	public function test_field_value_token_is_not_re_resolved_in_all_fields() {
+		pediment_form_secret_set( 'api', 'sk-LEAK' );
+		$ctx = array(
+			'fields' => array( 'evil' => '{{ secret:api }}' ),
+			'meta'   => array(),
+		);
+		$out  = pediment_form_render_template( '{"data":"{{ all_fields }}"}', $ctx, 'application/json' );
+		$data = json_decode( $out, true );
+		$this->assertSame( '{{ secret:api }}', $data['data']['evil'], 'field value must NOT be re-resolved as a token' );
+		$this->assertStringNotContainsString( 'sk-LEAK', $out );
+		pediment_form_secret_set( 'api', '' );
+	}
+
+	public function test_field_value_token_is_not_resolved_in_scalar_context() {
+		pediment_form_secret_set( 'api', 'sk-LEAK' );
+		$ctx = array(
+			'fields' => array( 'x' => '{{ secret:api }}' ),
+			'meta'   => array(),
+		);
+		$out = pediment_form_render_template( '{"v":"{{ field:x }}"}', $ctx, 'application/json' );
+		$this->assertSame( '{{ secret:api }}', json_decode( $out, true )['v'] );
+		$this->assertStringNotContainsString( 'sk-LEAK', $out );
+		pediment_form_secret_set( 'api', '' );
+	}
 }

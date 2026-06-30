@@ -51,19 +51,18 @@ function pediment_form_render_template( string $template, array $context, string
 	$fields  = isset( $context['fields'] ) && is_array( $context['fields'] ) ? $context['fields'] : array();
 
 	if ( $is_json ) {
-		// "{{ all_fields }}" (a quoted JSON value) becomes a JSON object.
-		$template = preg_replace_callback(
-			'/"\{\{\s*all_fields\s*\}\}"/',
-			static function () use ( $fields ) {
-				return (string) wp_json_encode( $fields );
-			},
-			$template
-		);
-		// Scalar tokens: JSON-string-escape, strip the surrounding quotes (already
-		// inside the template's own quotes).
+		// Single pass: match "{{ all_fields }}" OR a scalar token. Because this is
+		// one pass, replacement text (including field values that look like tokens)
+		// is never re-scanned — preventing field-value token injection.
 		return (string) preg_replace_callback(
-			PEDIMENT_FORM_SCALAR_TOKEN_RE,
-			static function ( $m ) use ( $context ) {
+			'/"\{\{\s*all_fields\s*\}\}"|\{\{\s*(field|meta|secret)\s*:\s*([a-z0-9_]+)\s*\}\}/i',
+			static function ( $m ) use ( $fields, $context ) {
+				if ( '"' === $m[0][0] ) {
+					// Matched "{{ all_fields }}" — emit the JSON object.
+					return (string) wp_json_encode( $fields );
+				}
+				// Matched a scalar token — JSON-string-escape the value and strip
+				// the surrounding quotes (already inside the template's own quotes).
 				$value   = pediment_form_resolve_token( strtolower( $m[1] ), strtolower( $m[2] ), $context );
 				$encoded = (string) wp_json_encode( $value );
 				return substr( $encoded, 1, -1 );
