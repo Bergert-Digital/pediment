@@ -86,6 +86,18 @@ class SchemaBuilderTest extends \WP_UnitTestCase {
 		$this->assertTrue( $schema['blocks']['core/group']['allowsInnerBlocks'] );
 	}
 
+	public function test_columns_pair_is_allowlisted(): void {
+		$blocks = ( new SchemaBuilder() )->build( true )['blocks'];
+
+		$this->assertArrayHasKey( 'core/columns', $blocks );
+		$this->assertTrue( $blocks['core/columns']['allowsInnerBlocks'] );
+		$this->assertSame( [ 'core/column' ], $blocks['core/columns']['allowedChildBlocks'] );
+
+		$this->assertArrayHasKey( 'core/column', $blocks );
+		$this->assertTrue( $blocks['core/column']['allowsInnerBlocks'] );
+		$this->assertSame( [ 'core/columns' ], $blocks['core/column']['requiresParent'] );
+	}
+
 	public function test_block_namespaces_default_excludes_unknown_namespaces(): void {
 		\PedimentAi\Anthropic\SchemaBuilder::invalidate();
 
