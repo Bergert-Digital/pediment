@@ -180,7 +180,7 @@ add_action(
 add_action( 'pediment_contact_submitted', 'pediment_contact_send_notification', 20, 2 );
 
 function pediment_contact_send_notification( array $payload, $request ): void {
-	$brand_name = (string) \Pediment\Brand::get( 'brand_name', get_bloginfo( 'name' ) );
+	$brand_name = (string) get_bloginfo( 'name' );
 
 	$recipient = '';
 	if ( $request instanceof WP_REST_Request ) {
@@ -190,7 +190,7 @@ function pediment_contact_send_notification( array $payload, $request ): void {
 		}
 	}
 	if ( '' === $recipient ) {
-		$recipient = (string) \Pediment\Brand::get( 'contact_email', get_option( 'admin_email' ) );
+		$recipient = (string) get_option( 'admin_email' );
 	}
 	if ( '' === $recipient ) {
 		return;

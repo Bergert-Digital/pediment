@@ -16,11 +16,15 @@ class MailTest extends WP_UnitTestCase {
 			2
 		);
 
-		\Pediment\Brand::set( 'contact_email', 'owner@example.com' );
-		\Pediment\Brand::set( 'brand_name', 'Acme Co' );
+		// Set the recipient (admin_email) and site name (blogname) via filters
+		// rather than update_option(): changing admin_email for real triggers
+		// WordPress's own admin-email-change notification, which would pollute
+		// the captured mail and break the assertions below.
+		add_filter( 'pre_option_admin_email', static fn() => 'owner@example.com' );
+		add_filter( 'pre_option_blogname', static fn() => 'Acme Co' );
 	}
 
-	public function test_sends_mail_to_brand_email_by_default() {
+	public function test_sends_mail_to_admin_email_by_default() {
 		do_action(
 			'pediment_contact_submitted',
 			array(
