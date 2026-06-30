@@ -30,6 +30,7 @@ require_once __DIR__ . '/inc/forms-template.php';
 require_once __DIR__ . '/inc/forms-presets.php';
 require_once __DIR__ . '/inc/forms-destinations.php';
 require_once __DIR__ . '/inc/forms-delivery.php';
+require_once __DIR__ . '/inc/forms-settings.php';
 require_once __DIR__ . '/inc/patterns.php';
 
 require_once __DIR__ . '/inc/bootstrap.php';
