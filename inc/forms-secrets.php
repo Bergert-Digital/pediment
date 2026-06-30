@@ -15,15 +15,36 @@ if ( ! defined( 'ABSPATH' ) ) {
 const PEDIMENT_FORM_SECRETS_OPTION = 'pediment_form_secrets';
 
 /**
+ * Normalise a secret name to a consistent slug used for storage.
+ *
+ * Replaces any run of non-alphanumeric characters with an underscore, strips
+ * leading/trailing underscores, then passes through sanitize_key() for
+ * lower-casing and final safety. Both set and get use this function so the
+ * storage key is always identical regardless of how the caller spells the name.
+ *
+ * @param string $name Raw secret name.
+ * @return string Normalised slug (may be empty if $name contained no alphanumerics).
+ */
+function pediment_form_secret_normalize_name( string $name ): string {
+	return sanitize_key( trim( (string) preg_replace( '/[^a-z0-9]+/i', '_', $name ), '_' ) );
+}
+
+/**
  * Derive the symmetric cipher key from the site's auth salt.
+ *
+ * @internal
  */
 function pediment_form_secret_cipher_key(): string {
+	if ( ! defined( 'SODIUM_CRYPTO_SECRETBOX_KEYBYTES' ) ) {
+		return '';
+	}
 	return substr( hash( 'sha256', wp_salt( 'auth' ) . '|pediment-form-secrets', true ), 0, SODIUM_CRYPTO_SECRETBOX_KEYBYTES );
 }
 
 /**
  * Encrypt a plaintext secret; base64-encodes nonce.ciphertext.
  *
+ * @internal
  * @param string $plain Plaintext value.
  */
 function pediment_form_secret_encrypt( string $plain ): string {
@@ -38,6 +59,7 @@ function pediment_form_secret_encrypt( string $plain ): string {
 /**
  * Decrypt a stored secret blob.
  *
+ * @internal
  * @param string $blob base64(nonce.ciphertext).
  */
 function pediment_form_secret_decrypt( string $blob ): string {
@@ -61,7 +83,7 @@ function pediment_form_secret_decrypt( string $blob ): string {
  * @param string $plain Plaintext value; '' removes the secret.
  */
 function pediment_form_secret_set( string $name, string $plain ): void {
-	$name = sanitize_key( trim( preg_replace( '/[^a-z0-9]+/i', '_', $name ), '_' ) );
+	$name = pediment_form_secret_normalize_name( $name );
 	if ( '' === $name ) {
 		return;
 	}
@@ -81,7 +103,7 @@ function pediment_form_secret_set( string $name, string $plain ): void {
  * @param string $name Secret name.
  */
 function pediment_form_secret_get( string $name ): string {
-	$name = sanitize_key( $name );
+	$name = pediment_form_secret_normalize_name( $name );
 	$all  = get_option( PEDIMENT_FORM_SECRETS_OPTION, array() );
 	if ( ! is_array( $all ) || ! isset( $all[ $name ] ) ) {
 		return '';
