@@ -476,6 +476,7 @@ function pediment_form_handle_save_destination(): void {
 	$result = pediment_form_sanitize_destination( wp_unslash( $_POST ) );
 	if ( ! empty( $result['errors'] ) ) {
 		pediment_form_settings_redirect( 'error', implode( ' ', $result['errors'] ) );
+		return;
 	}
 	// phpcs:ignore WordPress.Security.NonceVerification.Missing -- nonce already verified by check_admin_referer above.
 	if ( isset( $_POST['pediment_form_test'] ) ) {

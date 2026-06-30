@@ -109,15 +109,32 @@ function pediment_form_validate_destination( array $dest ): array {
 	}
 
 	// Token sanity across url + headers + body.
-	$haystacks = array( (string) ( $dest['url'] ?? '' ), $body );
-	foreach ( (array) ( $dest['headers'] ?? array() ) as $hv ) {
-		$haystacks[] = (string) $hv;
+	// Each haystack carries the field key to use when reporting a bad meta token.
+	$haystacks = array(
+		array(
+			'key' => 'url',
+			'hay' => (string) ( $dest['url'] ?? '' ),
+		),
+		array(
+			'key' => 'body_template',
+			'hay' => $body,
+		),
+	);
+	foreach ( (array) ( $dest['headers'] ?? array() ) as $hk => $hv ) {
+		$haystacks[] = array(
+			'key' => 'headers',
+			'hay' => (string) $hk,
+		);
+		$haystacks[] = array(
+			'key' => 'headers',
+			'hay' => (string) $hv,
+		);
 	}
 	$known_secrets = pediment_form_secret_names();
-	foreach ( $haystacks as $hay ) {
-		foreach ( pediment_form_extract_tokens( $hay ) as $tok ) {
+	foreach ( $haystacks as $entry ) {
+		foreach ( pediment_form_extract_tokens( $entry['hay'] ) as $tok ) {
 			if ( 'meta' === $tok['type'] && ! in_array( $tok['name'], PEDIMENT_FORM_META_KEYS, true ) ) {
-				$errors['body_template'] = sprintf(
+				$errors[ $entry['key'] ] = sprintf(
 					/* translators: %s: token name */
 					__( 'Unknown meta token: %s.', 'pediment' ),
 					$tok['name']

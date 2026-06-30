@@ -40,7 +40,7 @@ function pediment_form_presets(): array {
 			'url'           => 'https://api.mailgun.net/v3/YOUR_DOMAIN/messages',
 			'headers'       => array( 'Authorization' => 'Basic {{ secret:mailgun_basic_auth }}' ),
 			'content_type'  => 'application/x-www-form-urlencoded',
-			'body_template' => 'from=noreply@example.com&to=you@example.com&subject=New form submission&text={{ field:message }}',
+			'body_template' => 'from=noreply@example.com&to=you@example.com&subject=New+form+submission&text={{ field:message }}',
 			'secret_refs'   => array( 'mailgun_basic_auth' ),
 		),
 		'n8n'     => array(
