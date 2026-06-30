@@ -4,10 +4,15 @@
   "name": "pediment/social-links",
   "title": "Social Links",
   "category": "pediment",
-  "description": "Renders the social links configured in Settings → Brand Settings. Hides itself when none are configured.",
+  "description": "Renders a row of icon links to your social profiles. Add links in the block settings sidebar. Hides itself when none are configured.",
   "textdomain": "pediment",
   "supports": { "html": false, "align": [ "wide" ] },
-  "attributes": {},
+  "attributes": {
+    "links": {
+      "type": "array",
+      "default": []
+    }
+  },
   "example": {},
   "editorScript": "file:./index.js",
   "editorStyle": "file:./style-index.css",

@@ -63,11 +63,7 @@ if ( ! function_exists( 'pediment_social_links_labels' ) ) :
 	}
 endif;
 
-if ( ! class_exists( '\\Pediment\\Brand' ) ) {
-	return '';
-}
-
-$links = \Pediment\Brand::get( 'social_links', array() );
+$links = $attributes['links'] ?? array();
 $links = is_array( $links ) ? $links : array();
 
 if ( empty( $links ) ) {

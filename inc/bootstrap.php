@@ -1,7 +1,7 @@
 <?php
 /**
  * Framework bootstrap: make a freshly-activated Pediment site functional
- * (brand defaults, an editable header template part).
+ * (an editable header template part).
  * Runs on theme activation. Carries NO demo content.
  *
  * @package Pediment
@@ -12,18 +12,6 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 function pediment_bootstrap(): void {
-	$brand_defaults = array(
-		'brand_name'    => get_bloginfo( 'name' ) ?: 'Acme',
-		'brand_tagline' => 'Short benefit-led promise.',
-		'voice_tone'    => 'Confident, plain-spoken, no buzzwords.',
-		'contact_email' => get_option( 'admin_email' ),
-	);
-	foreach ( $brand_defaults as $k => $v ) {
-		if ( '' === (string) \Pediment\Brand::get( $k, '' ) ) {
-			\Pediment\Brand::set( $k, $v );
-		}
-	}
-
 	pediment_bootstrap_header_template_part();
 
 	// Intentionally leave the permalink structure untouched. Forcing pretty
