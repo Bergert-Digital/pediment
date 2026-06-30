@@ -921,7 +921,7 @@ return array(
 		'name' => 'pediment/social-links',
 		'title' => 'Social Links',
 		'category' => 'pediment',
-		'description' => 'Renders the social links configured in Settings → Brand Settings. Hides itself when none are configured.',
+		'description' => 'Renders a row of icon links to your social profiles. Add links in the block settings sidebar. Hides itself when none are configured.',
 		'textdomain' => 'pediment',
 		'supports' => array(
 			'html' => false,
@@ -930,7 +930,12 @@ return array(
 			)
 		),
 		'attributes' => array(
-			
+			'links' => array(
+				'type' => 'array',
+				'default' => array(
+					
+				)
+			)
 		),
 		'example' => array(
 			

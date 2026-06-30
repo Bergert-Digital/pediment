@@ -13,14 +13,11 @@ if ( ! defined( 'PEDIMENT_THEME_DIR' ) ) {
 	define( 'PEDIMENT_THEME_DIR', __DIR__ );
 }
 
-require_once __DIR__ . '/inc/BrandRegistry.php';
-require_once __DIR__ . '/inc/Brand.php';
 require_once __DIR__ . '/inc/register-blocks.php';
 require_once __DIR__ . '/inc/icons.php';
 require_once __DIR__ . '/inc/block-styles.php';
 require_once __DIR__ . '/inc/hero-variants.php';
 require_once __DIR__ . '/inc/layout-variations.php';
-require_once __DIR__ . '/inc/brand-settings.php';
 require_once __DIR__ . '/inc/contact-form.php';
 require_once __DIR__ . '/inc/forms.php';
 require_once __DIR__ . '/inc/forms-storage.php';
