@@ -29,9 +29,9 @@ on every block change, not just new blocks.
 ## Tests
 
 - **PHPUnit:** every block has `tests/phpunit/BlockRender/<Name>Test.php` covering valid +
-  edge-case (empty) attributes. Contact form, patterns, seed, and brand registry have suites.
+  edge-case (empty) attributes. Contact form, patterns, and seed have suites.
   Run: `npx wp-env run tests-wordpress --env-cwd=wp-content/themes/pediment vendor/bin/phpunit`
-- **Playwright:** editor block insertion, front-page render, brand settings, contact form.
+- **Playwright:** editor block insertion, front-page render, contact form.
   Run: `npm run e2e` (requires `npm run env:start`).
 - A feature or fix is not done until its test passes and the relevant screenshot looks right.
 
@@ -43,9 +43,9 @@ lint-blocks, phpunit, and e2e on every PR and push to main. Red CI never merges.
 
 ## Extensibility discipline
 
-Parent files are read-only from a child theme's perspective. Brand Settings extends only via
-`pediment_brand_fields` / `pediment_brand_sections`. A change that forces a child to edit a
-parent file is a parent-API gap to fix upstream, not a child workaround.
+Parent files are read-only from a child theme's perspective. Child themes extend the parent via
+`theme.json` overrides, template parts, block filters, and `client/*` blocks. A change that
+forces a child to edit a parent file is a parent-API gap to fix upstream, not a child workaround.
 
 ## Distribution
 

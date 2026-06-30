@@ -17,11 +17,6 @@ class BootstrapTest extends WP_UnitTestCase {
 		$this->assertNotEmpty( $parts, 'header template part should exist after bootstrap' );
 	}
 
-	public function test_bootstrap_sets_brand_defaults(): void {
-		pediment_bootstrap();
-		$this->assertNotSame( '', (string) \Pediment\Brand::get( 'brand_tagline', '' ) );
-	}
-
 	public function test_bootstrap_leaves_permalink_structure_untouched(): void {
 		// Bootstrap must not force pretty permalinks: in containerized installs
 		// that breaks REST (rest_url() -> /wp-json/ 404s). See pediment#47.
