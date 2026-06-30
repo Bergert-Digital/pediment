@@ -6,7 +6,7 @@ import {
 } from '@wordpress/block-editor';
 import { PanelBody, TextControl, TextareaControl } from '@wordpress/components';
 
-const ALLOWED = [ 'pediment/form-field' ];
+// Child block is constrained by `allowedBlocks` in block.json.
 const TEMPLATE: Array< [ string, Record< string, unknown > ] > = [
 	[
 		'pediment/form-field',
@@ -73,7 +73,7 @@ export default function Edit( {
 				</PanelBody>
 			</InspectorControls>
 			<form { ...blockProps } onSubmit={ ( e ) => e.preventDefault() }>
-				<InnerBlocks allowedBlocks={ ALLOWED } template={ TEMPLATE } />
+				<InnerBlocks template={ TEMPLATE } />
 				<button type="button" className="pediment-form__submit">
 					{ attributes.submitLabel || __( 'Send', 'pediment' ) }
 				</button>

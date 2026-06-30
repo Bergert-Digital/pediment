@@ -3,6 +3,56 @@
   gap: var( --wp--preset--spacing--20, 0.5rem );
 }
 
+.pediment-form__label {
+  font-weight: 600;
+}
+
+.pediment-form__field {
+  input:not( [type='checkbox'] ):not( [type='radio'] ),
+  textarea,
+  select {
+    box-sizing: border-box;
+    width: 100%;
+    padding: var( --wp--preset--spacing--20, 0.5rem )
+      var( --wp--preset--spacing--30, 1rem );
+    color: var( --wp--preset--color--foreground );
+    font-family: inherit;
+    font-size: inherit;
+    background-color: var( --wp--preset--color--surface );
+    border: 1px solid var( --wp--preset--color--border );
+    border-radius: 0.5rem;
+  }
+
+  input:not( [type='checkbox'] ):not( [type='radio'] ):focus,
+  textarea:focus,
+  select:focus {
+    border-color: var( --wp--preset--color--accent );
+    outline: 2px solid var( --wp--preset--color--accent );
+    outline-offset: 1px;
+  }
+
+  textarea {
+    resize: vertical;
+  }
+
+  input[type='checkbox'],
+  input[type='radio'] {
+    accent-color: var( --wp--preset--color--accent );
+  }
+}
+
+.pediment-form__radio {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-weight: 400;
+}
+
+.pediment-form__help {
+  color: var( --wp--preset--color--foreground-muted );
+  font-size: 0.875em;
+}
+
 .pediment-form__field-error {
   font-weight: 600;
 }

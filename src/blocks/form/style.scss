@@ -11,6 +11,30 @@
 	overflow: hidden;
 }
 
+.pediment-form__submit {
+	justify-self: start;
+	padding: var( --wp--preset--spacing--20, 0.5rem )
+		var( --wp--preset--spacing--30, 1rem );
+	color: var( --wp--preset--color--surface );
+	font-weight: 600;
+	font-family: inherit;
+	font-size: inherit;
+	background-color: var( --wp--preset--color--accent );
+	border: 0;
+	border-radius: 0.5rem;
+	cursor: pointer;
+}
+
+.pediment-form__submit:hover,
+.pediment-form__submit:focus {
+	background-color: var( --wp--preset--color--accent-hover );
+}
+
+.pediment-form__submit:disabled {
+	opacity: 0.6;
+	cursor: not-allowed;
+}
+
 .pediment-form__status[ data-state='error' ] {
 	font-weight: 600;
 }
