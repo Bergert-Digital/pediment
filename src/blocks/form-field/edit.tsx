@@ -12,7 +12,7 @@ import {
 	TextareaControl,
 } from '@wordpress/components';
 import { useSelect } from '@wordpress/data';
-import { useEffect } from '@wordpress/element';
+import { useEffect, useState } from '@wordpress/element';
 
 type Option = { label: string; value: string };
 type Attrs = {
@@ -132,6 +132,25 @@ export default function Edit( {
 				return { label: lab.trim(), value: ( val ?? lab ).trim() };
 			} );
 
+	// The Options textarea keeps its own draft so the user can freely type blank
+	// lines and `Label|value` rows. Storing parsed options back as the textarea
+	// value would strip empty lines on every keystroke (filter(Boolean)), making
+	// it impossible to press Enter. Only resync the draft when options change from
+	// OUTSIDE this control (undo/redo, programmatic edits) — typing round-trips to
+	// the same normalized text, so the cursor is never disturbed.
+	const [ optionsDraft, setOptionsDraft ] = useState( optionsText );
+	useEffect( () => {
+		const normalizedDraft = parseOptions( optionsDraft )
+			.map( ( o ) =>
+				o.label === o.value ? o.label : `${ o.label }|${ o.value }`
+			)
+			.join( '\n' );
+		if ( normalizedDraft !== optionsText ) {
+			setOptionsDraft( optionsText );
+		}
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [ optionsText ] );
+
 	return (
 		<>
 			<InspectorControls>
@@ -181,10 +200,13 @@ export default function Edit( {
 								'Options (one per line, "Label|value" optional)',
 								'pediment'
 							) }
-							value={ optionsText }
-							onChange={ ( v ) =>
-								setAttributes( { options: parseOptions( v ) } )
-							}
+							value={ optionsDraft }
+							onChange={ ( v ) => {
+								setOptionsDraft( v );
+								setAttributes( {
+									options: parseOptions( v ),
+								} );
+							} }
 						/>
 					) }
 				</PanelBody>
