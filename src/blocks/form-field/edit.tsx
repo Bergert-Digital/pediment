@@ -98,7 +98,26 @@ export default function Edit( {
 	}, [ label ] ); // eslint-disable-line react-hooks/exhaustive-deps
 
 	const needsOptions = fieldType === 'select' || fieldType === 'radio';
-	const optionsText = options
+	// `options` comes from block attributes, which AI-authored markup can shape
+	// loosely — a string, an array of strings, or objects with missing keys. Normalize
+	// to a clean Option[] so the editor preview never crashes on malformed input.
+	const rawOptions: unknown = options;
+	const safeOptions: Option[] = Array.isArray( rawOptions )
+		? rawOptions.map( ( o: unknown ) => {
+				if ( typeof o === 'string' ) {
+					return { label: o, value: o };
+				}
+				const obj = ( o ?? {} ) as {
+					label?: unknown;
+					value?: unknown;
+				};
+				return {
+					label: String( obj.label ?? obj.value ?? '' ),
+					value: String( obj.value ?? obj.label ?? '' ),
+				};
+		  } )
+		: [];
+	const optionsText = safeOptions
 		.map( ( o ) =>
 			o.label === o.value ? o.label : `${ o.label }|${ o.value }`
 		)
@@ -176,7 +195,7 @@ export default function Edit( {
 					{ label || __( 'Untitled field', 'pediment' ) }
 					{ required ? ' *' : '' }
 				</span>
-				{ renderPreview( fieldType, placeholder, options ) }
+				{ renderPreview( fieldType, placeholder, safeOptions ) }
 				{ helpText && (
 					<small className="pediment-form__help">{ helpText }</small>
 				) }
