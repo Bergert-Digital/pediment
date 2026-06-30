@@ -1,0 +1,27 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "pediment/form",
+	"title": "Form",
+	"category": "pediment",
+	"description": "A form that collects visitor input and delivers it to a configured destination. Add Form Field child blocks for each input. Use for contact, booking, registration, feedback, or signup forms.",
+	"textdomain": "pediment",
+	"supports": { "html": false, "align": [ "wide" ] },
+	"attributes": {
+		"destination": { "type": "string", "default": "" },
+		"successMessage": { "type": "string", "default": "Thanks — we'll be in touch shortly." },
+		"submitLabel": { "type": "string", "default": "Send" }
+	},
+	"example": {
+		"attributes": { "successMessage": "Thanks — we'll be in touch shortly." },
+		"innerBlocks": [
+			{ "name": "pediment/form-field", "attributes": { "label": "Name", "fieldName": "name", "required": true } },
+			{ "name": "pediment/form-field", "attributes": { "fieldType": "email", "label": "Email", "fieldName": "email", "required": true } }
+		]
+	},
+	"editorScript": "file:./index.js",
+	"editorStyle": "file:./style-index.css",
+	"style": "file:./style-index.css",
+	"viewScript": "file:./view.js",
+	"render": "file:./render.php"
+}

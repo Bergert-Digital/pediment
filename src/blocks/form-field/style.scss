@@ -1,0 +1,8 @@
+.pediment-form__field {
+  display: grid;
+  gap: var( --wp--preset--spacing--20, 0.5rem );
+}
+
+.pediment-form__field-error {
+  font-weight: 600;
+}

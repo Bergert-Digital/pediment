@@ -50,11 +50,12 @@ add_action(
 	'init',
 	function () {
 		$rel  = 'assets/css/insight-card.css';
+		$path = get_theme_file_path( $rel );
 		$args = array(
 			'handle' => 'pediment-insight-card',
 			'src'    => get_theme_file_uri( $rel ),
-			'ver'    => (string) filemtime( get_theme_file_path( $rel ) ),
-			'path'   => get_theme_file_path( $rel ),
+			'ver'    => file_exists( $path ) ? (string) filemtime( $path ) : false,
+			'path'   => $path,
 		);
 		wp_enqueue_block_style( 'pediment/blog-index', $args );
 		wp_enqueue_block_style( 'core/query', $args );
