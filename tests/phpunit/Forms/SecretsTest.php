@@ -34,4 +34,9 @@ class SecretsTest extends WP_UnitTestCase {
 	public function test_missing_secret_returns_empty_string() {
 		$this->assertSame( '', pediment_form_secret_get( 'nope' ) );
 	}
+
+	public function test_denormalized_name_roundtrips() {
+		pediment_form_secret_set( 'Zeta Key!', 'val' );
+		$this->assertSame( 'val', pediment_form_secret_get( 'Zeta Key!' ) );
+	}
 }
