@@ -75,4 +75,18 @@ class DestinationsTest extends WP_UnitTestCase {
 		delete_option( PEDIMENT_FORM_DEFAULT_DEST_OPTION );
 		$this->assertSame( '', pediment_form_resolve_destination_id( '' ) );
 	}
+
+	public function test_accepts_body_that_decodes_to_json_null() {
+		$d                  = $this->valid_dest();
+		$d['body_template'] = 'null';
+		$errors             = pediment_form_validate_destination( $d );
+		$this->assertArrayNotHasKey( 'body_template', $errors, 'a valid JSON null body must not be rejected' );
+	}
+
+	public function test_still_rejects_genuinely_broken_json_body() {
+		pediment_form_secret_set( 'brevo_api_key', 'sk' );
+		$d                  = $this->valid_dest();
+		$d['body_template'] = '{"broken": }';
+		$this->assertArrayHasKey( 'body_template', pediment_form_validate_destination( $d ) );
+	}
 }

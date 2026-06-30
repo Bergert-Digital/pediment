@@ -102,7 +102,8 @@ function pediment_form_validate_destination( array $dest ): array {
 	if ( false !== stripos( $content_type, 'json' ) && '' !== $body ) {
 		$skeleton = preg_replace( '/"\{\{\s*all_fields\s*\}\}"/', '{}', $body );
 		$skeleton = preg_replace( '/\{\{[^}]+\}\}/', 'x', (string) $skeleton );
-		if ( null === json_decode( (string) $skeleton ) ) {
+		json_decode( (string) $skeleton );
+		if ( JSON_ERROR_NONE !== json_last_error() ) {
 			$errors['body_template'] = __( 'Body is not valid JSON once tokens are filled.', 'pediment' );
 		}
 	}
