@@ -8,7 +8,8 @@ playwright-report/
 test-results/
 .DS_Store
 .worktrees/
-.claude/
+.claude/*
+!.claude/commands/
 .wp-env.override.json
 tests/fixtures/uploads/*
 !tests/fixtures/uploads/.gitkeep
