@@ -15,8 +15,8 @@ Walk this mentally before shipping anything that touches the fork/extension surf
    parent without `!important` hacks? Is the token name discoverable?
 4. Add a `client/promo-banner`-style block. **Friction check:** does the block contract in
    `docs/client-blocks.md` still match reality? Does the AI plugin pick it up with no extra work?
-5. Add a brand field via `pediment_brand_fields`. **Friction check:** does it appear in the admin
-   UI, participate in `Brand::all()`, and round-trip through its sanitizer?
+5. Extend the parent from the child via a block filter or `theme.json` override. **Friction
+   check:** does the change take effect without editing a parent file?
 
 If any step needs a workaround, that's the bug — not the symptom you noticed downstream.
 
@@ -25,8 +25,8 @@ If any step needs a workaround, that's the bug — not the symptom you noticed d
 1. Open the block inserter, drop in a Hero / CTA / FAQ / Prose. **Friction check:** is the
    block's purpose obvious from its title and description? Does it look right with *empty*
    attributes (no `<a href="">`, no orphan markup, no PHP notices)?
-2. Configure **Settings → Brand Settings** once. **Friction check:** are required-feeling fields
-   (contact email, social links) discoverable? Does Social Links hide cleanly when unset?
+2. Add a **Social Links** block to the footer and configure it. **Friction check:** are the
+   per-link controls discoverable in the block sidebar? Does the block hide cleanly when unset?
 3. Submit the contact form as a visitor. **Friction check:** does the editor preview match the
    front-end render? Does the success message show? Is the submission stored *and* mailed?
 4. Draft a page with the AI plugin. **Friction check:** does generated content use real tokens

@@ -11,8 +11,8 @@ export default async function globalSetup(): Promise<void> {
   const wp = (cmd: string) =>
     execSync(`npx wp-env run cli wp ${cmd}`, { stdio: 'pipe' }).toString().trim();
 
-  // Ensure Pediment is active so framework bootstrap (header part, brand
-  // defaults, permalinks) has run and the registered patterns the fixtures
+  // Ensure Pediment is active so framework bootstrap (header part) has run
+  // and the registered patterns the fixtures
   // source from are available. CI activates it explicitly too; guard so a
   // re-run never errors on an already-active theme.
   const active = wp(`option get stylesheet`);

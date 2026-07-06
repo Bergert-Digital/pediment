@@ -7,9 +7,9 @@ foundation of a three-part agency stack:
 
 | Piece | Repo | Role |
 |---|---|---|
-| **Parent theme** | `pediment` (this repo) | Blocks, design tokens, Brand Settings, contact form. Read-only in production. |
+| **Parent theme** | `pediment` (this repo) | Blocks, design tokens, contact form. Read-only in production. |
 | **Child theme** | `pediment-child-theme` | Per-client fork: `theme.json` overrides + `client/*` blocks. |
-| **AI plugin** | `pediment-ai` | Composes/edits pages from prompts using the registered blocks. |
+| **AI plugin** | `pediment-ai` | Composes/edits pages from prompts using the registered blocks; owns brand identity/voice settings. |
 
 The parent theme is the durable, shared layer. Everything client-specific lives downstream in a
 child theme so the parent improves for every client at once.
@@ -21,10 +21,10 @@ Two distinct users, both of whom must succeed:
 1. **The agency developer** who forks the child theme to stand up a new client site. They care
    about: fast setup, a clear fork checklist, never having to edit parent files, predictable
    `theme.json` overrides, and a block contract that the AI plugin can consume.
-2. **The site editor / client** who builds pages in the WordPress block editor, configures
-   identity once in **Settings → Brand Settings**, and (optionally) drafts pages with the AI
-   plugin. They care about: blocks that render correctly, sane defaults, no broken states, and
-   content that survives attribute changes.
+2. **The site editor / client** who builds pages in the WordPress block editor and (optionally)
+   drafts pages with the AI plugin, where brand identity/voice is configured. They care about:
+   blocks that render correctly, sane defaults, no broken states, and content that survives
+   attribute changes.
 
 ## Principles
 
@@ -37,11 +37,11 @@ Two distinct users, both of whom must succeed:
 - **AI-consumable by construction.** Every `block.json` carries an explicit one-sentence
   `description` and fully-typed `attributes` so the AI plugin can compose with it at runtime
   via `WP_Block_Type_Registry` — no per-block registration on the plugin side.
-- **Extend, don't fork the parent.** Child themes extend Brand Settings via the
-  `pediment_brand_fields` / `pediment_brand_sections` filters and add `client/*` blocks. Wanting
-  to edit a parent file means opening an upstream PR instead.
+- **Extend, don't fork the parent.** Child themes extend the parent via `theme.json` overrides,
+  template parts, block filters, and `client/*` blocks. Wanting to edit a parent file means
+  opening an upstream PR instead.
 - **Quality is non-negotiable.** PHPUnit covers every block's render; Playwright covers the
-  editor, front page, brand settings, and contact form; CI gates merges.
+  editor, front page, and contact form; CI gates merges.
 
 ## Non-goals
 

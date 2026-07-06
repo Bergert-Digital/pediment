@@ -1,7 +1,7 @@
 <?php
 /**
  * Framework bootstrap: make a freshly-activated Pediment site functional
- * (brand defaults, an editable header template part, pretty permalinks).
+ * (an editable header template part).
  * Runs on theme activation. Carries NO demo content.
  *
  * @package Pediment
@@ -12,28 +12,17 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 function pediment_bootstrap(): void {
-	$brand_defaults = array(
-		'brand_name'    => get_bloginfo( 'name' ) ?: 'Acme',
-		'brand_tagline' => 'Short benefit-led promise.',
-		'voice_tone'    => 'Confident, plain-spoken, no buzzwords.',
-		'contact_email' => get_option( 'admin_email' ),
-	);
-	foreach ( $brand_defaults as $k => $v ) {
-		if ( '' === (string) \Pediment\Brand::get( $k, '' ) ) {
-			\Pediment\Brand::set( $k, $v );
-		}
-	}
-
 	pediment_bootstrap_header_template_part();
 
-	// Pretty permalinks so path-based URLs resolve. WP-CLI/activation SAPI is not
-	// 'apache', so got_mod_rewrite() returns false; the got_rewrite override forces
-	// the .htaccess write (the same trick wp-cli uses for `rewrite flush --hard`).
-	if ( '' === (string) get_option( 'permalink_structure', '' ) ) {
-		$GLOBALS['wp_rewrite']->set_permalink_structure( '/%postname%/' );
-	}
-	add_filter( 'got_rewrite', '__return_true' );
-	flush_rewrite_rules();
+	// Intentionally leave the permalink structure untouched. Forcing pretty
+	// permalinks here breaks REST in containerized installs (wp-env, the official
+	// WordPress image) where Apache's .htaccess/AllowOverride isn't honored: the
+	// flush writes correct rules but Apache never serves the ^wp-json/ rule, so
+	// rest_url() resolves to /wp-json/… and 404s, breaking every editor save.
+	// On the plain default, rest_url() routes through ?rest_route=… which needs
+	// no rewrite and works on every SAPI. Real hosting opts into pretty
+	// permalinks via Settings → Permalinks, which flushes correctly there. See
+	// Bergert-Digital/pediment#47.
 }
 add_action( 'after_switch_theme', 'pediment_bootstrap' );
 

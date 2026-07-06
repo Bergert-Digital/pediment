@@ -27,10 +27,9 @@ _(none currently known — verify by running a user-journey audit)_
   `style.css` Theme URI and some docs say `github.com/bergert/pediment`. Distribution
   README/banner links may point at a non-existent `Bergert-Digital/pediment`. Audit
   every cross-repo link and the child `ci.yml` checkout path for consistency; fix dead links.
-- [ ] **Doc-vs-code drift audit (`docs/blocks.md`, `docs/client-blocks.md`,
-  `docs/brand-settings.md`).** Spot-check each documented contract against current code:
-  required block files, namespace rules, brand filter signatures, sanitizer null-contract.
-  Strike or correct anything the code no longer honors.
+- [ ] **Doc-vs-code drift audit (`docs/blocks.md`, `docs/client-blocks.md`).** Spot-check each
+  documented contract against current code: required block files, namespace rules, block
+  attribute shapes. Strike or correct anything the code no longer honors.
 
 ## 🟢 Medium
 
@@ -59,7 +58,5 @@ _(none currently known — verify by running a user-journey audit)_
 
 - [ ] Pattern coverage: only 3 patterns exist (`contact-page`, `hero-cta-faq`,
   `prose-article`). Consider a small library that showcases every block.
-- [ ] Brand Settings: a "preview" affordance so editors see logo/colors applied without
-  leaving the settings page.
 - [ ] Accessibility pass: keyboard/focus and contrast audit across blocks against the
   default token palette.

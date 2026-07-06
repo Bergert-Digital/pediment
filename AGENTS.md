@@ -24,8 +24,8 @@ plugin). See `docs/VISION.md`. Read `docs/STANDARDS.md` before changing code.
   `style.scss`) and a PHPUnit render test covering valid + empty attributes.
 - **Don't validate for scenarios that can't happen.** Delete unreachable defensive code
   rather than "polishing" it.
-- **Parent is read-only from a child's view.** Extend Brand Settings via the
-  `pediment_brand_fields` / `pediment_brand_sections` filters; never assume a child can patch a
+- **Parent is read-only from a child's view.** Child themes extend the parent through theme
+  features (theme.json, template parts, block filters); never assume a child can patch a
   parent file.
 
 ## Environment
