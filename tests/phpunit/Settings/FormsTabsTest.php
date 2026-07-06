@@ -9,6 +9,8 @@ class FormsTabsTest extends WP_UnitTestCase {
 
 	public function tear_down(): void {
 		unset( $GLOBALS['pediment_settings_tabs'] );
+		delete_option( PEDIMENT_FORM_DESTINATIONS_OPTION );
+		delete_transient( pediment_form_repopulate_key() );
 		parent::tear_down();
 	}
 
@@ -69,5 +71,39 @@ class FormsTabsTest extends WP_UnitTestCase {
 		$this->assertSame( 'https://api.brevo.com/v3/smtp/email', $v['url'] );
 		$this->assertSame( array( 'api-key' => '{{ secret:brevo_api_key }}' ), $v['headers'] );
 		delete_option( PEDIMENT_FORM_DESTINATIONS_OPTION );
+	}
+
+	public function test_form_values_repopulates_from_stash_and_consumes_it() {
+		pediment_form_stash_destination(
+			array(
+				'id'            => '',
+				'label'         => 'Half typed',
+				'method'        => 'PUT',
+				'url'           => 'https://example.com/hook',
+				'content_type'  => 'application/json',
+				'headers'       => array( 'X-Test' => 'v' ),
+				'body_template' => '{"a":1}',
+			)
+		);
+		$v = pediment_form_destination_form_values( '' );
+		$this->assertFalse( $v['is_edit'] );
+		$this->assertSame( 'Half typed', $v['label'] );
+		$this->assertSame( 'PUT', $v['method'] );
+		$this->assertSame( array( 'X-Test' => 'v' ), $v['headers'] );
+
+		// Stash is one-shot: a second read falls back to blank defaults.
+		$again = pediment_form_destination_form_values( '' );
+		$this->assertSame( '', $again['label'] );
+	}
+
+	public function test_form_values_stash_is_edit_when_id_is_stored() {
+		update_option(
+			PEDIMENT_FORM_DESTINATIONS_OPTION,
+			array( array( 'id' => '2', 'label' => 'Stored two' ) )
+		);
+		pediment_form_stash_destination( array( 'id' => '2', 'label' => 'Edited two' ) );
+		$v = pediment_form_destination_form_values( '2' );
+		$this->assertTrue( $v['is_edit'] );
+		$this->assertSame( 'Edited two', $v['label'] );
 	}
 }
