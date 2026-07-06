@@ -268,6 +268,7 @@ git commit -m "feat(settings): reusable tabbed Pediment Theme options page frame
   - `pediment_form_render_general_tab(): void`
   - `pediment_form_render_destinations_tab(): void`
   - `pediment_form_render_secrets_tab(): void`
+  - `pediment_form_destination_form_values( string $edit_id ): array` — field defaults for the add/edit form. Keys: `id`, `label`, `method`, `url`, `content_type`, `headers` (assoc), `body_template`, `is_edit` (bool). Empty/unknown `$edit_id` → blank add-mode defaults with `is_edit === false`.
   - `pediment_form_settings_redirect( string $type, string $message, string $tab = 'general' ): void` (adds `$tab`).
 - Removes: `const PEDIMENT_FORM_SETTINGS_PAGE`, the `add_submenu_page()` registration, and `pediment_form_render_settings_page()`.
 
@@ -308,8 +309,50 @@ class FormsTabsTest extends WP_UnitTestCase {
 			$this->assertTrue( is_callable( $tabs[ $id ]['render'] ), "$id render not callable" );
 		}
 	}
+
+	public function test_form_values_blank_for_empty_id() {
+		$v = pediment_form_destination_form_values( '' );
+		$this->assertFalse( $v['is_edit'] );
+		$this->assertSame( '', $v['id'] );
+		$this->assertSame( 'POST', $v['method'] );
+		$this->assertSame( 'application/json', $v['content_type'] );
+		$this->assertSame( array(), $v['headers'] );
+	}
+
+	public function test_form_values_blank_for_unknown_id() {
+		$v = pediment_form_destination_form_values( 'does_not_exist' );
+		$this->assertFalse( $v['is_edit'] );
+		$this->assertSame( '', $v['id'] );
+	}
+
+	public function test_form_values_prefills_stored_destination() {
+		update_option(
+			PEDIMENT_FORM_DESTINATIONS_OPTION,
+			array(
+				array(
+					'id'            => 'brevo',
+					'label'         => 'Brevo main',
+					'method'        => 'POST',
+					'url'           => 'https://api.brevo.com/v3/smtp/email',
+					'content_type'  => 'application/json',
+					'headers'       => array( 'api-key' => '{{ secret:brevo_api_key }}' ),
+					'body_template' => '{"x":"{{ all_fields }}"}',
+					'secret_refs'   => array( 'brevo_api_key' ),
+				),
+			)
+		);
+		$v = pediment_form_destination_form_values( 'brevo' );
+		$this->assertTrue( $v['is_edit'] );
+		$this->assertSame( 'brevo', $v['id'] );
+		$this->assertSame( 'Brevo main', $v['label'] );
+		$this->assertSame( 'https://api.brevo.com/v3/smtp/email', $v['url'] );
+		$this->assertSame( array( 'api-key' => '{{ secret:brevo_api_key }}' ), $v['headers'] );
+		delete_option( PEDIMENT_FORM_DESTINATIONS_OPTION );
+	}
 }
 ```
+
+Note: `pediment_form_destinations()` returns destinations keyed by id, so the lookup in the helper is `$destinations[ $edit_id ]`.
 
 - [ ] **Step 2: Run test to verify it fails**
 
@@ -417,6 +460,44 @@ function pediment_form_render_secrets_tab(): void {
 }
 
 /**
+ * Field defaults for the add/edit destination form.
+ *
+ * @param string $edit_id Destination id to edit, or '' for add mode.
+ * @return array{id:string,label:string,method:string,url:string,content_type:string,headers:array<string,string>,body_template:string,is_edit:bool}
+ */
+function pediment_form_destination_form_values( string $edit_id ): array {
+	$blank = array(
+		'id'            => '',
+		'label'         => '',
+		'method'        => 'POST',
+		'url'           => '',
+		'content_type'  => 'application/json',
+		'headers'       => array(),
+		'body_template' => '',
+		'is_edit'       => false,
+	);
+	if ( '' === $edit_id ) {
+		return $blank;
+	}
+	$destinations = pediment_form_destinations();
+	if ( ! isset( $destinations[ $edit_id ] ) ) {
+		return $blank;
+	}
+	$d       = $destinations[ $edit_id ];
+	$headers = ( isset( $d['headers'] ) && is_array( $d['headers'] ) ) ? $d['headers'] : array();
+	return array(
+		'id'            => (string) ( $d['id'] ?? $edit_id ),
+		'label'         => (string) ( $d['label'] ?? '' ),
+		'method'        => (string) ( $d['method'] ?? 'POST' ),
+		'url'           => (string) ( $d['url'] ?? '' ),
+		'content_type'  => (string) ( $d['content_type'] ?? 'application/json' ),
+		'headers'       => $headers,
+		'body_template' => (string) ( $d['body_template'] ?? '' ),
+		'is_edit'       => true,
+	);
+}
+
+/**
  * Form Destinations tab: destinations table + add/edit editor.
  */
 function pediment_form_render_destinations_tab(): void {
@@ -425,6 +506,11 @@ function pediment_form_render_destinations_tab(): void {
 	}
 	$destinations = pediment_form_destinations();
 	$presets      = pediment_form_presets();
+	// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only pre-fill of the edit form, changes no state.
+	$edit_id  = isset( $_GET['edit'] ) ? sanitize_key( wp_unslash( $_GET['edit'] ) ) : '';
+	$values   = pediment_form_destination_form_values( $edit_id );
+	$readonly = $values['is_edit'] ? 'readonly' : '';
+	$rows     = ! empty( $values['headers'] ) ? $values['headers'] : array( '' => '' );
 	?>
 	<h2><?php esc_html_e( 'Destinations', 'pediment' ); ?></h2>
 	<table class="widefat striped">
@@ -443,6 +529,7 @@ function pediment_form_render_destinations_tab(): void {
 					<td><?php echo esc_html( (string) ( $d['method'] ?? '' ) ); ?></td>
 					<td><?php echo esc_html( (string) ( $d['url'] ?? '' ) ); ?></td>
 					<td>
+						<a href="<?php echo esc_url( add_query_arg( 'edit', $id, pediment_settings_page_url( 'destinations' ) ) ); ?>" class="button-link"><?php esc_html_e( 'Edit', 'pediment' ); ?></a>
 						<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" style="display:inline">
 							<input type="hidden" name="action" value="pediment_form_delete_destination" />
 							<input type="hidden" name="id" value="<?php echo esc_attr( $id ); ?>" />
@@ -455,7 +542,19 @@ function pediment_form_render_destinations_tab(): void {
 		</tbody>
 	</table>
 
-	<h3><?php esc_html_e( 'Add / edit destination', 'pediment' ); ?></h3>
+	<h3>
+		<?php
+		if ( $values['is_edit'] ) {
+			/* translators: %s: destination id being edited. */
+			printf( esc_html__( 'Edit destination: %s', 'pediment' ), esc_html( $values['id'] ) );
+		} else {
+			esc_html_e( 'Add / edit destination', 'pediment' );
+		}
+		?>
+	</h3>
+	<?php if ( $values['is_edit'] ) : ?>
+		<p><a href="<?php echo esc_url( pediment_settings_page_url( 'destinations' ) ); ?>"><?php esc_html_e( 'Cancel / add new', 'pediment' ); ?></a></p>
+	<?php endif; ?>
 	<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" class="pediment-forms-destination" data-presets="<?php echo esc_attr( (string) wp_json_encode( $presets ) ); ?>">
 		<input type="hidden" name="action" value="pediment_form_save_destination" />
 		<?php wp_nonce_field( 'pediment_form_save_destination' ); ?>
@@ -473,32 +572,32 @@ function pediment_form_render_destinations_tab(): void {
 			</tr>
 			<tr>
 				<th scope="row"><label for="pf-id"><?php esc_html_e( 'ID', 'pediment' ); ?></label></th>
-				<td><input type="text" id="pf-id" name="id" class="regular-text pf-field-id" /></td>
+				<td><input type="text" id="pf-id" name="id" class="regular-text pf-field-id" value="<?php echo esc_attr( $values['id'] ); ?>" <?php echo esc_attr( $readonly ); ?> /></td>
 			</tr>
 			<tr>
 				<th scope="row"><label for="pf-label"><?php esc_html_e( 'Label', 'pediment' ); ?></label></th>
-				<td><input type="text" id="pf-label" name="label" class="regular-text" /></td>
+				<td><input type="text" id="pf-label" name="label" class="regular-text" value="<?php echo esc_attr( $values['label'] ); ?>" /></td>
 			</tr>
 			<tr>
 				<th scope="row"><label for="pf-method"><?php esc_html_e( 'Method', 'pediment' ); ?></label></th>
 				<td>
 					<select id="pf-method" name="method" class="pf-field-method">
 						<?php foreach ( PEDIMENT_FORM_METHODS as $m ) : ?>
-							<option value="<?php echo esc_attr( $m ); ?>"><?php echo esc_html( $m ); ?></option>
+							<option value="<?php echo esc_attr( $m ); ?>" <?php selected( $values['method'], $m ); ?>><?php echo esc_html( $m ); ?></option>
 						<?php endforeach; ?>
 					</select>
 				</td>
 			</tr>
 			<tr>
 				<th scope="row"><label for="pf-url"><?php esc_html_e( 'URL', 'pediment' ); ?></label></th>
-				<td><input type="url" id="pf-url" name="url" class="large-text code pf-field-url" placeholder="https://…" /></td>
+				<td><input type="url" id="pf-url" name="url" class="large-text code pf-field-url" placeholder="https://…" value="<?php echo esc_attr( $values['url'] ); ?>" /></td>
 			</tr>
 			<tr>
 				<th scope="row"><label for="pf-ct"><?php esc_html_e( 'Content type', 'pediment' ); ?></label></th>
 				<td>
 					<select id="pf-ct" name="content_type" class="pf-field-content_type">
 						<?php foreach ( PEDIMENT_FORM_CONTENT_TYPES as $ct ) : ?>
-							<option value="<?php echo esc_attr( $ct ); ?>"><?php echo esc_html( $ct ); ?></option>
+							<option value="<?php echo esc_attr( $ct ); ?>" <?php selected( $values['content_type'], $ct ); ?>><?php echo esc_html( $ct ); ?></option>
 						<?php endforeach; ?>
 					</select>
 				</td>
@@ -507,10 +606,12 @@ function pediment_form_render_destinations_tab(): void {
 				<th scope="row"><?php esc_html_e( 'Headers', 'pediment' ); ?></th>
 				<td class="pf-headers">
 					<div class="pf-headers-rows">
-						<div class="pf-header-row">
-							<input type="text" name="header_keys[]" placeholder="<?php esc_attr_e( 'Header', 'pediment' ); ?>" />
-							<input type="text" name="header_values[]" placeholder="<?php esc_attr_e( 'Value (tokens allowed)', 'pediment' ); ?>" class="code" />
-						</div>
+						<?php foreach ( $rows as $hk => $hv ) : ?>
+							<div class="pf-header-row">
+								<input type="text" name="header_keys[]" placeholder="<?php esc_attr_e( 'Header', 'pediment' ); ?>" value="<?php echo esc_attr( (string) $hk ); ?>" />
+								<input type="text" name="header_values[]" placeholder="<?php esc_attr_e( 'Value (tokens allowed)', 'pediment' ); ?>" class="code" value="<?php echo esc_attr( (string) $hv ); ?>" />
+							</div>
+						<?php endforeach; ?>
 					</div>
 					<button type="button" class="button pf-add-header"><?php esc_html_e( 'Add header', 'pediment' ); ?></button>
 				</td>
@@ -518,19 +619,24 @@ function pediment_form_render_destinations_tab(): void {
 			<tr>
 				<th scope="row"><label for="pf-body"><?php esc_html_e( 'Body template', 'pediment' ); ?></label></th>
 				<td>
-					<textarea id="pf-body" name="body_template" rows="6" class="large-text code pf-field-body_template"></textarea>
+					<textarea id="pf-body" name="body_template" rows="6" class="large-text code pf-field-body_template"><?php echo esc_textarea( $values['body_template'] ); ?></textarea>
 					<p class="description"><?php esc_html_e( 'Tokens: {{ field:NAME }} {{ all_fields }} {{ meta:post_id|page_url|submitted_at|destination }} {{ secret:NAME }}', 'pediment' ); ?></p>
 				</td>
 			</tr>
 		</table>
 		<p class="submit">
-			<?php submit_button( __( 'Save destination', 'pediment' ), 'primary', 'submit', false ); ?>
+			<?php submit_button( $values['is_edit'] ? __( 'Update destination', 'pediment' ) : __( 'Save destination', 'pediment' ), 'primary', 'submit', false ); ?>
 			<button type="submit" name="pediment_form_test" value="1" class="button"><?php echo esc_html__( 'Send test', 'pediment' ); ?></button>
 		</p>
 	</form>
 	<?php
 }
 ```
+
+**Edit-flow notes for the implementer:**
+- The `readonly` id on edit is intentional — the save handler upserts by id, so an editable id would create a new record (a "rename" makes a copy) rather than update. Do not change the save/sanitize logic.
+- The preset JS (`assets/js/admin-forms-settings.js`) is unchanged: `fillFromPreset` only runs on the preset `<select>` **change** event and never touches the id/label fields, so it does not clobber the server pre-filled values on page load. No JS edit is required.
+- Secret tokens (`{{ secret:NAME }}`) in url/headers/body are references, not values — rendering them back into the form (`esc_attr` / `esc_textarea`) leaks nothing.
 
 - [ ] **Step 5: Run test to verify it passes**
 
@@ -634,7 +740,8 @@ Confirm all of the following in **Settings → Pediment Theme**:
 - Saving on **General** (retention/default) round-trips and shows the success notice on the General tab.
 - Adding/deleting a **Secret** round-trips and shows its notice on the Secrets tab.
 - Adding a **Destination**, choosing a preset, adding a header row, and **Send test** all work and land back on the Form Destinations tab with the right notice.
-- Deep link `options-general.php?page=pediment-theme&tab=secrets` opens with Secrets active; an unknown `&tab=bogus` falls back to General.
+- **Editing a destination:** clicking **Edit** on a table row pre-fills the form (id shown **readonly**, label/url/method/content-type/headers/body populated); the heading reads "Edit destination: `<id>`" and the button "Update destination". Saving updates that record in place (no duplicate row). **Cancel / add new** returns to a blank form. Editing then choosing a preset still repopulates url/method/content-type/headers/body (the id stays as typed).
+- Deep link `options-general.php?page=pediment-theme&tab=secrets` opens with Secrets active; an unknown `&tab=bogus` falls back to General; `&tab=destinations&edit=bogus` shows the blank add form.
 
 - [ ] **Step 2: Run the e2e suite** (guards against unrelated regressions)
 
@@ -649,6 +756,7 @@ Expected: existing form specs pass (they do not depend on the settings page loca
 - New location (Settings → Pediment Theme, `add_options_page`, slug `pediment-theme`) → Task 1 Step 3.
 - Tab framework (`register`, `get`, `resolve`, `page_url`, shell) → Task 1.
 - Three tabs General/Destinations/Secrets with order → Task 2 Steps 3–4, tested Steps 1/5.
+- Editing destinations (per-row Edit link, server pre-fill, readonly id, Update button, Cancel link) → Task 2 Step 4 (`pediment_form_destination_form_values` + edit-aware render), tested Step 1 (`test_form_values_*`).
 - Redirect preserves tab → Task 2 Steps 6–7.
 - Enqueue hook-suffix update → Task 2 Step 8.
 - Handlers/logic unchanged → confirmed (only redirect calls gain a tab arg).

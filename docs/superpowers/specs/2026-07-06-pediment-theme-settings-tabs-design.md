@@ -83,6 +83,39 @@ Reading order: General → Form Destinations → Secrets. `general` is the defau
 Each callback renders only its own `<form>`(s); the surrounding `.wrap`, heading, nav, and
 `settings_errors()` come from the framework.
 
+### 3a. Editing destinations
+
+Today the destinations UI can only *add* (or blind-overwrite by retyping every field): the
+add/edit form always renders blank and there is no per-row edit action. Add a real edit flow,
+server-side (no new JS dependency):
+
+- Each destinations-table row gets an **Edit** link:
+  `pediment_settings_page_url( 'destinations' )` with `&edit=<id>` appended.
+- `pediment_form_render_destinations_tab()` reads `$_GET['edit']` (`sanitize_key`) and, when it
+  matches a stored destination, pre-fills the add/edit form from that record:
+  - `id` — pre-filled **and `readonly`** (changing the id would create a new record via the
+    upsert-by-id save, not rename). A hidden field is not needed; the readonly text input still
+    posts its value.
+  - `label`, `url`, `body_template` — pre-filled values.
+  - `method`, `content_type` — the matching `<option>` marked `selected`.
+  - Headers — one populated `.pf-header-row` per stored header (key + value); when the record has
+    no headers, render a single blank row (current behavior).
+  - Secret tokens (`{{ secret:NAME }}`) in the url/headers/body render back verbatim — they are
+    references, not secret values, so this leaks nothing.
+- In edit mode the section heading reads "Edit destination: `<id>`", the submit button reads
+  "Update destination", and a **Cancel / add new** link points back to the blank form
+  (`pediment_settings_page_url( 'destinations' )`).
+- In add mode (no/unknown `edit`) the form renders exactly as today: blank, id editable, heading
+  "Add / edit destination", button "Save destination".
+- The save handler (`pediment_form_handle_save_destination`) and sanitize logic are unchanged —
+  upsert-by-id already updates an existing record when the posted id matches.
+
+A small render helper keeps this testable: `pediment_form_destination_form_values( string $edit_id ): array`
+returns the field defaults (`id`, `label`, `method`, `url`, `content_type`, `headers`,
+`body_template`, and an `is_edit` bool) for a given edit id — an empty/unknown id yields the blank
+add-mode defaults. The render function consumes this array; unit tests assert it against stored
+destinations.
+
 ### 4. Wiring updates
 
 - **Redirect:** `pediment_form_settings_redirect()` gains a `$tab` argument (or infers it from the
@@ -111,12 +144,18 @@ Each callback renders only its own `<form>`(s); the surrounding `.wrap`, heading
   forms module loads, the three tabs (`general`, `destinations`, `secrets`) are registered with the
   expected labels and ordering, and that the active-tab resolver defaults to `general` and falls
   back to `general` for an unknown tab id.
+- **Edit pre-fill test** (`pediment_form_destination_form_values`): a known `edit` id returns the
+  stored record's field values with `is_edit === true`; an empty or unknown id returns blank
+  add-mode defaults with `is_edit === false`.
 - **Manual / e2e check:** Settings → Pediment Theme shows three tabs; each tab's save round-trips
-  and shows its success/error notice on the correct tab; the page is gone from under Form
+  and shows its success/error notice on the correct tab; clicking **Edit** on a destination
+  pre-fills the form (id readonly), saving updates it in place; the page is gone from under Form
   Submissions.
 
 ## Out of scope
 
-- No changes to destinations/secrets/delivery logic or data storage.
+- No changes to the destinations/secrets/delivery *data storage* format or the save/sanitize
+  logic (edit reuses the existing upsert-by-id save).
 - No filter-based tab extensibility (deferred).
-- No new settings beyond relocating and re-tabbing the existing ones.
+- No new settings fields beyond relocating, re-tabbing, and adding an edit affordance to the
+  existing ones.
