@@ -1,6 +1,6 @@
 <?php
 /**
- * Settings → Forms: general settings, encrypted secrets, and destinations CRUD.
+ * Forms settings tabs (General, Destinations, Secrets) for the Pediment Theme settings page.
  *
  * @package Pediment
  */
@@ -8,8 +8,6 @@
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
-
-const PEDIMENT_FORM_SETTINGS_PAGE = 'pediment-forms';
 
 /**
  * Dry-run a destination: build a sample context, render the request, send it,
@@ -184,189 +182,256 @@ function pediment_form_delete_destination( string $id ): void {
 add_action(
 	'admin_menu',
 	function () {
-		add_submenu_page(
-			'edit.php?post_type=' . PEDIMENT_FORM_CPT,
-			__( 'Forms settings', 'pediment' ),
-			__( 'Settings', 'pediment' ),
-			'manage_options',
-			PEDIMENT_FORM_SETTINGS_PAGE,
-			'pediment_form_render_settings_page'
-		);
+		pediment_settings_register_tab( 'general', __( 'General', 'pediment' ), 'pediment_form_render_general_tab', 10 );
+		pediment_settings_register_tab( 'destinations', __( 'Form Destinations', 'pediment' ), 'pediment_form_render_destinations_tab', 20 );
+		pediment_settings_register_tab( 'secrets', __( 'Secrets', 'pediment' ), 'pediment_form_render_secrets_tab', 30 );
 	}
 );
 
 /**
- * Render the Settings → Forms page.
+ * General tab: retention days + default destination.
  */
-function pediment_form_render_settings_page(): void {
+function pediment_form_render_general_tab(): void {
 	if ( ! current_user_can( 'manage_options' ) ) {
 		return;
 	}
 	$destinations = pediment_form_destinations();
-	$secrets      = pediment_form_secret_names();
-	$presets      = pediment_form_presets();
 	$retention    = (int) get_option( PEDIMENT_FORM_RETENTION_OPTION, 90 );
 	$default_dest = (string) get_option( PEDIMENT_FORM_DEFAULT_DEST_OPTION, '' );
 	?>
-	<div class="wrap pediment-forms-settings">
-		<h1><?php esc_html_e( 'Forms settings', 'pediment' ); ?></h1>
-		<?php settings_errors( 'pediment_forms' ); ?>
-
-		<h2><?php esc_html_e( 'General', 'pediment' ); ?></h2>
-		<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
-			<input type="hidden" name="action" value="pediment_form_save_general" />
-			<?php wp_nonce_field( 'pediment_form_save_general' ); ?>
-			<table class="form-table" role="presentation">
-				<tr>
-					<th scope="row"><label for="pf-retention"><?php esc_html_e( 'Retention (days)', 'pediment' ); ?></label></th>
-					<td>
-						<input type="number" min="0" id="pf-retention" name="retention_days" value="<?php echo esc_attr( (string) $retention ); ?>" class="small-text" />
-						<p class="description"><?php esc_html_e( '0 keeps submissions forever.', 'pediment' ); ?></p>
-					</td>
-				</tr>
-				<tr>
-					<th scope="row"><label for="pf-default"><?php esc_html_e( 'Default destination', 'pediment' ); ?></label></th>
-					<td>
-						<select id="pf-default" name="default_destination">
-							<option value=""><?php esc_html_e( '— none —', 'pediment' ); ?></option>
-							<?php foreach ( $destinations as $id => $d ) : ?>
-								<option value="<?php echo esc_attr( $id ); ?>" <?php selected( $default_dest, $id ); ?>><?php echo esc_html( (string) ( $d['label'] ?? $id ) ); ?></option>
-							<?php endforeach; ?>
-						</select>
-					</td>
-				</tr>
-			</table>
-			<?php submit_button( __( 'Save general settings', 'pediment' ) ); ?>
-		</form>
-
-		<hr />
-		<h2><?php esc_html_e( 'Secrets', 'pediment' ); ?></h2>
-		<p class="description"><?php esc_html_e( 'Credential values, encrypted at rest. Reference them in destinations as {{ secret:NAME }}.', 'pediment' ); ?></p>
-		<ul>
-			<?php foreach ( $secrets as $name ) : ?>
-				<li>
-					<code><?php echo esc_html( $name ); ?></code>
-					<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" style="display:inline">
-						<input type="hidden" name="action" value="pediment_form_delete_secret" />
-						<input type="hidden" name="secret_name" value="<?php echo esc_attr( $name ); ?>" />
-						<?php wp_nonce_field( 'pediment_form_delete_secret_' . $name ); ?>
-						<button type="submit" class="button-link delete"><?php esc_html_e( 'Delete', 'pediment' ); ?></button>
-					</form>
-				</li>
-			<?php endforeach; ?>
-		</ul>
-		<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
-			<input type="hidden" name="action" value="pediment_form_save_secret" />
-			<?php wp_nonce_field( 'pediment_form_save_secret' ); ?>
-			<input type="text" name="secret_name" placeholder="<?php esc_attr_e( 'name (e.g. brevo_api_key)', 'pediment' ); ?>" />
-			<input type="password" name="secret_value" autocomplete="new-password" placeholder="<?php esc_attr_e( 'value', 'pediment' ); ?>" class="regular-text" />
-			<?php submit_button( __( 'Save secret', 'pediment' ), 'secondary', 'submit', false ); ?>
-		</form>
-
-		<hr />
-		<h2><?php esc_html_e( 'Destinations', 'pediment' ); ?></h2>
-		<table class="widefat striped">
-			<thead><tr>
-				<th><?php esc_html_e( 'ID', 'pediment' ); ?></th>
-				<th><?php esc_html_e( 'Label', 'pediment' ); ?></th>
-				<th><?php esc_html_e( 'Method', 'pediment' ); ?></th>
-				<th><?php esc_html_e( 'URL', 'pediment' ); ?></th>
-				<th></th>
-			</tr></thead>
-			<tbody>
-				<?php foreach ( $destinations as $id => $d ) : ?>
-					<tr>
-						<td><code><?php echo esc_html( $id ); ?></code></td>
-						<td><?php echo esc_html( (string) ( $d['label'] ?? '' ) ); ?></td>
-						<td><?php echo esc_html( (string) ( $d['method'] ?? '' ) ); ?></td>
-						<td><?php echo esc_html( (string) ( $d['url'] ?? '' ) ); ?></td>
-						<td>
-							<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" style="display:inline">
-								<input type="hidden" name="action" value="pediment_form_delete_destination" />
-								<input type="hidden" name="id" value="<?php echo esc_attr( $id ); ?>" />
-								<?php wp_nonce_field( 'pediment_form_delete_destination_' . $id ); ?>
-								<button type="submit" class="button-link delete"><?php esc_html_e( 'Delete', 'pediment' ); ?></button>
-							</form>
-						</td>
-					</tr>
-				<?php endforeach; ?>
-			</tbody>
+	<h2><?php esc_html_e( 'General', 'pediment' ); ?></h2>
+	<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
+		<input type="hidden" name="action" value="pediment_form_save_general" />
+		<?php wp_nonce_field( 'pediment_form_save_general' ); ?>
+		<table class="form-table" role="presentation">
+			<tr>
+				<th scope="row"><label for="pf-retention"><?php esc_html_e( 'Retention (days)', 'pediment' ); ?></label></th>
+				<td>
+					<input type="number" min="0" id="pf-retention" name="retention_days" value="<?php echo esc_attr( (string) $retention ); ?>" class="small-text" />
+					<p class="description"><?php esc_html_e( '0 keeps submissions forever.', 'pediment' ); ?></p>
+				</td>
+			</tr>
+			<tr>
+				<th scope="row"><label for="pf-default"><?php esc_html_e( 'Default destination', 'pediment' ); ?></label></th>
+				<td>
+					<select id="pf-default" name="default_destination">
+						<option value=""><?php esc_html_e( '— none —', 'pediment' ); ?></option>
+						<?php foreach ( $destinations as $id => $d ) : ?>
+							<option value="<?php echo esc_attr( $id ); ?>" <?php selected( $default_dest, $id ); ?>><?php echo esc_html( (string) ( $d['label'] ?? $id ) ); ?></option>
+						<?php endforeach; ?>
+					</select>
+				</td>
+			</tr>
 		</table>
+		<?php submit_button( __( 'Save general settings', 'pediment' ) ); ?>
+	</form>
+	<?php
+}
 
-		<h3><?php esc_html_e( 'Add / edit destination', 'pediment' ); ?></h3>
-		<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" class="pediment-forms-destination" data-presets="<?php echo esc_attr( (string) wp_json_encode( $presets ) ); ?>">
-			<input type="hidden" name="action" value="pediment_form_save_destination" />
-			<?php wp_nonce_field( 'pediment_form_save_destination' ); ?>
-			<table class="form-table" role="presentation">
+/**
+ * Secrets tab: encrypted credential list + add form.
+ */
+function pediment_form_render_secrets_tab(): void {
+	if ( ! current_user_can( 'manage_options' ) ) {
+		return;
+	}
+	$secrets = pediment_form_secret_names();
+	?>
+	<h2><?php esc_html_e( 'Secrets', 'pediment' ); ?></h2>
+	<p class="description"><?php esc_html_e( 'Credential values, encrypted at rest. Reference them in destinations as {{ secret:NAME }}.', 'pediment' ); ?></p>
+	<ul>
+		<?php foreach ( $secrets as $name ) : ?>
+			<li>
+				<code><?php echo esc_html( $name ); ?></code>
+				<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" style="display:inline">
+					<input type="hidden" name="action" value="pediment_form_delete_secret" />
+					<input type="hidden" name="secret_name" value="<?php echo esc_attr( $name ); ?>" />
+					<?php wp_nonce_field( 'pediment_form_delete_secret_' . $name ); ?>
+					<button type="submit" class="button-link delete"><?php esc_html_e( 'Delete', 'pediment' ); ?></button>
+				</form>
+			</li>
+		<?php endforeach; ?>
+	</ul>
+	<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
+		<input type="hidden" name="action" value="pediment_form_save_secret" />
+		<?php wp_nonce_field( 'pediment_form_save_secret' ); ?>
+		<input type="text" name="secret_name" placeholder="<?php esc_attr_e( 'name (e.g. brevo_api_key)', 'pediment' ); ?>" />
+		<input type="password" name="secret_value" autocomplete="new-password" placeholder="<?php esc_attr_e( 'value', 'pediment' ); ?>" class="regular-text" />
+		<?php submit_button( __( 'Save secret', 'pediment' ), 'secondary', 'submit', false ); ?>
+	</form>
+	<?php
+}
+
+/**
+ * Field defaults for the add/edit destination form.
+ *
+ * @param string $edit_id Destination id to edit, or '' for add mode.
+ * @return array{id:string,label:string,method:string,url:string,content_type:string,headers:array<string,string>,body_template:string,is_edit:bool}
+ */
+function pediment_form_destination_form_values( string $edit_id ): array {
+	$blank = array(
+		'id'            => '',
+		'label'         => '',
+		'method'        => 'POST',
+		'url'           => '',
+		'content_type'  => 'application/json',
+		'headers'       => array(),
+		'body_template' => '',
+		'is_edit'       => false,
+	);
+	if ( '' === $edit_id ) {
+		return $blank;
+	}
+	$destinations = pediment_form_destinations();
+	if ( ! isset( $destinations[ $edit_id ] ) ) {
+		return $blank;
+	}
+	$d       = $destinations[ $edit_id ];
+	$headers = ( isset( $d['headers'] ) && is_array( $d['headers'] ) ) ? $d['headers'] : array();
+	return array(
+		'id'            => (string) ( $d['id'] ?? $edit_id ),
+		'label'         => (string) ( $d['label'] ?? '' ),
+		'method'        => (string) ( $d['method'] ?? 'POST' ),
+		'url'           => (string) ( $d['url'] ?? '' ),
+		'content_type'  => (string) ( $d['content_type'] ?? 'application/json' ),
+		'headers'       => $headers,
+		'body_template' => (string) ( $d['body_template'] ?? '' ),
+		'is_edit'       => true,
+	);
+}
+
+/**
+ * Form Destinations tab: destinations table + add/edit editor.
+ */
+function pediment_form_render_destinations_tab(): void {
+	if ( ! current_user_can( 'manage_options' ) ) {
+		return;
+	}
+	$destinations = pediment_form_destinations();
+	$presets      = pediment_form_presets();
+	// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only pre-fill of the edit form, changes no state.
+	$edit_id  = isset( $_GET['edit'] ) ? sanitize_key( wp_unslash( $_GET['edit'] ) ) : '';
+	$values   = pediment_form_destination_form_values( $edit_id );
+	$readonly = $values['is_edit'] ? 'readonly' : '';
+	$rows     = ! empty( $values['headers'] ) ? $values['headers'] : array( '' => '' );
+	?>
+	<h2><?php esc_html_e( 'Destinations', 'pediment' ); ?></h2>
+	<table class="widefat striped">
+		<thead><tr>
+			<th><?php esc_html_e( 'ID', 'pediment' ); ?></th>
+			<th><?php esc_html_e( 'Label', 'pediment' ); ?></th>
+			<th><?php esc_html_e( 'Method', 'pediment' ); ?></th>
+			<th><?php esc_html_e( 'URL', 'pediment' ); ?></th>
+			<th></th>
+		</tr></thead>
+		<tbody>
+			<?php foreach ( $destinations as $id => $d ) : ?>
 				<tr>
-					<th scope="row"><label><?php esc_html_e( 'Start from preset', 'pediment' ); ?></label></th>
+					<td><code><?php echo esc_html( $id ); ?></code></td>
+					<td><?php echo esc_html( (string) ( $d['label'] ?? '' ) ); ?></td>
+					<td><?php echo esc_html( (string) ( $d['method'] ?? '' ) ); ?></td>
+					<td><?php echo esc_html( (string) ( $d['url'] ?? '' ) ); ?></td>
 					<td>
-						<select class="pediment-forms-preset">
-							<option value=""><?php esc_html_e( '— choose —', 'pediment' ); ?></option>
-							<?php foreach ( $presets as $pid => $preset ) : ?>
-								<option value="<?php echo esc_attr( $pid ); ?>"><?php echo esc_html( (string) $preset['label'] ); ?></option>
-							<?php endforeach; ?>
-						</select>
+						<a href="<?php echo esc_url( add_query_arg( 'edit', $id, pediment_settings_page_url( 'destinations' ) ) ); ?>" class="button-link"><?php esc_html_e( 'Edit', 'pediment' ); ?></a>
+						<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" style="display:inline">
+							<input type="hidden" name="action" value="pediment_form_delete_destination" />
+							<input type="hidden" name="id" value="<?php echo esc_attr( $id ); ?>" />
+							<?php wp_nonce_field( 'pediment_form_delete_destination_' . $id ); ?>
+							<button type="submit" class="button-link delete"><?php esc_html_e( 'Delete', 'pediment' ); ?></button>
+						</form>
 					</td>
 				</tr>
-				<tr>
-					<th scope="row"><label for="pf-id"><?php esc_html_e( 'ID', 'pediment' ); ?></label></th>
-					<td><input type="text" id="pf-id" name="id" class="regular-text pf-field-id" /></td>
-				</tr>
-				<tr>
-					<th scope="row"><label for="pf-label"><?php esc_html_e( 'Label', 'pediment' ); ?></label></th>
-					<td><input type="text" id="pf-label" name="label" class="regular-text" /></td>
-				</tr>
-				<tr>
-					<th scope="row"><label for="pf-method"><?php esc_html_e( 'Method', 'pediment' ); ?></label></th>
-					<td>
-						<select id="pf-method" name="method" class="pf-field-method">
-							<?php foreach ( PEDIMENT_FORM_METHODS as $m ) : ?>
-								<option value="<?php echo esc_attr( $m ); ?>"><?php echo esc_html( $m ); ?></option>
-							<?php endforeach; ?>
-						</select>
-					</td>
-				</tr>
-				<tr>
-					<th scope="row"><label for="pf-url"><?php esc_html_e( 'URL', 'pediment' ); ?></label></th>
-					<td><input type="url" id="pf-url" name="url" class="large-text code pf-field-url" placeholder="https://…" /></td>
-				</tr>
-				<tr>
-					<th scope="row"><label for="pf-ct"><?php esc_html_e( 'Content type', 'pediment' ); ?></label></th>
-					<td>
-						<select id="pf-ct" name="content_type" class="pf-field-content_type">
-							<?php foreach ( PEDIMENT_FORM_CONTENT_TYPES as $ct ) : ?>
-								<option value="<?php echo esc_attr( $ct ); ?>"><?php echo esc_html( $ct ); ?></option>
-							<?php endforeach; ?>
-						</select>
-					</td>
-				</tr>
-				<tr>
-					<th scope="row"><?php esc_html_e( 'Headers', 'pediment' ); ?></th>
-					<td class="pf-headers">
-						<div class="pf-headers-rows">
+			<?php endforeach; ?>
+		</tbody>
+	</table>
+
+	<h3>
+		<?php
+		if ( $values['is_edit'] ) {
+			/* translators: %s: destination id being edited. */
+			printf( esc_html__( 'Edit destination: %s', 'pediment' ), esc_html( $values['id'] ) );
+		} else {
+			esc_html_e( 'Add / edit destination', 'pediment' );
+		}
+		?>
+	</h3>
+	<?php if ( $values['is_edit'] ) : ?>
+		<p><a href="<?php echo esc_url( pediment_settings_page_url( 'destinations' ) ); ?>"><?php esc_html_e( 'Cancel / add new', 'pediment' ); ?></a></p>
+	<?php endif; ?>
+	<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" class="pediment-forms-destination" data-presets="<?php echo esc_attr( (string) wp_json_encode( $presets ) ); ?>">
+		<input type="hidden" name="action" value="pediment_form_save_destination" />
+		<?php wp_nonce_field( 'pediment_form_save_destination' ); ?>
+		<table class="form-table" role="presentation">
+			<tr>
+				<th scope="row"><label><?php esc_html_e( 'Start from preset', 'pediment' ); ?></label></th>
+				<td>
+					<select class="pediment-forms-preset">
+						<option value=""><?php esc_html_e( '— choose —', 'pediment' ); ?></option>
+						<?php foreach ( $presets as $pid => $preset ) : ?>
+							<option value="<?php echo esc_attr( $pid ); ?>"><?php echo esc_html( (string) $preset['label'] ); ?></option>
+						<?php endforeach; ?>
+					</select>
+				</td>
+			</tr>
+			<tr>
+				<th scope="row"><label for="pf-id"><?php esc_html_e( 'ID', 'pediment' ); ?></label></th>
+				<td><input type="text" id="pf-id" name="id" class="regular-text pf-field-id" value="<?php echo esc_attr( $values['id'] ); ?>" <?php echo esc_attr( $readonly ); ?> /></td>
+			</tr>
+			<tr>
+				<th scope="row"><label for="pf-label"><?php esc_html_e( 'Label', 'pediment' ); ?></label></th>
+				<td><input type="text" id="pf-label" name="label" class="regular-text" value="<?php echo esc_attr( $values['label'] ); ?>" /></td>
+			</tr>
+			<tr>
+				<th scope="row"><label for="pf-method"><?php esc_html_e( 'Method', 'pediment' ); ?></label></th>
+				<td>
+					<select id="pf-method" name="method" class="pf-field-method">
+						<?php foreach ( PEDIMENT_FORM_METHODS as $m ) : ?>
+							<option value="<?php echo esc_attr( $m ); ?>" <?php selected( $values['method'], $m ); ?>><?php echo esc_html( $m ); ?></option>
+						<?php endforeach; ?>
+					</select>
+				</td>
+			</tr>
+			<tr>
+				<th scope="row"><label for="pf-url"><?php esc_html_e( 'URL', 'pediment' ); ?></label></th>
+				<td><input type="url" id="pf-url" name="url" class="large-text code pf-field-url" placeholder="https://…" value="<?php echo esc_attr( $values['url'] ); ?>" /></td>
+			</tr>
+			<tr>
+				<th scope="row"><label for="pf-ct"><?php esc_html_e( 'Content type', 'pediment' ); ?></label></th>
+				<td>
+					<select id="pf-ct" name="content_type" class="pf-field-content_type">
+						<?php foreach ( PEDIMENT_FORM_CONTENT_TYPES as $ct ) : ?>
+							<option value="<?php echo esc_attr( $ct ); ?>" <?php selected( $values['content_type'], $ct ); ?>><?php echo esc_html( $ct ); ?></option>
+						<?php endforeach; ?>
+					</select>
+				</td>
+			</tr>
+			<tr>
+				<th scope="row"><?php esc_html_e( 'Headers', 'pediment' ); ?></th>
+				<td class="pf-headers">
+					<div class="pf-headers-rows">
+						<?php foreach ( $rows as $hk => $hv ) : ?>
 							<div class="pf-header-row">
-								<input type="text" name="header_keys[]" placeholder="<?php esc_attr_e( 'Header', 'pediment' ); ?>" />
-								<input type="text" name="header_values[]" placeholder="<?php esc_attr_e( 'Value (tokens allowed)', 'pediment' ); ?>" class="code" />
+								<input type="text" name="header_keys[]" placeholder="<?php esc_attr_e( 'Header', 'pediment' ); ?>" value="<?php echo esc_attr( (string) $hk ); ?>" />
+								<input type="text" name="header_values[]" placeholder="<?php esc_attr_e( 'Value (tokens allowed)', 'pediment' ); ?>" class="code" value="<?php echo esc_attr( (string) $hv ); ?>" />
 							</div>
-						</div>
-						<button type="button" class="button pf-add-header"><?php esc_html_e( 'Add header', 'pediment' ); ?></button>
-					</td>
-				</tr>
-				<tr>
-					<th scope="row"><label for="pf-body"><?php esc_html_e( 'Body template', 'pediment' ); ?></label></th>
-					<td>
-						<textarea id="pf-body" name="body_template" rows="6" class="large-text code pf-field-body_template"></textarea>
-						<p class="description"><?php esc_html_e( 'Tokens: {{ field:NAME }} {{ all_fields }} {{ meta:post_id|page_url|submitted_at|destination }} {{ secret:NAME }}', 'pediment' ); ?></p>
-					</td>
-				</tr>
-			</table>
-			<p class="submit">
-				<?php submit_button( __( 'Save destination', 'pediment' ), 'primary', 'submit', false ); ?>
-				<button type="submit" name="pediment_form_test" value="1" class="button"><?php echo esc_html__( 'Send test', 'pediment' ); ?></button>
-			</p>
-		</form>
-	</div>
+						<?php endforeach; ?>
+					</div>
+					<button type="button" class="button pf-add-header"><?php esc_html_e( 'Add header', 'pediment' ); ?></button>
+				</td>
+			</tr>
+			<tr>
+				<th scope="row"><label for="pf-body"><?php esc_html_e( 'Body template', 'pediment' ); ?></label></th>
+				<td>
+					<textarea id="pf-body" name="body_template" rows="6" class="large-text code pf-field-body_template"><?php echo esc_textarea( $values['body_template'] ); ?></textarea>
+					<p class="description"><?php esc_html_e( 'Tokens: {{ field:NAME }} {{ all_fields }} {{ meta:post_id|page_url|submitted_at|destination }} {{ secret:NAME }}', 'pediment' ); ?></p>
+				</td>
+			</tr>
+		</table>
+		<p class="submit">
+			<?php submit_button( $values['is_edit'] ? __( 'Update destination', 'pediment' ) : __( 'Save destination', 'pediment' ), 'primary', 'submit', false ); ?>
+			<button type="submit" name="pediment_form_test" value="1" class="button"><?php echo esc_html__( 'Send test', 'pediment' ); ?></button>
+		</p>
+	</form>
 	<?php
 }
 
@@ -381,8 +446,9 @@ add_action( 'admin_post_pediment_form_delete_destination', 'pediment_form_handle
  *
  * @param string $type    'updated' or 'error'.
  * @param string $message Notice text.
+ * @param string $tab     Tab to return to. Default 'general'.
  */
-function pediment_form_settings_redirect( string $type, string $message ): void {
+function pediment_form_settings_redirect( string $type, string $message, string $tab = 'general' ): void {
 	set_transient(
 		'pediment_forms_notice',
 		array(
@@ -391,15 +457,7 @@ function pediment_form_settings_redirect( string $type, string $message ): void 
 		),
 		30
 	);
-	wp_safe_redirect(
-		add_query_arg(
-			array(
-				'post_type' => PEDIMENT_FORM_CPT,
-				'page'      => PEDIMENT_FORM_SETTINGS_PAGE,
-			),
-			admin_url( 'edit.php' )
-		)
-	);
+	wp_safe_redirect( pediment_settings_page_url( $tab ) );
 	exit;
 }
 
@@ -430,7 +488,7 @@ function pediment_form_handle_save_general(): void {
 	update_option( PEDIMENT_FORM_RETENTION_OPTION, isset( $_POST['retention_days'] ) ? absint( wp_unslash( $_POST['retention_days'] ) ) : 90 );
 	$default = isset( $_POST['default_destination'] ) ? sanitize_key( wp_unslash( $_POST['default_destination'] ) ) : '';
 	update_option( PEDIMENT_FORM_DEFAULT_DEST_OPTION, $default );
-	pediment_form_settings_redirect( 'updated', __( 'Settings saved.', 'pediment' ) );
+	pediment_form_settings_redirect( 'updated', __( 'Settings saved.', 'pediment' ), 'general' );
 }
 
 /**
@@ -445,11 +503,11 @@ function pediment_form_handle_save_secret(): void {
 	// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- secret value is a raw credential; sanitizing would corrupt arbitrary-character API keys.
 	$value = isset( $_POST['secret_value'] ) ? (string) wp_unslash( $_POST['secret_value'] ) : '';
 	if ( '' === $name || '' === $value ) {
-		pediment_form_settings_redirect( 'error', __( 'Secret name and value are required.', 'pediment' ) );
+		pediment_form_settings_redirect( 'error', __( 'Secret name and value are required.', 'pediment' ), 'secrets' );
 		return;
 	}
 	pediment_form_secret_set( $name, $value );
-	pediment_form_settings_redirect( 'updated', __( 'Secret saved.', 'pediment' ) );
+	pediment_form_settings_redirect( 'updated', __( 'Secret saved.', 'pediment' ), 'secrets' );
 }
 
 /**
@@ -462,7 +520,7 @@ function pediment_form_handle_delete_secret(): void {
 	$name = isset( $_POST['secret_name'] ) ? sanitize_key( wp_unslash( $_POST['secret_name'] ) ) : '';
 	check_admin_referer( 'pediment_form_delete_secret_' . $name );
 	pediment_form_secret_set( $name, '' );
-	pediment_form_settings_redirect( 'updated', __( 'Secret deleted.', 'pediment' ) );
+	pediment_form_settings_redirect( 'updated', __( 'Secret deleted.', 'pediment' ), 'secrets' );
 }
 
 /**
@@ -475,17 +533,17 @@ function pediment_form_handle_save_destination(): void {
 	check_admin_referer( 'pediment_form_save_destination' );
 	$result = pediment_form_sanitize_destination( wp_unslash( $_POST ) );
 	if ( ! empty( $result['errors'] ) ) {
-		pediment_form_settings_redirect( 'error', implode( ' ', $result['errors'] ) );
+		pediment_form_settings_redirect( 'error', implode( ' ', $result['errors'] ), 'destinations' );
 		return;
 	}
 	// phpcs:ignore WordPress.Security.NonceVerification.Missing -- nonce already verified by check_admin_referer above.
 	if ( isset( $_POST['pediment_form_test'] ) ) {
 		$test = pediment_form_test_destination( $result['dest'] );
-		pediment_form_settings_redirect( $test['ok'] ? 'updated' : 'error', $test['message'] );
+		pediment_form_settings_redirect( $test['ok'] ? 'updated' : 'error', $test['message'], 'destinations' );
 		return;
 	}
 	pediment_form_save_destination( $result['dest'] );
-	pediment_form_settings_redirect( 'updated', __( 'Destination saved.', 'pediment' ) );
+	pediment_form_settings_redirect( 'updated', __( 'Destination saved.', 'pediment' ), 'destinations' );
 }
 
 /**
@@ -498,13 +556,13 @@ function pediment_form_handle_delete_destination(): void {
 	$id = isset( $_POST['id'] ) ? sanitize_key( wp_unslash( $_POST['id'] ) ) : '';
 	check_admin_referer( 'pediment_form_delete_destination_' . $id );
 	pediment_form_delete_destination( $id );
-	pediment_form_settings_redirect( 'updated', __( 'Destination deleted.', 'pediment' ) );
+	pediment_form_settings_redirect( 'updated', __( 'Destination deleted.', 'pediment' ), 'destinations' );
 }
 
 add_action(
 	'admin_enqueue_scripts',
 	function ( $hook_suffix ) {
-		if ( false === strpos( (string) $hook_suffix, PEDIMENT_FORM_SETTINGS_PAGE ) ) {
+		if ( 'settings_page_' . PEDIMENT_SETTINGS_PAGE !== $hook_suffix ) {
 			return;
 		}
 		$rel = 'assets/js/admin-forms-settings.js';
