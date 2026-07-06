@@ -6,7 +6,7 @@
  * demo content the Playwright suite asserts against. Run via
  * `wp eval-file wp-content/themes/pediment/tests/e2e/fixtures.php` from
  * global-setup.ts AFTER the theme is active (so framework bootstrap has created
- * the header part + brand defaults and the registered patterns are available).
+ * the header part and the registered patterns are available).
  *
  * Canonical block markup for the Home and Mega-menu pages is sourced from the
  * registered patterns rather than hand-copied, so the fixtures never drift from

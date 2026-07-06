@@ -297,6 +297,119 @@ return array(
 		'style' => 'file:./style-index.css',
 		'render' => 'file:./render.php'
 	),
+	'form' => array(
+		'$schema' => 'https://schemas.wp.org/trunk/block.json',
+		'apiVersion' => 3,
+		'name' => 'pediment/form',
+		'title' => 'Form',
+		'category' => 'pediment',
+		'description' => 'A form that collects visitor input and delivers it to a configured destination. Add Form Field child blocks for each input. Use for contact, booking, registration, feedback, or signup forms.',
+		'textdomain' => 'pediment',
+		'supports' => array(
+			'html' => false,
+			'align' => array(
+				'wide'
+			)
+		),
+		'allowedBlocks' => array(
+			'pediment/form-field'
+		),
+		'attributes' => array(
+			'destination' => array(
+				'type' => 'string',
+				'default' => ''
+			),
+			'successMessage' => array(
+				'type' => 'string',
+				'default' => 'Thanks — we\'ll be in touch shortly.'
+			),
+			'submitLabel' => array(
+				'type' => 'string',
+				'default' => 'Send'
+			)
+		),
+		'example' => array(
+			'attributes' => array(
+				'successMessage' => 'Thanks — we\'ll be in touch shortly.'
+			),
+			'innerBlocks' => array(
+				array(
+					'name' => 'pediment/form-field',
+					'attributes' => array(
+						'label' => 'Name',
+						'fieldName' => 'name',
+						'required' => true
+					)
+				),
+				array(
+					'name' => 'pediment/form-field',
+					'attributes' => array(
+						'fieldType' => 'email',
+						'label' => 'Email',
+						'fieldName' => 'email',
+						'required' => true
+					)
+				)
+			)
+		),
+		'editorScript' => 'file:./index.js',
+		'editorStyle' => 'file:./style-index.css',
+		'style' => 'file:./style-index.css',
+		'viewScript' => 'file:./view.js',
+		'render' => 'file:./render.php'
+	),
+	'form-field' => array(
+		'$schema' => 'https://schemas.wp.org/trunk/block.json',
+		'apiVersion' => 3,
+		'name' => 'pediment/form-field',
+		'title' => 'Form Field',
+		'category' => 'pediment',
+		'parent' => array(
+			'pediment/form'
+		),
+		'description' => 'A single field inside a Pediment form. Choose its type (text, email, phone, long text, dropdown, checkbox, radio, number, date), label, and whether it is required.',
+		'textdomain' => 'pediment',
+		'supports' => array(
+			'html' => false,
+			'reusable' => false
+		),
+		'attributes' => array(
+			'fieldType' => array(
+				'type' => 'string',
+				'default' => 'text'
+			),
+			'label' => array(
+				'type' => 'string',
+				'default' => ''
+			),
+			'fieldName' => array(
+				'type' => 'string',
+				'default' => ''
+			),
+			'required' => array(
+				'type' => 'boolean',
+				'default' => false
+			),
+			'placeholder' => array(
+				'type' => 'string',
+				'default' => ''
+			),
+			'helpText' => array(
+				'type' => 'string',
+				'default' => ''
+			),
+			'options' => array(
+				'type' => 'array',
+				'default' => array(
+					
+				)
+			)
+		),
+		'editorScript' => 'file:./index.js',
+		'editorStyle' => 'file:./style-index.css',
+		'style' => 'file:./style-index.css',
+		'render' => 'file:./render.php'
+	),
 	'hero' => array(
 		'$schema' => 'https://schemas.wp.org/trunk/block.json',
 		'apiVersion' => 3,
@@ -808,7 +921,7 @@ return array(
 		'name' => 'pediment/social-links',
 		'title' => 'Social Links',
 		'category' => 'pediment',
-		'description' => 'Renders the social links configured in Settings → Brand Settings. Hides itself when none are configured.',
+		'description' => 'Renders a row of icon links to your social profiles. Add links in the block settings sidebar. Hides itself when none are configured.',
 		'textdomain' => 'pediment',
 		'supports' => array(
 			'html' => false,
@@ -817,7 +930,12 @@ return array(
 			)
 		),
 		'attributes' => array(
-			
+			'links' => array(
+				'type' => 'array',
+				'default' => array(
+					
+				)
+			)
 		),
 		'example' => array(
 			
