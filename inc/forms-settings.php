@@ -263,6 +263,26 @@ function pediment_form_render_secrets_tab(): void {
 }
 
 /**
+ * Transient key for stashing a rejected destination submission, per user.
+ *
+ * @return string
+ */
+function pediment_form_repopulate_key(): string {
+	return 'pediment_forms_repopulate_' . get_current_user_id();
+}
+
+/**
+ * Stash a submitted destination so the form re-renders with the admin's own
+ * input after a validation error or a test send. PRG loses POST, so this keeps
+ * the entered values across the redirect (per-user, short-lived).
+ *
+ * @param array<string,mixed> $dest Sanitized destination record.
+ */
+function pediment_form_stash_destination( array $dest ): void {
+	set_transient( pediment_form_repopulate_key(), $dest, 60 );
+}
+
+/**
  * Field defaults for the add/edit destination form.
  *
  * @param string $edit_id Destination id to edit, or '' for add mode.
@@ -279,6 +299,26 @@ function pediment_form_destination_form_values( string $edit_id ): array {
 		'body_template' => '',
 		'is_edit'       => false,
 	);
+
+	// Repopulate after a rejected save or a test send: show the admin's own
+	// input back instead of a blank/stored form.
+	$stash = get_transient( pediment_form_repopulate_key() );
+	if ( is_array( $stash ) ) {
+		delete_transient( pediment_form_repopulate_key() );
+		$sid     = (string) ( $stash['id'] ?? '' );
+		$headers = ( isset( $stash['headers'] ) && is_array( $stash['headers'] ) ) ? $stash['headers'] : array();
+		return array(
+			'id'            => $sid,
+			'label'         => (string) ( $stash['label'] ?? '' ),
+			'method'        => (string) ( $stash['method'] ?? 'POST' ),
+			'url'           => (string) ( $stash['url'] ?? '' ),
+			'content_type'  => (string) ( $stash['content_type'] ?? 'application/json' ),
+			'headers'       => $headers,
+			'body_template' => (string) ( $stash['body_template'] ?? '' ),
+			'is_edit'       => ( '' !== $sid && null !== pediment_form_get_destination( $sid ) ),
+		);
+	}
+
 	if ( '' === $edit_id ) {
 		return $blank;
 	}
@@ -310,10 +350,9 @@ function pediment_form_render_destinations_tab(): void {
 	$destinations = pediment_form_destinations();
 	$presets      = pediment_form_presets();
 	// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only pre-fill of the edit form, changes no state.
-	$edit_id  = isset( $_GET['edit'] ) ? sanitize_key( wp_unslash( $_GET['edit'] ) ) : '';
-	$values   = pediment_form_destination_form_values( $edit_id );
-	$readonly = $values['is_edit'] ? 'readonly' : '';
-	$rows     = ! empty( $values['headers'] ) ? $values['headers'] : array( '' => '' );
+	$edit_id = isset( $_GET['edit'] ) ? sanitize_key( wp_unslash( $_GET['edit'] ) ) : '';
+	$values  = pediment_form_destination_form_values( $edit_id );
+	$rows    = ! empty( $values['headers'] ) ? $values['headers'] : array( '' => '' );
 	?>
 	<h2><?php esc_html_e( 'Destinations', 'pediment' ); ?></h2>
 	<table class="widefat striped">
@@ -375,7 +414,14 @@ function pediment_form_render_destinations_tab(): void {
 			</tr>
 			<tr>
 				<th scope="row"><label for="pf-id"><?php esc_html_e( 'ID', 'pediment' ); ?></label></th>
-				<td><input type="text" id="pf-id" name="id" class="regular-text pf-field-id" value="<?php echo esc_attr( $values['id'] ); ?>" <?php echo esc_attr( $readonly ); ?> /></td>
+				<td>
+					<?php if ( $values['is_edit'] ) : ?>
+						<input type="text" id="pf-id" name="id" class="regular-text pf-field-id" value="<?php echo esc_attr( $values['id'] ); ?>" readonly />
+					<?php else : ?>
+						<input type="text" id="pf-id" class="regular-text pf-field-id" value="<?php echo esc_attr( pediment_form_next_destination_id() ); ?>" disabled />
+						<p class="description"><?php esc_html_e( 'Assigned automatically.', 'pediment' ); ?></p>
+					<?php endif; ?>
+				</td>
 			</tr>
 			<tr>
 				<th scope="row"><label for="pf-label"><?php esc_html_e( 'Label', 'pediment' ); ?></label></th>
@@ -537,19 +583,26 @@ function pediment_form_handle_save_destination(): void {
 	}
 	check_admin_referer( 'pediment_form_save_destination' );
 	$result = pediment_form_sanitize_destination( wp_unslash( $_POST ) );
+	$dest   = $result['dest'];
+	// Editing keeps the (readonly) id; a new destination posts an empty id.
+	$edit = ( '' !== (string) $dest['id'] ) ? array( 'edit' => (string) $dest['id'] ) : array();
+
 	if ( ! empty( $result['errors'] ) ) {
-		$edit_id = (string) ( $result['dest']['id'] ?? '' );
-		pediment_form_settings_redirect( 'error', implode( ' ', $result['errors'] ), 'destinations', '' !== $edit_id ? array( 'edit' => $edit_id ) : array() );
+		pediment_form_stash_destination( $dest );
+		pediment_form_settings_redirect( 'error', implode( ' ', $result['errors'] ), 'destinations', $edit );
 		return;
 	}
 	// phpcs:ignore WordPress.Security.NonceVerification.Missing -- nonce already verified by check_admin_referer above.
 	if ( isset( $_POST['pediment_form_test'] ) ) {
-		$test    = pediment_form_test_destination( $result['dest'] );
-		$edit_id = (string) ( $result['dest']['id'] ?? '' );
-		pediment_form_settings_redirect( $test['ok'] ? 'updated' : 'error', $test['message'], 'destinations', '' !== $edit_id ? array( 'edit' => $edit_id ) : array() );
+		$test = pediment_form_test_destination( $dest );
+		pediment_form_stash_destination( $dest );
+		pediment_form_settings_redirect( $test['ok'] ? 'updated' : 'error', $test['message'], 'destinations', $edit );
 		return;
 	}
-	pediment_form_save_destination( $result['dest'] );
+	if ( '' === (string) $dest['id'] ) {
+		$dest['id'] = pediment_form_next_destination_id();
+	}
+	pediment_form_save_destination( $dest );
 	pediment_form_settings_redirect( 'updated', __( 'Destination saved.', 'pediment' ), 'destinations' );
 }
 

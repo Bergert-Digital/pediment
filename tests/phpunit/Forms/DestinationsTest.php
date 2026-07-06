@@ -97,4 +97,34 @@ class DestinationsTest extends WP_UnitTestCase {
 		$d['body_template'] = '{"broken": }';
 		$this->assertArrayHasKey( 'body_template', pediment_form_validate_destination( $d ) );
 	}
+
+	public function test_missing_id_is_no_longer_a_validation_error() {
+		pediment_form_secret_set( 'brevo_api_key', 'sk' );
+		$d       = $this->valid_dest();
+		$d['id'] = '';
+		$this->assertArrayNotHasKey( 'id', pediment_form_validate_destination( $d ) );
+	}
+
+	public function test_next_destination_id_starts_at_one() {
+		$this->assertSame( '1', pediment_form_next_destination_id() );
+	}
+
+	public function test_next_destination_id_increments_past_highest_integer() {
+		update_option(
+			PEDIMENT_FORM_DESTINATIONS_OPTION,
+			array(
+				array( 'id' => '1', 'label' => 'One' ),
+				array( 'id' => '4', 'label' => 'Four' ),
+			)
+		);
+		$this->assertSame( '5', pediment_form_next_destination_id() );
+	}
+
+	public function test_next_destination_id_ignores_non_numeric_ids() {
+		update_option(
+			PEDIMENT_FORM_DESTINATIONS_OPTION,
+			array( array( 'id' => 'brevo_main', 'label' => 'Brevo' ) + $this->valid_dest() )
+		);
+		$this->assertSame( '1', pediment_form_next_destination_id() );
+	}
 }
