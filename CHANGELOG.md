@@ -1,5 +1,57 @@
 # Changelog
 
+## [2.1.0](https://github.com/Bergert-Digital/pediment/compare/v2.0.0...v2.1.0) (2026-07-06)
+
+
+### Features
+
+* **404:** center page-not-found content vertically ([140d76b](https://github.com/Bergert-Digital/pediment/commit/140d76b5905422ad2cfc04beff3422e0b33fe637))
+* **404:** center page-not-found content vertically ([#53](https://github.com/Bergert-Digital/pediment/issues/53)) ([b3e68ae](https://github.com/Bergert-Digital/pediment/commit/b3e68aee98ed714f38b1035b7f192e15dc8a2ec9))
+* AI-generatable forms — Plan 1 (capture) ([#49](https://github.com/Bergert-Digital/pediment/issues/49)) ([c57ed2c](https://github.com/Bergert-Digital/pediment/commit/c57ed2cdb9f559a3f59bda0b1c16af8eda5aadd9))
+* AI-generatable forms with delivery, plus Brand Settings removal ([#54](https://github.com/Bergert-Digital/pediment/issues/54)) ([e872399](https://github.com/Bergert-Digital/pediment/commit/e872399366c88957811afdcf8a8edbb5168d892a))
+* encrypted secret store for form destinations ([3ba302f](https://github.com/Bergert-Digital/pediment/commit/3ba302f0e3554d2964f6bf6c203b72ec1a9350ec))
+* form delivery engine wired to submission storage ([8cada5f](https://github.com/Bergert-Digital/pediment/commit/8cada5f2d2dfea74cfdc8a1e588a7cce2e0a5837))
+* form destinations registry and validation gate ([4960345](https://github.com/Bergert-Digital/pediment/commit/4960345e4b15c2452b9b2111f74da840385e5092))
+* form field-collection and validation helpers ([2d4f107](https://github.com/Bergert-Digital/pediment/commit/2d4f107008aea4e830391b609dfc51f715cf2e2e))
+* form submission delivery — destinations, templated HTTP, secrets (Plan 2) ([#52](https://github.com/Bergert-Digital/pediment/issues/52)) ([2407052](https://github.com/Bergert-Digital/pediment/commit/2407052d6cf530950a5982fa53063aa6aa6adef5))
+* form submission retention cron ([0de31ef](https://github.com/Bergert-Digital/pediment/commit/0de31ef29f9a24b5b7505a3f31ef71d5257367c0))
+* form_submission CPT, persistence, and admin columns ([d22bff9](https://github.com/Bergert-Digital/pediment/commit/d22bff980c9a8e4e0322aa92c93f83d797d84c6b))
+* **forms-settings:** send-test dry-run for destinations ([61f7a8f](https://github.com/Bergert-Digital/pediment/commit/61f7a8f8d7dc9e10b9239692e22d9da1662703df))
+* generic form submission REST endpoint with server-authoritative validation ([7f96147](https://github.com/Bergert-Digital/pediment/commit/7f961474bb05ff4f3836fa19a0abf6abf561bd92))
+* HTTPS + SSRF guard for form delivery URLs ([6a6fe10](https://github.com/Bergert-Digital/pediment/commit/6a6fe104c7c4fb92d2a43312790893082e9cec8f))
+* pediment/form block with server-authoritative submission wiring ([a1d040b](https://github.com/Bergert-Digital/pediment/commit/a1d040b8991d751268cba92af5b8dd43a4a61c42))
+* pediment/form-field block ([1825c19](https://github.com/Bergert-Digital/pediment/commit/1825c19b560c38094227c9e7c9ca7208a146e5c0))
+* provider presets for form destinations ([fd57f04](https://github.com/Bergert-Digital/pediment/commit/fd57f0455e6d9bb788526fec3e0030182f3923b9))
+* retention setting + delivery status column and retry ([7eec194](https://github.com/Bergert-Digital/pediment/commit/7eec194b8b91a2cdc6287e0a74c89b0c288e36e8))
+* Settings → Forms admin UI for destinations and secrets ([dbba3ce](https://github.com/Bergert-Digital/pediment/commit/dbba3cea7028afc905d448cb5282bcb3c460cf0e))
+* structural token templating for form delivery ([64465b5](https://github.com/Bergert-Digital/pediment/commit/64465b51537652606b9115e0df30d6282b8051d6))
+
+
+### Bug Fixes
+
+* add novalidate to form so server-side validation is authoritative ([18c3ffa](https://github.com/Bergert-Digital/pediment/commit/18c3ffa234030c197b1aee6416326bbb4836b2da))
+* explicit esc_attr on data-success, harden honeypot hiding, null-guard submit button ([0d4bcf5](https://github.com/Bergert-Digital/pediment/commit/0d4bcf54fa0f5cf7387abe47fa596e33bac90483))
+* **form-field:** allow editing blank lines in the Options textarea ([a0f64b2](https://github.com/Bergert-Digital/pediment/commit/a0f64b298853a4877584d53fe40c7a2f2ef7ee63))
+* **form-field:** harden options handling against malformed AI input ([dbc9169](https://github.com/Bergert-Digital/pediment/commit/dbc91699822200ea1882cc7490204c5eda2536c3))
+* **form:** editor preview structure + field/button theming ([faba02b](https://github.com/Bergert-Digital/pediment/commit/faba02b6165b703fa7fd0efce75bb7173663f702))
+* **forms-destinations:** use json_last_error for body validity (accept JSON null) ([6f55255](https://github.com/Bergert-Digital/pediment/commit/6f55255b79316237eb439935074491b24730da81))
+* **forms-secrets:** consistent name normalization in set/get + guards ([1e3f093](https://github.com/Bergert-Digital/pediment/commit/1e3f093577e1f2f4793c6c4e201876f0486f2bc0))
+* **forms-template:** single-pass token resolution to block field-value token injection ([fed52d1](https://github.com/Bergert-Digital/pediment/commit/fed52d1aa17f48958448c661df310f331b06453b))
+* **form:** serialize inner field blocks on save (InnerBlocks.Content) ([498c52d](https://github.com/Bergert-Digital/pediment/commit/498c52ddd21defbb5b5eff402be8bb889f4641f3))
+* **forms:** precise validator error keys, scan header keys, preset+style nits ([b82f874](https://github.com/Bergert-Digital/pediment/commit/b82f874b29c632e972a8119c1600af077f2e22c2))
+* guard retention cron against strtotime false (mass-delete blast radius) ([6368f25](https://github.com/Bergert-Digital/pediment/commit/6368f2590932652508cb2abf2241b4ed5e92dd11))
+* move form-field help text out of label (a11y) + add name-fallback test ([479ef2d](https://github.com/Bergert-Digital/pediment/commit/479ef2da1385c6bce0651b73aacaa148e3acf564))
+* stop forcing pretty permalinks on activation ([#47](https://github.com/Bergert-Digital/pediment/issues/47)) ([bec0b1a](https://github.com/Bergert-Digital/pediment/commit/bec0b1aa45c2d20ea39f1cf80745ba1097812a56))
+* stop forcing pretty permalinks on activation ([#47](https://github.com/Bergert-Digital/pediment/issues/47)) ([#48](https://github.com/Bergert-Digital/pediment/issues/48)) ([250c20a](https://github.com/Bergert-Digital/pediment/commit/250c20a47fd9db13d9f8ff558771be30a112b1df))
+* store pending delivery status + sanitize fields at storage time ([c692376](https://github.com/Bergert-Digital/pediment/commit/c692376539b868fac1aa89b404b958456afb0c44))
+* surface submission field values in form_submission admin list ([1ca9ada](https://github.com/Bergert-Digital/pediment/commit/1ca9ada544e92ea6a09f687596ebbb1165e9399d))
+* surface submission field values in form_submission admin list (fixes e2e) ([#50](https://github.com/Bergert-Digital/pediment/issues/50)) ([fe8d7c3](https://github.com/Bergert-Digital/pediment/commit/fe8d7c349a08d31d4960d13e1ee0374d737b2c53))
+
+
+### Refactors
+
+* remove Brand Settings, make social-links block self-contained ([58932ed](https://github.com/Bergert-Digital/pediment/commit/58932edd3c4689b3f18b5745843c6d28beaa1313))
+
 ## [2.0.0](https://github.com/Bergert-Digital/pediment/compare/v1.0.0...v2.0.0) (2026-06-29)
 
 
