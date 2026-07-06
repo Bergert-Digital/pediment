@@ -444,11 +444,12 @@ add_action( 'admin_post_pediment_form_delete_destination', 'pediment_form_handle
 /**
  * Redirect back to the settings page with a notice.
  *
- * @param string $type    'updated' or 'error'.
- * @param string $message Notice text.
- * @param string $tab     Tab to return to. Default 'general'.
+ * @param string $type       'updated' or 'error'.
+ * @param string $message    Notice text.
+ * @param string $tab        Tab to return to. Default 'general'.
+ * @param array  $extra_args Optional extra query args to append to the redirect URL.
  */
-function pediment_form_settings_redirect( string $type, string $message, string $tab = 'general' ): void {
+function pediment_form_settings_redirect( string $type, string $message, string $tab = 'general', array $extra_args = array() ): void {
 	set_transient(
 		'pediment_forms_notice',
 		array(
@@ -457,7 +458,11 @@ function pediment_form_settings_redirect( string $type, string $message, string 
 		),
 		30
 	);
-	wp_safe_redirect( pediment_settings_page_url( $tab ) );
+	$url = pediment_settings_page_url( $tab );
+	if ( ! empty( $extra_args ) ) {
+		$url = add_query_arg( $extra_args, $url );
+	}
+	wp_safe_redirect( $url );
 	exit;
 }
 
@@ -533,13 +538,15 @@ function pediment_form_handle_save_destination(): void {
 	check_admin_referer( 'pediment_form_save_destination' );
 	$result = pediment_form_sanitize_destination( wp_unslash( $_POST ) );
 	if ( ! empty( $result['errors'] ) ) {
-		pediment_form_settings_redirect( 'error', implode( ' ', $result['errors'] ), 'destinations' );
+		$edit_id = (string) ( $result['dest']['id'] ?? '' );
+		pediment_form_settings_redirect( 'error', implode( ' ', $result['errors'] ), 'destinations', '' !== $edit_id ? array( 'edit' => $edit_id ) : array() );
 		return;
 	}
 	// phpcs:ignore WordPress.Security.NonceVerification.Missing -- nonce already verified by check_admin_referer above.
 	if ( isset( $_POST['pediment_form_test'] ) ) {
-		$test = pediment_form_test_destination( $result['dest'] );
-		pediment_form_settings_redirect( $test['ok'] ? 'updated' : 'error', $test['message'], 'destinations' );
+		$test    = pediment_form_test_destination( $result['dest'] );
+		$edit_id = (string) ( $result['dest']['id'] ?? '' );
+		pediment_form_settings_redirect( $test['ok'] ? 'updated' : 'error', $test['message'], 'destinations', '' !== $edit_id ? array( 'edit' => $edit_id ) : array() );
 		return;
 	}
 	pediment_form_save_destination( $result['dest'] );
