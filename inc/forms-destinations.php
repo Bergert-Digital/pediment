@@ -69,6 +69,22 @@ function pediment_form_resolve_destination_id( string $id ): string {
 }
 
 /**
+ * Next auto-assigned destination id: the highest existing integer id plus one,
+ * starting from 1. Non-numeric ids (legacy/filter-registered) count as 0.
+ *
+ * @return string
+ */
+function pediment_form_next_destination_id(): string {
+	$max = 0;
+	foreach ( array_keys( pediment_form_destinations() ) as $id ) {
+		if ( ctype_digit( (string) $id ) ) {
+			$max = max( $max, (int) $id );
+		}
+	}
+	return (string) ( $max + 1 );
+}
+
+/**
  * Validate a destination record. Returns field => error (empty when valid).
  *
  * @param array<string,mixed> $dest Destination record.
@@ -77,9 +93,8 @@ function pediment_form_resolve_destination_id( string $id ): string {
 function pediment_form_validate_destination( array $dest ): array {
 	$errors = array();
 
-	if ( '' === sanitize_key( (string) ( $dest['id'] ?? '' ) ) ) {
-		$errors['id'] = __( 'A machine id is required.', 'pediment' );
-	}
+	// Note: no id check — ids are auto-assigned on save (see
+	// pediment_form_next_destination_id), so admins never supply one.
 	if ( ! in_array( strtoupper( (string) ( $dest['method'] ?? '' ) ), PEDIMENT_FORM_METHODS, true ) ) {
 		$errors['method'] = __( 'Method must be GET, POST, PUT, or PATCH.', 'pediment' );
 	}
