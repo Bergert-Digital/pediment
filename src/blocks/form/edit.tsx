@@ -1,7 +1,7 @@
 import { __ } from '@wordpress/i18n';
 import {
 	useBlockProps,
-	InnerBlocks,
+	useInnerBlocksProps,
 	InspectorControls,
 } from '@wordpress/block-editor';
 import { PanelBody, TextControl, TextareaControl } from '@wordpress/components';
@@ -58,6 +58,13 @@ export default function Edit( {
 			? ( { '--pediment-form-gap': gap } as React.CSSProperties )
 			: undefined,
 	} );
+	// Spread inner blocks directly onto the <form> (like the theme's other
+	// container blocks) so each field is a direct grid child and the block gap
+	// spaces the fields — not just the trailing button. A bare <InnerBlocks />
+	// nests them in a wrapper the grid gap can't reach.
+	const { children, ...innerBlocksProps } = useInnerBlocksProps( blockProps, {
+		template: TEMPLATE,
+	} );
 	return (
 		<>
 			<InspectorControls>
@@ -89,8 +96,11 @@ export default function Edit( {
 					/>
 				</PanelBody>
 			</InspectorControls>
-			<form { ...blockProps } onSubmit={ ( e ) => e.preventDefault() }>
-				<InnerBlocks template={ TEMPLATE } />
+			<form
+				{ ...innerBlocksProps }
+				onSubmit={ ( e ) => e.preventDefault() }
+			>
+				{ children }
 				<button type="button" className="pediment-form__submit">
 					{ attributes.submitLabel || __( 'Send', 'pediment' ) }
 				</button>
