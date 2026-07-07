@@ -1,6 +1,8 @@
 .pediment-form {
 	display: grid;
-	gap: var( --wp--preset--spacing--30, 1rem );
+	// Default to a comfortable gap; the block's Block Spacing control overrides
+	// it by setting --pediment-form-gap (see render.php / edit.tsx).
+	gap: var( --pediment-form-gap, var( --wp--preset--spacing--40, 1.5rem ) );
 }
 
 .pediment-form__hp {
