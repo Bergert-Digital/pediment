@@ -31,7 +31,18 @@ type Attrs = {
 	destination: string;
 	successMessage: string;
 	submitLabel: string;
+	style?: { spacing?: { blockGap?: string } };
 };
+
+// Mirror render.php: resolve a blockGap value (raw or `var:preset|spacing|N`) to
+// a CSS value so the editor preview matches the front end.
+function gapToCSS( value?: string ): string | undefined {
+	if ( ! value ) {
+		return undefined;
+	}
+	const preset = /^var:preset\|spacing\|(.+)$/.exec( value );
+	return preset ? `var(--wp--preset--spacing--${ preset[ 1 ] })` : value;
+}
 
 export default function Edit( {
 	attributes,
@@ -40,7 +51,13 @@ export default function Edit( {
 	attributes: Attrs;
 	setAttributes: ( a: Partial< Attrs > ) => void;
 } ) {
-	const blockProps = useBlockProps( { className: 'pediment-form' } );
+	const gap = gapToCSS( attributes.style?.spacing?.blockGap );
+	const blockProps = useBlockProps( {
+		className: 'pediment-form',
+		style: gap
+			? ( { '--pediment-form-gap': gap } as React.CSSProperties )
+			: undefined,
+	} );
 	return (
 		<>
 			<InspectorControls>
