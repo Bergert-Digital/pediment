@@ -6,7 +6,7 @@
 	"category": "pediment",
 	"description": "A form that collects visitor input and delivers it to a configured destination. Add Form Field child blocks for each input. Use for contact, booking, registration, feedback, or signup forms.",
 	"textdomain": "pediment",
-	"supports": { "html": false, "align": [ "wide" ] },
+	"supports": { "html": false, "align": [ "wide" ], "spacing": { "blockGap": true } },
 	"allowedBlocks": [ "pediment/form-field" ],
 	"attributes": {
 		"destination": { "type": "string", "default": "" },

@@ -1,7 +1,7 @@
 import { __ } from '@wordpress/i18n';
 import {
 	useBlockProps,
-	InnerBlocks,
+	useInnerBlocksProps,
 	InspectorControls,
 } from '@wordpress/block-editor';
 import { PanelBody, TextControl, TextareaControl } from '@wordpress/components';
@@ -31,7 +31,18 @@ type Attrs = {
 	destination: string;
 	successMessage: string;
 	submitLabel: string;
+	style?: { spacing?: { blockGap?: string } };
 };
+
+// Mirror render.php: resolve a blockGap value (raw or `var:preset|spacing|N`) to
+// a CSS value so the editor preview matches the front end.
+function gapToCSS( value?: string ): string | undefined {
+	if ( ! value ) {
+		return undefined;
+	}
+	const preset = /^var:preset\|spacing\|(.+)$/.exec( value );
+	return preset ? `var(--wp--preset--spacing--${ preset[ 1 ] })` : value;
+}
 
 export default function Edit( {
 	attributes,
@@ -40,7 +51,20 @@ export default function Edit( {
 	attributes: Attrs;
 	setAttributes: ( a: Partial< Attrs > ) => void;
 } ) {
-	const blockProps = useBlockProps( { className: 'pediment-form' } );
+	const gap = gapToCSS( attributes.style?.spacing?.blockGap );
+	const blockProps = useBlockProps( {
+		className: 'pediment-form',
+		style: gap
+			? ( { '--pediment-form-gap': gap } as React.CSSProperties )
+			: undefined,
+	} );
+	// Spread inner blocks directly onto the <form> (like the theme's other
+	// container blocks) so each field is a direct grid child and the block gap
+	// spaces the fields — not just the trailing button. A bare <InnerBlocks />
+	// nests them in a wrapper the grid gap can't reach.
+	const { children, ...innerBlocksProps } = useInnerBlocksProps( blockProps, {
+		template: TEMPLATE,
+	} );
 	return (
 		<>
 			<InspectorControls>
@@ -72,8 +96,11 @@ export default function Edit( {
 					/>
 				</PanelBody>
 			</InspectorControls>
-			<form { ...blockProps } onSubmit={ ( e ) => e.preventDefault() }>
-				<InnerBlocks template={ TEMPLATE } />
+			<form
+				{ ...innerBlocksProps }
+				onSubmit={ ( e ) => e.preventDefault() }
+			>
+				{ children }
 				<button type="button" className="pediment-form__submit">
 					{ attributes.submitLabel || __( 'Send', 'pediment' ) }
 				</button>
