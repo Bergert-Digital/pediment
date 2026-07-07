@@ -309,6 +309,9 @@ return array(
 			'html' => false,
 			'align' => array(
 				'wide'
+			),
+			'spacing' => array(
+				'blockGap' => true
 			)
 		),
 		'allowedBlocks' => array(

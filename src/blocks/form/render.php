@@ -19,15 +19,28 @@ $pediment_fields   = pediment_form_collect_fields( $pediment_inner );
 $pediment_form_key = pediment_form_form_key( $pediment_fields );
 $pediment_post_id  = (int) get_the_ID();
 
-$pediment_wrapper = get_block_wrapper_attributes(
-	array(
-		'class'         => 'pediment-form',
-		'data-success'  => esc_attr( $pediment_success ),
-		'data-rest-url' => esc_url_raw( rest_url( PEDIMENT_FORM_NAMESPACE . PEDIMENT_FORM_ROUTE ) ),
-		'data-post-id'  => (string) $pediment_post_id,
-		'data-form-key' => $pediment_form_key,
-	)
+// Core serializes spacing padding/margin to inline styles automatically, but
+// leaves blockGap for layout support — which this block doesn't use — so wire
+// the chosen Block Spacing value to our own --pediment-form-gap custom property.
+$pediment_gap = isset( $attributes['style']['spacing']['blockGap'] )
+	? (string) $attributes['style']['spacing']['blockGap']
+	: '';
+if ( '' !== $pediment_gap && preg_match( '/^var:preset\|spacing\|(.+)$/', $pediment_gap, $pediment_gap_m ) ) {
+	$pediment_gap = 'var(--wp--preset--spacing--' . $pediment_gap_m[1] . ')';
+}
+
+$pediment_wrapper_args = array(
+	'class'         => 'pediment-form',
+	'data-success'  => esc_attr( $pediment_success ),
+	'data-rest-url' => esc_url_raw( rest_url( PEDIMENT_FORM_NAMESPACE . PEDIMENT_FORM_ROUTE ) ),
+	'data-post-id'  => (string) $pediment_post_id,
+	'data-form-key' => $pediment_form_key,
 );
+if ( '' !== $pediment_gap ) {
+	$pediment_wrapper_args['style'] = '--pediment-form-gap:' . $pediment_gap . ';';
+}
+
+$pediment_wrapper = get_block_wrapper_attributes( $pediment_wrapper_args );
 
 $pediment_timestamp = time();
 
