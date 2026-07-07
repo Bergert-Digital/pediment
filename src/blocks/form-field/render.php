@@ -18,9 +18,14 @@ $pediment_opts  = isset( $attributes['options'] ) && is_array( $attributes['opti
 $pediment_req_attr = $pediment_req ? ' required' : '';
 $pediment_ph_attr  = '' !== $pediment_ph ? ' placeholder="' . esc_attr( $pediment_ph ) . '"' : '';
 
+$pediment_field_class = 'pediment-form__field';
+if ( 'checkbox' === $pediment_type ) {
+	$pediment_field_class .= ' pediment-form__field--checkbox';
+}
+
 ob_start();
 ?>
-<label class="pediment-form__field">
+<label class="<?php echo esc_attr( $pediment_field_class ); ?>">
 	<span class="pediment-form__label"><?php echo esc_html( '' !== $pediment_label ? $pediment_label : $pediment_name ); ?><?php echo $pediment_req ? ' <span aria-hidden="true">*</span>' : ''; // phpcs:ignore WordPress.Security.EscapeOutput ?></span>
 	<?php
 	switch ( $pediment_type ) :

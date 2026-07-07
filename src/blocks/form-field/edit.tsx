@@ -56,7 +56,6 @@ export default function Edit( {
 	attributes: Attrs;
 	setAttributes: ( a: Partial< Attrs > ) => void;
 } ) {
-	const blockProps = useBlockProps( { className: 'pediment-form__field' } );
 	const {
 		fieldType,
 		label,
@@ -66,6 +65,13 @@ export default function Edit( {
 		helpText,
 		options,
 	} = attributes;
+	const blockProps = useBlockProps( {
+		className:
+			'pediment-form__field' +
+			( fieldType === 'checkbox'
+				? ' pediment-form__field--checkbox'
+				: '' ),
+	} );
 
 	const siblingNames = useSelect(
 		( select: any ) => {
