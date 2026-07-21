@@ -1,5 +1,27 @@
 # Changelog
 
+## [2.2.0](https://github.com/Bergert-Digital/pediment/compare/v2.1.0...v2.2.0) (2026-07-07)
+
+
+### Features
+
+* **forms:** auto-assign destination ids + keep form input on error ([38dda2f](https://github.com/Bergert-Digital/pediment/commit/38dda2f50ae2931686ff201e967484f3dd97f446))
+* **forms:** auto-assign destination ids + keep form input on error ([fdb7597](https://github.com/Bergert-Digital/pediment/commit/fdb7597c54301f74308e1facc41ee5672792512e))
+* **forms:** move forms settings to Settings → Pediment Theme tabs ([78a2452](https://github.com/Bergert-Digital/pediment/commit/78a245230f82da3058f0062c6707eb725a7e7e04))
+* **forms:** settings tabs, destination editing, form block fixes ([#58](https://github.com/Bergert-Digital/pediment/issues/58)) ([7130b5f](https://github.com/Bergert-Digital/pediment/commit/7130b5f19b61b2fc1114858ab1264143dbe7d652))
+* Settings → Pediment Theme tabbed settings with destination editing ([#56](https://github.com/Bergert-Digital/pediment/issues/56)) ([9bf0e0a](https://github.com/Bergert-Digital/pediment/commit/9bf0e0aa6dd24f4adfa440d5f47ec509d1171b47))
+* **settings:** reusable tabbed Pediment Theme options page framework ([460d873](https://github.com/Bergert-Digital/pediment/commit/460d873b345f96218a0fbcdf83ada0ed481dfc15))
+
+
+### Bug Fixes
+
+* **forms:** apply block gap between fields, roomier default ([a4463b5](https://github.com/Bergert-Digital/pediment/commit/a4463b510e368392bb7b5a72d22a09f65ccdd031))
+* **forms:** checkbox inline layout + field block-spacing; add dev commands ([#57](https://github.com/Bergert-Digital/pediment/issues/57)) ([1cdda48](https://github.com/Bergert-Digital/pediment/commit/1cdda48e484f03b2d1926c89127aa0ac0d963843))
+* **forms:** give form fields room and honor Block Spacing ([5da5555](https://github.com/Bergert-Digital/pediment/commit/5da55551a62a0897babb9314be2789f0a245fe3d))
+* **forms:** keep edit context on destination save error/test redirect ([e009b7d](https://github.com/Bergert-Digital/pediment/commit/e009b7d7dbef0d0f481ea7f563f45b073fd4bc28))
+* **forms:** lay out checkbox field inline with its label ([e409539](https://github.com/Bergert-Digital/pediment/commit/e40953971b92141e3d74afded84f93c468640511))
+* restore in-sync package-lock.json to unblock npm ci in CI ([703e10e](https://github.com/Bergert-Digital/pediment/commit/703e10ec094b96f2b5f06028aa0c1b062ecd249d))
+
 ## [2.1.0](https://github.com/Bergert-Digital/pediment/compare/v2.0.0...v2.1.0) (2026-07-06)
 
 
