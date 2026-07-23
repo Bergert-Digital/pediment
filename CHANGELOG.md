@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.6.0](https://github.com/Bergert-Digital/pediment-ai/compare/v0.5.0...v0.6.0) (2026-07-23)
+
+
+### Features
+
+* **settings:** mount AI settings as a Pediment hub tab ([#25](https://github.com/Bergert-Digital/pediment-ai/issues/25)) ([18d2825](https://github.com/Bergert-Digital/pediment-ai/commit/18d282502bd6f12fe99002e469384e926b7b1e1f))
+
 ## [0.5.0](https://github.com/Bergert-Digital/Pediment-AI/compare/v0.4.0...v0.5.0) (2026-06-30)
 
 
