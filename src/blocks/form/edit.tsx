@@ -1,10 +1,25 @@
-import { __ } from '@wordpress/i18n';
+import { __, sprintf } from '@wordpress/i18n';
 import {
 	useBlockProps,
 	useInnerBlocksProps,
 	InspectorControls,
 } from '@wordpress/block-editor';
-import { PanelBody, TextControl, TextareaControl } from '@wordpress/components';
+import {
+	PanelBody,
+	SelectControl,
+	TextControl,
+	TextareaControl,
+} from '@wordpress/components';
+
+type Destination = { id: string; label: string };
+
+// Destinations are injected by inc/forms-destinations.php via an inline script
+// on `enqueue_block_editor_assets`.
+declare global {
+	interface Window {
+		pedimentFormDestinations?: Destination[];
+	}
+}
 
 // Child block is constrained by `allowedBlocks` in block.json.
 const TEMPLATE: Array< [ string, Record< string, unknown > ] > = [
@@ -51,6 +66,26 @@ export default function Edit( {
 	attributes: Attrs;
 	setAttributes: ( a: Partial< Attrs > ) => void;
 } ) {
+	const destinations = window.pedimentFormDestinations ?? [];
+	const destinationOptions = [
+		{ label: __( 'Save to submissions only', 'pediment' ), value: '' },
+		...destinations.map( ( d ) => ( { label: d.label, value: d.id } ) ),
+	];
+	// Preserve a saved id that no longer matches a configured destination so it
+	// is not silently dropped to the default.
+	if (
+		attributes.destination &&
+		! destinations.some( ( d ) => d.id === attributes.destination )
+	) {
+		destinationOptions.push( {
+			label: sprintf(
+				/* translators: %s: destination id */
+				__( 'Unknown (%s)', 'pediment' ),
+				attributes.destination
+			),
+			value: attributes.destination,
+		} );
+	}
 	const gap = gapToCSS( attributes.style?.spacing?.blockGap );
 	const blockProps = useBlockProps( {
 		className: 'pediment-form',
@@ -69,13 +104,14 @@ export default function Edit( {
 		<>
 			<InspectorControls>
 				<PanelBody title={ __( 'Form settings', 'pediment' ) }>
-					<TextControl
-						label={ __( 'Destination id', 'pediment' ) }
+					<SelectControl
+						label={ __( 'Destination', 'pediment' ) }
 						help={ __(
-							'Configured in Settings → Forms. Leave empty for the default.',
+							'Submissions are always saved. Pick a destination to also forward them (configured in Settings → Pediment Theme → Forms).',
 							'pediment'
 						) }
 						value={ attributes.destination }
+						options={ destinationOptions }
 						onChange={ ( v ) =>
 							setAttributes( { destination: v } )
 						}
