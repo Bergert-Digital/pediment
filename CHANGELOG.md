@@ -1,5 +1,14 @@
 # Changelog
 
+## [2.3.0](https://github.com/Bergert-Digital/pediment/compare/v2.2.0...v2.3.0) (2026-07-24)
+
+
+### Features
+
+* **forms:** destination dropdown in the Form block inspector ([a62b403](https://github.com/Bergert-Digital/pediment/commit/a62b403f08323a1cbb136dc6061d723fcaf0a3fe))
+* **forms:** destination dropdown in the Form block inspector ([#60](https://github.com/Bergert-Digital/pediment/issues/60)) ([51d426c](https://github.com/Bergert-Digital/pediment/commit/51d426ccb7cbf16839179619b5482dee72e2ee07))
+* **forms:** destination dropdown in the Form block inspector ([#61](https://github.com/Bergert-Digital/pediment/issues/61)) ([781da95](https://github.com/Bergert-Digital/pediment/commit/781da954ae287a9a85cf3edc5efa1984295c6479))
+
 ## [2.2.0](https://github.com/Bergert-Digital/pediment/compare/v2.1.0...v2.2.0) (2026-07-07)
 
 
