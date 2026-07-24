@@ -85,6 +85,38 @@ function pediment_form_next_destination_id(): string {
 }
 
 /**
+ * Destinations reduced to { id, label } pairs for the block editor dropdown.
+ *
+ * @return array<int,array{id:string,label:string}>
+ */
+function pediment_form_destination_choices(): array {
+	$choices = array();
+	foreach ( pediment_form_destinations() as $id => $dest ) {
+		$label     = trim( (string) ( $dest['label'] ?? '' ) );
+		$choices[] = array(
+			'id'    => (string) $id,
+			'label' => '' !== $label ? $label : (string) $id,
+		);
+	}
+	return $choices;
+}
+
+/**
+ * Expose the destination choices to the block editor so the Form inspector can
+ * offer a dropdown instead of a free-text id field.
+ */
+add_action(
+	'enqueue_block_editor_assets',
+	function () {
+		wp_add_inline_script(
+			'wp-blocks',
+			'window.pedimentFormDestinations = ' . wp_json_encode( pediment_form_destination_choices() ) . ';',
+			'after'
+		);
+	}
+);
+
+/**
  * Validate a destination record. Returns field => error (empty when valid).
  *
  * @param array<string,mixed> $dest Destination record.
