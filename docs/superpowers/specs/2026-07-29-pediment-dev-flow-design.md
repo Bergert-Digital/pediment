@@ -162,9 +162,20 @@ The rule resolves forms cleanly. The form *block* is design and stays. The webho
 destinations, encrypted secrets, SSRF allow-list, retention cron, the 637-line admin UI — is
 machinery and goes. The two parallel form stacks reconcile to one during the move.
 
+**Theme-plugin runtime contract.** The cut creates a real runtime dependency: the form block's
+`render.php` lives in the theme but calls engine code that now lives in the plugin. The theme
+must never fatal when the plugin is absent or outdated — every call across the boundary goes
+through a guarded service accessor (`function_exists` / a `pediment()` locator returning null
+objects), and blocks that need the engine render their static markup with the dynamic behavior
+disabled. The single version line does not remove this risk: theme and plugin update as two
+separate one-click actions in wp-admin, so a site can transiently run mismatched versions. On
+mismatch, show an admin notice naming the artifact to update; never fail the front end.
+
 **Single version line.** Tag once, publish two zips, both stamped `X.Y.Z`. The child pins one
 number. This deletes the compatibility matrix that produced seven bump commits, five duplicate
-PRs, and one revert.
+PRs, and one revert. The accepted cost: an AI-only fix ships a theme update (and vice versa) to
+every client site. That is deliberate — update fatigue is cheaper than the matrix, and the
+release notes distinguish which artifact actually changed.
 
 **Why a monorepo.** CI already behaves like one: `pediment-ai`'s CI checks out and builds
 `Bergert-Digital/pediment@development` before it can run, and the child's CI checks out both.
@@ -198,6 +209,14 @@ Required properties, each tied to a specific past failure:
   `post_content` and compare with the stored hash. Match means nobody edited it, so write the
   new pattern content and update the hash. Mismatch means the client edited it, so never touch
   content and reconcile structure only.
+- **The stored hash is computed from the persisted row, never from the input.** WordPress
+  mutates markup on write — KSES, void-tag normalization, `wp_update_post` un-slashing (all
+  documented in `WORDPRESS_TRAPS.md`) — and the seeder rewrites media URLs. Hash the intended
+  content instead of reading it back after the write, and every page mismatches on the first
+  re-seed, silently disabling content updates system-wide while reporting nothing wrong.
+- **`post_title` is content, arbitrated by the same hash** (hash covers title + content).
+  **Slug is structure**: a client slug change is reverted on re-seed by design — renaming a
+  page is a repo-level operation — and the dry-run plan surfaces the revert before it happens.
 - **Structure the seeder always owns:** page existence, slug, parent/child nesting, front-page
   and posts-page settings, nav membership, CPT registration and rewrite rules,
   translation-group links, media presence.
@@ -347,7 +366,13 @@ in every clone and every Conductor worktree.
 ## 7. Open questions
 
 - Does the child template keep its own CI, or consume a reusable workflow from the monorepo?
-  Leaning reusable, decided during step 1.
+  Leaning reusable, decided during step 1. The same question applies to the shared e2e helpers:
+  "one copy in the monorepo" only solves the problem for the monorepo. The child template is a
+  separate, forked-per-client repo and needs the same helpers — the history shows the identical
+  three e2e fixes (welcome-modal dismissal, persisted-publish waits, permalink resolution)
+  copy-pasted across 3-4 repos. Without a consumption mechanism (an npm package published from
+  the monorepo, plus the reusable workflow), the copy-paste pattern survives in exactly the
+  repo that multiplies per client.
 - Where does `pediment doctor` live — the plugin as WP-CLI, or the template as a node script?
   It needs to run before WordPress exists, which argues for node.
 - Should AI features be license-gated inside the merged plugin from the start, or added when
