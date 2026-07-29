@@ -120,8 +120,8 @@ Two repos, three artifacts, one version line.
 
 ```
 pediment/                    monorepo
-  theme/                     -> pediment.zip
-  plugin/                    -> pediment-core.zip  (framework + AI)
+  theme/                     -> pediment.zip         (installs as themes/pediment)
+  plugin/                    -> pediment-plugin.zip  (installs as plugins/pediment)
   .github/workflows/         one copy, releases both
   tools/                     one copy
   tests/e2e/helpers/         one copy
@@ -129,6 +129,23 @@ pediment/                    monorepo
 
 pediment-child-template/     forked per client
 ```
+
+**Naming.** Both artifacts are called Pediment and both install under the slug `pediment`.
+WordPress keeps theme and plugin slugs in separate namespaces, so `themes/pediment` and
+`plugins/pediment` coexist without conflict.
+
+The release *asset filenames* must still differ, because both are published to the same release
+tag. The theme keeps `pediment.zip`: wp-env derives the mounted theme slug from the URL
+basename, and children declare `Template: pediment`, so that filename is load-bearing
+(`build-release-zip.yml:52-58`). The plugin ships as `pediment-plugin.zip`, which is plumbing
+only — the installed slug comes from the directory inside the zip, and PUC's
+`enableReleaseAssets()` matches on the asset name independently of the slug.
+
+One consequence to accept: in the child template's wp-env, a downloaded
+`pediment-plugin.zip` mounts as `plugins/pediment-plugin` rather than `plugins/pediment`. That
+is harmless (nothing hardcodes the plugin path; `plugins_url()` resolves dynamically), but it
+is a dev/production difference worth knowing about. It does not arise in the monorepo's own
+wp-env, which mounts `theme/` and `plugin/` as local paths.
 
 The theme/plugin cut follows one rule: **blocks and tokens stay in the theme; anything that
 touches the database, the network, or the filesystem moves to the plugin.**
@@ -335,10 +352,12 @@ in every clone and every Conductor worktree.
   It needs to run before WordPress exists, which argues for node.
 - Should AI features be license-gated inside the merged plugin from the start, or added when
   productizing? Deferring, since gating is additive.
-- **Plugin slug continuity.** Existing sites run `pediment-ai`. Shipping the merged plugin as
-  `pediment-core` changes the slug, and Plugin Update Checker keys updates off the slug and
-  directory name, so those installs would silently stop receiving updates rather than fail
-  visibly. Two options: keep the `pediment-ai` slug and rename only the display name, or ship a
-  one-time migration that deactivates the old plugin and installs the new one. Given how often
-  this project has been bitten by update-detection failures (`9c9af20`, `22f0024`, `432faf6`),
-  the safer default is keeping the existing slug. Decide during step 1.
+- **Plugin slug continuity.** Existing sites run `pediment-ai`. Renaming the merged plugin to
+  `pediment` changes the installed directory, and Plugin Update Checker keys updates off the
+  slug, so those installs would silently stop receiving updates rather than fail visibly. The
+  rename is decided; what remains is the transition. Two options: ship one final `pediment-ai`
+  release whose only job is to install and activate `pediment` and deactivate itself, or accept
+  a manual one-time swap on the small number of existing sites. Given how few sites are
+  affected today, and how often this project has been bitten by update-detection failures
+  (`9c9af20`, `22f0024`, `432faf6`), the manual swap is probably safer than automating a
+  self-replacing plugin. Decide during step 1.
