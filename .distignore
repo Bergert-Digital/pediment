@@ -18,3 +18,12 @@ phpunit.xml.dist
 composer.json
 composer.lock
 docs
+plugin
+.claude
+.conductor
+.context
+AGENTS.md
+pediment.code-workspace
+release-please-config.json
+.release-please-manifest.json
+CHANGELOG.md
