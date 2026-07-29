@@ -109,6 +109,7 @@ multilingual symptoms.
 | 2 | Multilingual is first-class, via a `LanguageProvider` interface with `Null` and `Polylang` implementations | Build our own translation layer | The bug history does not justify owning routing, hreflang, sitemaps, search, feeds, REST scoping and editor UX forever. The seam remains if product reasons later demand it. |
 | 3 | Git owns structure, database owns content, arbitrated by a content hash | Seed-once-then-stop; git-always-wins with round-trip export | Preserves shipping content improvements to live sites without destroying client edits. Round-trip export becomes an explicit per-page command rather than a default. |
 | 4 | `/start` is a Claude Code skill that sequences the existing skills | A command layer inside the WP plugin | The plugin has no command system; building one is greenfield work for no benefit. |
+| 5 | Single branch: work lands on `main`, release-please's release PR is the shipping gate. Applies to the monorepo, the child template, and client forks | Keep `development` -> `main` | The two-branch flow was the #4 ranked pain point: it doubled every PR (release PRs were 22-35% of all PRs in every repo), produced five duplicate-titled PR pairs, and forced a manual merge to resolve release-please divergence. A monorepo doubles the version-file churn on `main`, making the split structurally worse. The release PR already provides the staging gate `development` was meant to be. Accepted cost: no parking lane for "done but not ready to ship" — merging the release PR ships everything on `main`. |
 
 ---
 
@@ -330,7 +331,10 @@ Two supporting fixes:
 Ordered by dependency. Each step is shippable.
 
 1. **Monorepo and single version line.** Merge `pediment-ai` in as `plugin/`. One release
-   workflow, one `.wp-env.json`, one phpcs config. Mechanical, and unblocks everything.
+   workflow, one `.wp-env.json`, one phpcs config. This step also retires `development`:
+   the monorepo starts on `main` only (decision 5), which means reconciling the current
+   `development`-ahead-of-`main` state in both source repos as part of the merge. Mechanical,
+   and unblocks everything.
 2. **Move framework runtime into the plugin.** Theme shrinks to presentation; forms reconcile
    from two stacks to one. Breaking for children, so **Pediment 3.0.0**.
 3. **Seeding engine.** Identity keys, hash arbitration, dry-run. Port Workation's
