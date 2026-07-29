@@ -43,13 +43,18 @@ Per-user, per-hour defaults (configurable in Settings):
 
 ## Local dev
 
+This plugin is part of the `pediment` monorepo and shares its **one root wp-env** — there is
+no standalone wp-env for the plugin. Run everything below from the **repo root**, not from
+`plugin/`.
+
 ### First-time setup
 
 ```bash
 composer install
 npm install
-( cd ../pediment && npm install && npm run build )
 npm run build
+composer install -d plugin
+( cd plugin && npm install && npm run build )
 ```
 
 ### Start wp-env
@@ -58,49 +63,34 @@ npm run build
 npm run env:start
 ```
 
-URLs after start:
-
-- Editor: http://localhost:8898/wp-admin (admin / password)
-- Tests WordPress: http://localhost:8899
-
-Ports are set in [.wp-env.json](.wp-env.json) (8898 / 8899) to avoid colliding with the sibling `pediment` wp-env on 8888 / 8889.
+The root wp-env mounts the theme at `wp-content/themes/pediment` and this plugin at
+`wp-content/plugins/pediment-ai`, both served from http://localhost:8888.
 
 ### Stop wp-env
 
-`npm run env:stop` hits a wp-env 10.39 path-resolution bug. Use one of these instead:
-
 ```bash
-# Stop + remove containers (keeps DB volume — fast restart)
-docker compose -f ~/.wp-env/wp-env-pediment-ai-dcebb3bb/docker-compose.yml down
-
-# Just stop the containers (even faster restart)
-docker stop $(docker ps -q --filter "name=wp-env-pediment-ai")
-
-# Nuke the DB too (fresh install on next start)
-docker compose -f ~/.wp-env/wp-env-pediment-ai-dcebb3bb/docker-compose.yml down -v
+npm run env:stop
 ```
 
 ### Day-to-day commands
 
 ```bash
-# Rebuild the editor bundle after JS/TS changes
-npm run build
+# Rebuild the editor bundle after JS/TS changes (from plugin/)
+cd plugin && npm run build
 
-# Watch + rebuild on save
-npm run start
+# Watch + rebuild on save (from plugin/)
+cd plugin && npm run start
 
-# Run PHPUnit (with the workaround for the wp-env run bug)
-docker exec -w /var/www/html/wp-content/plugins/pediment-ai \
-  wp-env-pediment-ai-dcebb3bb-tests-wordpress-1 vendor/bin/phpunit
+# Run PHPUnit (from the repo root)
+npx wp-env run tests-wordpress --env-cwd=wp-content/plugins/pediment-ai ./vendor/bin/phpunit
 
 # Filter a single test class
-docker exec -w /var/www/html/wp-content/plugins/pediment-ai \
-  wp-env-pediment-ai-dcebb3bb-tests-wordpress-1 vendor/bin/phpunit --filter ComposeJobTest
+npx wp-env run tests-wordpress --env-cwd=wp-content/plugins/pediment-ai ./vendor/bin/phpunit --filter ComposeJobTest
 
-# Run Playwright E2E (needs wp-env running)
-npm run e2e
+# Run Playwright E2E (needs wp-env running, from plugin/)
+cd plugin && npm run e2e
 
-# PHP lint
+# PHP lint (from plugin/)
 composer lint
 composer lint:fix
 ```
