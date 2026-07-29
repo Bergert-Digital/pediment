@@ -10,11 +10,12 @@ Distribution: GitHub Release zip (`pediment-ai.zip`) installed via wp-admin, wit
 
 ## Branches
 
-- `main` — released code.
-- `development` — integration branch. All feature branches merge here first; promote to `main` when ready to tag.
-- `feat/*` — short-lived feature branches off `development`.
+Main-only. This plugin lives in the `pediment` monorepo (root = theme, `plugin/` = this
+plugin) and follows the monorepo's branch model: work lands on `main`; there is no
+`development` integration branch. release-please's release PR is the shipping gate —
+merging it tags the monorepo and ships both `pediment.zip` and `pediment-ai.zip`.
 
-Default working branch for /dev-cycle and ad-hoc work: `development`.
+Default working branch for /dev-cycle and ad-hoc work: `main`.
 
 ## Schema and migrations
 
@@ -28,14 +29,17 @@ Schema-touching changes must run on the working branch, not in a worktree (per u
 
 ## Local dev
 
-- `npm run env:start` — boot wp-env (ports 8898 / 8899). The 8899 tests instance has its own DB.
-- `npm run build` / `npm run start` — build / watch the editor bundle.
-- `PEDIMENT_AI_MOCK=true` (set in `.wp-env.json`, on by default for local) makes the plugin return canned fixture responses instead of hitting Anthropic. Toggle off in Settings → Pediment AI to test live.
+- One root wp-env for the whole monorepo (no standalone wp-env for this plugin) — boot it
+  from the repo root with `npm run env:start`. It mounts this plugin at
+  `wp-content/plugins/pediment-ai`, served at `localhost:8888`.
+- `npm run build` / `npm run start` (from `plugin/`) — build / watch the editor bundle.
+- `PEDIMENT_AI_MOCK=true` (set in the root `.wp-env.json`, on by default for local) makes the plugin return canned fixture responses instead of hitting Anthropic. Toggle off in Settings → Pediment AI to test live.
 
 ## Testing
 
-- **PHP unit tests** — phpunit via wp-env's test container. The wp-env 10.39 `npm run env:stop` bug also affects `wp-env run`; use the explicit `docker exec` form documented in [README.md](README.md#day-to-day-commands).
-- **E2E** — Playwright against `localhost:8898`. `npm run e2e`.
+- **PHP unit tests** — from the repo root:
+  `npx wp-env run tests-wordpress --env-cwd=wp-content/plugins/pediment-ai ./vendor/bin/phpunit`.
+- **E2E** — Playwright against `localhost:8888`. `cd plugin && npm run e2e`.
 - **PHP lint** — `composer lint` (phpcs) / `composer lint:fix`.
 
 Always run **both** unit and E2E before claiming a flow works end-to-end. The editor UI sits on top of WP's React build, and TS-level checks alone don't catch enqueue/registration issues.

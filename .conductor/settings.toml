@@ -1,8 +1,9 @@
 "$schema" = "https://conductor.build/schemas/settings.repo.schema.json"
 
 [scripts]
-# Prepare a freshly created workspace: PHP deps, JS deps, and a one-shot block build.
-setup = "composer install && npm install && npm run build"
+# Prepare a freshly created workspace: PHP deps, JS deps, and a one-shot block build for the
+# theme, then the same for the plugin (plugin/).
+setup = "composer install && npm install && npm run build && composer install -d plugin && (cd plugin && npm install && npm run build)"
 
 # Boot the wp-env Docker stack on this workspace's port range, then watch + rebuild blocks.
 # WP_ENV_PORT / WP_ENV_TESTS_PORT keep each workspace's WordPress + tests containers on

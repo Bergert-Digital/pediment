@@ -5,9 +5,10 @@ take precedence over this file.
 
 ## What this project is
 
-A forkable WordPress FSE block theme — the parent layer of a three-repo agency stack
-(`pediment` parent · `pediment-child-theme` per-client child · `pediment-ai`
-plugin). See `docs/VISION.md`. Read `docs/STANDARDS.md` before changing code.
+A monorepo holding a forkable WordPress FSE block theme (root) and its companion AI plugin
+(`plugin/`, `pediment-ai`). The client-theme template used to build per-client sites lives in
+its own repo (`Bergert-Digital/Pediment-Child-Theme`). See `docs/VISION.md`. Read
+`docs/STANDARDS.md` before changing code.
 
 ## Hard rules
 
@@ -30,16 +31,19 @@ plugin). See `docs/VISION.md`. Read `docs/STANDARDS.md` before changing code.
 
 ## Environment
 
-- Local dev: wp-env (Docker). The shared test base is the **child-theme** env at
-  `localhost:8890`; do **not** start wp-env from `pediment` or `pediment-ai`
-  independently. "Dev server down" → check the Docker daemon first.
+- Local dev: one root wp-env (Docker) for the whole monorepo, at `localhost:8888`. It mounts
+  the theme at `wp-content/themes/pediment` and the plugin at
+  `wp-content/plugins/pediment-ai`. Don't start a separate wp-env from `plugin/`. "Dev server
+  down" → check the Docker daemon first.
 - PHP 8.1+, WordPress 6.4+. `@wordpress/scripts` build (`npm run build` → `build/blocks/`).
 
 ## Verifying work
 
 1. `composer lint` · `npm run lint:js` · `npm run lint:blocks` · `npm run lint:colors`
-2. PHPUnit: `npx wp-env run tests-wordpress --env-cwd=wp-content/themes/pediment vendor/bin/phpunit`
-3. Playwright: `npm run e2e`
+2. PHPUnit, both suites, run from the repo root:
+   - Theme: `npx wp-env run tests-wordpress --env-cwd=wp-content/themes/pediment vendor/bin/phpunit`
+   - Plugin: `npx wp-env run tests-wordpress --env-cwd=wp-content/plugins/pediment-ai ./vendor/bin/phpunit`
+3. Playwright: `npm run e2e` (theme) · `cd plugin && npm run e2e` (plugin)
 4. **Layout / typography / style changes**: also run `node tools/audit-landing.mjs` and
    verify the affected band at **375px, 768px, and 1440px** viewports, AND in the block
    editor (post.php?action=edit). A change that looks right at desktop but breaks the
@@ -59,6 +63,10 @@ No success claims without running the relevant command and seeing it pass.
 Conventional commits, imperative, ≤60-char summary, stage by name (never `git add -A`),
 Co-Authored-By trailer. `git push` and any `gh` remote action require explicit user
 go-ahead — show the exact command and stop.
+
+Branch model: single-branch, main-only — no separate integration branch. Work lands on
+`main`; release-please's release PR is the shipping gate — merging it cuts the tag and
+releases both `pediment.zip` (theme) and `pediment-ai.zip` (plugin) from one version line.
 
 ## /dev-cycle docs
 

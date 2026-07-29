@@ -33,6 +33,11 @@ _(none currently known — verify by running a user-journey audit)_
 
 ## 🟢 Medium
 
+- [ ] **History purge of the removed `docs/images/*.jpg`.** The 11 tracked Unsplash JPEGs
+  (~46 MB) were `git rm`'d going forward (monorepo step 1, Task 7) but still bloat every
+  clone via history. A full purge (`git filter-repo` or similar) would force-push and
+  invalidate every Conductor workspace's shared object store — deferred until no
+  workspaces are live. Do this as a deliberate, coordinated one-off, not casually.
 - [ ] **`npm run test:js` has no tests.** Jest is wired via wp-scripts but there are no JS
   unit tests. Either add coverage for the few bits of editor logic worth unit-testing, or
   drop the script so CI/devs aren't misled. Decide and act.
