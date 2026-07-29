@@ -1,0 +1,266 @@
+<?php
+/**
+ * REST routes under /pediment-ai/v1/chat/*.
+ *
+ * @package PedimentAi
+ */
+
+declare(strict_types=1);
+
+namespace PedimentAi\Rest;
+
+use PedimentAi\Anthropic\Client;
+use PedimentAi\Anthropic\SchemaBuilder;
+use PedimentAi\BlockTree\Validator;
+use PedimentAi\Chat\ConversationStore;
+use PedimentAi\Chat\PromptBuilder;
+use PedimentAi\Chat\Tools;
+use PedimentAi\Chat\TurnRunner;
+use PedimentAi\Chat\VirtualTree;
+
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
+
+final class ChatController {
+	public const NS = 'pediment-ai/v1';
+
+	public function register(): void {
+		register_rest_route( self::NS, '/chat/conversations', [
+			'methods'             => 'GET',
+			'permission_callback' => [ $this, 'permGetConv' ],
+			'callback'            => [ $this, 'getConversation' ],
+			'args'                => [ 'post_id' => [ 'type' => 'integer', 'required' => true ] ],
+		] );
+		register_rest_route( self::NS, '/chat/conversations/(?P<id>\d+)', [
+			'methods'             => 'DELETE',
+			'permission_callback' => [ $this, 'permTouchConv' ],
+			'callback'            => [ $this, 'clearConversation' ],
+		] );
+		register_rest_route( self::NS, '/chat/turns', [
+			'methods'             => 'POST',
+			'permission_callback' => [ $this, 'permPostTurn' ],
+			'callback'            => [ $this, 'startTurn' ],
+		] );
+		register_rest_route( self::NS, '/chat/turns/(?P<id>\d+)', [
+			'methods'             => 'GET',
+			'permission_callback' => [ $this, 'permTouchTurn' ],
+			'callback'            => [ $this, 'getTurn' ],
+		] );
+		register_rest_route( self::NS, '/chat/turns/(?P<id>\d+)', [
+			'methods'             => 'DELETE',
+			'permission_callback' => [ $this, 'permTouchTurn' ],
+			'callback'            => [ $this, 'abortTurn' ],
+		] );
+		register_rest_route( self::NS, '/chat/turns/(?P<id>\d+)/run', [
+			'methods'             => 'POST',
+			'permission_callback' => [ $this, 'permRunTurn' ],
+			'callback'            => [ $this, 'runTurn' ],
+		] );
+	}
+
+	// --- Permission callbacks ---
+
+	public function permGetConv( \WP_REST_Request $r ): bool {
+		$post_id = (int) $r->get_param( 'post_id' );
+		return $post_id > 0 && current_user_can( 'edit_post', $post_id );
+	}
+
+	public function permTouchConv( \WP_REST_Request $r ): bool {
+		$conv = ( new ConversationStore() )->findById( (int) $r->get_param( 'id' ) );
+		return $conv && current_user_can( 'edit_post', $conv['post_id'] ) && (int) $conv['user_id'] === get_current_user_id();
+	}
+
+	public function permPostTurn( \WP_REST_Request $r ): bool {
+		$post_id = (int) $r->get_param( 'post_id' );
+		return $post_id > 0 && current_user_can( 'edit_post', $post_id );
+	}
+
+	public function permTouchTurn( \WP_REST_Request $r ): bool {
+		global $wpdb;
+		$row = $wpdb->get_row( $wpdb->prepare(
+			"SELECT c.post_id, c.user_id FROM {$wpdb->prefix}pediment_ai_chat_messages m
+			 JOIN {$wpdb->prefix}pediment_ai_chat_conversations c ON c.id = m.conversation_id
+			 WHERE m.id = %d",
+			(int) $r->get_param( 'id' )
+		), ARRAY_A );
+		return $row && current_user_can( 'edit_post', (int) $row['post_id'] ) && (int) $row['user_id'] === get_current_user_id();
+	}
+
+	public function permRunTurn( \WP_REST_Request $r ): bool {
+		$turn_id = (int) $r->get_param( 'id' );
+		$token   = (string) $r->get_header( 'X-Pediment-Ai-Token' );
+		return '' !== $token && ( new \PedimentAi\Chat\TurnDispatcher() )->verifyToken( $turn_id, $token );
+	}
+
+	// --- Handlers ---
+
+	public function getConversation( \WP_REST_Request $r ): \WP_REST_Response {
+		$conv = ( new ConversationStore() )->getOrCreate( (int) $r->get_param( 'post_id' ), get_current_user_id() );
+		return new \WP_REST_Response( $conv, 200 );
+	}
+
+	public function clearConversation( \WP_REST_Request $r ): \WP_REST_Response {
+		( new ConversationStore() )->clear( (int) $r->get_param( 'id' ) );
+		return new \WP_REST_Response( null, 204 );
+	}
+
+	public function startTurn( \WP_REST_Request $r ) {
+		$post_id         = (int) $r->get_param( 'post_id' );
+		$conversation_id = (int) $r->get_param( 'conversation_id' );
+		$message         = trim( (string) $r->get_param( 'message' ) );
+		$selected        = $r->get_param( 'selected_block' );
+		$images = $this->normalizeImages( $r->get_param( 'images' ) );
+		if ( '' === $message && [] === $images ) {
+			return new \WP_Error( 'pediment_ai_invalid', __( 'A message or an image is required.', 'pediment-ai' ), [ 'status' => 400 ] );
+		}
+
+		$limits = (array) get_option( 'pediment_ai_rate_limits', \PedimentAi\Usage\RateLimiter::DEFAULTS );
+		if ( ! ( new \PedimentAi\Usage\RateLimiter( $limits ) )->consume( get_current_user_id(), 'compose' ) ) {
+			return new \WP_Error( 'pediment_ai_rate_limited', __( 'Rate limit reached.', 'pediment-ai' ), [ 'status' => 429 ] );
+		}
+
+		$store   = new ConversationStore();
+		$user_message_id = $store->appendUserMessage( $conversation_id, $message, $images );
+		$turn_id = $store->startAssistantTurn( $conversation_id );
+
+		// Normalise the block_tree param once; reused in both dispatch branches.
+		$tree_source = is_array( $r->get_param( 'block_tree' ) ) ? $r->get_param( 'block_tree' ) : [];
+
+		$dispatcher = new \PedimentAi\Chat\TurnDispatcher();
+		/**
+		 * Dispatch mode: 'auto' (non-blocking loopback; streams) or 'inline'
+		 * (run synchronously before responding; no streaming, but needs no
+		 * loopback). Default 'auto'.
+		 *
+		 * @param string $mode
+		 */
+		$mode = (string) apply_filters( 'pediment_ai_dispatch_mode', 'auto' );
+
+		if ( 'inline' === $mode ) {
+			$this->processTurn( $turn_id, $conversation_id, new VirtualTree( $tree_source ), $selected, $message, $images );
+			return new \WP_REST_Response( [ 'turn_id' => $turn_id ], 202 );
+		}
+
+		$dispatcher->stashInput( $turn_id, [
+			'conversation_id' => $conversation_id,
+			'message'         => $message,
+			'selected_block'  => $selected,
+			'block_tree'      => $tree_source,
+			'user_message_id' => $user_message_id,
+		] );
+		$dispatcher->dispatch( $turn_id, $dispatcher->mintToken( $turn_id ) );
+
+		return new \WP_REST_Response( [ 'turn_id' => $turn_id ], 202 );
+	}
+
+	public function getTurn( \WP_REST_Request $r ): \WP_REST_Response {
+		$msg = ( new ConversationStore() )->getMessage( (int) $r->get_param( 'id' ) );
+		if ( ! $msg ) {
+			return new \WP_REST_Response( [ 'status' => 'error', 'error' => [ 'code' => 'not_found', 'message' => 'Turn not found' ] ], 404 );
+		}
+		return new \WP_REST_Response( [
+			'status'     => $msg['status'],
+			'content'    => $msg['content'],
+			'tool_calls' => $msg['tool_calls'],
+			'error'      => $msg['error'],
+		], 200 );
+	}
+
+	public function abortTurn( \WP_REST_Request $r ): \WP_REST_Response {
+		( new ConversationStore() )->abort( (int) $r->get_param( 'id' ) );
+		return new \WP_REST_Response( null, 204 );
+	}
+
+	public function runTurn( \WP_REST_Request $r ): \WP_REST_Response {
+		$turn_id = (int) $r->get_param( 'id' );
+		$token = (string) $r->get_header( 'X-Pediment-Ai-Token' );
+		if ( ! ( new \PedimentAi\Chat\TurnDispatcher() )->consumeToken( $turn_id, $token ) ) {
+			return new \WP_REST_Response( null, 403 );
+		}
+		$store   = new ConversationStore();
+		$msg     = $store->getMessage( $turn_id );
+
+		// Idempotency: only a freshly-started assistant turn may be run.
+		if ( ! $msg || 'streaming' !== $msg['status'] ) {
+			return new \WP_REST_Response( null, 204 );
+		}
+
+		$input = ( new \PedimentAi\Chat\TurnDispatcher() )->takeInput( $turn_id );
+		if ( null === $input ) {
+			$store->fail( $turn_id, 'dispatch_lost', 'Turn inputs expired before the runner started.' );
+			return new \WP_REST_Response( null, 204 );
+		}
+
+		ignore_user_abort( true );
+		$images = $store->getAttachments( (int) ( $input['user_message_id'] ?? 0 ) );
+		$tree = new VirtualTree( is_array( $input['block_tree'] ?? null ) ? $input['block_tree'] : [] );
+		$this->processTurn(
+			$turn_id,
+			(int) $input['conversation_id'],
+			$tree,
+			$input['selected_block'] ?? null,
+			(string) $input['message'],
+			$images
+		);
+		return new \WP_REST_Response( null, 204 );
+	}
+
+	// --- Internal ---
+
+	/**
+	 * @param array<string,mixed>|null $selected
+	 */
+	public function processTurn( int $turn_id, int $conversation_id, VirtualTree $tree, $selected, string $message, array $images = [] ): void {
+		$store = new ConversationStore();
+		$conv  = $store->findById( $conversation_id );
+		// Build history (everything except the just-inserted user+assistant pair).
+		$history = array_slice( $conv['messages'], 0, -2 );
+
+		$schema   = ( new SchemaBuilder() )->build();
+		$tools    = new Tools( $schema['blocks'], new Validator( $schema['blocks'] ) );
+		$prompts  = new PromptBuilder( $schema['blocks'] );
+		$provider = apply_filters(
+			'pediment_ai_provider',
+			new Client( ( new \PedimentAi\Settings\OptionsStore() )->getApiKey() )
+		);
+		$model    = (string) apply_filters( 'pediment_ai_model_compose', 'claude-sonnet-4-6' );
+
+		$selectedId = is_array( $selected ) && isset( $selected['clientId'] ) ? (string) $selected['clientId'] : null;
+
+		( new TurnRunner( $store, $tools, $prompts, $provider, $model ) )->run(
+			turn_id:        $turn_id,
+			tree:           $tree,
+			history:        $history,
+			selectedId:     $selectedId,
+			currentUserMsg: $message,
+			images:         $images
+		);
+	}
+
+	/**
+	 * @param mixed $raw
+	 * @return array<int,array{media_type:string,data:string}>
+	 */
+	private function normalizeImages( $raw ): array {
+		if ( ! is_array( $raw ) ) {
+			return [];
+		}
+		$allowed = [ 'image/png', 'image/jpeg', 'image/gif', 'image/webp' ];
+		$out     = [];
+		foreach ( $raw as $img ) {
+			if ( ! is_array( $img ) ) {
+				continue;
+			}
+			$type = isset( $img['media_type'] ) ? (string) $img['media_type'] : '';
+			$data = isset( $img['data'] ) ? (string) $img['data'] : '';
+			if ( in_array( $type, $allowed, true ) && '' !== $data ) {
+				$out[] = [ 'media_type' => $type, 'data' => $data ];
+			}
+			if ( count( $out ) >= 5 ) {
+				break;
+			}
+		}
+		return $out;
+	}
+}

@@ -1,0 +1,12 @@
+{
+  "model": "mock",
+  "usage": { "input_tokens": 0, "output_tokens": 0 },
+  "content": [
+    { "type": "tool_use", "id": "tu_edit_faq", "name": "emit_page", "input": { "blocks": [
+      { "name": "pediment/hero", "attributes": { "headline": "Same hero" }, "innerBlocks": [] },
+      { "name": "pediment/faq",  "attributes": {}, "innerBlocks": [
+        { "name": "pediment/faq-item", "attributes": { "question": "Newly added question?", "answer": "Newly added answer." }, "innerBlocks": [] }
+      ] }
+    ] } }
+  ]
+}
