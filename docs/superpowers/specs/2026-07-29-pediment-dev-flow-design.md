@@ -105,11 +105,12 @@ multilingual symptoms.
 
 | # | Decision | Rejected alternative | Why |
 |---|---|---|---|
-| 1 | Framework runtime moves into a plugin, merged with the AI plugin, in a monorepo with the parent theme, on a single version line | Composer package; automate the current shape | A package ships inside the theme zip and cannot be one-click updated. Automation leaves drift structural. |
+| 1 | Framework runtime moves into a plugin, merged with the AI plugin, in a monorepo, on a single version line. *(Topology amended by decision 6: the presentation layer joins the plugin too; there is no parent theme.)* | Composer package; automate the current shape | A package ships inside the theme zip and cannot be one-click updated. Automation leaves drift structural. |
 | 2 | Multilingual is first-class, via a `LanguageProvider` interface with `Null` and `Polylang` implementations | Build our own translation layer | The bug history does not justify owning routing, hreflang, sitemaps, search, feeds, REST scoping and editor UX forever. The seam remains if product reasons later demand it. |
 | 3 | Git owns structure, database owns content, arbitrated by a content hash | Seed-once-then-stop; git-always-wins with round-trip export | Preserves shipping content improvements to live sites without destroying client edits. Round-trip export becomes an explicit per-page command rather than a default. |
 | 4 | `/start` is a Claude Code skill that sequences the existing skills | A command layer inside the WP plugin | The plugin has no command system; building one is greenfield work for no benefit. |
 | 5 | Single branch: work lands on `main`, release-please's release PR is the shipping gate. Applies to the monorepo, the child template, and client forks | Keep `development` -> `main` | The two-branch flow was the #4 ranked pain point: it doubled every PR (release PRs were 22-35% of all PRs in every repo), produced five duplicate-titled PR pairs, and forced a manual merge to resolve release-please divergence. A monorepo doubles the version-file churn on `main`, making the split structurally worse. The release PR already provides the staging gate `development` was meant to be. Accepted cost: no parking lane for "done but not ready to ship" — merging the release PR ships everything on `main`. |
+| 6 | **The parent theme is retired.** Two artifacts: the `pediment` plugin (engine + AI + blocks + templates + default tokens + patterns) and one standalone theme per client. Validated by spike on 2026-07-29 (see 4.1) | Parent + child themes (the original decision 1 topology) | Deletes three complications this spec itself had to carry: the theme-plugin runtime contract (blocks and engine now ship in one artifact), the load-bearing `pediment.zip` filename / `Template: pediment` folder-name coupling, and the header-defined-twice problem. One less artifact for clients to install and update. Blocks-in-plugin is the idiomatic WordPress position — content survives a theme switch. Costs: plugin-registered templates are a WP 6.7+ API and less battle-tested than parent/child; template *parts* cannot come from plugins; style variations (`styles/*.json`) remain theme-territory. |
 
 ---
 
@@ -117,70 +118,76 @@ multilingual symptoms.
 
 ### 4.1 Artifact topology
 
-Two repos, three artifacts, one version line.
+Two repos, two artifacts, one version line. **There is no parent theme** (decision 6): the
+plugin carries everything shared, and each client site runs one standalone theme scaffolded
+from the template.
 
 ```
-pediment/                    monorepo
-  theme/                     -> pediment.zip         (installs as themes/pediment)
-  plugin/                    -> pediment-plugin.zip  (installs as plugins/pediment)
-  .github/workflows/         one copy, releases both
+pediment/                    monorepo -> pediment.zip (installs as plugins/pediment)
+  plugin/
+    src/blocks/              all 25 blocks
+    templates/               registered via register_block_template()
+    patterns/                incl. the footer (parts cannot come from plugins)
+    tokens/                  default theme.json data, injected via filter
+    inc/                     engine: seeding, forms, language, media, consent,
+                             redirects, brand/site config, updater, AI
+  .github/workflows/         one copy
   tools/                     one copy
   tests/e2e/helpers/         one copy
-  phpcs.xml.dist             one copy
 
-pediment-child-template/     forked per client
+pediment-client-template/    scaffolded per client -> <client>.zip
+  style.css                  no Template: header — standalone
+  theme.json                 client tokens, merged OVER plugin defaults
+  templates/*.html           optional file overrides of plugin templates
+  patterns/, assets/         client content
+  src/blocks/                client-specific blocks
 ```
 
-**Naming.** Both artifacts are called Pediment and both install under the slug `pediment`.
-WordPress keeps theme and plugin slugs in separate namespaces, so `themes/pediment` and
-`plugins/pediment` coexist without conflict.
+**Spike-validated (2026-07-29, WP 7.0.2; all mechanisms are WP 6.7+ APIs).** Throwaway wp-env,
+minimal plugin + standalone client theme; artifacts in `.context/spike-plugin-theme/`:
 
-The release *asset filenames* must still differ, because both are published to the same release
-tag. The theme keeps `pediment.zip`: wp-env derives the mounted theme slug from the URL
-basename, and children declare `Template: pediment`, so that filename is load-bearing
-(`build-release-zip.yml:52-58`). The plugin ships as `pediment-plugin.zip`, which is plumbing
-only — the installed slug comes from the directory inside the zip, and PUC's
-`enableReleaseAssets()` matches on the asset name independently of the slug.
+1. `register_block_template()` templates render on the front end, appear in the Site Editor's
+   template list (`source=plugin`, namespaced under the active theme), and a Site Editor edit
+   (via the same REST route the editor uses) persists and wins over the registration.
+2. A client theme template *file* (`templates/page.html`) beats the plugin registration — the
+   child-override path works unchanged.
+3. A footer shipped as a plugin-registered *pattern* renders inside plugin templates (template
+   parts cannot come from plugins; the header is DB-seeded by the seeder anyway).
+4. Token injection works with parent/child override semantics — **but only via
+   `wp_theme_json_data_theme`**, constructing the plugin's defaults as a base and merging the
+   client's data over it. Injecting into `wp_theme_json_data_default` is a trap: core's
+   preset prevent-override rule (`defaultPalette`) silently *strips* theme presets whose slug
+   collides with a default-origin preset, inverting the override direction.
+5. Because the plugin controls that merge in PHP, it can merge presets **per slug** — the
+   client declares only the tokens it changes and everything else survives. This is strictly
+   better than parent/child `theme.json` semantics, where declaring `color.palette` forces the
+   child to re-paste the entire parent array (the documented wart in the child README).
 
-One consequence to accept: in the child template's wp-env, a downloaded
-`pediment-plugin.zip` mounts as `plugins/pediment-plugin` rather than `plugins/pediment`. That
-is harmless (nothing hardcodes the plugin path; `plugins_url()` resolves dynamically), but it
-is a dev/production difference worth knowing about. It does not arise in the monorepo's own
-wp-env, which mounts `theme/` and `plugin/` as local paths.
+**Runtime contract.** Blocks and engine now ship in one artifact, so the cross-artifact fatal
+risk this section previously had to design around is gone. What remains is simpler: the client
+theme must degrade gracefully when the plugin is deactivated (unregistered blocks render as
+raw markup; the theme's own `templates/index.html` still resolves). The plugin is a hard
+requirement of a Pediment site and says so via an activation notice in the theme.
 
-The theme/plugin cut follows one rule: **blocks and tokens stay in the theme; anything that
-touches the database, the network, or the filesystem moves to the plugin.**
+**Single version line.** The plugin is the one shared artifact and carries the version. Client
+themes version independently per site (as today). An AI-only fix still ships a plugin update to
+every site — accepted; release notes say what changed.
 
-| Stays in theme | Moves to plugin |
-|---|---|
-| `theme.json`, `templates/`, `parts/`, `patterns/` | seeding engine (from `inc/bootstrap.php`) |
-| all 25 blocks in `src/blocks/` | forms engine: `forms-*.php` + `contact-form.php`, 2,145 LOC |
-| `block-styles`, `hero-variants`, `layout-variations` | `ThemeUpdater`, updating both artifacts |
-| `icons`, `nav-active`, `mega-menu` | language provider, media resolver, brand/site config |
-| | consent, redirects, AI |
+**Why a monorepo still.** One copy of the release workflow, CI, wp-env config, and e2e helpers
+— the version-header bug that was fixed four times gets exactly one place to live. The merge of
+`pediment` + `pediment-ai` proceeds as planned; the theme repo's presentation layer moves into
+`plugin/` instead of a sibling `theme/`.
 
-The rule resolves forms cleanly. The form *block* is design and stays. The webhook engine —
-destinations, encrypted secrets, SSRF allow-list, retention cron, the 637-line admin UI — is
-machinery and goes. The two parallel form stacks reconcile to one during the move.
+**What this deletes from the previous design:** the guarded-service-accessor machinery (blocks
+and engine are one artifact), the load-bearing `pediment.zip` filename rules and the
+`Template: pediment` folder-name coupling (no parent to find), the wp-env slug-derivation
+hacks, and the header-defined-twice problem.
 
-**Theme-plugin runtime contract.** The cut creates a real runtime dependency: the form block's
-`render.php` lives in the theme but calls engine code that now lives in the plugin. The theme
-must never fatal when the plugin is absent or outdated — every call across the boundary goes
-through a guarded service accessor (`function_exists` / a `pediment()` locator returning null
-objects), and blocks that need the engine render their static markup with the dynamic behavior
-disabled. The single version line does not remove this risk: theme and plugin update as two
-separate one-click actions in wp-admin, so a site can transiently run mismatched versions. On
-mismatch, show an admin notice naming the artifact to update; never fail the front end.
-
-**Single version line.** Tag once, publish two zips, both stamped `X.Y.Z`. The child pins one
-number. This deletes the compatibility matrix that produced seven bump commits, five duplicate
-PRs, and one revert. The accepted cost: an AI-only fix ships a theme update (and vice versa) to
-every client site. That is deliberate — update fatigue is cheaper than the matrix, and the
-release notes distinguish which artifact actually changed.
-
-**Why a monorepo.** CI already behaves like one: `pediment-ai`'s CI checks out and builds
-`Bergert-Digital/pediment@development` before it can run, and the child's CI checks out both.
-One copy of the release workflow means one place the version-header bug can live.
+**Costs, accepted:** plugin-registered templates are two majors old versus fifteen years of
+parent/child — Site Editor edge cases are likelier here than anywhere else in this design;
+style variations (`styles/*.json`) can't ship from the plugin (unused today); the spike ran on
+WP 7.0.2, so step 2 of the migration re-verifies the five spike claims on the 6.9 production
+floor before anything moves.
 
 ### 4.2 Seeding engine
 
@@ -305,11 +312,11 @@ with no manual steps.
 
 ### 4.5 Scaffolding
 
-Most of the rename disappears on its own. Once framework code lives in the plugin, the child
-theme has almost no PHP: no `inc/seed.php` (808 lines in Workation), no `ThemeUpdater`, no
-`UpdateToken`, no `settings-updates.php` (91 occurrences by itself). What remains is
-`style.css` headers, `package.json`, `composer.json`, `release-please-config.json`, and the
-text domain in client-shipped blocks.
+Most of the rename disappears on its own. With everything shared living in the plugin
+(decision 6), the client theme has almost no PHP: no `inc/seed.php` (808 lines in Workation),
+no `ThemeUpdater`, no `UpdateToken`, no `settings-updates.php` (91 occurrences by itself), and
+no `Template:` header to keep consistent. What remains is `style.css` headers, `package.json`,
+`composer.json`, `release-please-config.json`, and the text domain in client-shipped blocks.
 
 Scaffolding derives the rest from two inputs, client name and repo slug: writes headers, resets
 `CHANGELOG.md` and the release manifest, sets the text domain, deletes the example
@@ -320,7 +327,7 @@ Two supporting fixes:
 - **CI stops hardcoding the slug.** `ci.yml` has 21 hardcoded `pediment-child-theme`
   occurrences, so CI tests a theme whose slug differs from production's. Derive it from the
   `style.css` Text Domain, which the release workflow already does (`e4705f0`).
-- **A `pediment doctor` command** checking slug consistency across the five files, the parent
+- **A `pediment doctor` command** checking slug consistency across the five files, the plugin
   pin, folder-name whitespace (which breaks Site Editor URLs), and that languages are
   configured before seeding.
 
@@ -335,8 +342,12 @@ Ordered by dependency. Each step is shippable.
    the monorepo starts on `main` only (decision 5), which means reconciling the current
    `development`-ahead-of-`main` state in both source repos as part of the merge. Mechanical,
    and unblocks everything.
-2. **Move framework runtime into the plugin.** Theme shrinks to presentation; forms reconcile
-   from two stacks to one. Breaking for children, so **Pediment 3.0.0**.
+2. **Move everything shared into the plugin — runtime and presentation.** First, re-verify the
+   five spike claims of 4.1 on the WP 6.9 production floor (the spike ran on 7.0.2). Then:
+   blocks, templates, patterns, and default tokens move from the theme into `plugin/`; forms
+   reconcile from two stacks to one; the parent theme is retired. Breaking for every existing
+   site, so **Pediment 3.0.0**. Client themes drop their `Template:` header and gain the
+   activation-notice dependency on the plugin.
 3. **Seeding engine.** Identity keys, hash arbitration, dry-run. Port Workation's
    `inc/seed.php` as the reference implementation; it is the most battle-tested one available.
 4. **`LanguageProvider` and the Polylang adapter.**
@@ -389,4 +400,6 @@ in every clone and every Conductor worktree.
   a manual one-time swap on the small number of existing sites. Given how few sites are
   affected today, and how often this project has been bitten by update-detection failures
   (`9c9af20`, `22f0024`, `432faf6`), the manual swap is probably safer than automating a
-  self-replacing plugin. Decide during step 1.
+  self-replacing plugin. Decide during step 1. The same one-time visit also cleans up the
+  parent theme: once a site's client theme updates to its 3.0 build (standalone, no
+  `Template:` header), the installed `pediment` parent theme is inert and gets deleted.
