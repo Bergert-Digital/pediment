@@ -269,7 +269,9 @@ attached from this repo's unified release. Slug and asset regex are
 unchanged. Plugin e2e targets the root wp-env port 8888."
 ```
 
----### Task 5: Unified release plumbing — one version line, two zips
+---
+
+### Task 5: Unified release plumbing — one version line, two zips
 
 **Files:**
 - Modify: `release-please-config.json` (add `plugin/plugin.php` to extra-files)
