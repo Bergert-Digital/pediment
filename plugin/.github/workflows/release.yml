@@ -1,0 +1,24 @@
+name: Release asset
+
+# Manual fallback for re-uploading pediment-ai.zip against an existing tag —
+# e.g. if the chained attach-zip job inside release-please.yml failed on the
+# first try. The normal path is for that job to run automatically when
+# release-please publishes a release; this workflow is only the escape hatch.
+# See release-please.yml for why this is not on `release: published`.
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Existing release tag to (re-)attach pediment-ai.zip to (e.g. v0.2.1)'
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  call:
+    uses: ./.github/workflows/build-release-zip.yml
+    with:
+      tag: ${{ inputs.tag }}
