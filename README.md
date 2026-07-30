@@ -47,11 +47,16 @@ npm run start       # watches src/blocks/ and rebuilds on save
 
 Open http://localhost:8888 for the front-end, or http://localhost:8888/wp-admin (admin / `password`).
 
-If this is the very first boot of wp-env, activate the theme once:
+If this is the very first boot of wp-env, activate the theme and plugin once:
 
 ```bash
 npx wp-env run cli wp theme activate pediment
+npx wp-env run cli wp plugin activate pediment-ai
 ```
+
+wp-env no longer auto-activates the plugin now that its mount moved to
+`mappings`, so the second command is required — skipping it leaves AI
+authoring unavailable in the editor.
 
 Activation runs the framework bootstrap — Brand defaults, an editable header
 template part, and pretty permalinks — so the site is usable immediately. The

@@ -3,16 +3,19 @@
 ## What this is
 
 **pediment** is a forkable WordPress full-site-editing block theme that serves as the
-foundation of a three-part agency stack:
+foundation of a two-repo agency stack:
 
 | Piece | Repo | Role |
 |---|---|---|
-| **Parent theme** | `pediment` (this repo) | Blocks, design tokens, contact form. Read-only in production. |
+| **Parent theme + AI plugin** | `pediment` (this repo, a monorepo) | The theme lives at the repo root; the AI plugin lives in `plugin/`. Both ship together on one version line and release as two artifacts from a single tag. Blocks, design tokens, contact form, and page composition/editing all live here; the theme is read-only in production. |
 | **Child theme** | `pediment-child-theme` | Per-client fork: `theme.json` overrides + `client/*` blocks. |
-| **AI plugin** | `pediment-ai` | Composes/edits pages from prompts using the registered blocks; owns brand identity/voice settings. |
 
 The parent theme is the durable, shared layer. Everything client-specific lives downstream in a
 child theme so the parent improves for every client at once.
+
+A future step (see `docs/superpowers/specs/2026-07-29-pediment-dev-flow-design.md` §4.1) plans to
+dissolve the parent theme into the plugin entirely, leaving one plugin artifact plus one
+standalone theme per client — but that has not happened yet; the layout above is current.
 
 ## Who it's for
 
