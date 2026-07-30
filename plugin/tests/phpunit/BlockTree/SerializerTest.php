@@ -1,7 +1,7 @@
 <?php
-namespace PedimentAi\Tests\BlockTree;
+namespace Pediment\Tests\BlockTree;
 
-use PedimentAi\BlockTree\Serializer;
+use Pediment\BlockTree\Serializer;
 
 class SerializerTest extends \WP_UnitTestCase {
 	public function test_serializes_single_block(): void {

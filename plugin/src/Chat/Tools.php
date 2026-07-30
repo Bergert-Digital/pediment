@@ -2,14 +2,14 @@
 /**
  * Tool schema definitions and tool-call dispatcher for chat.
  *
- * @package PedimentAi
+ * @package Pediment
  */
 
 declare(strict_types=1);
 
-namespace PedimentAi\Chat;
+namespace Pediment\Chat;
 
-use PedimentAi\BlockTree\Validator;
+use Pediment\BlockTree\Validator;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;

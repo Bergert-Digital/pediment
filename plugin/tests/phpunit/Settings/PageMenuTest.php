@@ -1,12 +1,12 @@
 <?php
-namespace PedimentAi\Tests\Settings;
+namespace Pediment\Tests\Settings;
 
-use PedimentAi\Settings\Page;
+use Pediment\Settings\Page;
 
 /**
  * Covers where the settings UI is mounted: as a tab inside Pediment's shared
  * settings hub when the parent theme exposes pediment_settings_register_tab(),
- * or as a standalone Settings > Pediment AI page otherwise. Also pins the
+ * or as a standalone Settings > Pediment page otherwise. Also pins the
  * split between the tab body (no page chrome) and the standalone shell.
  */
 class PageMenuTest extends \WP_UnitTestCase {

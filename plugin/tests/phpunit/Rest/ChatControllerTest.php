@@ -1,8 +1,8 @@
 <?php
-namespace PedimentAi\Tests\Rest;
+namespace Pediment\Tests\Rest;
 
-use PedimentAi\Chat\ConversationStore;
-use PedimentAi\Rest\ChatController;
+use Pediment\Chat\ConversationStore;
+use Pediment\Rest\ChatController;
 
 class ChatControllerTest extends \WP_UnitTestCase {
 	private \WP_REST_Server $server;
@@ -27,11 +27,11 @@ class ChatControllerTest extends \WP_UnitTestCase {
 		$this->post_id = $this->factory->post->create( [ 'post_author' => $user_id, 'post_status' => 'draft' ] );
 
 		// Force the mock provider regardless of constants.
-		add_filter( 'pediment_ai_provider', static fn() => new \PedimentAi\Mock\MockProvider( PEDIMENT_AI_PLUGIN_DIR . '/src/Mock/fixtures' ) );
+		add_filter( 'pediment_ai_provider', static fn() => new \Pediment\Mock\MockProvider( PEDIMENT_AI_PLUGIN_DIR . '/src/Mock/fixtures' ) );
 	}
 
 	public function test_get_conversation_creates_on_first_call(): void {
-		$req = new \WP_REST_Request( 'GET', '/pediment-ai/v1/chat/conversations' );
+		$req = new \WP_REST_Request( 'GET', '/pediment/v1/chat/conversations' );
 		$req->set_param( 'post_id', $this->post_id );
 		$res = $this->server->dispatch( $req );
 		$this->assertSame( 200, $res->get_status() );
@@ -41,7 +41,7 @@ class ChatControllerTest extends \WP_UnitTestCase {
 
 	public function test_post_turn_returns_202_and_persists_user_message(): void {
 		$conv = ( new ConversationStore() )->getOrCreate( $this->post_id, get_current_user_id() );
-		$req  = new \WP_REST_Request( 'POST', '/pediment-ai/v1/chat/turns' );
+		$req  = new \WP_REST_Request( 'POST', '/pediment/v1/chat/turns' );
 		$req->set_param( 'conversation_id', $conv['id'] );
 		$req->set_param( 'post_id', $this->post_id );
 		$req->set_param( 'message', 'Hi' );
@@ -60,14 +60,14 @@ class ChatControllerTest extends \WP_UnitTestCase {
 
 	public function test_get_turn_returns_turn_state(): void {
 		$conv = ( new ConversationStore() )->getOrCreate( $this->post_id, get_current_user_id() );
-		$req  = new \WP_REST_Request( 'POST', '/pediment-ai/v1/chat/turns' );
+		$req  = new \WP_REST_Request( 'POST', '/pediment/v1/chat/turns' );
 		$req->set_param( 'conversation_id', $conv['id'] );
 		$req->set_param( 'post_id', $this->post_id );
 		$req->set_param( 'message', 'Add a paragraph that says hi' );
 		$post_res = $this->server->dispatch( $req );
 		$turn_id  = $post_res->get_data()['turn_id'];
 
-		$get = new \WP_REST_Request( 'GET', "/pediment-ai/v1/chat/turns/{$turn_id}" );
+		$get = new \WP_REST_Request( 'GET', "/pediment/v1/chat/turns/{$turn_id}" );
 		$res = $this->server->dispatch( $get );
 		$this->assertSame( 200, $res->get_status() );
 		$this->assertContains( $res->get_data()['status'], [ 'streaming', 'complete' ] );
@@ -81,7 +81,7 @@ class ChatControllerTest extends \WP_UnitTestCase {
 		$store->appendUserMessage( $conv['id'], 'x' );
 		$turn_id = $store->startAssistantTurn( $conv['id'] );
 
-		$del = new \WP_REST_Request( 'DELETE', "/pediment-ai/v1/chat/turns/{$turn_id}" );
+		$del = new \WP_REST_Request( 'DELETE', "/pediment/v1/chat/turns/{$turn_id}" );
 		$res = $this->server->dispatch( $del );
 		$this->assertSame( 204, $res->get_status() );
 		$this->assertSame( 'aborted', $store->getMessage( $turn_id )['status'] );
@@ -91,7 +91,7 @@ class ChatControllerTest extends \WP_UnitTestCase {
 		$conv = ( new ConversationStore() )->getOrCreate( $this->post_id, get_current_user_id() );
 		( new ConversationStore() )->appendUserMessage( $conv['id'], 'a' );
 
-		$del = new \WP_REST_Request( 'DELETE', "/pediment-ai/v1/chat/conversations/{$conv['id']}" );
+		$del = new \WP_REST_Request( 'DELETE', "/pediment/v1/chat/conversations/{$conv['id']}" );
 		$res = $this->server->dispatch( $del );
 		$this->assertSame( 204, $res->get_status() );
 		$this->assertSame( [], ( new ConversationStore() )->findById( $conv['id'] )['messages'] );
@@ -103,7 +103,7 @@ class ChatControllerTest extends \WP_UnitTestCase {
 		wp_set_current_user( $this->factory->user->create( [ 'role' => 'author' ] ) );
 		$conv = ( new ConversationStore() )->getOrCreate( $other, get_current_user_id() );
 
-		$req = new \WP_REST_Request( 'POST', '/pediment-ai/v1/chat/turns' );
+		$req = new \WP_REST_Request( 'POST', '/pediment/v1/chat/turns' );
 		$req->set_param( 'conversation_id', $conv['id'] );
 		$req->set_param( 'post_id', $other );
 		$req->set_param( 'message', 'x' );

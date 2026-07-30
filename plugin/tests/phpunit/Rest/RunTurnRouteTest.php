@@ -1,8 +1,8 @@
 <?php
-namespace PedimentAi\Tests\Rest;
+namespace Pediment\Tests\Rest;
 
-use PedimentAi\Chat\ConversationStore;
-use PedimentAi\Chat\TurnDispatcher;
+use Pediment\Chat\ConversationStore;
+use Pediment\Chat\TurnDispatcher;
 
 class RunTurnRouteTest extends \WP_UnitTestCase {
 	private int $conv;
@@ -16,7 +16,7 @@ class RunTurnRouteTest extends \WP_UnitTestCase {
 		global $wp_rest_server;
 		$wp_rest_server = new \WP_REST_Server();
 		do_action( 'rest_api_init' );
-		( new \PedimentAi\Rest\ChatController() )->register();
+		( new \Pediment\Rest\ChatController() )->register();
 
 		// Authenticate as an editor so WP returns 403 (forbidden) rather than 401
 		// (unauthenticated) when the token permission check fails. The /run route is a
@@ -29,11 +29,11 @@ class RunTurnRouteTest extends \WP_UnitTestCase {
 		$this->conv = $c['id'];
 		$store->appendUserMessage( $this->conv, 'create a landing page' );
 		$this->turn = $store->startAssistantTurn( $this->conv );
-		add_filter( 'pediment_ai_provider', fn() => new \PedimentAi\Mock\MockProvider( PEDIMENT_AI_PLUGIN_DIR . '/src/Mock/fixtures' ) );
+		add_filter( 'pediment_ai_provider', fn() => new \Pediment\Mock\MockProvider( PEDIMENT_AI_PLUGIN_DIR . '/src/Mock/fixtures' ) );
 	}
 
 	private function call( array $headers ): \WP_REST_Response {
-		$req = new \WP_REST_Request( 'POST', '/pediment-ai/v1/chat/turns/' . $this->turn . '/run' );
+		$req = new \WP_REST_Request( 'POST', '/pediment/v1/chat/turns/' . $this->turn . '/run' );
 		foreach ( $headers as $k => $v ) {
 			$req->set_header( $k, $v );
 		}

@@ -9,9 +9,9 @@ const PluginDocumentSettingPanel =
 export default function DocumentPanel() {
   return (
     <PluginDocumentSettingPanel
-      name="pediment-ai-chat"
-      title={__('Pediment AI', 'pediment-ai')}
-      className="pediment-ai__panel"
+      name="pediment-chat"
+      title={__('Pediment', 'pediment')}
+      className="pediment__panel"
     >
       <ChatPanel />
     </PluginDocumentSettingPanel>

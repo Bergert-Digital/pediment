@@ -1,13 +1,13 @@
 <?php
 /**
- * Encrypted settings store for the Pediment AI plugin.
+ * Encrypted settings store for the Pediment plugin.
  *
- * @package PedimentAi
+ * @package Pediment
  */
 
 declare(strict_types=1);
 
-namespace PedimentAi\Settings;
+namespace Pediment\Settings;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;

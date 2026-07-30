@@ -1,7 +1,7 @@
 <?php
-namespace PedimentAi\Tests\Usage;
+namespace Pediment\Tests\Usage;
 
-use PedimentAi\Usage\Tracker;
+use Pediment\Usage\Tracker;
 
 class TrackerTest extends \WP_UnitTestCase {
 	public function setUp(): void {

@@ -21,14 +21,14 @@ test('chat composer attaches an image and persists its thumbnail', async ({ page
   });
 
   // A thumbnail chip appears in the composer.
-  await expect(sidebar.locator('.pediment-ai-chat__thumb img')).toBeVisible({ timeout: 5_000 });
+  await expect(sidebar.locator('.pediment-chat__thumb img')).toBeVisible({ timeout: 5_000 });
 
   // Send with text that triggers the insert-paragraph mock fixture.
   await sidebar.locator('textarea').fill('Add a paragraph that says hi');
   await sidebar.getByRole('button', { name: /^send$/i }).click();
 
   // The user message renders its image thumbnail (optimistic + persisted reload).
-  await expect(sidebar.locator('.pediment-ai-chat__msg-images img').first()).toBeVisible({ timeout: 15_000 });
+  await expect(sidebar.locator('.pediment-chat__msg-images img').first()).toBeVisible({ timeout: 15_000 });
 
   // The mock still applies its tool call to the canvas.
   const editor = await canvas(page);

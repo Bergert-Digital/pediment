@@ -1,8 +1,8 @@
 <?php
-namespace PedimentAi\Tests\Chat;
+namespace Pediment\Tests\Chat;
 
-use PedimentAi\Chat\PromptBuilder;
-use PedimentAi\Chat\VirtualTree;
+use Pediment\Chat\PromptBuilder;
+use Pediment\Chat\VirtualTree;
 
 class PromptBuilderTest extends \WP_UnitTestCase {
 	public function test_system_prompt_lists_block_names_and_tool_conventions(): void {
@@ -52,7 +52,7 @@ class PromptBuilderTest extends \WP_UnitTestCase {
 	}
 
 	public function test_system_prompt_instructs_section_grouping(): void {
-		$pb = new \PedimentAi\Chat\PromptBuilder( [ 'core/group' => [ 'description' => 'A section container.' ] ] );
+		$pb = new \Pediment\Chat\PromptBuilder( [ 'core/group' => [ 'description' => 'A section container.' ] ] );
 		$prompt = $pb->systemPrompt();
 		$this->assertStringContainsString( 'starter-band', $prompt );
 		$this->assertStringContainsString( 'core/group', $prompt );
@@ -83,7 +83,7 @@ class PromptBuilderTest extends \WP_UnitTestCase {
 	}
 
 	public function test_system_prompt_prescribes_theme_respecting_layout(): void {
-		$pb     = new \PedimentAi\Chat\PromptBuilder( [ 'core/group' => [ 'description' => 'A section container.' ] ] );
+		$pb     = new \Pediment\Chat\PromptBuilder( [ 'core/group' => [ 'description' => 'A section container.' ] ] );
 		$prompt = $pb->systemPrompt();
 		// Sections must use the theme's constrained layout and lean on the theme's
 		// own width settings — never force flow, never hard-code pixel widths.

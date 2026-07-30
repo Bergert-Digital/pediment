@@ -2,12 +2,12 @@
 /**
  * Retrieves a web page's readable text from this WordPress host.
  *
- * @package PedimentAi
+ * @package Pediment
  */
 
 declare(strict_types=1);
 
-namespace PedimentAi\Chat;
+namespace Pediment\Chat;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;

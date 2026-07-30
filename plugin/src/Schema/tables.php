@@ -1,8 +1,8 @@
 <?php
 /**
- * Database table installer for the Pediment AI plugin.
+ * Database table installer for the Pediment plugin.
  *
- * @package PedimentAi
+ * @package Pediment
  */
 
 declare(strict_types=1);

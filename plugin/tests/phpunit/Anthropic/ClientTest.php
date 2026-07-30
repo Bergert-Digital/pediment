@@ -1,7 +1,7 @@
 <?php
-namespace PedimentAi\Tests\Anthropic;
+namespace Pediment\Tests\Anthropic;
 
-use PedimentAi\Anthropic\Client;
+use Pediment\Anthropic\Client;
 
 class ClientTest extends \WP_UnitTestCase {
 	public function setUp(): void {

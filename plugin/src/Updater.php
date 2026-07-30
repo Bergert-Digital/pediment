@@ -1,17 +1,17 @@
 <?php
 /**
- * GitHub-release auto-updates for the Pediment AI plugin.
+ * GitHub-release auto-updates for the Pediment plugin.
  *
  * Points Plugin Update Checker at the public GitHub repo's releases so updates
  * arrive through wp-admin's normal one-click flow (Plugins screen / Dashboard →
  * Updates) instead of manual zip uploads.
  *
- * @package PedimentAi
+ * @package Pediment
  */
 
 declare(strict_types=1);
 
-namespace PedimentAi;
+namespace Pediment;
 
 use YahnisElsts\PluginUpdateChecker\v5\PucFactory;
 
@@ -33,19 +33,19 @@ final class Updater {
 			return;
 		}
 
-		$checker = PucFactory::buildUpdateChecker( self::REPO_URL, $plugin_file, 'pediment-ai' );
+		$checker = PucFactory::buildUpdateChecker( self::REPO_URL, $plugin_file, 'pediment' );
 
 		// Fallback branch for reading the version header if a release is ever absent.
 		if ( method_exists( $checker, 'setBranch' ) ) {
 			$checker->setBranch( 'main' );
 		}
 
-		// Install the built release asset (pediment-ai.zip) rather than GitHub's
+		// Install the built release asset (pediment-plugin.zip) rather than GitHub's
 		// auto-generated "Source code" zip, which has the wrong folder name and
 		// ships no vendor/ autoloader.
 		$api = $checker->getVcsApi();
 		if ( method_exists( $api, 'enableReleaseAssets' ) ) {
-			$api->enableReleaseAssets( '/pediment-ai\.zip$/' );
+			$api->enableReleaseAssets( '/pediment-plugin\.zip$/' );
 		}
 	}
 }

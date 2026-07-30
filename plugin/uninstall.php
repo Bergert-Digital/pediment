@@ -2,7 +2,7 @@
 /**
  * Runs when the plugin is deleted from wp-admin. Drops AI plugin tables.
  *
- * @package PedimentAi
+ * @package Pediment
  */
 
 if ( ! defined( 'WP_UNINSTALL_PLUGIN' ) ) {

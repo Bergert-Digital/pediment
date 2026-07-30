@@ -1,14 +1,14 @@
 <?php
-namespace PedimentAi\Tests\Mock;
+namespace Pediment\Tests\Mock;
 
-use PedimentAi\Mock\MockProvider;
+use Pediment\Mock\MockProvider;
 
 class MockProviderTest extends \WP_UnitTestCase {
 	private string $fixturesDir;
 
 	public function setUp(): void {
 		parent::setUp();
-		$this->fixturesDir = sys_get_temp_dir() . '/pediment-ai-fixtures-' . uniqid();
+		$this->fixturesDir = sys_get_temp_dir() . '/pediment-fixtures-' . uniqid();
 		mkdir( $this->fixturesDir, 0777, true );
 		file_put_contents( $this->fixturesDir . '/compose-landing.json', wp_json_encode( [
 			'content' => [

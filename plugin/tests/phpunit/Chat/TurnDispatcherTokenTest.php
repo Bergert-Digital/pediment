@@ -1,7 +1,7 @@
 <?php
-namespace PedimentAi\Tests\Chat;
+namespace Pediment\Tests\Chat;
 
-use PedimentAi\Chat\TurnDispatcher;
+use Pediment\Chat\TurnDispatcher;
 
 class TurnDispatcherTokenTest extends \WP_UnitTestCase {
 	public function test_minted_token_verifies_once_then_is_consumed(): void {

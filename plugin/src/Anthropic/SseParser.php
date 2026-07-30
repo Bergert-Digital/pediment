@@ -7,12 +7,12 @@
  * callers can dispatch events in real time instead of buffering the whole
  * response.
  *
- * @package PedimentAi
+ * @package Pediment
  */
 
 declare(strict_types=1);
 
-namespace PedimentAi\Anthropic;
+namespace Pediment\Anthropic;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;

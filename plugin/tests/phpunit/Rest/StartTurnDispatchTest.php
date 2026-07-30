@@ -1,18 +1,18 @@
 <?php
-namespace PedimentAi\Tests\Rest;
+namespace Pediment\Tests\Rest;
 
-use PedimentAi\Chat\ConversationStore;
+use Pediment\Chat\ConversationStore;
 
 class StartTurnDispatchTest extends \WP_UnitTestCase {
 	public function setUp(): void {
 		parent::setUp();
 		\pediment_ai_install_tables();
-		( new \PedimentAi\Rest\ChatController() )->register();
+		( new \Pediment\Rest\ChatController() )->register();
 		wp_set_current_user( self::factory()->user->create( [ 'role' => 'administrator' ] ) );
 	}
 
 	private function start( int $post_id, int $conv ): \WP_REST_Response {
-		$req = new \WP_REST_Request( 'POST', '/pediment-ai/v1/chat/turns' );
+		$req = new \WP_REST_Request( 'POST', '/pediment/v1/chat/turns' );
 		$req->set_body_params( [
 			'post_id'         => $post_id,
 			'conversation_id' => $conv,
@@ -47,7 +47,7 @@ class StartTurnDispatchTest extends \WP_UnitTestCase {
 		$post = self::factory()->post->create();
 		$conv = ( new ConversationStore() )->getOrCreate( $post, get_current_user_id() )['id'];
 		add_filter( 'pediment_ai_dispatch_mode', fn() => 'inline' );
-		add_filter( 'pediment_ai_provider', fn() => new \PedimentAi\Mock\MockProvider( PEDIMENT_AI_PLUGIN_DIR . '/src/Mock/fixtures' ) );
+		add_filter( 'pediment_ai_provider', fn() => new \Pediment\Mock\MockProvider( PEDIMENT_AI_PLUGIN_DIR . '/src/Mock/fixtures' ) );
 
 		$res     = $this->start( $post, $conv );
 		$turn_id = $res->get_data()['turn_id'];

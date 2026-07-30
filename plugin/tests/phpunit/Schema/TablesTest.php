@@ -1,5 +1,5 @@
 <?php
-namespace PedimentAi\Tests\Schema;
+namespace Pediment\Tests\Schema;
 
 class TablesTest extends \WP_UnitTestCase {
 	public function test_tables_exist_after_install(): void {

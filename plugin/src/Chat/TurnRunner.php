@@ -2,14 +2,14 @@
 /**
  * Orchestrates the Anthropic iterative tool-use loop for one chat turn.
  *
- * @package PedimentAi
+ * @package Pediment
  */
 
 declare(strict_types=1);
 
-namespace PedimentAi\Chat;
+namespace Pediment\Chat;
 
-use PedimentAi\Anthropic\ProviderInterface;
+use Pediment\Anthropic\ProviderInterface;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;

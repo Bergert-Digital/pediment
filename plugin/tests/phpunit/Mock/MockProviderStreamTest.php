@@ -1,7 +1,7 @@
 <?php
-namespace PedimentAi\Tests\Mock;
+namespace Pediment\Tests\Mock;
 
-use PedimentAi\Mock\MockProvider;
+use Pediment\Mock\MockProvider;
 
 class MockProviderStreamTest extends \WP_UnitTestCase {
 	public function test_stream_messages_yields_insert_event_for_compose_request(): void {

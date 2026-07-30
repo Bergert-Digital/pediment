@@ -1,5 +1,5 @@
 <?php
-namespace PedimentAi\Tests\Schema;
+namespace Pediment\Tests\Schema;
 
 class ChatTablesTest extends \WP_UnitTestCase {
 	public function test_chat_tables_exist_after_install(): void {

@@ -1,7 +1,7 @@
 <?php
-namespace PedimentAi\Tests\Settings;
+namespace Pediment\Tests\Settings;
 
-use PedimentAi\Settings\OptionsStore;
+use Pediment\Settings\OptionsStore;
 
 class OptionsStoreTest extends \WP_UnitTestCase {
 	public function setUp(): void {

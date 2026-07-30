@@ -1,7 +1,7 @@
 <?php
-namespace PedimentAi\Tests\Anthropic;
+namespace Pediment\Tests\Anthropic;
 
-use PedimentAi\Anthropic\ToolUseParser;
+use Pediment\Anthropic\ToolUseParser;
 
 class ToolUseParserTest extends \WP_UnitTestCase {
 	public function test_extracts_emit_page_tool_input(): void {

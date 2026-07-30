@@ -1,14 +1,14 @@
 <?php
-namespace PedimentAi\Tests;
+namespace Pediment\Tests;
 
-use PedimentAi\Anthropic\ProviderInterface;
-use PedimentAi\BlockTree\Validator;
-use PedimentAi\Chat\ConversationStore;
-use PedimentAi\Chat\PageFetcherInterface;
-use PedimentAi\Chat\PromptBuilder;
-use PedimentAi\Chat\Tools;
-use PedimentAi\Chat\TurnRunner;
-use PedimentAi\Chat\VirtualTree;
+use Pediment\Anthropic\ProviderInterface;
+use Pediment\BlockTree\Validator;
+use Pediment\Chat\ConversationStore;
+use Pediment\Chat\PageFetcherInterface;
+use Pediment\Chat\PromptBuilder;
+use Pediment\Chat\Tools;
+use Pediment\Chat\TurnRunner;
+use Pediment\Chat\VirtualTree;
 
 class TurnRunnerImagesTest extends \WP_UnitTestCase {
 	public function set_up(): void {
