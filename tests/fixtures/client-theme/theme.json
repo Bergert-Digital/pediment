@@ -1,0 +1,14 @@
+{
+	"version": 2,
+	"settings": {
+		"color": {
+			"palette": [
+				{
+					"slug": "foreground",
+					"color": "#1f2937",
+					"name": "Foreground (fixture client)"
+				}
+			]
+		}
+	}
+}

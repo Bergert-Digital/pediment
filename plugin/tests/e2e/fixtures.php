@@ -4,13 +4,13 @@
  *
  * Replaces the (removed) `wp pediment seed` command: builds only the minimal
  * demo content the Playwright suite asserts against. Run via
- * `wp eval-file wp-content/themes/pediment/tests/e2e/fixtures.php` from
- * global-setup.ts AFTER the theme is active (so framework bootstrap has created
- * the header part and the registered patterns are available).
+ * `wp eval-file wp-content/plugins/pediment-ai/tests/e2e/fixtures.php` from
+ * global-setup.ts AFTER the fixture theme and Pediment plugin are active (so
+ * framework bootstrap has created the header part and patterns are available).
  *
  * Canonical block markup for the Home and Mega-menu pages is sourced from the
  * registered patterns rather than hand-copied, so the fixtures never drift from
- * the patterns the theme actually ships.
+ * the patterns the plugin actually ships.
  *
  * Idempotent: safe to run on every e2e invocation.
  *

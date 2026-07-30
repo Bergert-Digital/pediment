@@ -10,7 +10,9 @@ const FORM = `<!-- wp:pediment/form {"successMessage":"Thanks, got it."} -->
 <!-- wp:pediment/form-field {"fieldType":"textarea","label":"Message","fieldName":"message"} /-->
 <!-- /wp:pediment/form -->`;
 
-test( 'generic form submits, shows success, and stores a submission', async ( { page } ) => {
+test( 'generic form submits, shows success, and stores a submission', async ( {
+	page,
+} ) => {
 	test.slow();
 	deletePageBySlug( SLUG );
 	const url = createPageWithContent( SLUG, 'Form test', FORM );
@@ -24,9 +26,12 @@ test( 'generic form submits, shows success, and stores a submission', async ( { 
 	await page.waitForTimeout( 4000 );
 	await page.click( 'button.pediment-form__submit' );
 
-	await expect( page.locator( '.pediment-form__status' ) ).toContainText( /thanks/i, {
-		timeout: 10_000,
-	} );
+	await expect( page.locator( '.pediment-form__status' ) ).toContainText(
+		/thanks/i,
+		{
+			timeout: 10_000,
+		}
+	);
 
 	await login( page );
 	await page.goto( '/wp-admin/edit.php?post_type=form_submission' );
