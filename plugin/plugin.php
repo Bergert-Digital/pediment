@@ -1,7 +1,7 @@
 <?php
 /**
  * Plugin Name:       Pediment AI
- * Plugin URI:        https://github.com/Bergert-Digital/Pediment-AI
+ * Plugin URI:        https://github.com/Bergert-Digital/pediment
  * Description:       Gutenberg AI composer for pediment: compose, edit, and refine pages with Claude.
  * x-release-please-start-version
  * Version:           2.4.0
