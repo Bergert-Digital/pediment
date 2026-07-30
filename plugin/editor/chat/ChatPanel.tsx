@@ -62,9 +62,7 @@ export default function ChatPanel( { hideSelectionChip = false }: Props ) {
 				</Button>
 			</div>
 			<MessageList messages={ messages } streaming={ streaming } />
-			{ error && (
-				<div className="pediment-chat__error">{ error }</div>
-			) }
+			{ error && <div className="pediment-chat__error">{ error }</div> }
 			{ selected && ! hideSelectionChip && (
 				<SelectionChip block={ selected } />
 			) }
@@ -72,10 +70,15 @@ export default function ChatPanel( { hideSelectionChip = false }: Props ) {
 				<QuickActions
 					block={ selected }
 					onAction={ send }
-					busy={ !! streaming }
+					busy={ !! streaming || ! conv || ! postId }
 				/>
 			) }
-			<Composer onSubmit={ send } onStop={ stop } busy={ !! streaming } />
+			<Composer
+				onSubmit={ send }
+				onStop={ stop }
+				busy={ !! streaming }
+				ready={ !! conv && !! postId }
+			/>
 		</div>
 	);
 }
