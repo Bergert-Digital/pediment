@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.4.1](https://github.com/Bergert-Digital/pediment/compare/v2.4.0...v2.4.1) (2026-07-30)
+
+
+### Bug Fixes
+
+* **plugin:** point at the live monorepo, drop stale changelog from zip ([b03ef2d](https://github.com/Bergert-Digital/pediment/commit/b03ef2d86552d213b3264b79f07d26419b1b2c19))
+
 ## [2.4.0](https://github.com/Bergert-Digital/pediment/compare/v2.3.0...v2.4.0) (2026-07-30)
 
 
