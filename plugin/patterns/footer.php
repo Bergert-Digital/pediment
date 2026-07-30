@@ -1,3 +1,14 @@
+<?php
+/**
+ * Title: Footer
+ * Slug: pediment/footer
+ * Categories: pediment
+ * Description: Site footer — brand, service links, company links, contact, and legal row. Placeholder copy; client content is a later cleanup.
+ * Keywords: footer
+ * Inserter: false
+ */
+// phpcs:ignoreFile -- block pattern content
+?>
 <!-- wp:group {"tagName":"footer","style":{"spacing":{"padding":{"top":"var:preset|spacing|60","bottom":"var:preset|spacing|40"}},"border":{"top":{"color":"var:preset|color|border","width":"1px"}}},"backgroundColor":"surface-elevated","layout":{"type":"constrained","contentSize":"1200px"}} -->
 <footer class="wp-block-group has-border-color has-surface-elevated-background-color has-background" style="border-top-color:var(--wp--preset--color--border);border-top-width:1px;padding-top:var(--wp--preset--spacing--60);padding-bottom:var(--wp--preset--spacing--40)">
   <!-- wp:columns {"style":{"spacing":{"blockGap":{"top":"var:preset|spacing|40","left":"var:preset|spacing|50"}}}} -->

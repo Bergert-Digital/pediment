@@ -628,9 +628,9 @@ add_action(
 		$rel = 'assets/js/admin-forms-settings.js';
 		wp_enqueue_script(
 			'pediment-forms-settings',
-			get_theme_file_uri( $rel ),
+			PEDIMENT_AI_PLUGIN_URL . $rel,
 			array(),
-			(string) filemtime( get_theme_file_path( $rel ) ),
+			(string) filemtime( PEDIMENT_AI_PLUGIN_DIR . '/' . $rel ),
 			true
 		);
 	}

@@ -23,6 +23,9 @@ final class Bootstrap {
 	 * @return void
 	 */
 	public function register(): void {
+		\Pediment\Templates\Registrar::register();
+		\Pediment\Tokens\Injector::register();
+
 		add_filter( 'register_block_type_args', static function ( $args ) {
 			\Pediment\Anthropic\SchemaBuilder::invalidate();
 			return $args;

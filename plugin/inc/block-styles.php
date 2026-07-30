@@ -50,10 +50,10 @@ add_action(
 	'init',
 	function () {
 		$rel  = 'assets/css/insight-card.css';
-		$path = get_theme_file_path( $rel );
+		$path = PEDIMENT_AI_PLUGIN_DIR . '/' . $rel;
 		$args = array(
 			'handle' => 'pediment-insight-card',
-			'src'    => get_theme_file_uri( $rel ),
+			'src'    => PEDIMENT_AI_PLUGIN_URL . $rel,
 			'ver'    => file_exists( $path ) ? (string) filemtime( $path ) : false,
 			'path'   => $path,
 		);

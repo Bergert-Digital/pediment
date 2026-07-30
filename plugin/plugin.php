@@ -52,6 +52,16 @@ require_once PEDIMENT_AI_PLUGIN_DIR . '/inc/layout-variations.php';
 require_once PEDIMENT_AI_PLUGIN_DIR . '/inc/nav-active.php';
 require_once PEDIMENT_AI_PLUGIN_DIR . '/inc/mega-menu.php';
 
+// Templates, patterns (incl. the footer pattern), the header-seeding
+// bootstrap, and global CSS/JS enqueues moved from the theme (Task 6 of the
+// plugin-absorbs-theme migration): the theme.json tokens (Pediment\Tokens\Injector)
+// and the pediment//* templates (Pediment\Templates\Registrar) are wired from
+// Bootstrap::register() below since they're autoloaded classes, not procedural
+// includes.
+require_once PEDIMENT_AI_PLUGIN_DIR . '/inc/patterns.php';
+require_once PEDIMENT_AI_PLUGIN_DIR . '/inc/bootstrap.php';
+require_once PEDIMENT_AI_PLUGIN_DIR . '/inc/assets.php';
+
 // Forms cleanup cron: was wired off theme-switch hooks when the forms engine
 // lived in the theme; now that pediment_form_schedule_cleanup() /
 // pediment_form_unschedule_cleanup() ship in the plugin (inc/forms-storage.php

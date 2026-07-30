@@ -1,14 +1,16 @@
 <?php
 
+/**
+ * Design-token assertions, now read via wp_get_global_settings() instead of a
+ * theme file: the tokens ship from plugin/tokens/theme.json and are merged
+ * into the active theme's data by Pediment\Tokens\Injector, so the resolved
+ * global settings are the real source of truth (Task 6 of the
+ * plugin-absorbs-theme migration).
+ */
 class ThemeJsonTest extends WP_UnitTestCase {
-	private function theme_json(): array {
-		$path = get_theme_file_path( 'theme.json' );
-		return json_decode( file_get_contents( $path ), true );
-	}
-
 	private function palette(): array {
 		$out = array();
-		foreach ( $this->theme_json()['settings']['color']['palette'] as $c ) {
+		foreach ( wp_get_global_settings( array( 'color', 'palette', 'theme' ) ) as $c ) {
 			$out[ $c['slug'] ] = strtoupper( $c['color'] );
 		}
 		return $out;
@@ -33,9 +35,8 @@ class ThemeJsonTest extends WP_UnitTestCase {
 	}
 
 	public function test_primary_font_is_plus_jakarta_sans() {
-		$tj = $this->theme_json();
 		$fam = array();
-		foreach ( $tj['settings']['typography']['fontFamilies'] as $f ) {
+		foreach ( wp_get_global_settings( array( 'typography', 'fontFamilies', 'theme' ) ) as $f ) {
 			$fam[ $f['slug'] ] = $f['fontFamily'];
 		}
 		$this->assertStringContainsString( 'Plus Jakarta Sans', $fam['body'] );
@@ -49,9 +50,8 @@ class ThemeJsonTest extends WP_UnitTestCase {
 	}
 
 	public function test_focus_shadow_uses_accent() {
-		$tj = $this->theme_json();
 		$focus = '';
-		foreach ( $tj['settings']['shadow']['presets'] as $p ) {
+		foreach ( wp_get_global_settings( array( 'shadow', 'presets', 'theme' ) ) as $p ) {
 			if ( 'focus' === $p['slug'] ) {
 				$focus = $p['shadow'];
 			}
