@@ -1,5 +1,35 @@
 # Changelog
 
+## [3.0.0](https://github.com/Bergert-Digital/pediment/compare/v2.4.1...v3.0.0) (2026-07-30)
+
+
+### ⚠ BREAKING CHANGES
+
+* fixture client theme; e2e runs against the plugin-served site
+* retire the parent theme; the plugin is the product
+* templates, patterns, tokens and assets ship from the plugin
+* blocks and block build move into the plugin
+* move the forms engine and settings hub into the plugin
+* rename the plugin to Pediment (namespace, slug, asset)
+* remove the contact-form stack in favor of the forms engine
+
+### Features
+
+* blocks and block build move into the plugin ([4573b73](https://github.com/Bergert-Digital/pediment/commit/4573b73ed206bb61b71d840eb25a369b778fb413))
+* fixture client theme; e2e runs against the plugin-served site ([408f6dc](https://github.com/Bergert-Digital/pediment/commit/408f6dc89b9194321c7b000c3b34fd14216273a3))
+* move the forms engine and settings hub into the plugin ([914d002](https://github.com/Bergert-Digital/pediment/commit/914d002c90cc583c069fb139407595e8f5565e20))
+* **release:** one artifact — pediment-plugin.zip, installs as plugins/pediment ([092ce7f](https://github.com/Bergert-Digital/pediment/commit/092ce7f1e1d62bd0f6c11a7c3ea0f4ba529d90e1))
+* remove the contact-form stack in favor of the forms engine ([609defd](https://github.com/Bergert-Digital/pediment/commit/609defd43e5746277bf2f3f613f705b06cdf99d8))
+* rename the plugin to Pediment (namespace, slug, asset) ([e8be77d](https://github.com/Bergert-Digital/pediment/commit/e8be77d006a3a7daa071470f5232873114cd906a))
+* retire the parent theme; the plugin is the product ([531feed](https://github.com/Bergert-Digital/pediment/commit/531feedc24b69e375376dc24f5dddc8ec2adb872))
+* templates, patterns, tokens and assets ship from the plugin ([cafdd2c](https://github.com/Bergert-Digital/pediment/commit/cafdd2c8df84a4a5fae95e3c93240df2f2175aeb))
+
+
+### Bug Fixes
+
+* **ci:** regenerate the plugin lockfile with npm 10 so npm ci passes on CI ([78fb2f3](https://github.com/Bergert-Digital/pediment/commit/78fb2f30860445233a96c220b35a43ee6d8a32da))
+* **editor:** gate the chat composer until the conversation loads; translate quick-action labels ([e314151](https://github.com/Bergert-Digital/pediment/commit/e3141519d5c8d8e6b9a2d2e13577f01f65459ba3))
+
 ## [2.4.1](https://github.com/Bergert-Digital/pediment/compare/v2.4.0...v2.4.1) (2026-07-30)
 
 
