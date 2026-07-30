@@ -63,30 +63,29 @@ class PageMenuTest extends \WP_UnitTestCase {
 	}
 
 	// --- Hub tab registration ---------------------------------------------
-	// Defined last: declaring the stub makes function_exists() true for the
-	// rest of the process, which would mask the fallback path above.
+	// Since Task 4 (settings hub + forms engine moved into this plugin),
+	// pediment_settings_register_tab() is always defined in this process —
+	// it ships in the same artifact as Page, so the "hub absent" branch in
+	// addMenu() can no longer be reached; it's covered only by the
+	// self-skipping fallback test above. This test now asserts against the
+	// real hub registry (inc/settings-page.php) instead of an eval() stub.
 
 	public function test_addMenu_registers_ai_tab_when_hub_present(): void {
-		if ( ! function_exists( 'pediment_settings_register_tab' ) ) {
-			// Stub the parent theme's hub API, recording registrations.
-			eval(
-				'function pediment_settings_register_tab( $id, $label, $render, $priority = 10 ) {'
-				. ' $GLOBALS["pediment_registered_tabs"][] = [ "id" => $id, "label" => $label, "render" => $render, "priority" => $priority ]; }'
-			);
-		}
-		$GLOBALS['pediment_registered_tabs'] = [];
+		$GLOBALS['pediment_settings_tabs'] = [];
 		unset( $GLOBALS['submenu']['options-general.php'] );
 
 		$page = new Page();
 		$page->addMenu();
 
-		$tabs = $GLOBALS['pediment_registered_tabs'];
+		$tabs = pediment_settings_get_tabs();
 		$this->assertCount( 1, $tabs, 'Exactly one tab should be registered with the hub.' );
-		$this->assertSame( 'ai', $tabs[0]['id'] );
-		$this->assertSame( 100, $tabs[0]['priority'] );
-		$this->assertSame( [ $page, 'renderTabBody' ], $tabs[0]['render'] );
+		$this->assertSame( 'ai', array_key_first( $tabs ) );
+		$this->assertSame( 100, $tabs['ai']['priority'] );
+		$this->assertSame( [ $page, 'renderTabBody' ], $tabs['ai']['render'] );
 
 		$slugs = array_column( $GLOBALS['submenu']['options-general.php'] ?? [], 2 );
 		$this->assertNotContains( Page::SLUG, $slugs, 'No standalone menu when mounting as a hub tab.' );
+
+		unset( $GLOBALS['pediment_settings_tabs'] );
 	}
 }
