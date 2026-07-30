@@ -1,8 +1,8 @@
 <?php
 /**
- * Plugin Name:       Pediment AI
+ * Plugin Name:       Pediment
  * Plugin URI:        https://github.com/Bergert-Digital/pediment
- * Description:       Gutenberg AI composer for pediment: compose, edit, and refine pages with Claude.
+ * Description:       The Pediment engine + AI: Gutenberg blocks, templates, and tokens, plus an AI composer that edits and refines pages with Claude.
  * x-release-please-start-version
  * Version:           2.4.1
  * x-release-please-end
@@ -12,9 +12,9 @@
  * Author URI:        https://bergert.digital
  * License:           GPL-2.0-or-later
  * License URI:       https://www.gnu.org/licenses/gpl-2.0.html
- * Text Domain:       pediment-ai
+ * Text Domain:       pediment
  *
- * @package PedimentAi
+ * @package Pediment
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -31,8 +31,8 @@ if ( file_exists( __DIR__ . '/vendor/autoload.php' ) ) {
 }
 
 // One-click updates from GitHub Releases (no manual zip uploads).
-if ( class_exists( \PedimentAi\Updater::class ) ) {
-	\PedimentAi\Updater::register( PEDIMENT_AI_PLUGIN_FILE );
+if ( class_exists( \Pediment\Updater::class ) ) {
+	\Pediment\Updater::register( PEDIMENT_AI_PLUGIN_FILE );
 }
 
 require_once __DIR__ . '/src/Schema/tables.php';
@@ -49,14 +49,14 @@ add_action(
 
 if ( defined( 'WP_CLI' ) && WP_CLI ) {
 	require_once __DIR__ . '/wp-cli/DumpSchemaCommand.php';
-	\WP_CLI::add_command( 'pediment-ai dump-schema', \PedimentAi\Cli\DumpSchemaCommand::class );
+	\WP_CLI::add_command( 'pediment dump-schema', \Pediment\Cli\DumpSchemaCommand::class );
 }
 
 add_action(
 	'plugins_loaded',
 	static function () {
-		if ( class_exists( '\\PedimentAi\\Bootstrap' ) ) {
-			( new \PedimentAi\Bootstrap() )->register();
+		if ( class_exists( '\\Pediment\\Bootstrap' ) ) {
+			( new \Pediment\Bootstrap() )->register();
 		}
 	}
 );

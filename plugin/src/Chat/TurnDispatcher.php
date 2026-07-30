@@ -3,12 +3,12 @@
  * Dispatches a chat turn to run in a separate (loopback) request so the
  * starting request can return immediately and the poller can stream.
  *
- * @package PedimentAi
+ * @package Pediment
  */
 
 declare(strict_types=1);
 
-namespace PedimentAi\Chat;
+namespace Pediment\Chat;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -88,7 +88,7 @@ final class TurnDispatcher {
 		// Use an unencoded ?rest_route= value so that the URL contains a literal
 		// /run path segment, which allows test interception via pre_http_request
 		// and a simple strpos check.
-		$route = '/' . \PedimentAi\Rest\ChatController::NS . '/chat/turns/' . $turn_id . '/run';
+		$route = '/' . \Pediment\Rest\ChatController::NS . '/chat/turns/' . $turn_id . '/run';
 		$url   = $base . '/?rest_route=' . $route;
 
 		$host = (string) wp_parse_url( home_url(), PHP_URL_HOST );

@@ -52,18 +52,18 @@ export default function ChatPanel( { hideSelectionChip = false }: Props ) {
 	};
 
 	return (
-		<div className="pediment-ai-chat">
-			<div className="pediment-ai-chat__header">
-				<span className="pediment-ai-chat__title">
-					{ __( 'AI Chat', 'pediment-ai' ) }
+		<div className="pediment-chat">
+			<div className="pediment-chat__header">
+				<span className="pediment-chat__title">
+					{ __( 'AI Chat', 'pediment' ) }
 				</span>
 				<Button variant="tertiary" size="small" onClick={ clear }>
-					{ __( 'Clear', 'pediment-ai' ) }
+					{ __( 'Clear', 'pediment' ) }
 				</Button>
 			</div>
 			<MessageList messages={ messages } streaming={ streaming } />
 			{ error && (
-				<div className="pediment-ai-chat__error">{ error }</div>
+				<div className="pediment-chat__error">{ error }</div>
 			) }
 			{ selected && ! hideSelectionChip && (
 				<SelectionChip block={ selected } />

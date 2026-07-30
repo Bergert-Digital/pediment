@@ -1,7 +1,7 @@
 <?php
-namespace PedimentAi\Tests\Chat;
+namespace Pediment\Tests\Chat;
 
-use PedimentAi\Chat\ConversationStore;
+use Pediment\Chat\ConversationStore;
 
 class ConversationStoreTest extends \WP_UnitTestCase {
 	private ConversationStore $store;

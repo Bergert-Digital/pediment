@@ -20,20 +20,20 @@ export default function MessageList( {
 	const display = streaming ? [ ...messages, streaming ] : messages;
 
 	return (
-		<div className="pediment-ai-chat__messages" ref={ ref }>
+		<div className="pediment-chat__messages" ref={ ref }>
 			{ display.map( ( m ) => (
 				<div
 					key={ m.id }
-					className={ `pediment-ai-chat__message pediment-ai-chat__message--${ m.role }` }
+					className={ `pediment-chat__message pediment-chat__message--${ m.role }` }
 				>
-					<div className="pediment-ai-chat__bubble">
+					<div className="pediment-chat__bubble">
 						{ m.content }
 						{ m.status === 'streaming' && (
-							<span className="pediment-ai-chat__caret" />
+							<span className="pediment-chat__caret" />
 						) }
 					</div>
 					{ m.attachments && m.attachments.length > 0 && (
-						<div className="pediment-ai-chat__msg-images">
+						<div className="pediment-chat__msg-images">
 							{ m.attachments.map( ( a, i ) => (
 								<img
 									key={ i }
@@ -45,7 +45,7 @@ export default function MessageList( {
 					) }
 					<ToolCallSummary calls={ m.tool_calls } />
 					{ m.error && (
-						<div className="pediment-ai-chat__error">
+						<div className="pediment-chat__error">
 							{ m.error.message }
 						</div>
 					) }

@@ -1,5 +1,5 @@
 <?php
-namespace PedimentAi\Tests\Mock;
+namespace Pediment\Tests\Mock;
 
 class FixturesTest extends \WP_UnitTestCase {
 	private const REQUIRED = [

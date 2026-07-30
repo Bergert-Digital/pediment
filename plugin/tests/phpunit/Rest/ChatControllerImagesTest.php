@@ -4,14 +4,14 @@
  *
  * Uses inline dispatch mode with an anonymous stub provider to avoid loopback HTTP.
  *
- * @package PedimentAi\Tests\Rest
+ * @package Pediment\Tests\Rest
  */
 
-namespace PedimentAi\Tests\Rest;
+namespace Pediment\Tests\Rest;
 
-use PedimentAi\Anthropic\ProviderInterface;
-use PedimentAi\Chat\ConversationStore;
-use PedimentAi\Rest\ChatController;
+use Pediment\Anthropic\ProviderInterface;
+use Pediment\Chat\ConversationStore;
+use Pediment\Rest\ChatController;
 
 class ChatControllerImagesTest extends \WP_UnitTestCase {
 	private \WP_REST_Server $server;
@@ -60,7 +60,7 @@ class ChatControllerImagesTest extends \WP_UnitTestCase {
 	// --- helpers ---
 
 	private function startTurn( array $params ): \WP_REST_Response {
-		$req = new \WP_REST_Request( 'POST', '/pediment-ai/v1/chat/turns' );
+		$req = new \WP_REST_Request( 'POST', '/pediment/v1/chat/turns' );
 		$req->set_param( 'post_id', $this->post_id );
 		$req->set_param( 'conversation_id', $this->conv_id );
 		foreach ( $params as $k => $v ) {

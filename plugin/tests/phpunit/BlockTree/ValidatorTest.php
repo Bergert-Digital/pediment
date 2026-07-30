@@ -1,7 +1,7 @@
 <?php
-namespace PedimentAi\Tests\BlockTree;
+namespace Pediment\Tests\BlockTree;
 
-use PedimentAi\BlockTree\Validator;
+use Pediment\BlockTree\Validator;
 
 class ValidatorTest extends \WP_UnitTestCase {
 	private function schema(): array {

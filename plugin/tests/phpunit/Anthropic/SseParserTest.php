@@ -1,7 +1,7 @@
 <?php
-namespace PedimentAi\Tests\Anthropic;
+namespace Pediment\Tests\Anthropic;
 
-use PedimentAi\Anthropic\SseParser;
+use Pediment\Anthropic\SseParser;
 
 class SseParserTest extends \WP_UnitTestCase {
 	public function test_push_full_blob_returns_all_events_in_order(): void {

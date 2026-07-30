@@ -1,7 +1,7 @@
 <?php
-namespace PedimentAi\Tests\Chat;
+namespace Pediment\Tests\Chat;
 
-use PedimentAi\Chat\VirtualTree;
+use Pediment\Chat\VirtualTree;
 
 class VirtualTreeTest extends \WP_UnitTestCase {
 	public function test_loads_initial_tree_with_client_ids(): void {

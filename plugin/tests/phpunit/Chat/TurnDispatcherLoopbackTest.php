@@ -1,7 +1,7 @@
 <?php
-namespace PedimentAi\Tests\Chat;
+namespace Pediment\Tests\Chat;
 
-use PedimentAi\Chat\TurnDispatcher;
+use Pediment\Chat\TurnDispatcher;
 
 class TurnDispatcherLoopbackTest extends \WP_UnitTestCase {
 	public function test_dispatch_fires_nonblocking_loopback_with_token_header(): void {
@@ -15,7 +15,7 @@ class TurnDispatcherLoopbackTest extends \WP_UnitTestCase {
 
 		remove_all_filters( 'pre_http_request' );
 		$this->assertStringContainsString( 'rest_route=', $captured['url'] );
-		$this->assertStringContainsString( '/pediment-ai/v1/chat/turns/77/run', urldecode( $captured['url'] ) );
+		$this->assertStringContainsString( '/pediment/v1/chat/turns/77/run', urldecode( $captured['url'] ) );
 		$this->assertFalse( $captured['args']['blocking'], 'must be non-blocking' );
 		$this->assertSame( 'tok-abc', $captured['args']['headers']['X-Pediment-Ai-Token'] );
 		$this->assertLessThanOrEqual( 1.0, $captured['args']['timeout'] );

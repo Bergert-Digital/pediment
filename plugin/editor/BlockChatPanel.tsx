@@ -11,18 +11,18 @@ const withChat = createHigherOrderComponent((BlockEdit: any) => (props: any) => 
     <>
       <BlockEdit {...props} />
       <InspectorControls>
-        <PanelBody title={__('Pediment AI', 'pediment-ai')} initialOpen={false} className="pediment-ai-chat__inspector">
+        <PanelBody title={__('Pediment', 'pediment')} initialOpen={false} className="pediment-chat__inspector">
           <ChatPanel hideSelectionChip />
         </PanelBody>
       </InspectorControls>
     </>
   );
-}, 'withPedimentAiChat');
+}, 'withPedimentChat');
 
 let registered = false;
 function ensureFilter() {
   if (registered) return;
-  addFilter('editor.BlockEdit', 'pediment-ai/chat-panel', withChat);
+  addFilter('editor.BlockEdit', 'pediment/chat-panel', withChat);
   registered = true;
 }
 

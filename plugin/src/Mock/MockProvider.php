@@ -2,14 +2,14 @@
 /**
  * Fixture-driven mock provider for tests and dev mode.
  *
- * @package PedimentAi
+ * @package Pediment
  */
 
 declare(strict_types=1);
 
-namespace PedimentAi\Mock;
+namespace Pediment\Mock;
 
-use PedimentAi\Anthropic\ProviderInterface;
+use Pediment\Anthropic\ProviderInterface;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;

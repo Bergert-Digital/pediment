@@ -1,8 +1,8 @@
 <?php
-namespace PedimentAi\Tests\Settings;
+namespace Pediment\Tests\Settings;
 
-use PedimentAi\Settings\OptionsStore;
-use PedimentAi\Settings\Page;
+use Pediment\Settings\OptionsStore;
+use Pediment\Settings\Page;
 
 /**
  * Exercises the Settings-API save path end to end: the sanitize callback is

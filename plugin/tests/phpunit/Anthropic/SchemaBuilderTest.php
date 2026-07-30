@@ -1,7 +1,7 @@
 <?php
-namespace PedimentAi\Tests\Anthropic;
+namespace Pediment\Tests\Anthropic;
 
-use PedimentAi\Anthropic\SchemaBuilder;
+use Pediment\Anthropic\SchemaBuilder;
 
 class SchemaBuilderTest extends \WP_UnitTestCase {
 	public function setUp(): void {
@@ -55,7 +55,7 @@ class SchemaBuilderTest extends \WP_UnitTestCase {
 	}
 
 	public function test_block_namespaces_filter_extends_allowlist(): void {
-		\PedimentAi\Anthropic\SchemaBuilder::invalidate();
+		\Pediment\Anthropic\SchemaBuilder::invalidate();
 
 		register_block_type(
 			'acme/promo-banner',
@@ -71,7 +71,7 @@ class SchemaBuilderTest extends \WP_UnitTestCase {
 		};
 		add_filter( 'pediment_ai_block_namespaces', $cb );
 
-		$schema = ( new \PedimentAi\Anthropic\SchemaBuilder() )->build( true );
+		$schema = ( new \Pediment\Anthropic\SchemaBuilder() )->build( true );
 
 		$this->assertArrayHasKey( 'acme/promo-banner', $schema['blocks'] );
 		$this->assertSame( 'A promotional banner.', $schema['blocks']['acme/promo-banner']['description'] );
@@ -99,7 +99,7 @@ class SchemaBuilderTest extends \WP_UnitTestCase {
 	}
 
 	public function test_block_namespaces_default_excludes_unknown_namespaces(): void {
-		\PedimentAi\Anthropic\SchemaBuilder::invalidate();
+		\Pediment\Anthropic\SchemaBuilder::invalidate();
 
 		register_block_type(
 			'thirdparty/widget',
@@ -109,7 +109,7 @@ class SchemaBuilderTest extends \WP_UnitTestCase {
 			]
 		);
 
-		$schema = ( new \PedimentAi\Anthropic\SchemaBuilder() )->build( true );
+		$schema = ( new \Pediment\Anthropic\SchemaBuilder() )->build( true );
 
 		$this->assertArrayNotHasKey( 'thirdparty/widget', $schema['blocks'] );
 
@@ -117,7 +117,7 @@ class SchemaBuilderTest extends \WP_UnitTestCase {
 	}
 
 	public function test_parent_child_pair_exposes_allowed_children_and_requires_parent(): void {
-		\PedimentAi\Anthropic\SchemaBuilder::invalidate();
+		\Pediment\Anthropic\SchemaBuilder::invalidate();
 
 		register_block_type( 'pediment/demo-grid', [
 			'description' => 'A demo container grid.',

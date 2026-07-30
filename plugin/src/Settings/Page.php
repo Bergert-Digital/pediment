@@ -1,16 +1,16 @@
 <?php
 /**
- * Plugin settings page under Settings > Pediment AI.
+ * Plugin settings page under Settings > Pediment.
  *
- * @package PedimentAi
+ * @package Pediment
  */
 
 declare(strict_types=1);
 
-namespace PedimentAi\Settings;
+namespace Pediment\Settings;
 
-use PedimentAi\Usage\RateLimiter;
-use PedimentAi\Usage\Tracker;
+use Pediment\Usage\RateLimiter;
+use Pediment\Usage\Tracker;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -20,7 +20,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  * Renders the admin settings UI and persists options via the Settings API.
  */
 final class Page {
-	public const SLUG = 'pediment-ai';
+	public const SLUG = 'pediment';
 
 	public function register(): void {
 		add_action( 'admin_menu', [ $this, 'addMenu' ] );
@@ -33,15 +33,15 @@ final class Page {
 		// top-level menu entry. The hub owns the page shell (.wrap/<h1>/nav) and
 		// invokes renderTabBody() for just our tab's body.
 		if ( function_exists( 'pediment_settings_register_tab' ) ) {
-			pediment_settings_register_tab( 'ai', __( 'AI', 'pediment-ai' ), [ $this, 'renderTabBody' ], 100 );
+			pediment_settings_register_tab( 'ai', __( 'AI', 'pediment' ), [ $this, 'renderTabBody' ], 100 );
 			return; // Don't also register a standalone menu.
 		}
 
 		// Fallback: no hub (Pediment before the settings-hub release, or a
-		// non-Pediment theme). Keep the self-contained Settings > Pediment AI page.
+		// non-Pediment theme). Keep the self-contained Settings > Pediment page.
 		add_options_page(
-			__( 'Pediment AI', 'pediment-ai' ),
-			__( 'Pediment AI', 'pediment-ai' ),
+			__( 'Pediment', 'pediment' ),
+			__( 'Pediment', 'pediment' ),
 			'manage_options',
 			self::SLUG,
 			[ $this, 'render' ]
@@ -103,7 +103,7 @@ final class Page {
 		}
 		?>
 		<div class="wrap">
-			<h1><?php esc_html_e( 'Pediment AI Settings', 'pediment-ai' ); ?></h1>
+			<h1><?php esc_html_e( 'Pediment Settings', 'pediment' ); ?></h1>
 			<?php $this->renderTabBody(); ?>
 		</div>
 		<?php
@@ -126,14 +126,14 @@ final class Page {
 			<form method="post" action="options.php">
 				<?php settings_fields( 'pediment_ai_group' ); ?>
 
-				<h2><?php esc_html_e( 'API key', 'pediment-ai' ); ?></h2>
+				<h2><?php esc_html_e( 'API key', 'pediment' ); ?></h2>
 				<?php if ( $env_key ) : ?>
-					<p><?php esc_html_e( 'Loaded from ANTHROPIC_API_KEY env constant. Field below is ignored.', 'pediment-ai' ); ?></p>
+					<p><?php esc_html_e( 'Loaded from ANTHROPIC_API_KEY env constant. Field below is ignored.', 'pediment' ); ?></p>
 				<?php endif; ?>
-				<input type="password" name="<?php echo esc_attr( OptionsStore::OPTION ); ?>[api_key]" value="" autocomplete="off" placeholder="<?php esc_attr_e( 'Set or update Anthropic key', 'pediment-ai' ); ?>" class="regular-text" />
-				<p class="description"><?php esc_html_e( 'Stored encrypted using wp_salt-derived key.', 'pediment-ai' ); ?></p>
+				<input type="password" name="<?php echo esc_attr( OptionsStore::OPTION ); ?>[api_key]" value="" autocomplete="off" placeholder="<?php esc_attr_e( 'Set or update Anthropic key', 'pediment' ); ?>" class="regular-text" />
+				<p class="description"><?php esc_html_e( 'Stored encrypted using wp_salt-derived key.', 'pediment' ); ?></p>
 
-				<h2><?php esc_html_e( 'Models', 'pediment-ai' ); ?></h2>
+				<h2><?php esc_html_e( 'Models', 'pediment' ); ?></h2>
 				<p>
 					<label>Compose / Edit
 						<input type="text" name="<?php echo esc_attr( OptionsStore::OPTION ); ?>[model_compose]" value="<?php echo esc_attr( (string) $store->get( 'model_compose', 'claude-sonnet-4-6' ) ); ?>" class="regular-text" />
@@ -145,13 +145,13 @@ final class Page {
 					</label>
 				</p>
 
-				<h2><?php esc_html_e( 'Mock mode', 'pediment-ai' ); ?></h2>
+				<h2><?php esc_html_e( 'Mock mode', 'pediment' ); ?></h2>
 				<label>
 					<input type="checkbox" name="<?php echo esc_attr( OptionsStore::OPTION ); ?>[mock_mode]" value="1" <?php checked( (bool) $store->get( 'mock_mode', false ) ); ?> />
-					<?php esc_html_e( 'Return fixture responses instead of calling Anthropic. For development.', 'pediment-ai' ); ?>
+					<?php esc_html_e( 'Return fixture responses instead of calling Anthropic. For development.', 'pediment' ); ?>
 				</label>
 
-				<h2><?php esc_html_e( 'Rate limits (per user per hour)', 'pediment-ai' ); ?></h2>
+				<h2><?php esc_html_e( 'Rate limits (per user per hour)', 'pediment' ); ?></h2>
 				<?php foreach ( [ 'compose', 'edit', 'refine' ] as $k ) : ?>
 					<p><label><?php echo esc_html( ucfirst( $k ) ); ?>: <input type="number" min="1" name="pediment_ai_rate_limits[<?php echo esc_attr( $k ); ?>]" value="<?php echo esc_attr( (string) ( $limits[ $k ] ?? RateLimiter::DEFAULTS[ $k ] ) ); ?>" /></label></p>
 				<?php endforeach; ?>
@@ -159,7 +159,7 @@ final class Page {
 				<?php submit_button(); ?>
 			</form>
 
-			<h2><?php esc_html_e( 'Usage this month', 'pediment-ai' ); ?></h2>
+			<h2><?php esc_html_e( 'Usage this month', 'pediment' ); ?></h2>
 			<ul>
 				<li>Input tokens: <?php echo esc_html( number_format_i18n( $usage['input_tokens'] ) ); ?></li>
 				<li>Output tokens: <?php echo esc_html( number_format_i18n( $usage['output_tokens'] ) ); ?></li>

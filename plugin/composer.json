@@ -1,6 +1,6 @@
 {
-  "name": "bergert-digital/pediment-ai",
-  "description": "WordPress AI page composer plugin for pediment",
+  "name": "bergert-digital/pediment-plugin",
+  "description": "The Pediment engine + AI: WordPress blocks, templates, tokens, and AI page composer",
   "homepage": "https://github.com/Bergert-Digital/pediment",
   "type": "wordpress-plugin",
   "license": "GPL-2.0-or-later",
@@ -18,13 +18,13 @@
   },
   "autoload": {
     "psr-4": {
-      "PedimentAi\\": "src/",
-      "PedimentAi\\Cli\\": "wp-cli/"
+      "Pediment\\": "src/",
+      "Pediment\\Cli\\": "wp-cli/"
     }
   },
   "autoload-dev": {
     "psr-4": {
-      "PedimentAi\\Tests\\": "tests/phpunit/"
+      "Pediment\\Tests\\": "tests/phpunit/"
     }
   },
   "config": {

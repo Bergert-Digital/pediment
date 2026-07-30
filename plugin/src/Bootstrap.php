@@ -1,13 +1,13 @@
 <?php
 /**
- * Bootstrap class for the Pediment AI plugin.
+ * Bootstrap class for the Pediment plugin.
  *
- * @package PedimentAi
+ * @package Pediment
  */
 
 declare(strict_types=1);
 
-namespace PedimentAi;
+namespace Pediment;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -24,20 +24,20 @@ final class Bootstrap {
 	 */
 	public function register(): void {
 		add_filter( 'register_block_type_args', static function ( $args ) {
-			\PedimentAi\Anthropic\SchemaBuilder::invalidate();
+			\Pediment\Anthropic\SchemaBuilder::invalidate();
 			return $args;
 		} );
 
 		add_filter( 'pediment_ai_provider', static function ( $default ) {
 			$mock_const   = defined( 'PEDIMENT_AI_MOCK' ) && PEDIMENT_AI_MOCK;
-			$mock_setting = (bool) ( new \PedimentAi\Settings\OptionsStore() )->get( 'mock_mode', false );
+			$mock_setting = (bool) ( new \Pediment\Settings\OptionsStore() )->get( 'mock_mode', false );
 			if ( $mock_const || $mock_setting ) {
-				return new \PedimentAi\Mock\MockProvider( PEDIMENT_AI_PLUGIN_DIR . '/src/Mock/fixtures' );
+				return new \Pediment\Mock\MockProvider( PEDIMENT_AI_PLUGIN_DIR . '/src/Mock/fixtures' );
 			}
 			return $default;
 		} );
 
-		( new \PedimentAi\Settings\Page() )->register();
+		( new \Pediment\Settings\Page() )->register();
 
 		add_action( 'enqueue_block_editor_assets', static function () {
 			$asset_path = PEDIMENT_AI_PLUGIN_DIR . '/build/index.asset.php';
@@ -57,7 +57,7 @@ final class Bootstrap {
 				);
 			}
 			wp_enqueue_script(
-				'pediment-ai-editor',
+				'pediment-editor',
 				PEDIMENT_AI_PLUGIN_URL . 'build/index.js',
 				$asset['dependencies'] ?? [],
 				$asset['version'] ?? PEDIMENT_AI_VERSION,
@@ -65,7 +65,7 @@ final class Bootstrap {
 			);
 			if ( file_exists( PEDIMENT_AI_PLUGIN_DIR . '/build/index.css' ) ) {
 				wp_enqueue_style(
-					'pediment-ai-editor',
+					'pediment-editor',
 					PEDIMENT_AI_PLUGIN_URL . 'build/index.css',
 					[],
 					$asset['version'] ?? PEDIMENT_AI_VERSION
@@ -74,22 +74,22 @@ final class Bootstrap {
 		} );
 
 		add_filter( 'pediment_ai_model_compose', static function ( $default ) {
-			$val = ( new \PedimentAi\Settings\OptionsStore() )->get( 'model_compose', '' );
+			$val = ( new \Pediment\Settings\OptionsStore() )->get( 'model_compose', '' );
 			return '' !== $val ? $val : $default;
 		} );
 		add_filter( 'pediment_ai_model_edit', static function ( $default ) {
-			$val = ( new \PedimentAi\Settings\OptionsStore() )->get( 'model_edit', '' );
+			$val = ( new \Pediment\Settings\OptionsStore() )->get( 'model_edit', '' );
 			return '' !== $val ? $val : $default;
 		} );
 		add_filter( 'pediment_ai_model_refine', static function ( $default ) {
-			$val = ( new \PedimentAi\Settings\OptionsStore() )->get( 'model_refine', '' );
+			$val = ( new \Pediment\Settings\OptionsStore() )->get( 'model_refine', '' );
 			return '' !== $val ? $val : $default;
 		} );
 
 		add_action(
 			'rest_api_init',
 			static function () {
-				( new \PedimentAi\Rest\ChatController() )->register();
+				( new \Pediment\Rest\ChatController() )->register();
 			}
 		);
 	}

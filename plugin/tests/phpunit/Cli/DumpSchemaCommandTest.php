@@ -1,12 +1,12 @@
 <?php
-namespace PedimentAi\Tests\Cli;
+namespace Pediment\Tests\Cli;
 
-use PedimentAi\Cli\DumpSchemaCommand;
+use Pediment\Cli\DumpSchemaCommand;
 
 class DumpSchemaCommandTest extends \WP_UnitTestCase {
 	public function setUp(): void {
 		parent::setUp();
-		\PedimentAi\Anthropic\SchemaBuilder::invalidate();
+		\Pediment\Anthropic\SchemaBuilder::invalidate();
 		register_block_type( 'pediment/test', [ 'attributes' => [ 'x' => [ 'type' => 'string' ] ], 'description' => 'T' ] );
 	}
 
@@ -16,7 +16,7 @@ class DumpSchemaCommandTest extends \WP_UnitTestCase {
 	}
 
 	public function test_writes_schema_to_specified_path(): void {
-		$path = sys_get_temp_dir() . '/pediment-ai-schema-' . uniqid() . '.json';
+		$path = sys_get_temp_dir() . '/pediment-schema-' . uniqid() . '.json';
 		( new DumpSchemaCommand() )->__invoke( [], [ 'output' => $path ] );
 
 		$this->assertFileExists( $path );

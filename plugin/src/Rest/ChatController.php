@@ -1,29 +1,29 @@
 <?php
 /**
- * REST routes under /pediment-ai/v1/chat/*.
+ * REST routes under /pediment/v1/chat/*.
  *
- * @package PedimentAi
+ * @package Pediment
  */
 
 declare(strict_types=1);
 
-namespace PedimentAi\Rest;
+namespace Pediment\Rest;
 
-use PedimentAi\Anthropic\Client;
-use PedimentAi\Anthropic\SchemaBuilder;
-use PedimentAi\BlockTree\Validator;
-use PedimentAi\Chat\ConversationStore;
-use PedimentAi\Chat\PromptBuilder;
-use PedimentAi\Chat\Tools;
-use PedimentAi\Chat\TurnRunner;
-use PedimentAi\Chat\VirtualTree;
+use Pediment\Anthropic\Client;
+use Pediment\Anthropic\SchemaBuilder;
+use Pediment\BlockTree\Validator;
+use Pediment\Chat\ConversationStore;
+use Pediment\Chat\PromptBuilder;
+use Pediment\Chat\Tools;
+use Pediment\Chat\TurnRunner;
+use Pediment\Chat\VirtualTree;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
 final class ChatController {
-	public const NS = 'pediment-ai/v1';
+	public const NS = 'pediment/v1';
 
 	public function register(): void {
 		register_rest_route( self::NS, '/chat/conversations', [
@@ -90,7 +90,7 @@ final class ChatController {
 	public function permRunTurn( \WP_REST_Request $r ): bool {
 		$turn_id = (int) $r->get_param( 'id' );
 		$token   = (string) $r->get_header( 'X-Pediment-Ai-Token' );
-		return '' !== $token && ( new \PedimentAi\Chat\TurnDispatcher() )->verifyToken( $turn_id, $token );
+		return '' !== $token && ( new \Pediment\Chat\TurnDispatcher() )->verifyToken( $turn_id, $token );
 	}
 
 	// --- Handlers ---
@@ -112,12 +112,12 @@ final class ChatController {
 		$selected        = $r->get_param( 'selected_block' );
 		$images = $this->normalizeImages( $r->get_param( 'images' ) );
 		if ( '' === $message && [] === $images ) {
-			return new \WP_Error( 'pediment_ai_invalid', __( 'A message or an image is required.', 'pediment-ai' ), [ 'status' => 400 ] );
+			return new \WP_Error( 'pediment_ai_invalid', __( 'A message or an image is required.', 'pediment' ), [ 'status' => 400 ] );
 		}
 
-		$limits = (array) get_option( 'pediment_ai_rate_limits', \PedimentAi\Usage\RateLimiter::DEFAULTS );
-		if ( ! ( new \PedimentAi\Usage\RateLimiter( $limits ) )->consume( get_current_user_id(), 'compose' ) ) {
-			return new \WP_Error( 'pediment_ai_rate_limited', __( 'Rate limit reached.', 'pediment-ai' ), [ 'status' => 429 ] );
+		$limits = (array) get_option( 'pediment_ai_rate_limits', \Pediment\Usage\RateLimiter::DEFAULTS );
+		if ( ! ( new \Pediment\Usage\RateLimiter( $limits ) )->consume( get_current_user_id(), 'compose' ) ) {
+			return new \WP_Error( 'pediment_ai_rate_limited', __( 'Rate limit reached.', 'pediment' ), [ 'status' => 429 ] );
 		}
 
 		$store   = new ConversationStore();
@@ -127,7 +127,7 @@ final class ChatController {
 		// Normalise the block_tree param once; reused in both dispatch branches.
 		$tree_source = is_array( $r->get_param( 'block_tree' ) ) ? $r->get_param( 'block_tree' ) : [];
 
-		$dispatcher = new \PedimentAi\Chat\TurnDispatcher();
+		$dispatcher = new \Pediment\Chat\TurnDispatcher();
 		/**
 		 * Dispatch mode: 'auto' (non-blocking loopback; streams) or 'inline'
 		 * (run synchronously before responding; no streaming, but needs no
@@ -175,7 +175,7 @@ final class ChatController {
 	public function runTurn( \WP_REST_Request $r ): \WP_REST_Response {
 		$turn_id = (int) $r->get_param( 'id' );
 		$token = (string) $r->get_header( 'X-Pediment-Ai-Token' );
-		if ( ! ( new \PedimentAi\Chat\TurnDispatcher() )->consumeToken( $turn_id, $token ) ) {
+		if ( ! ( new \Pediment\Chat\TurnDispatcher() )->consumeToken( $turn_id, $token ) ) {
 			return new \WP_REST_Response( null, 403 );
 		}
 		$store   = new ConversationStore();
@@ -186,7 +186,7 @@ final class ChatController {
 			return new \WP_REST_Response( null, 204 );
 		}
 
-		$input = ( new \PedimentAi\Chat\TurnDispatcher() )->takeInput( $turn_id );
+		$input = ( new \Pediment\Chat\TurnDispatcher() )->takeInput( $turn_id );
 		if ( null === $input ) {
 			$store->fail( $turn_id, 'dispatch_lost', 'Turn inputs expired before the runner started.' );
 			return new \WP_REST_Response( null, 204 );
@@ -222,7 +222,7 @@ final class ChatController {
 		$prompts  = new PromptBuilder( $schema['blocks'] );
 		$provider = apply_filters(
 			'pediment_ai_provider',
-			new Client( ( new \PedimentAi\Settings\OptionsStore() )->getApiKey() )
+			new Client( ( new \Pediment\Settings\OptionsStore() )->getApiKey() )
 		);
 		$model    = (string) apply_filters( 'pediment_ai_model_compose', 'claude-sonnet-4-6' );
 

@@ -2,12 +2,12 @@
 /**
  * Records per-call telemetry to the wp_pediment_ai_usage table.
  *
- * @package PedimentAi
+ * @package Pediment
  */
 
 declare(strict_types=1);
 
-namespace PedimentAi\Usage;
+namespace Pediment\Usage;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;

@@ -36,7 +36,7 @@ export default function Composer( {
 			rejected
 				? __(
 						'Some files were skipped — up to 5 JPEG, PNG, GIF, or WebP images.',
-						'pediment-ai'
+						'pediment'
 				  )
 				: null
 		);
@@ -55,7 +55,7 @@ export default function Composer( {
 
 	return (
 		<div
-			className={ `pediment-ai-chat__composer${
+			className={ `pediment-chat__composer${
 				dragging ? ' is-dragging' : ''
 			}` }
 			onDragOver={ ( e ) => {
@@ -70,9 +70,9 @@ export default function Composer( {
 			} }
 		>
 			{ images.length > 0 && (
-				<div className="pediment-ai-chat__thumbs">
+				<div className="pediment-chat__thumbs">
 					{ images.map( ( img, i ) => (
-						<div key={ i } className="pediment-ai-chat__thumb">
+						<div key={ i } className="pediment-chat__thumb">
 							<img
 								src={ `data:${ img.media_type };base64,${ img.data }` }
 								alt=""
@@ -81,7 +81,7 @@ export default function Composer( {
 								type="button"
 								aria-label={ __(
 									'Remove image',
-									'pediment-ai'
+									'pediment'
 								) }
 								onClick={ () =>
 									setImages( ( cur ) =>
@@ -115,13 +115,13 @@ export default function Composer( {
 				} }
 				placeholder={ __(
 					'Ask the AI to write or edit…',
-					'pediment-ai'
+					'pediment'
 				) }
 				rows={ 3 }
 				disabled={ busy }
 			/>
 			{ notice && (
-				<div className="pediment-ai-chat__composer-notice">
+				<div className="pediment-chat__composer-notice">
 					{ notice }
 				</div>
 			) }
@@ -136,16 +136,16 @@ export default function Composer( {
 					e.target.value = '';
 				} }
 			/>
-			<div className="pediment-ai-chat__composer-actions">
+			<div className="pediment-chat__composer-actions">
 				<Button
 					icon="format-image"
-					label={ __( 'Attach image', 'pediment-ai' ) }
+					label={ __( 'Attach image', 'pediment' ) }
 					onClick={ () => fileRef.current?.click() }
 					disabled={ busy || images.length >= MAX_IMAGES }
 				/>
 				{ busy ? (
 					<Button variant="secondary" onClick={ onStop }>
-						{ __( 'Stop', 'pediment-ai' ) }
+						{ __( 'Stop', 'pediment' ) }
 					</Button>
 				) : (
 					<Button
@@ -153,7 +153,7 @@ export default function Composer( {
 						onClick={ submit }
 						disabled={ ! value.trim() && images.length === 0 }
 					>
-						{ __( 'Send', 'pediment-ai' ) }
+						{ __( 'Send', 'pediment' ) }
 					</Button>
 				) }
 			</div>

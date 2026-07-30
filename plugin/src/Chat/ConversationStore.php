@@ -2,12 +2,12 @@
 /**
  * CRUD for the chat_conversations and chat_messages tables.
  *
- * @package PedimentAi
+ * @package Pediment
  */
 
 declare(strict_types=1);
 
-namespace PedimentAi\Chat;
+namespace Pediment\Chat;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -139,7 +139,7 @@ final class ConversationStore {
 			'created_at' => current_time( 'mysql', true ),
 		] );
 		if ( false === $result ) {
-			error_log( 'pediment-ai: failed to persist chat attachment: ' . $wpdb->last_error );
+			error_log( 'pediment: failed to persist chat attachment: ' . $wpdb->last_error );
 		}
 	}
 

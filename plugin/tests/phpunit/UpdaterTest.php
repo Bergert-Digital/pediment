@@ -1,7 +1,7 @@
 <?php
-namespace PedimentAi\Tests;
+namespace Pediment\Tests;
 
-use PedimentAi\Updater;
+use Pediment\Updater;
 use ReflectionClass;
 
 class UpdaterTest extends \WP_UnitTestCase {
@@ -17,5 +17,26 @@ class UpdaterTest extends \WP_UnitTestCase {
 		$reflection = new ReflectionClass( Updater::class );
 
 		$this->assertTrue( $reflection->hasMethod( 'register' ) );
+	}
+
+	/**
+	 * The PUC slug and release-asset regex are inline literals inside
+	 * register(), not class constants, so reflection can't read their
+	 * values directly. Parse the source instead.
+	 */
+	public function test_register_wires_the_pediment_slug_and_asset_regex(): void {
+		$reflection = new ReflectionClass( Updater::class );
+		$source     = (string) file_get_contents( (string) $reflection->getFileName() );
+
+		$this->assertStringContainsString(
+			"buildUpdateChecker( self::REPO_URL, \$plugin_file, 'pediment' )",
+			$source,
+			'PUC slug should be pediment.'
+		);
+		$this->assertStringContainsString(
+			"enableReleaseAssets( '/pediment-plugin\\.zip\$/' )",
+			$source,
+			'Release asset regex should match pediment-plugin.zip.'
+		);
 	}
 }

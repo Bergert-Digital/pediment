@@ -2,21 +2,21 @@
 /**
  * WP-CLI command that dumps the runtime block schema to a JSON file.
  *
- * @package PedimentAi
+ * @package Pediment
  */
 
 declare(strict_types=1);
 
-namespace PedimentAi\Cli;
+namespace Pediment\Cli;
 
-use PedimentAi\Anthropic\SchemaBuilder;
+use Pediment\Anthropic\SchemaBuilder;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
 /**
- * Implements `wp pediment-ai dump-schema`.
+ * Implements `wp pediment dump-schema`.
  */
 final class DumpSchemaCommand {
 	/**

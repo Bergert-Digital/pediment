@@ -1,20 +1,20 @@
 <?php
-namespace PedimentAi\Tests\Chat;
+namespace Pediment\Tests\Chat;
 
-use PedimentAi\Chat\ConversationStore;
-use PedimentAi\Chat\PromptBuilder;
-use PedimentAi\Chat\Tools;
-use PedimentAi\Chat\TurnRunner;
-use PedimentAi\Chat\VirtualTree;
-use PedimentAi\BlockTree\Validator;
-use PedimentAi\Mock\MockProvider;
+use Pediment\Chat\ConversationStore;
+use Pediment\Chat\PromptBuilder;
+use Pediment\Chat\Tools;
+use Pediment\Chat\TurnRunner;
+use Pediment\Chat\VirtualTree;
+use Pediment\BlockTree\Validator;
+use Pediment\Mock\MockProvider;
 
 class TurnRunnerTest extends \WP_UnitTestCase {
 	private ConversationStore $store;
 	private Tools $tools;
 	private PromptBuilder $prompts;
 	private MockProvider $provider;
-	private \PedimentAi\Chat\PageFetcherInterface $fetcher;
+	private \Pediment\Chat\PageFetcherInterface $fetcher;
 
 	public function setUp(): void {
 		parent::setUp();
@@ -29,7 +29,7 @@ class TurnRunnerTest extends \WP_UnitTestCase {
 		$this->prompts  = new PromptBuilder( $schema );
 		$this->provider = new MockProvider( PEDIMENT_AI_PLUGIN_DIR . '/src/Mock/fixtures' );
 		// Default to a no-op fetcher so prefetch never touches the network in tests.
-		$this->fetcher = new class implements \PedimentAi\Chat\PageFetcherInterface {
+		$this->fetcher = new class implements \Pediment\Chat\PageFetcherInterface {
 			public function fetch( string $url ): ?string {
 				return null;
 			}
@@ -60,7 +60,7 @@ class TurnRunnerTest extends \WP_UnitTestCase {
 		$conv     = $this->store->getOrCreate( 1, 1 );
 		$turn_id  = $this->store->startAssistantTurn( $conv['id'] );
 
-		$broken = new class implements \PedimentAi\Anthropic\ProviderInterface {
+		$broken = new class implements \Pediment\Anthropic\ProviderInterface {
 			public function messages( array $args ) { return new \WP_Error( 'down', 'Down' ); }
 			public function stream_messages( array $args ) { return new \WP_Error( 'down', 'Down' ); }
 		};
@@ -103,7 +103,7 @@ class TurnRunnerTest extends \WP_UnitTestCase {
 	 * then a final text + end_turn. Records the args of the last call.
 	 */
 	private function fakeProvider( int $toolRounds ) {
-		return new class( $toolRounds ) implements \PedimentAi\Anthropic\ProviderInterface {
+		return new class( $toolRounds ) implements \Pediment\Anthropic\ProviderInterface {
 			public int $calls      = 0;
 			public array $lastArgs = [];
 			public function __construct( private int $toolRounds ) {}
@@ -199,7 +199,7 @@ class TurnRunnerTest extends \WP_UnitTestCase {
 		// Call 1: text + one complete tool_use + one truncated tool_use (start/stop,
 		// no input deltas) + stop_reason=max_tokens. Call 2: reject if any tool_use
 		// sent back has non-object input (reproduces the real Anthropic 400), else end.
-		$provider = new class implements \PedimentAi\Anthropic\ProviderInterface {
+		$provider = new class implements \Pediment\Anthropic\ProviderInterface {
 			public int $calls = 0;
 			public function messages( array $args ) {
 				return new \WP_Error( 'unused', 'unused' );
@@ -262,7 +262,7 @@ class TurnRunnerTest extends \WP_UnitTestCase {
 		$turn_id = $this->store->startAssistantTurn( $conv['id'] );
 
 		// Only a truncated tool_use, no text, no complete calls → nothing valid to send.
-		$provider = new class implements \PedimentAi\Anthropic\ProviderInterface {
+		$provider = new class implements \Pediment\Anthropic\ProviderInterface {
 			public int $calls = 0;
 			public function messages( array $args ) {
 				return new \WP_Error( 'unused', 'unused' );
@@ -301,7 +301,7 @@ class TurnRunnerTest extends \WP_UnitTestCase {
 
 		// Call 1: text + a server web_fetch + its result block + a client insert_block,
 		// stop_reason=tool_use. Call 2: capture args, then end the turn.
-		$provider = new class implements \PedimentAi\Anthropic\ProviderInterface {
+		$provider = new class implements \Pediment\Anthropic\ProviderInterface {
 			public int $calls      = 0;
 			public array $lastArgs = [];
 			public function messages( array $args ) { return new \WP_Error( 'unused', 'unused' ); }
@@ -387,7 +387,7 @@ class TurnRunnerTest extends \WP_UnitTestCase {
 		// page. Both halves of every server tool call must be echoed back — Anthropic
 		// 400s on a server_tool_use whose result block is missing. Call 2 reproduces
 		// that 400 if any server_tool_use id lacks a matching *_tool_result.
-		$provider = new class implements \PedimentAi\Anthropic\ProviderInterface {
+		$provider = new class implements \Pediment\Anthropic\ProviderInterface {
 			public int $calls = 0;
 			public function messages( array $args ) { return new \WP_Error( 'unused', 'unused' ); }
 			public function stream_messages( array $args ) {
@@ -465,10 +465,10 @@ class TurnRunnerTest extends \WP_UnitTestCase {
 		// raw error_code so the failure is diagnosable after the fact.
 		// A null-returning fetcher keeps the server-side fallback from firing, so this
 		// test isolates the error-recording behavior (and never touches the network).
-		$fetcher = new class implements \PedimentAi\Chat\PageFetcherInterface {
+		$fetcher = new class implements \Pediment\Chat\PageFetcherInterface {
 			public function fetch( string $url ): ?string { return null; }
 		};
-		$provider = new class implements \PedimentAi\Anthropic\ProviderInterface {
+		$provider = new class implements \Pediment\Anthropic\ProviderInterface {
 			public function messages( array $args ) { return new \WP_Error( 'unused', 'unused' ); }
 			public function stream_messages( array $args ) {
 				return ( static function () {
@@ -506,7 +506,7 @@ class TurnRunnerTest extends \WP_UnitTestCase {
 		$conv    = $this->store->getOrCreate( 1, 1 );
 		$turn_id = $this->store->startAssistantTurn( $conv['id'] );
 
-		$fetcher = new class implements \PedimentAi\Chat\PageFetcherInterface {
+		$fetcher = new class implements \Pediment\Chat\PageFetcherInterface {
 			/** @var string[] */
 			public array $fetched = [];
 			public function fetch( string $url ): ?string {
@@ -519,7 +519,7 @@ class TurnRunnerTest extends \WP_UnitTestCase {
 		// with end_turn. The runner must fetch the page server-side and re-prompt.
 		// Round 2: the injected page text must arrive as a user message; the model
 		// acknowledges and ends.
-		$provider = new class implements \PedimentAi\Anthropic\ProviderInterface {
+		$provider = new class implements \Pediment\Anthropic\ProviderInterface {
 			public int $calls = 0;
 			/** @var string[] */
 			public array $userTextSeenRound2 = [];
@@ -589,7 +589,7 @@ class TurnRunnerTest extends \WP_UnitTestCase {
 		$conv    = $this->store->getOrCreate( 1, 1 );
 		$turn_id = $this->store->startAssistantTurn( $conv['id'] );
 
-		$fetcher = new class implements \PedimentAi\Chat\PageFetcherInterface {
+		$fetcher = new class implements \Pediment\Chat\PageFetcherInterface {
 			/** @var string[] */
 			public array $fetched = [];
 			public function fetch( string $url ): ?string {
@@ -600,7 +600,7 @@ class TurnRunnerTest extends \WP_UnitTestCase {
 
 		// The model should receive the page content in its very first request and never
 		// need web_fetch. Capture that request's text, then end the turn.
-		$provider = new class implements \PedimentAi\Anthropic\ProviderInterface {
+		$provider = new class implements \Pediment\Anthropic\ProviderInterface {
 			/** @var string[] */
 			public array $firstRequestText = [];
 			public function messages( array $args ) { return new \WP_Error( 'unused', 'unused' ); }
@@ -649,7 +649,7 @@ class TurnRunnerTest extends \WP_UnitTestCase {
 		// call (rounds 1-2) or before ending (round 3). Without a separator the
 		// stored content reads "…content.Let me…" — period glued to the next
 		// sentence's capital. Each round's narration is one text block.
-		$provider = new class implements \PedimentAi\Anthropic\ProviderInterface {
+		$provider = new class implements \Pediment\Anthropic\ProviderInterface {
 			public int $calls = 0;
 			public function messages( array $args ) { return new \WP_Error( 'unused', 'unused' ); }
 			public function stream_messages( array $args ) {
@@ -697,7 +697,7 @@ class TurnRunnerTest extends \WP_UnitTestCase {
 
 		// Call 1: a server web_fetch that pauses (stop_reason=pause_turn). Call 2:
 		// capture the messages, then finish.
-		$provider = new class implements \PedimentAi\Anthropic\ProviderInterface {
+		$provider = new class implements \Pediment\Anthropic\ProviderInterface {
 			public int $calls               = 0;
 			public array $secondCallMessages = [];
 			public function messages( array $args ) { return new \WP_Error( 'unused', 'unused' ); }

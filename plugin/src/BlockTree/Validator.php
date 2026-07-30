@@ -2,12 +2,12 @@
 /**
  * Validates a block tree against the runtime block schema.
  *
- * @package PedimentAi
+ * @package Pediment
  */
 
 declare(strict_types=1);
 
-namespace PedimentAi\BlockTree;
+namespace Pediment\BlockTree;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;

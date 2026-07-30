@@ -2,12 +2,12 @@
 /**
  * Per-user, per-kind rate limiter backed by WP transients.
  *
- * @package PedimentAi
+ * @package Pediment
  */
 
 declare(strict_types=1);
 
-namespace PedimentAi\Usage;
+namespace Pediment\Usage;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;

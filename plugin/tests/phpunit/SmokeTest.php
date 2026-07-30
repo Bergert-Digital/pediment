@@ -1,5 +1,5 @@
 <?php
-namespace PedimentAi\Tests;
+namespace Pediment\Tests;
 
 class SmokeTest extends \WP_UnitTestCase {
 	public function test_plugin_constants_defined(): void {
@@ -7,6 +7,6 @@ class SmokeTest extends \WP_UnitTestCase {
 	}
 
 	public function test_bootstrap_class_exists(): void {
-		$this->assertTrue( class_exists( '\\PedimentAi\\Bootstrap' ) );
+		$this->assertTrue( class_exists( '\\Pediment\\Bootstrap' ) );
 	}
 }

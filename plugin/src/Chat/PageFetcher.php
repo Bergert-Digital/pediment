@@ -2,12 +2,12 @@
 /**
  * Fetches a web page over HTTP and reduces it to readable text.
  *
- * @package PedimentAi
+ * @package Pediment
  */
 
 declare(strict_types=1);
 
-namespace PedimentAi\Chat;
+namespace Pediment\Chat;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
