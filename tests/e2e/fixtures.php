@@ -74,7 +74,7 @@ function pediment_e2e_upsert_page( string $slug, string $title, string $content 
 }
 
 // ---------------------------------------------------------------------------
-// 1. Pages: Home (landing pattern), About, Contact (contact-form block),
+// 1. Pages: Home (landing pattern), About, Contact,
 // Blog (listing rendered by home.html — own content unused), Mega-menu demo.
 // ---------------------------------------------------------------------------
 
@@ -93,11 +93,7 @@ $ids['about'] = pediment_e2e_upsert_page(
 		'<!-- wp:paragraph --><p>Who we are and what we do.</p><!-- /wp:paragraph -->'
 );
 
-$ids['contact'] = pediment_e2e_upsert_page(
-	'contact',
-	'Contact',
-	'<!-- wp:pediment/contact-form {"includePhone":true} /-->'
-);
+$ids['contact'] = pediment_e2e_upsert_page( 'contact', 'Contact', '' );
 
 $ids['blog'] = pediment_e2e_upsert_page( 'blog', 'Blog', '' );
 
