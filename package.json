@@ -3,21 +3,18 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "start": "cd plugin && npm run start:blocks",
     "build": "cd plugin && npm run build",
+    "env:start": "node tools/check-folder-name.mjs && wp-env start",
+    "env:stop": "wp-env stop",
+    "e2e": "cd plugin && npm run e2e",
     "lint:blocks": "node tools/lint-blocks.mjs",
     "lint:colors": "node tools/lint-colors.mjs",
     "lint:icons": "node tools/lint-icons.mjs",
     "lint:js": "cd plugin && npm run lint:js",
     "format": "cd plugin && npm run format",
-    "test:js": "cd plugin && npm run test:js",
-    "e2e": "playwright test",
-    "env:start": "node tools/check-folder-name.mjs && wp-env start",
-    "env:stop": "wp-env stop"
+    "test:js": "cd plugin && npm run test:js"
   },
   "devDependencies": {
-    "@playwright/test": "^1.45.0",
-    "@wordpress/env": "^10.0.0",
-    "typescript": "^5.4.0"
+    "@wordpress/env": "^10.0.0"
   }
 }
