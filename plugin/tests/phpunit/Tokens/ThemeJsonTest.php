@@ -23,9 +23,9 @@ class ThemeJsonTest extends WP_UnitTestCase {
 		$this->assertSame( '#E1F1F6', $p['accent-tint'] );
 	}
 
-	public function test_navy_ink_and_surfaces() {
+	public function test_client_override_and_plugin_surfaces() {
 		$p = $this->palette();
-		$this->assertSame( '#0B1B33', $p['foreground'] );
+		$this->assertSame( '#1F2937', $p['foreground'], 'fixture client override wins by slug' );
 		$this->assertSame( '#0A1B33', $p['primary'] );
 		$this->assertSame( '#5C6B82', $p['foreground-muted'] );
 		$this->assertSame( '#FFFFFF', $p['surface'] );

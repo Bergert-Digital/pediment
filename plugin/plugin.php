@@ -62,6 +62,10 @@ require_once PEDIMENT_AI_PLUGIN_DIR . '/inc/patterns.php';
 require_once PEDIMENT_AI_PLUGIN_DIR . '/inc/bootstrap.php';
 require_once PEDIMENT_AI_PLUGIN_DIR . '/inc/assets.php';
 
+// A client theme can already be active when Pediment is installed. Seed its
+// editable header then as well as on later theme switches.
+register_activation_hook( PEDIMENT_AI_PLUGIN_FILE, 'pediment_bootstrap' );
+
 // Forms cleanup cron: was wired off theme-switch hooks when the forms engine
 // lived in the theme; now that pediment_form_schedule_cleanup() /
 // pediment_form_unschedule_cleanup() ship in the plugin (inc/forms-storage.php

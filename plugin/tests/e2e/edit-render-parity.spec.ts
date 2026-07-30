@@ -92,11 +92,11 @@ const CONTRACTS: BlockContract[] = [
 
 function homePageId(): number {
 	const out = execSync(
-		"npx wp-env run cli wp post list --post_type=page --name=home --field=ID 2>/dev/null",
+		'npx wp-env run cli wp post list --post_type=page --name=home --field=ID 2>/dev/null',
 		{ encoding: 'utf8' }
 	);
 	const id = out
-		.split('\n')
+		.split( '\n' )
 		.map( ( line ) => line.trim() )
 		.find( ( line ) => /^\d+$/.test( line ) );
 	if ( ! id ) {
@@ -120,7 +120,12 @@ async function collectEditorSelectors(
 			const f = document.querySelector(
 				'iframe[name="editor-canvas"]'
 			) as HTMLIFrameElement | null;
-			return !! ( f && f.contentDocument && f.contentDocument.body && f.contentDocument.querySelector( '.starter-hero' ) );
+			return !! (
+				f &&
+				f.contentDocument &&
+				f.contentDocument.body &&
+				f.contentDocument.querySelector( '.starter-hero' )
+			);
 		},
 		undefined,
 		{ timeout: 30_000 }
@@ -179,9 +184,9 @@ test.describe( 'edit ↔ render parity', () => {
 				if ( ! inEditor ) missing.push( 'editor' );
 				if ( ! inFront ) missing.push( 'front-end' );
 				failures.push(
-					`[${ contract.name }] "${ sel }" missing in: ${ missing.join(
-						' + '
-					) }`
+					`[${
+						contract.name
+					}] "${ sel }" missing in: ${ missing.join( ' + ' ) }`
 				);
 			}
 		}

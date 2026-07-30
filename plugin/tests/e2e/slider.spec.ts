@@ -106,10 +106,10 @@ test.describe( 'image/content slider', () => {
 	test( 'panel color and image side apply on the front end', async ( {
 		page,
 	} ) => {
-		const markup = sliderMarkup(
-			[ slideObj( 1 ), slideObj( 2 ) ],
-			{ mediaPosition: 'right', panelColor: '#0E7490' }
-		);
+		const markup = sliderMarkup( [ slideObj( 1 ), slideObj( 2 ) ], {
+			mediaPosition: 'right',
+			panelColor: '#0E7490',
+		} );
 		const url = createPageWithContent( SLUG + '-color', 'Slider', markup );
 		await page.goto( url );
 

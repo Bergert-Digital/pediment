@@ -35,41 +35,24 @@ class Registrar {
 	 */
 	public static function register(): void {
 		add_action( 'init', array( self::class, 'register_templates' ) );
-		add_filter( 'theme_file_path', array( self::class, 'shim_is_block_theme_detection' ), 10, 2 );
+		add_filter( 'get_block_templates', array( self::class, 'normalize_template_query_results' ), PHP_INT_MAX );
 	}
 
 	/**
-	 * WordPress decides whether the active theme is a "block theme" purely by
-	 * checking `is_file( $theme_dir . '/templates/index.html' )`
-	 * (WP_Theme::is_block_theme()) — a plugin registering block templates via
-	 * register_block_template() does not count, and the check has no filter of
-	 * its own. Once templates/*.html moved out of the theme entirely (this
-	 * task), a theme with none of its own trips WordPress into the classic
-	 * (non-block) template hierarchy and the front end renders nothing.
+	 * Ensures template queries return a list rather than registry-keyed array.
 	 *
-	 * WP_Theme::get_file_path() does run its resolved path through the
-	 * `theme_file_path` filter before the is_file() check, so redirecting
-	 * exactly the `templates/index.html` lookup to the plugin's copy — only
-	 * when the active theme has no such file of its own — is enough to flip
-	 * that detection back on. It doesn't affect any other template's
-	 * resolution: those still correctly miss the (removed) theme file and
-	 * fall through to Pediment\Templates\Registrar's own
-	 * register_block_template() entries via the WP_Block_Templates_Registry.
+	 * WP_Block_Templates_Registry::get_by_query() preserves a registered
+	 * template's namespaced key (for example, `pediment//page`). WordPress 6.9
+	 * then assumes `get_block_templates( array( 'slug__in' => array( 'page' ) ) )`
+	 * has a numeric zero index while building editor settings. Reindexing at the
+	 * public query boundary preserves the documented WP_Block_Template[] result
+	 * while making that core consumer safe.
 	 *
-	 * @param string $path Resolved absolute path.
-	 * @param string $file Relative file requested, e.g. "templates/index.html".
-	 * @return string
+	 * @param WP_Block_Template[] $templates Queried templates.
+	 * @return WP_Block_Template[] Numerically indexed templates.
 	 */
-	public static function shim_is_block_theme_detection( $path, $file ) {
-		if ( 'templates/index.html' !== ltrim( (string) $file, '/' ) ) {
-			return $path;
-		}
-		if ( is_readable( $path ) ) {
-			// The active theme really does have its own index.html; leave it alone.
-			return $path;
-		}
-		$plugin_path = PEDIMENT_AI_PLUGIN_DIR . '/templates/index.html';
-		return is_readable( $plugin_path ) ? $plugin_path : $path;
+	public static function normalize_template_query_results( $templates ) {
+		return array_values( $templates );
 	}
 
 	/**

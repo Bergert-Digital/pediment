@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Visual audit: rendered :8890 landing page vs docs/design/pediment-mockup.html.
+// Visual audit: rendered landing page vs docs/design/pediment-mockup.html.
 // Per-band screenshots + bounding-box metrics so we can see WHERE things diverge,
 // not just guess from CSS.
 //
@@ -18,7 +18,7 @@ const outDir = resolve(repoRoot, 'test-results/audit');
 const renderedDir = resolve(outDir, 'rendered');
 const mockupDir = resolve(outDir, 'mockup');
 
-const RENDERED_URL = 'http://localhost:8890/';
+const RENDERED_URL = process.env.PLAYWRIGHT_BASE_URL ?? 'http://localhost:8888/';
 const MOCKUP_FILE = resolve(repoRoot, 'docs/design/pediment-mockup.html');
 const VIEWPORT = { width: 1440, height: 900 };
 
@@ -186,7 +186,7 @@ async function main() {
   const ctx = await browser.newContext({ viewport: VIEWPORT, deviceScaleFactor: 1 });
   const page = await ctx.newPage();
 
-  console.log('Auditing rendered :8890 …');
+  console.log(`Auditing rendered ${RENDERED_URL} …`);
   const rendered = await auditRendered(page);
 
   console.log('Auditing mockup …');

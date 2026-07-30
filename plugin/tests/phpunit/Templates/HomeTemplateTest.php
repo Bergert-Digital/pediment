@@ -61,6 +61,14 @@ class HomeTemplateTest extends WP_UnitTestCase {
 		$this->assertContains( 'pediment/footer', $pattern_slugs, 'footer is now the pediment/footer pattern' );
 	}
 
+	public function test_template_query_results_are_numerically_indexed(): void {
+		$templates = get_block_templates( array( 'slug__in' => array( 'page' ) ) );
+
+		$this->assertNotEmpty( $templates );
+		$this->assertSame( array_values( $templates ), $templates );
+		$this->assertSame( 'page', $templates[0]->slug );
+	}
+
 	public function test_template_has_heading_band_with_h1(): void {
 		$blocks = $this->template_blocks();
 		// First band group with kicker + h1 + lead.
