@@ -1,6 +1,6 @@
 # Pediment AI Plugin
 
-WordPress plugin that adds AI-powered authoring to the [pediment](https://github.com/bergert/pediment): Compose a page from a prompt, Edit an existing page, Refine a single block.
+WordPress plugin that adds AI-powered authoring to the [pediment](https://github.com/Bergert-Digital/pediment): Compose a page from a prompt, Edit an existing page, Refine a single block.
 
 ## Requirements
 
@@ -66,6 +66,14 @@ npm run env:start
 The root wp-env mounts the theme at `wp-content/themes/pediment` and this plugin at
 `wp-content/plugins/pediment-ai`, both served from http://localhost:8888.
 
+If this is the very first boot of wp-env, activate the theme and plugin once — wp-env no
+longer auto-activates either now that their mounts moved to `mappings`:
+
+```bash
+npx wp-env run cli wp theme activate pediment
+npx wp-env run cli wp plugin activate pediment-ai
+```
+
 ### Stop wp-env
 
 ```bash
@@ -98,4 +106,3 @@ composer lint:fix
 Mock mode is on by default in `.wp-env.json` (`PEDIMENT_AI_MOCK=true`), so the plugin returns fixture responses instead of calling Anthropic. Toggle off in plugin settings to test against real Anthropic.
 
 See [docs/prompts.md](docs/prompts.md) for prompt tuning and [docs/privacy.md](docs/privacy.md) for data-handling disclosures clients should include in their privacy policies.
-# pediment-ai
