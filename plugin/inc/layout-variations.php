@@ -15,9 +15,9 @@ add_action(
 		$rel = 'assets/js/layout-variations.js';
 		wp_enqueue_script(
 			'pediment-layout-variations',
-			get_theme_file_uri( $rel ),
+			PEDIMENT_AI_PLUGIN_URL . $rel,
 			array( 'wp-blocks', 'wp-dom-ready' ),
-			(string) filemtime( get_theme_file_path( $rel ) ),
+			(string) filemtime( PEDIMENT_AI_PLUGIN_DIR . '/' . $rel ),
 			true
 		);
 	}

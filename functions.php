@@ -1,6 +1,11 @@
 <?php
 /**
- * Pediment bootstrap.
+ * Pediment theme functions.
+ *
+ * Templates, patterns, the footer pattern, tokens, and global asset enqueues
+ * moved into the plugin (Task 6 of the plugin-absorbs-theme migration); only
+ * the theme-support declarations and the theme's own updater remain here.
+ * Task 7 deletes this theme entirely.
  *
  * @package Pediment
  */
@@ -8,14 +13,6 @@
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
-
-if ( ! defined( 'PEDIMENT_THEME_DIR' ) ) {
-	define( 'PEDIMENT_THEME_DIR', __DIR__ );
-}
-
-require_once __DIR__ . '/inc/patterns.php';
-
-require_once __DIR__ . '/inc/bootstrap.php';
 
 // One-click theme updates from GitHub Releases (no manual zip uploads).
 if ( file_exists( __DIR__ . '/vendor/autoload.php' ) ) {
@@ -25,41 +22,9 @@ require_once __DIR__ . '/inc/ThemeUpdater.php';
 \Pediment\ThemeUpdater::register();
 
 add_action(
-	'wp_enqueue_scripts',
-	function () {
-		$css = 'assets/css/theme.css';
-		wp_enqueue_style(
-			'pediment-theme',
-			get_theme_file_uri( $css ),
-			array(),
-			(string) filemtime( get_theme_file_path( $css ) )
-		);
-		$js = 'assets/js/reveal.js';
-		wp_enqueue_script(
-			'pediment-reveal',
-			get_theme_file_uri( $js ),
-			array(),
-			(string) filemtime( get_theme_file_path( $js ) ),
-			true
-		);
-	}
-);
-
-// No-FOUC: add the .anim class before first paint. Use wp_print_inline_script_tag
-// so security plugins / hosts that emit a CSP nonce can attach it automatically.
-add_action(
-	'wp_head',
-	function () {
-		wp_print_inline_script_tag( "document.documentElement.classList.add('anim')" );
-	},
-	0
-);
-
-add_action(
 	'after_setup_theme',
 	function () {
 		load_theme_textdomain( 'pediment', get_template_directory() . '/languages' );
-		add_editor_style( 'assets/css/theme.css' );
 		add_theme_support(
 			'custom-logo',
 			array(

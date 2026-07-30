@@ -118,9 +118,9 @@ add_action(
 		$css = 'assets/css/icon-picker-editor.css';
 		wp_enqueue_style(
 			'pediment-icon-picker-editor',
-			get_theme_file_uri( $css ),
+			PEDIMENT_AI_PLUGIN_URL . $css,
 			array( 'wp-edit-blocks' ),
-			(string) filemtime( get_theme_file_path( $css ) )
+			(string) filemtime( PEDIMENT_AI_PLUGIN_DIR . '/' . $css )
 		);
 	}
 );

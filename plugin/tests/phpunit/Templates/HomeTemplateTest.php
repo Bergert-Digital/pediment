@@ -4,15 +4,21 @@ class HomeTemplateTest extends WP_UnitTestCase {
 
 	public function set_up(): void {
 		parent::set_up();
-		$this->assertFileExists( $this->template_path(), 'templates/home.html must exist' );
+		$this->assertNotNull( $this->template(), 'pediment//home must be a registered block template' );
 	}
 
-	private function template_path(): string {
-		return get_theme_file_path( 'templates/home.html' );
+	/**
+	 * The home template is registered from the plugin (Pediment\Templates\Registrar)
+	 * regardless of which theme is active, so look it up in the registry
+	 * instead of reading a theme file (Task 6 of the plugin-absorbs-theme
+	 * migration).
+	 */
+	private function template(): ?WP_Block_Template {
+		return WP_Block_Templates_Registry::get_instance()->get_registered( 'pediment//home' );
 	}
 
 	private function template_blocks(): array {
-		return parse_blocks( file_get_contents( $this->template_path() ) );
+		return parse_blocks( $this->template()->content );
 	}
 
 	private function find_first_block( array $blocks, string $name ): ?array {
@@ -43,12 +49,16 @@ class HomeTemplateTest extends WP_UnitTestCase {
 		return $out;
 	}
 
-	public function test_template_has_header_and_footer_parts(): void {
+	public function test_template_has_header_part_and_footer_pattern(): void {
 		$blocks = $this->template_blocks();
-		$parts  = $this->find_all_blocks( $blocks, 'core/template-part' );
-		$slugs  = array_map( static fn( $b ) => $b['attrs']['slug'] ?? '', $parts );
-		$this->assertContains( 'header', $slugs );
-		$this->assertContains( 'footer', $slugs );
+
+		$parts = $this->find_all_blocks( $blocks, 'core/template-part' );
+		$slugs = array_map( static fn( $b ) => $b['attrs']['slug'] ?? '', $parts );
+		$this->assertContains( 'header', $slugs, 'header stays a DB-seeded template part' );
+
+		$patterns      = $this->find_all_blocks( $blocks, 'core/pattern' );
+		$pattern_slugs = array_map( static fn( $b ) => $b['attrs']['slug'] ?? '', $patterns );
+		$this->assertContains( 'pediment/footer', $pattern_slugs, 'footer is now the pediment/footer pattern' );
 	}
 
 	public function test_template_has_heading_band_with_h1(): void {
