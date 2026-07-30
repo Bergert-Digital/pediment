@@ -8,47 +8,25 @@ on:
 jobs:
   phpcs:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: pediment
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          path: pediment
-      - uses: shivammathur/setup-php@v2
-        with:
-          php-version: '8.1'
-          tools: composer
-      - run: composer install --prefer-dist --no-progress
-      - run: composer lint
-
-  phpcs-plugin:
-    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: shivammathur/setup-php@v2
         with:
-          php-version: '8.1'
+          php-version: "8.1"
           tools: composer
       - run: composer install --prefer-dist --no-progress -d plugin
       - run: composer lint -d plugin
 
   lint-blocks:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: pediment
     steps:
       - uses: actions/checkout@v4
-        with:
-          path: pediment
       - uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: "20"
           cache: npm
-          cache-dependency-path: pediment/package-lock.json
+          cache-dependency-path: plugin/package-lock.json
       - run: npm ci
-      # lint:js proxies into plugin/ now that blocks + the block build moved there.
       - run: cd plugin && npm ci
       - run: npm run lint:blocks
       - run: npm run lint:colors
@@ -57,111 +35,48 @@ jobs:
 
   phpunit:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: pediment
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          path: pediment
-      - uses: shivammathur/setup-php@v2
-        with:
-          php-version: '8.1'
-          tools: composer
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: npm
-          cache-dependency-path: pediment/package-lock.json
-      - run: composer install --prefer-dist --no-progress
-      - run: npm ci
-      # build proxies into plugin/ now that blocks + the block build moved there;
-      # the theme's remaining PHPUnit tests (Patterns/, Templates/) render
-      # pediment/* blocks, which only register once the plugin is built.
-      - run: cd plugin && npm ci
-      - run: npm run env:start
-      - run: npm run build
-      - run: npx wp-env run tests-wordpress --env-cwd=wp-content/themes/pediment vendor/bin/phpunit
-      - if: always()
-        run: npm run env:stop
-
-  phpunit-plugin:
-    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: "20"
           cache: npm
+          cache-dependency-path: plugin/package-lock.json
       - uses: shivammathur/setup-php@v2
         with:
-          php-version: '8.1'
+          php-version: "8.1"
           tools: composer
-      # Root no longer has a build target of its own (blocks + the block build
-      # moved into plugin/); just install root deps for wp-env.
       - run: npm ci
       - run: composer install --prefer-dist --no-progress -d plugin
       - run: cd plugin && npm ci && npm run build
-      - run: npx wp-env start
-      - run: npx wp-env run cli wp plugin activate pediment-ai
+      - run: npm run env:start
       - run: npx wp-env run tests-wordpress --env-cwd=wp-content/plugins/pediment-ai ./vendor/bin/phpunit
+      - if: always()
+        run: npm run env:stop
 
   e2e:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: pediment
     steps:
       - uses: actions/checkout@v4
-        with:
-          path: pediment
       - uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: "20"
           cache: npm
-          cache-dependency-path: pediment/package-lock.json
+          cache-dependency-path: plugin/package-lock.json
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.1"
+          tools: composer
       - run: npm ci
-      # build proxies into plugin/ now that blocks + the block build moved there.
-      - run: cd plugin && npm ci
-      - run: npx playwright install --with-deps chromium
+      - run: composer install --prefer-dist --no-progress -d plugin
+      - run: cd plugin && npm ci && npm run build
+      - run: cd plugin && npx playwright install --with-deps chromium
       - run: npm run env:start
-      - run: npm run build
-      - run: npx wp-env run cli wp theme activate pediment
-      - run: npx wp-env run cli wp rewrite structure "/%postname%/"
-      - run: npx wp-env run cli wp rewrite flush --hard
-      - run: npm run e2e
+      - run: cd plugin && npm run e2e
       - if: always()
         run: npm run env:stop
       - if: failure()
         uses: actions/upload-artifact@v4
         with:
           name: playwright-report
-          path: pediment/playwright-report/
-
-  e2e-plugin:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: npm
-      - uses: shivammathur/setup-php@v2
-        with:
-          php-version: '8.1'
-          tools: composer
-      # Root no longer has a build target of its own (blocks + the block build
-      # moved into plugin/); just install root deps for wp-env.
-      - run: npm ci
-      - run: composer install --prefer-dist --no-progress -d plugin
-      - run: cd plugin && npm ci && npm run build
-      - run: cd plugin && npx playwright install --with-deps chromium
-      - run: npx wp-env start
-      - run: npx wp-env run cli wp theme activate pediment
-      - run: npx wp-env run cli wp plugin activate pediment-ai
-      - run: cd plugin && npm run e2e
-      - if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: plugin-playwright-report
           path: plugin/playwright-report/
