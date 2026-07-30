@@ -31,9 +31,18 @@ survives. Release staging dry-run: `pediment-plugin.zip` top dir `pediment/`
 ships plugin.php, build/, templates/, patterns/, tokens/, src/, vendor/,
 wpml-config.xml; no editor/, tests/, node_modules.
 
+[18:05] ✅ v3.0.0 SHIPPED. Push → CI green (after one lockfile fix: npm 11
+writes lockfiles npm 10 rejects; regenerated with npm 10) → release PR #66
+verified (plugin.php header + PEDIMENT_AI_VERSION + manifest all 3.0.0) →
+merged → tag carries exactly one asset, `pediment-plugin.zip`: single top
+dir `pediment/`, stamped 3.0.0, ships src/build/templates/patterns/tokens/
+vendor/wpml-config, zero editor/tests/node_modules entries. Neither legacy
+asset name published — 2.4.x theme updaters and old pediment-ai installs
+stay pinned by design.
+
 ### Planned next
-- Complete the gated v3.0.0 release verification after explicit push and
-  release-PR approval (plan Tasks 9–11).
+- Migration step 3: the declarative seeding engine (`_pediment_seed_key` +
+  `_pediment_seed_hash`), per the approved spec.
 
 ### Need a decision on
 _(none)_
