@@ -1,13 +1,19 @@
 {
-  "core": "WordPress/WordPress#6.9",
-  "phpVersion": "8.1",
-  "themes": ["."],
-  "config": {
-    "WP_DEBUG": true,
-    "WP_DEBUG_LOG": true,
-    "SCRIPT_DEBUG": true
-  },
-  "mappings": {
-    "wp-content/uploads": "./tests/fixtures/uploads"
-  }
+	"core": "WordPress/WordPress#6.9",
+	"phpVersion": "8.1",
+	"themes": [],
+	"plugins": [],
+	"config": {
+		"WP_DEBUG": true,
+		"WP_DEBUG_LOG": true,
+		"SCRIPT_DEBUG": true,
+		"PEDIMENT_AI_MOCK": true,
+		"PEDIMENT_AI_LOOPBACK_URL": "http://127.0.0.1"
+	},
+	"mappings": {
+		"wp-content/themes/pediment": ".",
+		"wp-content/plugins/pediment-ai": "./plugin",
+		"wp-content/uploads": "./tests/fixtures/uploads",
+		"wp-content/mu-plugins/activate-pediment.php": "./plugin/tests/fixtures/mu-activate-theme.php"
+	}
 }

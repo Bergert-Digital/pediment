@@ -1,0 +1,12 @@
+{
+  "extends": "@wordpress/scripts/tsconfig.json",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": { "@/*": ["editor/*"] },
+    "jsx": "react-jsx",
+    "allowJs": true,
+    "noEmit": true
+  },
+  "include": ["editor/**/*.ts", "editor/**/*.tsx"],
+  "exclude": ["node_modules", "build"]
+}

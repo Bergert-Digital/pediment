@@ -1,6 +1,9 @@
 # Pediment
 
-A forkable WordPress block theme for client websites. Sibling to the Payload Starter.
+A forkable WordPress block theme for client websites, plus its companion AI plugin — one
+monorepo. The theme lives at the repo root; the plugin lives in [`plugin/`](plugin/README.md).
+Per-client sites are built from a separate child-theme template repo
+(`Bergert-Digital/Pediment-Child-Theme`), not from this repo.
 
 ## Stack
 - WordPress 6.4+
@@ -21,6 +24,8 @@ cd pediment
 composer install
 npm install
 npm run build
+composer install -d plugin
+( cd plugin && npm install && npm run build )
 ```
 
 > **Folder naming:** the project directory name becomes the WordPress theme
@@ -81,7 +86,34 @@ Stop with `npm run env:stop`.
 npx wp-env run tests-wordpress --env-cwd=wp-content/themes/pediment ./vendor/bin/phpunit
 ```
 
+## Plugin (`plugin/`)
+
+The AI plugin (`pediment-ai`) lives in [`plugin/`](plugin/README.md) and shares this repo's
+one root wp-env — it mounts at `wp-content/plugins/pediment-ai`, no separate Docker stack.
+
+```bash
+composer install -d plugin
+cd plugin && npm install && npm run build
+```
+
+Plugin tests, run from the repo root:
+
+```bash
+npx wp-env run tests-wordpress --env-cwd=wp-content/plugins/pediment-ai ./vendor/bin/phpunit
+```
+
+```bash
+cd plugin && npm run e2e
+```
+
+See [`plugin/README.md`](plugin/README.md) and [`plugin/AGENTS.md`](plugin/AGENTS.md) for
+the plugin's own flows, models, and rate limits.
+
 ## Deployment
+
+Main-only branch model: all work lands on `main`, and release-please's release PR is the
+shipping gate — merging it cuts one tag for the whole monorepo and publishes both
+`pediment.zip` (theme) and `pediment-ai.zip` (plugin) from a single version line.
 
 This theme installs like any standard WordPress theme — upload the release zip (Appearance → Themes → Add New → Upload). After the first install, updates arrive one-click through the normal wp-admin Updates screen via GitHub Releases. It works on any WP host that supports custom themes; tested specifically on:
 
