@@ -2,7 +2,7 @@
 import { readdirSync, statSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
-const root = new URL('../src/blocks/', import.meta.url).pathname;
+const root = new URL('../plugin/src/blocks/', import.meta.url).pathname;
 const HEX = /#[0-9a-fA-F]{3}(?:[0-9a-fA-F]{1,5})?\b/;
 const RGB = /\brgb[a]?\s*\(/i;
 const HSL = /\bhsl[a]?\s*\(/i;
@@ -36,4 +36,4 @@ if (failed) {
   process.exit(1);
 }
 
-console.log('✓ No color literals in src/blocks/ stylesheets.');
+console.log('✓ No color literals in plugin/src/blocks/ stylesheets.');

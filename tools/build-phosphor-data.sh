@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Reference builder for the icon-set data contract. Regenerates four committed
-# files under assets/icons/ from Phosphor core (regular weight, MIT):
+# files under plugin/assets/icons/ from Phosphor core (regular weight, MIT):
 #
 #   icon-markup.php   — return array( 'slug' => '<inner svg>' ); read by PHP render
 #   icon-markup.json  — { "slug": "<inner svg>" };            read by the editor grid
@@ -18,10 +18,10 @@
 set -euo pipefail
 
 VER="2.1.1"
-OUT_PHP="assets/icons/icon-markup.php"
-OUT_JSON="assets/icons/icon-markup.json"
-OUT_META="assets/icons/icon-meta.json"
-OUT_SET="assets/icons/icon-set.json"
+OUT_PHP="plugin/assets/icons/icon-markup.php"
+OUT_JSON="plugin/assets/icons/icon-markup.json"
+OUT_META="plugin/assets/icons/icon-meta.json"
+OUT_SET="plugin/assets/icons/icon-set.json"
 
 tmp="$(mktemp -d)"
 trap 'rm -rf "$tmp"' EXIT

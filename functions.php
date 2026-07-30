@@ -13,16 +13,9 @@ if ( ! defined( 'PEDIMENT_THEME_DIR' ) ) {
 	define( 'PEDIMENT_THEME_DIR', __DIR__ );
 }
 
-require_once __DIR__ . '/inc/register-blocks.php';
-require_once __DIR__ . '/inc/icons.php';
-require_once __DIR__ . '/inc/block-styles.php';
-require_once __DIR__ . '/inc/hero-variants.php';
-require_once __DIR__ . '/inc/layout-variations.php';
 require_once __DIR__ . '/inc/patterns.php';
 
 require_once __DIR__ . '/inc/bootstrap.php';
-require_once __DIR__ . '/inc/nav-active.php';
-require_once __DIR__ . '/inc/mega-menu.php';
 
 // One-click theme updates from GitHub Releases (no manual zip uploads).
 if ( file_exists( __DIR__ . '/vendor/autoload.php' ) ) {

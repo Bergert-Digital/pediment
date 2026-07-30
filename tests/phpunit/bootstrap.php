@@ -20,12 +20,13 @@ tests_add_filter(
 	'muplugins_loaded',
 	function () {
 		switch_theme( 'pediment' );
-		// The forms engine and settings hub moved into the plugin (Task 4 of
-		// the plugin-absorbs-theme migration); theme blocks that render forms
-		// (src/blocks/form, src/blocks/form-field — still theme-owned until
-		// Task 5) call pediment_form_*() at render time, so the plugin has to
-		// be loaded alongside the theme here too, matching how both artifacts
-		// run together in production.
+		// The forms engine, settings hub, blocks, and block build all moved into
+		// the plugin (Tasks 4 + 5 of the plugin-absorbs-theme migration). Blocks
+		// are registered from the plugin now (see plugin/inc/register-blocks.php)
+		// regardless of which theme is active, and the remaining theme tests
+		// (Patterns/, Templates/) render patterns whose content is pediment/*
+		// blocks, so the plugin has to be loaded alongside the theme here too —
+		// matching how both artifacts run together in production.
 		require_once dirname( __DIR__, 2 ) . '/plugin/plugin.php';
 		require_once dirname( __DIR__, 2 ) . '/functions.php';
 	}

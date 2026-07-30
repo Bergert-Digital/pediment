@@ -3,7 +3,7 @@
  * Inline icon helper.
  *
  * Icons are rendered inline from a generated slug → SVG-markup map
- * (assets/icons/icon-markup.php), produced by tools/build-phosphor-data.sh.
+ * (plugin/assets/icons/icon-markup.php), produced by tools/build-phosphor-data.sh.
  *
  * @package Pediment
  */
@@ -20,7 +20,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 function pediment_icon_map(): array {
 	static $map = null;
 	if ( null === $map ) {
-		$file = get_theme_file_path( 'assets/icons/icon-markup.php' );
+		$file = PEDIMENT_AI_PLUGIN_DIR . '/assets/icons/icon-markup.php';
 		$map  = is_readable( $file ) ? (array) require $file : array();
 	}
 	return $map;
@@ -39,7 +39,7 @@ function pediment_icon_map(): array {
 function pediment_icon_set(): array {
 	static $set = null;
 	if ( null === $set ) {
-		$file = get_theme_file_path( 'assets/icons/icon-set.json' );
+		$file = PEDIMENT_AI_PLUGIN_DIR . '/assets/icons/icon-set.json';
 		$data = is_readable( $file ) ? json_decode( (string) file_get_contents( $file ), true ) : null;
 		$set  = array(
 			'viewBox'  => ( is_array( $data ) && ! empty( $data['viewBox'] ) )
@@ -105,9 +105,9 @@ add_action(
 	'enqueue_block_editor_assets',
 	function () {
 		$icons = array(
-			'markupUrl' => get_theme_file_uri( 'assets/icons/icon-markup.json' ),
-			'metaUrl'   => get_theme_file_uri( 'assets/icons/icon-meta.json' ),
-			'setUrl'    => get_theme_file_uri( 'assets/icons/icon-set.json' ),
+			'markupUrl' => PEDIMENT_AI_PLUGIN_URL . 'assets/icons/icon-markup.json',
+			'metaUrl'   => PEDIMENT_AI_PLUGIN_URL . 'assets/icons/icon-meta.json',
+			'setUrl'    => PEDIMENT_AI_PLUGIN_URL . 'assets/icons/icon-set.json',
 		);
 		wp_add_inline_script(
 			'wp-blocks',

@@ -16,6 +16,7 @@ phpunit.xml.dist
 composer.json
 composer.lock
 editor
+src
 AGENTS.md
 docs
 .mcp.json

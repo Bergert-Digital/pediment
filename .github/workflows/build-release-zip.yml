@@ -40,10 +40,9 @@ jobs:
           node-version: '20'
           cache: npm
 
-      - name: Build JS bundle
-        run: |
-          npm ci
-          npm run build
+      # No build step here: blocks + the block build moved into plugin/ (Task 5,
+      # plugin-absorbs-theme migration). The theme zip is pure PHP/template
+      # source now; `npm run build` is redundant with the plugin build below.
 
       - name: Patch version into style.css and package.json
         env:

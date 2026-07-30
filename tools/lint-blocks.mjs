@@ -2,11 +2,11 @@
 import { readdirSync, statSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 
-const root = new URL('../src/blocks/', import.meta.url).pathname;
+const root = new URL('../plugin/src/blocks/', import.meta.url).pathname;
 const required = ['block.json', 'render.php', 'edit.tsx'];
 
 if (!existsSync(root)) {
-  console.log(`No src/blocks/ directory yet — skipping.`);
+  console.log(`No plugin/src/blocks/ directory yet — skipping.`);
   process.exit(0);
 }
 
@@ -19,14 +19,14 @@ let failed = false;
 for (const dir of dirs) {
   const missing = required.filter((file) => !existsSync(join(root, dir, file)));
   if (missing.length > 0) {
-    console.error(`✗ src/blocks/${dir}/ is missing: ${missing.join(', ')}`);
+    console.error(`✗ plugin/src/blocks/${dir}/ is missing: ${missing.join(', ')}`);
     failed = true;
   } else {
-    console.log(`✓ src/blocks/${dir}/`);
+    console.log(`✓ plugin/src/blocks/${dir}/`);
   }
 }
 
 if (failed) {
-  console.error('\nEach src/blocks/<name>/ must contain block.json, render.php, and edit.tsx.');
+  console.error('\nEach plugin/src/blocks/<name>/ must contain block.json, render.php, and edit.tsx.');
   process.exit(1);
 }

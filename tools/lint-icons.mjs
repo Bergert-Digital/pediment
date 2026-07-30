@@ -4,7 +4,7 @@
 //   - icon-set.json must have a viewBox string and an svgAttrs object
 import { readFileSync } from 'node:fs';
 
-const dir = new URL( '../assets/icons/', import.meta.url );
+const dir = new URL( '../plugin/assets/icons/', import.meta.url );
 const read = ( name ) => JSON.parse( readFileSync( new URL( name, dir ), 'utf8' ) );
 
 let markup, meta, set;
