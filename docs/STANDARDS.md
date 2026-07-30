@@ -4,7 +4,7 @@ Non-negotiable quality bars. CI enforces most of these; the rest are review gate
 
 ## Block authoring contract (see `docs/blocks.md`)
 
-Every block in `src/blocks/<name>/` has exactly: `block.json`, `index.tsx`, `edit.tsx`,
+Every block in `plugin/src/blocks/<name>/` has exactly: `block.json`, `index.tsx`, `edit.tsx`,
 `render.php`, `style.scss`. Enforced by `npm run lint:blocks`.
 
 - `block.json` has an explicit one-sentence `description` and fully-typed `attributes` with
@@ -16,9 +16,10 @@ Every block in `src/blocks/<name>/` has exactly: `block.json`, `index.tsx`, `edi
 
 ## Design tokens
 
-No hex / rgb / hsl literals anywhere under `src/blocks/`. Use `var(--wp--preset--…)` from
-`theme.json`. Enforced by `npm run lint:colors` **and** the `Starter.NoColorLiteralSniff`
-PHPCS sniff. The only place a hex literal is allowed is a child theme's `theme.json` palette.
+No hex / rgb / hsl literals anywhere under `plugin/src/blocks/`. Use `var(--wp--preset--…)` from
+`plugin/tokens/theme.json`. Enforced by `npm run lint:colors` **and** the `Starter.NoColorLiteralSniff`
+PHPCS sniff. Shared defaults live in `plugin/tokens/theme.json`; client palette literals belong
+in the standalone client theme's `theme.json`.
 
 ## Empty / partial / hostile states
 
@@ -28,11 +29,11 @@ on every block change, not just new blocks.
 
 ## Tests
 
-- **PHPUnit:** every block has `tests/phpunit/BlockRender/<Name>Test.php` covering valid +
-  edge-case (empty) attributes. Contact form, patterns, and seed have suites.
-  Run: `npx wp-env run tests-wordpress --env-cwd=wp-content/themes/pediment vendor/bin/phpunit`
-- **Playwright:** editor block insertion, front-page render, contact form.
-  Run: `npm run e2e` (requires `npm run env:start`).
+- **PHPUnit:** every block has `plugin/tests/phpunit/BlockRender/<Name>Test.php` covering valid +
+  edge-case (empty) attributes. Forms, patterns, templates, and AI have suites.
+  Run: `npx wp-env run tests-wordpress --env-cwd=wp-content/plugins/pediment-ai ./vendor/bin/phpunit`
+- **Playwright:** editor block insertion, front-page render, forms, and AI flows.
+  Run: `cd plugin && npm run e2e` (requires `npm run env:start`).
 - A feature or fix is not done until its test passes and the relevant screenshot looks right.
 
 ## Linting & CI
@@ -43,16 +44,16 @@ lint-blocks, phpunit, and e2e on every PR and push to main. Red CI never merges.
 
 ## Extensibility discipline
 
-Parent files are read-only from a child theme's perspective. Child themes extend the parent via
-`theme.json` overrides, template parts, block filters, and `client/*` blocks. A change that
-forces a child to edit a parent file is a parent-API gap to fix upstream, not a child workaround.
+Client themes are independent and extend Pediment through `theme.json` overrides,
+template parts, block filters, and `client/*` blocks. A change that forces a client
+theme to edit a plugin file is a product API gap to fix upstream, not a workaround.
 
 ## Distribution
 
-Releases go out as installable zips via each repo's `workflow_dispatch` `release.yml`, with a
-`.distignore` controlling what ships. The parent zip excludes `src/`/`tools/`/`docs`; the
-child zip stays forkable (keeps `src/`). Version metadata is patched in the release commit —
-never hand-bump `style.css` / `functions.php` / `package.json` out of band.
+Releases ship one installable `pediment-plugin.zip`, staged as `plugins/pediment`.
+It includes templates, patterns, tokens, assets, forms, and blocks; `plugin/.distignore`
+excludes development-only files. Version metadata is patched by release-please —
+never hand-bump `plugin/plugin.php` or `plugin/package.json` out of band.
 
 ## Commits
 

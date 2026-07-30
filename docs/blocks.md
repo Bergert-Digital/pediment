@@ -1,9 +1,9 @@
 # Authoring starter blocks
 
-Every block in `src/blocks/<name>/` must contain exactly these files:
+Every shared block in `plugin/src/blocks/<name>/` must contain exactly these files:
 
 ```
-src/blocks/<name>/
+plugin/src/blocks/<name>/
   block.json     metadata + attributes
   index.tsx      entry: registers the block with @wordpress/blocks
   edit.tsx       editor UI (React)
@@ -38,7 +38,7 @@ Example:
 
 ## Design tokens
 
-No hex / rgb / hsl literals are allowed in `src/blocks/`. Use CSS custom properties from `theme.json`:
+No hex / rgb / hsl literals are allowed in `plugin/src/blocks/`. Use CSS custom properties from `plugin/tokens/theme.json`:
 
 ```scss
 .starter-my-block {
@@ -68,7 +68,13 @@ Sanitize aggressively: `wp_kses_post()` for rich text, `esc_html()` for plain st
 
 ## Tests
 
-Every block needs a test in `tests/phpunit/BlockRender/<Name>Test.php`. The minimum:
+Every block needs a test in `plugin/tests/phpunit/BlockRender/<Name>Test.php`. The minimum:
 
 - Render with valid attributes → output contains expected substrings.
 - Render with edge-case attributes (empty fields) → output handled gracefully (no PHP errors, no empty `<a href="">`).
+
+## Client blocks
+
+Standalone client themes may register `client/*` blocks for client-owned
+behavior. They must follow the same rendering, sanitization, token, and test
+contract, but must not modify Pediment's `plugin/` files.
