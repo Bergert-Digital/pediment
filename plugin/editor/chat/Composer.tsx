@@ -9,10 +9,12 @@ export default function Composer( {
 	onSubmit,
 	onStop,
 	busy,
+	ready,
 }: {
 	onSubmit: ( text: string, images: ChatImage[] ) => void;
 	onStop: () => void;
 	busy: boolean;
+	ready: boolean;
 } ) {
 	const [ value, setValue ] = useState( '' );
 	const [ images, setImages ] = useState< ChatImage[] >( [] );
@@ -44,7 +46,7 @@ export default function Composer( {
 
 	const submit = () => {
 		const trimmed = value.trim();
-		if ( ( ! trimmed && images.length === 0 ) || busy ) {
+		if ( ( ! trimmed && images.length === 0 ) || busy || ! ready ) {
 			return;
 		}
 		onSubmit( trimmed, images );
@@ -79,10 +81,7 @@ export default function Composer( {
 							/>
 							<button
 								type="button"
-								aria-label={ __(
-									'Remove image',
-									'pediment'
-								) }
+								aria-label={ __( 'Remove image', 'pediment' ) }
 								onClick={ () =>
 									setImages( ( cur ) =>
 										cur.filter( ( _, j ) => j !== i )
@@ -113,17 +112,12 @@ export default function Composer( {
 						submit();
 					}
 				} }
-				placeholder={ __(
-					'Ask the AI to write or edit…',
-					'pediment'
-				) }
+				placeholder={ __( 'Ask the AI to write or edit…', 'pediment' ) }
 				rows={ 3 }
 				disabled={ busy }
 			/>
 			{ notice && (
-				<div className="pediment-chat__composer-notice">
-					{ notice }
-				</div>
+				<div className="pediment-chat__composer-notice">{ notice }</div>
 			) }
 			<input
 				ref={ fileRef }
@@ -151,7 +145,9 @@ export default function Composer( {
 					<Button
 						variant="primary"
 						onClick={ submit }
-						disabled={ ! value.trim() && images.length === 0 }
+						disabled={
+							! ready || ( ! value.trim() && images.length === 0 )
+						}
 					>
 						{ __( 'Send', 'pediment' ) }
 					</Button>
