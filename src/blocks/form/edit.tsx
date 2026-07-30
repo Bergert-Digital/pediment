@@ -13,8 +13,8 @@ import {
 
 type Destination = { id: string; label: string };
 
-// Destinations are injected by inc/forms-destinations.php via an inline script
-// on `enqueue_block_editor_assets`.
+// Destinations are injected by the plugin's inc/forms-destinations.php via an
+// inline script on `enqueue_block_editor_assets`.
 declare global {
 	interface Window {
 		pedimentFormDestinations?: Destination[];

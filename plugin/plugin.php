@@ -30,6 +30,25 @@ if ( file_exists( __DIR__ . '/vendor/autoload.php' ) ) {
 	require __DIR__ . '/vendor/autoload.php';
 }
 
+require_once PEDIMENT_AI_PLUGIN_DIR . '/inc/settings-page.php';
+require_once PEDIMENT_AI_PLUGIN_DIR . '/inc/forms.php';
+require_once PEDIMENT_AI_PLUGIN_DIR . '/inc/forms-storage.php';
+require_once PEDIMENT_AI_PLUGIN_DIR . '/inc/forms-secrets.php';
+require_once PEDIMENT_AI_PLUGIN_DIR . '/inc/forms-ssrf.php';
+require_once PEDIMENT_AI_PLUGIN_DIR . '/inc/forms-template.php';
+require_once PEDIMENT_AI_PLUGIN_DIR . '/inc/forms-presets.php';
+require_once PEDIMENT_AI_PLUGIN_DIR . '/inc/forms-destinations.php';
+require_once PEDIMENT_AI_PLUGIN_DIR . '/inc/forms-delivery.php';
+require_once PEDIMENT_AI_PLUGIN_DIR . '/inc/forms-settings.php';
+
+// Forms cleanup cron: was wired off theme-switch hooks when the forms engine
+// lived in the theme; now that pediment_form_schedule_cleanup() /
+// pediment_form_unschedule_cleanup() ship in the plugin (inc/forms-storage.php
+// above), the wiring moves here too. Hook names unchanged for now (still
+// theme-switch, not plugin activation) to keep this move load-path-only.
+add_action( 'after_switch_theme', 'pediment_form_schedule_cleanup' );
+add_action( 'switch_theme', 'pediment_form_unschedule_cleanup' );
+
 // One-click updates from GitHub Releases (no manual zip uploads).
 if ( class_exists( \Pediment\Updater::class ) ) {
 	\Pediment\Updater::register( PEDIMENT_AI_PLUGIN_FILE );
