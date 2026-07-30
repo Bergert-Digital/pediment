@@ -1,5 +1,17 @@
 # Changelog
 
+## [2.4.0](https://github.com/Bergert-Digital/pediment/compare/v2.3.0...v2.4.0) (2026-07-30)
+
+
+### Features
+
+* **ci:** one workflow for theme and plugin ([949ff5a](https://github.com/Bergert-Digital/pediment/commit/949ff5a67e5e2d54ca0099a85ef53c9d78581630))
+* **env:** one wp-env for theme and plugin with pinned mount names ([24671d4](https://github.com/Bergert-Digital/pediment/commit/24671d48ca9964fd729760d660488cfcc04a5f8c))
+* merge pediment-ai into a monorepo with one release line ([#63](https://github.com/Bergert-Digital/pediment/issues/63)) ([78608cf](https://github.com/Bergert-Digital/pediment/commit/78608cf0695f6a8624058acb0f12b0e39821d69d))
+* merge pediment-ai into the monorepo as plugin/ ([1c1de3b](https://github.com/Bergert-Digital/pediment/commit/1c1de3b7df066538a3ae1878573a8a065d32db41))
+* **release:** one version line, two artifacts per tag ([8ecb77a](https://github.com/Bergert-Digital/pediment/commit/8ecb77ac27c3061ce9820f04f77ac271a176e7b3))
+* **updates:** plugin updater follows monorepo releases ([8a721ad](https://github.com/Bergert-Digital/pediment/commit/8a721adea93b731853db3750b0b492212da0a1c6))
+
 ## [2.3.0](https://github.com/Bergert-Digital/pediment/compare/v2.2.0...v2.3.0) (2026-07-24)
 
 
