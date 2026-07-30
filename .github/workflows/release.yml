@@ -1,6 +1,6 @@
 name: Release asset
 
-# Manual fallback for re-uploading pediment.zip against an existing tag —
+# Manual fallback for re-uploading pediment-plugin.zip against an existing tag —
 # e.g. if the chained attach-zip job inside release-please.yml failed on
 # the first try. The normal path is for that job to run automatically when
 # release-please publishes a release; this workflow is only the escape
@@ -10,7 +10,7 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: 'Existing release tag to (re-)attach pediment.zip to (e.g. v0.2.0)'
+        description: "Existing release tag to (re-)attach pediment-plugin.zip to (e.g. v3.0.0)"
         required: true
         type: string
 
