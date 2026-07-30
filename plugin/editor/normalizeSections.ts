@@ -37,6 +37,7 @@ function isBand( b: BlockLike ): boolean {
  * A legacy `starter-section` wrapper — a `core/group.starter-section` that is
  * NOT itself a band. These get unwrapped (their children lifted to the top
  * level) so bands the old normalizer swallowed resurface as top-level sections.
+ * @param b
  */
 function isLegacyWrapper( b: BlockLike ): boolean {
 	return (
@@ -57,6 +58,7 @@ function isLegacyWrapper( b: BlockLike ): boolean {
  * Any maximal run of other blocks between boundaries becomes one wrapped band.
  * Adjacent correct bands are each kept, never collapsed into one parent wrap,
  * which makes the canonical flat-band page idempotent.
+ * @param blocks
  */
 export function planSections( blocks: BlockLike[] ): SectionPlan[] {
 	const out: SectionPlan[] = [];
@@ -65,7 +67,9 @@ export function planSections( blocks: BlockLike[] ): SectionPlan[] {
 	// The segment only ever holds non-band, non-separator blocks, so a flush is
 	// always a wrap.
 	const flush = () => {
-		if ( segment.length === 0 ) return;
+		if ( segment.length === 0 ) {
+			return;
+		}
 		out.push( { kind: 'wrap', indices: segment.slice() } );
 		segment = [];
 	};
@@ -107,6 +111,8 @@ export type CreateBlock = (
  * FRESH clientId. Reusing live block objects keeps their original clientIds,
  * which are also in replaceBlocks' removal list — producing a cyclic
  * parent/order map and an infinite-recursion editor crash.
+ * @param b
+ * @param create
  */
 function cloneBlock( b: RootBlock, create: CreateBlock ): any {
 	return create(
@@ -122,13 +128,16 @@ function cloneBlock( b: RootBlock, create: CreateBlock ): any {
  * `starter-section` wrapping many bands (the "everything nested in one group,
  * new sections land on top" bug) is healed back into a flat band list. Bands
  * themselves are never descended into — their children are section content.
+ * @param blocks
  */
 function flattenLegacyWrappers( blocks: RootBlock[] ): RootBlock[] {
 	const out: RootBlock[] = [];
 	for ( const b of blocks ) {
 		if ( isLegacyWrapper( b ) ) {
 			out.push(
-				...flattenLegacyWrappers( ( b.innerBlocks ?? [] ) as RootBlock[] )
+				...flattenLegacyWrappers(
+					( b.innerBlocks ?? [] ) as RootBlock[]
+				)
 			);
 		} else {
 			out.push( b );
@@ -145,6 +154,7 @@ function flattenLegacyWrappers( blocks: RootBlock[] ): RootBlock[] {
  * so a chosen band style, custom classes, and spacing survive, but the
  * band-shape keys are always enforced. Auto-derived classes and the legacy
  * `starter-section`/`tagName:section` shape are stripped.
+ * @param base
  */
 function bandAttributes( base?: any ): any {
 	const rest = { ...( base ?? {} ) };
@@ -153,12 +163,15 @@ function bandAttributes( base?: any ): any {
 	delete rest.layout;
 	delete rest.style;
 
-	const tokens = ( typeof base?.className === 'string'
-		? base.className.split( /\s+/ ).filter( Boolean )
-		: []
+	const tokens = (
+		typeof base?.className === 'string'
+			? base.className.split( /\s+/ ).filter( Boolean )
+			: []
 	).filter( ( t: string ) => t !== SECTION_CLASS && ! AUTO_CLASS.test( t ) );
 
-	if ( ! tokens.includes( BAND_CLASS ) ) tokens.unshift( BAND_CLASS );
+	if ( ! tokens.includes( BAND_CLASS ) ) {
+		tokens.unshift( BAND_CLASS );
+	}
 	if ( ! tokens.some( ( t: string ) => t.startsWith( 'is-style-band-' ) ) ) {
 		tokens.push( DEFAULT_BAND_STYLE );
 	}
@@ -188,13 +201,17 @@ function bandAttributes( base?: any ): any {
  * unwrapped first (healing nested pages), then every top-level run is either
  * kept (an existing band, band-shape attrs enforced) or wrapped into a new
  * band. Idempotent in structure.
+ * @param deps
+ * @param create
  */
 export function normalizeSections(
 	deps: NormalizeDeps,
 	create: CreateBlock
 ): void {
 	const root = deps.getBlocks();
-	if ( root.length === 0 ) return;
+	if ( root.length === 0 ) {
+		return;
+	}
 
 	const flat = flattenLegacyWrappers( root );
 	const plan = planSections( flat );

@@ -4,16 +4,17 @@ import { __ } from '@wordpress/i18n';
 import ChatPanel from './chat/ChatPanel';
 
 const PluginDocumentSettingPanel =
-  PluginDocumentSettingPanelFromEditor ?? PluginDocumentSettingPanelFromEditPost;
+	PluginDocumentSettingPanelFromEditor ??
+	PluginDocumentSettingPanelFromEditPost;
 
 export default function DocumentPanel() {
-  return (
-    <PluginDocumentSettingPanel
-      name="pediment-chat"
-      title={__('Pediment', 'pediment')}
-      className="pediment__panel"
-    >
-      <ChatPanel />
-    </PluginDocumentSettingPanel>
-  );
+	return (
+		<PluginDocumentSettingPanel
+			name="pediment-chat"
+			title={ __( 'Pediment', 'pediment' ) }
+			className="pediment__panel"
+		>
+			<ChatPanel />
+		</PluginDocumentSettingPanel>
+	);
 }

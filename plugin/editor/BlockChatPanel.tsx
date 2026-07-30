@@ -6,29 +6,40 @@ import { useEffect } from '@wordpress/element';
 import { __ } from '@wordpress/i18n';
 import ChatPanel from './chat/ChatPanel';
 
-const withChat = createHigherOrderComponent((BlockEdit: any) => (props: any) => {
-  return (
-    <>
-      <BlockEdit {...props} />
-      <InspectorControls>
-        <PanelBody title={__('Pediment', 'pediment')} initialOpen={false} className="pediment-chat__inspector">
-          <ChatPanel hideSelectionChip />
-        </PanelBody>
-      </InspectorControls>
-    </>
-  );
-}, 'withPedimentChat');
+const withChat = createHigherOrderComponent(
+	( BlockEdit: any ) => ( props: any ) => {
+		return (
+			<>
+				<BlockEdit { ...props } />
+				<InspectorControls>
+					<PanelBody
+						title={ __( 'Pediment', 'pediment' ) }
+						initialOpen={ false }
+						className="pediment-chat__inspector"
+					>
+						<ChatPanel hideSelectionChip />
+					</PanelBody>
+				</InspectorControls>
+			</>
+		);
+	},
+	'withPedimentChat'
+);
 
 let registered = false;
 function ensureFilter() {
-  if (registered) return;
-  addFilter('editor.BlockEdit', 'pediment/chat-panel', withChat);
-  registered = true;
+	if ( registered ) {
+		return;
+	}
+	addFilter( 'editor.BlockEdit', 'pediment/chat-panel', withChat );
+	registered = true;
 }
 
 export default function BlockChatPanel() {
-  useEffect(() => { ensureFilter(); }, []);
-  return null;
+	useEffect( () => {
+		ensureFilter();
+	}, [] );
+	return null;
 }
 
 // Register at import time so the filter is in place before blocks render.

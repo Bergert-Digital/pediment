@@ -1,15 +1,70 @@
 {
-  "model": "mock",
-  "usage": { "input_tokens": 0, "output_tokens": 0 },
-  "content": [
-    { "type": "tool_use", "id": "tu_mock_contact", "name": "emit_page", "input": { "blocks": [
-      { "name": "pediment/hero", "attributes": { "variant": "centered", "headline": "Contact", "subheadline": "Tell us about your project." }, "innerBlocks": [] },
-      { "name": "pediment/form", "attributes": { "successMessage": "Thanks — we'll be in touch shortly." }, "innerBlocks": [
-        { "name": "pediment/form-field", "attributes": { "label": "Name", "fieldName": "name", "required": true }, "innerBlocks": [] },
-        { "name": "pediment/form-field", "attributes": { "fieldType": "email", "label": "Email", "fieldName": "email", "required": true }, "innerBlocks": [] },
-        { "name": "pediment/form-field", "attributes": { "fieldType": "tel", "label": "Phone", "fieldName": "phone" }, "innerBlocks": [] },
-        { "name": "pediment/form-field", "attributes": { "fieldType": "textarea", "label": "Message", "fieldName": "message", "required": true }, "innerBlocks": [] }
-      ] }
-    ] } }
-  ]
+	"model": "mock",
+	"usage": { "input_tokens": 0, "output_tokens": 0 },
+	"content": [
+		{
+			"type": "tool_use",
+			"id": "tu_mock_contact",
+			"name": "emit_page",
+			"input": {
+				"blocks": [
+					{
+						"name": "pediment/hero",
+						"attributes": {
+							"variant": "centered",
+							"headline": "Contact",
+							"subheadline": "Tell us about your project."
+						},
+						"innerBlocks": []
+					},
+					{
+						"name": "pediment/form",
+						"attributes": {
+							"successMessage": "Thanks — we'll be in touch shortly."
+						},
+						"innerBlocks": [
+							{
+								"name": "pediment/form-field",
+								"attributes": {
+									"label": "Name",
+									"fieldName": "name",
+									"required": true
+								},
+								"innerBlocks": []
+							},
+							{
+								"name": "pediment/form-field",
+								"attributes": {
+									"fieldType": "email",
+									"label": "Email",
+									"fieldName": "email",
+									"required": true
+								},
+								"innerBlocks": []
+							},
+							{
+								"name": "pediment/form-field",
+								"attributes": {
+									"fieldType": "tel",
+									"label": "Phone",
+									"fieldName": "phone"
+								},
+								"innerBlocks": []
+							},
+							{
+								"name": "pediment/form-field",
+								"attributes": {
+									"fieldType": "textarea",
+									"label": "Message",
+									"fieldName": "message",
+									"required": true
+								},
+								"innerBlocks": []
+							}
+						]
+					}
+				]
+			}
+		}
+	]
 }
