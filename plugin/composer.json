@@ -1,7 +1,7 @@
 {
   "name": "bergert-digital/pediment-ai",
   "description": "WordPress AI page composer plugin for pediment",
-  "homepage": "https://github.com/Bergert-Digital/Pediment-AI",
+  "homepage": "https://github.com/Bergert-Digital/pediment",
   "type": "wordpress-plugin",
   "license": "GPL-2.0-or-later",
   "require": {

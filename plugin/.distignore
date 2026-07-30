@@ -1,6 +1,7 @@
 .git
 .github
 .distignore
+CHANGELOG.md
 .wp-env.json
 node_modules
 tests
