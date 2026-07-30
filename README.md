@@ -1,146 +1,64 @@
 # Pediment
 
-A forkable WordPress block theme for client websites, plus its companion AI plugin — one
-monorepo. The theme lives at the repo root; the plugin lives in [`plugin/`](plugin/README.md).
-Per-client sites are built from a separate child-theme template repo
-(`Bergert-Digital/Pediment-Child-Theme`), not from this repo.
+Pediment is a WordPress plugin that ships the shared site engine: 24 Gutenberg
+blocks, templates, patterns, design tokens, forms, and AI-assisted authoring.
+Each site uses its own standalone client theme for branding and client-owned
+customizations. The release artifact is `pediment-plugin.zip`.
 
-## Stack
-- WordPress 6.4+
-- PHP 8.1+
-- FSE block theme (no parent dependency)
-- TypeScript blocks compiled by `@wordpress/scripts`
-- PHPUnit + Playwright for testing
+## Requirements
+
+- WordPress 6.9+, PHP 8.1+
+- A standalone block client theme
+- Docker, Node 20+, and Composer for local development
 
 ## Local development
 
-Requires Docker + Node 20+ + Composer.
-
-### First-time setup
-
 ```bash
-git clone <repo>
-cd pediment
-composer install
 npm install
-npm run build
 composer install -d plugin
 ( cd plugin && npm install && npm run build )
+npm run env:start
 ```
 
-> **Folder naming:** the project directory name becomes the WordPress theme
-> stylesheet identifier (via `get_stylesheet()`). The Site Editor builds
-> template-part edit URLs as `?p=<stylesheet>//<slug>&canvas=edit`, and that
-> URL breaks if `<stylesheet>` contains whitespace — Edit on a template or
-> template part lands on an empty editor. Forks should use a
-> lowercase-hyphenated name (e.g. `my-client-site`, not `My Client Site`).
-> `npm run env:start` aborts if the folder name contains whitespace.
-
-### Running the dev server
-
-Two commands in two terminals:
+wp-env mounts the test client theme at `wp-content/themes/pediment-fixture` and
+Pediment at `wp-content/plugins/pediment-ai`. Activate them once after a fresh
+environment:
 
 ```bash
-npm run env:start   # boots WordPress at http://localhost:8888 via Docker (wp-env)
-npm run start       # watches plugin/src/blocks/ and rebuilds on save (proxies into plugin/)
-```
-
-Open http://localhost:8888 for the front-end, or http://localhost:8888/wp-admin (admin / `password`).
-
-If this is the very first boot of wp-env, activate the theme and plugin once:
-
-```bash
-npx wp-env run cli wp theme activate pediment
+npx wp-env run cli wp theme activate pediment-fixture
 npx wp-env run cli wp plugin activate pediment-ai
 ```
 
-wp-env no longer auto-activates the plugin now that its mount moved to
-`mappings`, so the second command is required — skipping it leaves AI
-authoring unavailable in the editor.
+The fixture is intentionally minimal. Templates, patterns, tokens, blocks, and
+shared assets are supplied by the plugin.
 
-Activation runs the framework bootstrap — Brand defaults, an editable header
-template part, and pretty permalinks — so the site is usable immediately. The
-parent theme seeds **no** demo content. For sample pages/posts, install the
-child theme and run its seeder:
+## Useful commands
 
-```bash
-npx wp-env run cli wp pediment-child seed-demo
-npx wp-env run cli wp pediment-child seed
-```
+| Command | What it does |
+| --- | --- |
+| `npm run build` | Builds the plugin editor bundle and blocks. |
+| `npm run lint:blocks` | Checks the plugin block file contract. |
+| `npm run lint:colors` | Rejects color literals in plugin block styles. |
+| `npm run lint:js` | Runs JavaScript linting. |
+| `composer lint -d plugin` | Runs PHP coding standards checks. |
+| `npx wp-env run tests-wordpress --env-cwd=wp-content/plugins/pediment-ai ./vendor/bin/phpunit` | Runs plugin PHPUnit tests. |
+| `cd plugin && npm run e2e` | Runs the merged Playwright suite. |
 
-Stop with `npm run env:stop`.
+## Releases
 
-### Useful commands
-
-| Command                                          | What it does                                     |
-|--------------------------------------------------|--------------------------------------------------|
-| `npm run start`                                  | Watch + rebuild blocks (proxies into `plugin/`)  |
-| `npm run build`                                  | One-shot build: editor bundle + blocks (proxies into `plugin/`) |
-| `npm run lint:blocks`                            | Asserts each block dir has the 3 required files  |
-| `npm run lint:colors`                            | Rejects hex/rgb/hsl in plugin/src/blocks/*.scss  |
-| `npm run lint:js`                                | ESLint on plugin's editor/ and src/ (proxies into `plugin/`) |
-| `composer lint`                                  | PHPCS (WP standards + custom color sniff)        |
-| `npm run e2e`                                    | Playwright against http://localhost:8888         |
-| `npx wp-env run cli wp theme activate pediment`  | Bootstrap the framework (Brand defaults, header part, permalinks); seeds no content |
-| `npx wp-env run cli wp pediment-child seed-demo` | Demo pages + sample posts (child theme)          |
-| `npx wp-env run cli wp pediment-child seed`      | Brand defaults only (child theme)                |
-
-### Run PHPUnit
-
-```bash
-npx wp-env run tests-wordpress --env-cwd=wp-content/themes/pediment ./vendor/bin/phpunit
-```
-
-## Plugin (`plugin/`)
-
-The AI plugin (`pediment-ai`) lives in [`plugin/`](plugin/README.md) and shares this repo's
-one root wp-env — it mounts at `wp-content/plugins/pediment-ai`, no separate Docker stack.
-
-```bash
-composer install -d plugin
-cd plugin && npm install && npm run build
-```
-
-Plugin tests, run from the repo root:
-
-```bash
-npx wp-env run tests-wordpress --env-cwd=wp-content/plugins/pediment-ai ./vendor/bin/phpunit
-```
-
-```bash
-cd plugin && npm run e2e
-```
-
-See [`plugin/README.md`](plugin/README.md) and [`plugin/AGENTS.md`](plugin/AGENTS.md) for
-the plugin's own flows, models, and rate limits.
-
-## Deployment
-
-Main-only branch model: all work lands on `main`, and release-please's release PR is the
-shipping gate — merging it cuts one tag for the whole monorepo and publishes both
-`pediment.zip` (theme) and `pediment-ai.zip` (plugin) from a single version line.
-
-This theme installs like any standard WordPress theme — upload the release zip (Appearance → Themes → Add New → Upload). After the first install, updates arrive one-click through the normal wp-admin Updates screen via GitHub Releases. It works on any WP host that supports custom themes; tested specifically on:
-
-- **Hetzner Cloud / Hetzner Robot** — full control, works out of the box. Set `max_execution_time ≥ 60s` (the AI plugin's polling endpoints accommodate background jobs; the theme itself has no long-running requests).
-- **Hetzner Webhosting** — works. Verify cron is enabled in their panel (Action Scheduler in the AI plugin depends on it; the theme's own daily contact-submission cleanup also needs it).
-- **Kinsta / WP Engine / SpinupWP** — work for the theme; restrictions only affect the AI plugin's long-running requests.
-
-### Cloudflare note
-
-If you put Cloudflare proxy mode in front of the site, **bypass it for `/wp-json/starter-ai/*` paths** when you ship the AI plugin alongside this theme. The theme itself has no streaming requirements.
-
-## Forking for a new client
-
-This theme is the foundation; per-client customization happens in a child theme (see the `pediment-child-theme` repo). The starter never edits client-owned files, and the child theme never edits starter files. Updates flow through the wp-admin Updates screen via GitHub Releases.
+Main-only development uses release-please. A release creates exactly one asset:
+`pediment-plugin.zip`, which installs as `wp-content/plugins/pediment/`. It
+does not include a client theme; install or keep a site-specific standalone
+theme alongside it.
 
 ## Architecture
 
-- `plugin/src/blocks/` — starter block sources (moved from the theme into the plugin so blocks work regardless of active theme). Each has `block.json`, `index.tsx`, `edit.tsx`, `render.php`, `style.scss`.
-- `plugin/build/blocks/` — compiled output (gitignored). Generated by `npm run build` (proxies into `plugin/`).
-- `templates/` + `parts/` — FSE block templates and template parts.
-- `theme.json` — the only source of design tokens. No hex values in `plugin/src/blocks/`.
-- `inc/` — theme-level PHP includes (patterns, bootstrap seeding, theme updater). Block registration, icons, and block-editor enhancements now live in `plugin/inc/`.
+- `plugin/src/blocks/` — server-rendered shared blocks.
+- `plugin/templates/` and `plugin/patterns/` — plugin-served site presentation.
+- `plugin/tokens/theme.json` — default tokens, injected beneath client-theme
+  overrides.
+- `plugin/inc/` — procedural WordPress integrations, forms, and assets.
+- `tests/fixtures/client-theme/` — the minimal standalone client theme used by
+  wp-env and end-to-end tests.
 
-See [`docs/blocks.md`](docs/blocks.md) for the block authoring contract.
-See [`docs/client-blocks.md`](docs/client-blocks.md) for child-theme block authoring.
+See [docs/blocks.md](docs/blocks.md) for the block authoring contract.

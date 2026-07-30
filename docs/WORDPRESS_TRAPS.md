@@ -23,27 +23,36 @@ Keep entries terse. If an entry needs paragraphs, it's two entries.
 
 ---
 
+## Registered plugin templates can return associative query results
+
+**Symptom.** Opening the block editor emits `block-editor.php` notices and leaves its REST responses malformed.
+**Cause.** In WP 6.9, `WP_Block_Templates_Registry::get_by_query()` preserves a registered template's namespaced key. `wp_get_post_content_block_attributes()` then incorrectly reads `$current_template[0]`.
+**Fix.** Reindex `get_block_templates` results through `Pediment\Templates\Registrar::normalize_template_query_results()`.
+**Catch it early.** `HomeTemplateTest::test_template_query_results_are_numerically_indexed()` and the plugin E2E suite exercise the affected editor request.
+
+---
+
 ## Font-size slugs that start with a digit get hyphenated in the emitted CSS variable
 
-**Symptom.** Headings render at the browser default (`18px`) despite theme.json declaring
+**Symptom.** Headings render at the browser default (`18px`) despite the plugin token file declaring
 larger fluid clamps; `getComputedStyle(root).getPropertyValue('--wp--preset--font-size--4xl')`
 returns an empty string.
 **Cause.** WordPress sanitizes preset slugs that begin with a digit by inserting a hyphen
 between the digit and the letter that follows. A slug declared as `"4xl"` is emitted as
 `--wp--preset--font-size--4-xl` (with hyphen). Any rule referencing `var(--wp--preset--font-size--4xl)`
 (without hyphen) resolves to an undefined variable and falls back to the inherited size.
-**Fix.** Match the slug to its sanitized form: rename the theme.json slug to `"4-xl"` (or
-`"2-xl"` / `"3-xl"`) AND update every reference in `theme.json`'s `styles.elements` and in
-`src/blocks/*/style.scss`. Don't mix the two forms.
+**Fix.** Match the slug to its sanitized form: rename the plugin token slug to `"4-xl"` (or
+`"2-xl"` / `"3-xl"`) AND update every reference in `plugin/tokens/theme.json`'s
+`styles.elements` and in `plugin/src/blocks/*/style.scss`. Don't mix the two forms.
 **Catch it early.** When adding or editing a `settings.typography.fontSizes` entry, grep:
-`grep -rn 'var(--wp--preset--font-size--' assets/ src/blocks/ theme.json` — every
+`grep -rn 'var(--wp--preset--font-size--' plugin/assets/ plugin/src/blocks/ plugin/tokens/theme.json` — every
 reference must use the hyphenated form for any leading-digit slug.
 
 ---
 
 ## `has-global-padding` is auto-added and gets zeroed on nested instances
 
-**Symptom.** Content sits edge-to-edge on narrow viewports despite `theme.json` declaring
+**Symptom.** Content sits edge-to-edge on narrow viewports despite the plugin token file declaring
 `styles.spacing.padding` and the band's class list including `has-global-padding`.
 Measuring `getComputedStyle(band).paddingLeft` returns `0px`.
 **Cause.** WordPress automatically adds `has-global-padding` to `<main>` AND to every
@@ -53,7 +62,7 @@ to prevent double-padding on nested instances. Because our bands sit inside `<ma
 band's own `has-global-padding` is suppressed by the nested-reset.
 **Fix.** Apply `padding-inline` directly to the inner element using the root padding
 variables, bypassing the `has-global-padding` mechanism. See
-[assets/css/theme.css](../assets/css/theme.css) `.starter-band`:
+[plugin/assets/css/theme.css](../plugin/assets/css/theme.css) `.starter-band`:
 ```css
 padding-inline: var(--wp--style--root--padding-left);
 ```
@@ -70,7 +79,7 @@ class rule sets bottom spacing, so the footer butts directly against the last li
 **Cause.** WordPress layout CSS normalizes block margins inside constrained/flow
 containers, including the last child's block-end margin.
 **Fix.** Put the closing gutter on padding instead of bottom margin. See
-[assets/css/theme.css](../assets/css/theme.css) `.back-to-blog`.
+[plugin/assets/css/theme.css](../plugin/assets/css/theme.css) `.back-to-blog`.
 **Catch it early.** Measure the gap from the last article block to the footer at
 375 / 768 / 1440 px; also inspect computed `marginBottom` on the last child.
 
@@ -80,11 +89,11 @@ containers, including the last child's block-end margin.
 
 **Symptom.** `--wp--style--root--padding-left` resolves to an empty string at the document
 root; every `has-global-padding` consumer renders with no gutter regardless of viewport.
-**Cause.** The root padding CSS variables only exist if `theme.json` declares
+**Cause.** The root padding CSS variables only exist if the effective token data declares
 `styles.spacing.padding.{left,right,top,bottom}`. Without explicit values, the
 `has-global-padding` rule's `padding-right: var(--wp--style--root--padding-right)` resolves
 to nothing.
-**Fix.** Declare in [theme.json](../theme.json):
+**Fix.** Declare in [plugin/tokens/theme.json](../plugin/tokens/theme.json):
 ```json
 "spacing": {
   "blockGap": "var(--wp--preset--spacing--40)",
@@ -211,7 +220,7 @@ sprite.
 injects the sprite into both the outer admin document AND the editor canvas iframe's
 contentDocument, using a `MutationObserver` to handle the iframe being created
 asynchronously and a `load` listener to handle its document being replaced. See
-[inc/icons.php](../inc/icons.php) `pediment_enqueue_editor_icon_sprite()` for the
+[plugin/inc/icons.php](../plugin/inc/icons.php) `pediment_enqueue_editor_icon_sprite()` for the
 canonical implementation.
 **Catch it early.** Open a page with any `<use href="#ph-…">` block in the editor.
 Inspect `document.querySelector('iframe[name="editor-canvas"]').contentDocument.getElementById('starter-icon-sprite')`
@@ -239,7 +248,7 @@ blocks you expect it to appear in — those are the ones suppressing it.
 ## Editor canvas narrows with the inspector open; alignwide content fills it
 
 **Symptom.** In the block editor, an `align:wide` block (e.g., the hero) spans the entire
-canvas with no visible margins, contradicting the theme.json `wideSize: 1200px`.
+canvas with no visible margins, contradicting the effective token `wideSize: 1200px`.
 **Cause.** With the right Page/Block inspector open, the editor canvas iframe is often
 narrower than 1200 px (measured: ~999 px on a 1440-wide viewport). `alignwide` is "up to
 wideSize" — when the canvas is narrower than wideSize, content stretches to fill the
@@ -279,7 +288,7 @@ If it returns 200 (or a validation 400, not a 401/403) and the front-end *also* 
 
 ## Front-end block JS: prefer `viewScript` over `has_block()` + manual enqueue
 
-**Symptom.** A `wp_enqueue_scripts` callback in `functions.php` does
+**Symptom.** A `wp_enqueue_scripts` callback in `plugin/inc/assets.php` does
 `if ( ! has_block( 'pediment/<name>' ) ) return;` and then `wp_enqueue_script(...)` by
 hand. Works, but the pattern is duplicated per block; deps and version stay hand-rolled
 and drift from what `@wordpress/scripts` would emit.
@@ -289,11 +298,11 @@ matured. As of API v3, declaring `"viewScript": "file:./view.js"` in `block.json
 `build/blocks/<name>/view.asset.php` automatically, and (c) respect `strategy => 'defer'`
 when registered with the WP 6.3+ args.
 **Fix.** Add `"viewScript": "file:./view.js"` to the block's `block.json`, move the JS
-into `src/blocks/<name>/view.{ts,js}` so the build emits a sibling `.asset.php`, and
-delete the matching `wp_enqueue_scripts` + `has_block` block in `functions.php`. To
+into `plugin/src/blocks/<name>/view.{ts,js}` so the build emits a sibling `.asset.php`, and
+delete the matching `wp_enqueue_scripts` + `has_block` block in `plugin/inc/assets.php`. To
 defer, hook `wp_script_attributes` and set `defer => true` on the generated handle, or
 pass `'strategy' => 'defer'` via a `register_block_type_args` filter.
-**Catch it early.** `grep -nE 'has_block\(' inc/ functions.php` — every match is a
+**Catch it early.** `grep -nE 'has_block\(' plugin/inc/` — every match is a
 candidate for `viewScript` migration unless it's gating CSS or a shared library.
 
 ---
@@ -308,11 +317,11 @@ animations never trigger.
 **Cause.** `echo "<script>...</script>"` writes the tag without a `nonce` attribute. WP's
 `wp_print_inline_script_tag()` (5.7+) emits the same script but auto-attaches the CSP
 nonce registered by a security plugin via the `wp_inline_script_attributes` filter.
-**Fix.** Replace `echo "<script>...</script>";` in `functions.php`/`inc/icons.php` with
+**Fix.** Replace `echo "<script>...</script>";` in `plugin/inc/assets.php`/`plugin/inc/icons.php` with
 `wp_print_inline_script_tag( 'document.documentElement.classList.add("anim")' )` (or
 `wp_get_inline_script_tag()` if you need the string). The same fix applies to the editor
-icon-sprite injector in `inc/icons.php`.
-**Catch it early.** `grep -rnE 'echo .*<script' functions.php inc/` — each match needs the
+icon-sprite injector in `plugin/inc/icons.php`.
+**Catch it early.** `grep -rnE 'echo .*<script' plugin/inc/` — each match needs the
 helper instead. Periodically smoke-test with a strict CSP header injected via
 `.wp-env.override.json` and confirm the home page paints correctly.
 
@@ -324,15 +333,15 @@ helper instead. Periodically smoke-test with a strict CSP header injected via
 ~3KB `<style>` block in `<head>` containing rules that have nothing to do with the
 rendered blocks (Navigation submenu colors, CTA-button hovers, etc.). Caching is
 impossible because the rules are inline, not enqueued.
-**Cause.** Anything inside `theme.json` `styles.css` is concatenated into WP's global
+**Cause.** Anything inside the effective token data's `styles.css` is concatenated into WP's global
 stylesheet, which is emitted inline on every request. It's an escape hatch for selectors
 the schema can't express, not a general-purpose stylesheet location.
-**Fix.** Triage each rule in [theme.json](../theme.json) `styles.css`:
+**Fix.** Triage each rule in [plugin/tokens/theme.json](../plugin/tokens/theme.json) `styles.css`:
 1. Block-scoped → move to `styles.blocks.<ns/name>` (where the Site Editor can override
    it) or to that block's `style.scss` / `viewStyle`.
-2. True global layout (`.wp-site-blocks`, `<main>` flex chain) → keep in `theme.json`.
+2. True global layout (`.wp-site-blocks`, `<main>` flex chain) → keep in `plugin/tokens/theme.json`.
 3. Theme chrome that doesn't belong to a block (header layout, custom utility classes) →
-   move to [assets/css/theme.css](../assets/css/theme.css) and enqueue normally.
+   move to [plugin/assets/css/theme.css](../plugin/assets/css/theme.css) and enqueue normally.
 **Catch it early.** `curl -s http://localhost:8888/ | tr '<' '\n' | grep -c '^style'` —
 the count, and the size of the first `<style>…</style>` block, should shrink after the
 triage. Anything > ~500 bytes inline is a smell.

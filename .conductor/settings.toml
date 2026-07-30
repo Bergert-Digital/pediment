@@ -1,14 +1,15 @@
 "$schema" = "https://conductor.build/schemas/settings.repo.schema.json"
 
 [scripts]
-# Prepare a freshly created workspace: PHP deps, JS deps, and a one-shot block build for the
-# theme, then the same for the plugin (plugin/).
-setup = "composer install && npm install && npm run build && composer install -d plugin && (cd plugin && npm install && npm run build)"
+# Prepare a freshly created workspace: root wp-env dependencies, then plugin
+# PHP/JS dependencies and its one-shot build.
+setup = "npm install && composer install -d plugin && (cd plugin && npm install && npm run build)"
 
-# Boot the wp-env Docker stack on this workspace's port range, then watch + rebuild blocks.
+# Boot the wp-env Docker stack on this workspace's port range, then watch the
+# plugin editor bundle.
 # WP_ENV_PORT / WP_ENV_TESTS_PORT keep each workspace's WordPress + tests containers on
 # distinct ports so multiple workspaces can run side by side.
-run = "WP_ENV_PORT=$CONDUCTOR_PORT WP_ENV_TESTS_PORT=$((CONDUCTOR_PORT + 1)) npm run env:start && npm run start"
+run = "WP_ENV_PORT=$CONDUCTOR_PORT WP_ENV_TESTS_PORT=$((CONDUCTOR_PORT + 1)) npm run env:start && (cd plugin && npm run start)"
 
 # Tear down the workspace's Docker containers when archiving to free ports and resources.
 archive = "npm run env:stop || true"

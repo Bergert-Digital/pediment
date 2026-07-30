@@ -1,16 +1,18 @@
-# Pediment AI Plugin
+# Pediment
 
-WordPress plugin that adds AI-powered authoring to the [pediment](https://github.com/Bergert-Digital/pediment): Compose a page from a prompt, Edit an existing page, Refine a single block.
+WordPress site engine with shared Gutenberg blocks, templates, patterns, tokens,
+forms, and AI-powered authoring: compose a page from a prompt, edit an existing
+page, or refine a single block.
 
 ## Requirements
 
-- WordPress 6.4+, PHP 8.1+
-- `pediment` (Plan A) installed and active
+- WordPress 6.9+, PHP 8.1+
+- A standalone client block theme
 - Anthropic API key
 
 ## Install
 
-Upload `pediment-ai.zip` from the latest [GitHub Release](https://github.com/Bergert-Digital/pediment/releases) via **Plugins → Add New → Upload Plugin**, then activate. After the first install, updates arrive one-click through the normal wp-admin Updates screen.
+Upload `pediment-plugin.zip` from the latest [GitHub Release](https://github.com/Bergert-Digital/pediment/releases) via **Plugins → Add New → Upload Plugin**, then activate. It installs as `pediment`; after the first install, updates arrive through the normal wp-admin Updates screen.
 
 Define `ANTHROPIC_API_KEY` in `wp-config.php` — the plugin reads the constant when set; otherwise it falls back to the key in Settings → Pediment AI, where it is stored encrypted.
 
@@ -20,7 +22,7 @@ Define `ANTHROPIC_API_KEY` in `wp-config.php` — the plugin reads the constant 
 - **Edit.** Document sidebar → "Edit with AI" → instruction → page content replaced (use Undo to revert).
 - **Refine.** Select any Pediment block → Inspector → "AI refine" → quick actions or custom instruction → attributes update.
 
-Compose and Edit run as background jobs (Action Scheduler); the editor polls `/wp-json/pediment-ai/v1/jobs/{id}` every 750ms. Refine is synchronous.
+The editor and PHP runtime use the `pediment/v1` REST namespace.
 
 ## Web fetch
 
@@ -50,9 +52,7 @@ no standalone wp-env for the plugin. Run everything below from the **repo root**
 ### First-time setup
 
 ```bash
-composer install
 npm install
-npm run build
 composer install -d plugin
 ( cd plugin && npm install && npm run build )
 ```
@@ -63,14 +63,14 @@ composer install -d plugin
 npm run env:start
 ```
 
-The root wp-env mounts the theme at `wp-content/themes/pediment` and this plugin at
+The root wp-env mounts a minimal fixture client theme at
+`wp-content/themes/pediment-fixture` and this plugin at
 `wp-content/plugins/pediment-ai`, both served from http://localhost:8888.
 
-If this is the very first boot of wp-env, activate the theme and plugin once — wp-env no
-longer auto-activates either now that their mounts moved to `mappings`:
+If this is the very first boot of wp-env, activate the fixture theme and plugin once:
 
 ```bash
-npx wp-env run cli wp theme activate pediment
+npx wp-env run cli wp theme activate pediment-fixture
 npx wp-env run cli wp plugin activate pediment-ai
 ```
 
