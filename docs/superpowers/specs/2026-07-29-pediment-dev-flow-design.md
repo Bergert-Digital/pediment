@@ -123,7 +123,7 @@ plugin carries everything shared, and each client site runs one standalone theme
 from the template.
 
 ```
-pediment/                    monorepo -> pediment.zip (installs as plugins/pediment)
+pediment/                    monorepo -> pediment-plugin.zip (installs as plugins/pediment)
   plugin/
     src/blocks/              all 25 blocks
     templates/               registered via register_block_template()
@@ -142,6 +142,22 @@ pediment-client-template/    scaffolded per client -> <client>.zip
   patterns/, assets/         client content
   src/blocks/                client-specific blocks
 ```
+
+**Asset naming (decided 2026-07-30, during step-2 planning).** The plugin ships as
+`pediment-plugin.zip`, NOT `pediment.zip`, even though retiring the theme frees that name.
+Reason: every 2.4.x client site's ThemeUpdater watches this repo's releases for an asset
+matching `/pediment\.zip$/`. A v3.0.0 `pediment.zip` containing a plugin would be offered to
+those sites as a *theme* update and install a broken theme on click. With
+`pediment-plugin.zip`, old theme updaters find no matching asset and stay quietly pinned at
+2.4.x until each site is migrated (step 6) — the intended behavior. Old plugin installs
+(watching `pediment-ai.zip`) likewise stop updating until their manual slug swap.
+
+**Forms reconciliation (decided 2026-07-30).** The `forms.*` stack survives (destinations,
+encrypted secrets, SSRF allow-list, presets, retention — the newer, better-tested engine).
+The parallel `contact-form.*` stack — `inc/contact-form.php`, the `pediment/contact-form`
+block, and its tests — is **removed outright in v3.0.0**, no compatibility shim. Existing
+content using the block renders nothing after the upgrade; affected pages are migrated to
+the `pediment/form` block as part of each site's step-6 migration.
 
 **Spike-validated (2026-07-29, WP 7.0.2; all mechanisms are WP 6.7+ APIs).** Throwaway wp-env,
 minimal plugin + standalone client theme; artifacts in `.context/spike-plugin-theme/`:
