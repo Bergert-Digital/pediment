@@ -3,6 +3,7 @@
   <description>Coding standards for pediment-ai.</description>
 
   <file>plugin.php</file>
+  <file>inc/</file>
   <file>src/</file>
   <file>uninstall.php</file>
 
@@ -57,8 +58,25 @@
     <exclude name="Squiz.Commenting.FunctionComment.SpacingAfterParamType"/>
   </rule>
 
+  <!-- src/blocks/*/render.php (moved from the theme, Task 5) render via
+       ob_get_clean() and carry no file @package tag — the theme's ruleset
+       exempted both wholesale; scope the same exemption to src/blocks/ only so
+       the rest of the plugin (Anthropic/, Rest/, Chat/, Usage/, …) keeps
+       stricter escaping + docblock enforcement. -->
+  <rule ref="Squiz.Commenting.FileComment.MissingPackageTag">
+    <exclude-pattern>src/blocks/*</exclude-pattern>
+  </rule>
+  <rule ref="WordPress.Security.EscapeOutput.OutputNotEscaped">
+    <exclude-pattern>src/blocks/*</exclude-pattern>
+  </rule>
+
   <config name="testVersion" value="8.1-"/>
   <rule ref="PHPCompatibilityWP"/>
+
+  <!-- Blocks moved from the theme (Task 5, plugin-absorbs-theme migration); the
+       theme's custom color-literal sniff moves with them so `src/blocks/` still
+       gets this check regardless of which repo root scans it. -->
+  <rule ref="../tools/phpcs-sniffs/Pediment/ruleset.xml"/>
 
   <!-- Only fail CI on errors; warnings stay reported but non-blocking. -->
   <config name="ignore_warnings_on_exit" value="1"/>

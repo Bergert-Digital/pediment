@@ -48,6 +48,8 @@ jobs:
           cache: npm
           cache-dependency-path: pediment/package-lock.json
       - run: npm ci
+      # lint:js proxies into plugin/ now that blocks + the block build moved there.
+      - run: cd plugin && npm ci
       - run: npm run lint:blocks
       - run: npm run lint:colors
       - run: npm run lint:icons
@@ -73,6 +75,10 @@ jobs:
           cache-dependency-path: pediment/package-lock.json
       - run: composer install --prefer-dist --no-progress
       - run: npm ci
+      # build proxies into plugin/ now that blocks + the block build moved there;
+      # the theme's remaining PHPUnit tests (Patterns/, Templates/) render
+      # pediment/* blocks, which only register once the plugin is built.
+      - run: cd plugin && npm ci
       - run: npm run env:start
       - run: npm run build
       - run: npx wp-env run tests-wordpress --env-cwd=wp-content/themes/pediment vendor/bin/phpunit
@@ -91,7 +97,9 @@ jobs:
         with:
           php-version: '8.1'
           tools: composer
-      - run: npm ci && npm run build
+      # Root no longer has a build target of its own (blocks + the block build
+      # moved into plugin/); just install root deps for wp-env.
+      - run: npm ci
       - run: composer install --prefer-dist --no-progress -d plugin
       - run: cd plugin && npm ci && npm run build
       - run: npx wp-env start
@@ -113,6 +121,8 @@ jobs:
           cache: npm
           cache-dependency-path: pediment/package-lock.json
       - run: npm ci
+      # build proxies into plugin/ now that blocks + the block build moved there.
+      - run: cd plugin && npm ci
       - run: npx playwright install --with-deps chromium
       - run: npm run env:start
       - run: npm run build
@@ -140,7 +150,9 @@ jobs:
         with:
           php-version: '8.1'
           tools: composer
-      - run: npm ci && npm run build
+      # Root no longer has a build target of its own (blocks + the block build
+      # moved into plugin/); just install root deps for wp-env.
+      - run: npm ci
       - run: composer install --prefer-dist --no-progress -d plugin
       - run: cd plugin && npm ci && npm run build
       - run: cd plugin && npx playwright install --with-deps chromium

@@ -7,6 +7,6 @@
     "allowJs": true,
     "noEmit": true
   },
-  "include": ["editor/**/*.ts", "editor/**/*.tsx"],
+  "include": ["editor/**/*.ts", "editor/**/*.tsx", "src/**/*.ts", "src/**/*.tsx"],
   "exclude": ["node_modules", "build"]
 }

@@ -16,7 +16,7 @@ its own repo (`Bergert-Digital/Pediment-Child-Theme`). See `docs/VISION.md`. Rea
   APIs, and conventions over custom solutions. Only invent a custom mechanism when
   WordPress offers no official extension point for what's needed — and flag that choice
   in the PR so it can be reviewed.
-- **No color literals in `src/blocks/`.** Use `var(--wp--preset--…)` from `theme.json`.
+- **No color literals in `plugin/src/blocks/`.** Use `var(--wp--preset--…)` from `theme.json`.
   `lint:colors` + the `Starter.NoColorLiteralSniff` PHPCS sniff will fail CI otherwise.
 - **Server-side render only.** Blocks render via `render.php`. Atomic blocks emit no `save()`
   markup; InnerBlocks containers persist `<InnerBlocks.Content />`.
@@ -35,7 +35,8 @@ its own repo (`Bergert-Digital/Pediment-Child-Theme`). See `docs/VISION.md`. Rea
   the theme at `wp-content/themes/pediment` and the plugin at
   `wp-content/plugins/pediment-ai`. Don't start a separate wp-env from `plugin/`. "Dev server
   down" → check the Docker daemon first.
-- PHP 8.1+, WordPress 6.4+. `@wordpress/scripts` build (`npm run build` → `build/blocks/`).
+- PHP 8.1+, WordPress 6.4+. `@wordpress/scripts` build (`npm run build`, proxied into `plugin/`
+  → `plugin/build/blocks/`).
 
 ## Verifying work
 
