@@ -74,3 +74,30 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAG: ${{ inputs.tag }}
         run: gh release upload "$TAG" pediment.zip --clobber
+
+      # ---- plugin: pediment-ai.zip ----
+      - name: Build plugin
+        run: |
+          composer install --no-dev --prefer-dist --no-progress -d plugin
+          cd plugin && npm ci && npm run build
+
+      - name: Stamp plugin version
+        env:
+          TAG: ${{ inputs.tag }}
+        run: |
+          VERSION="${TAG#v}"
+          sed -i "s/^ \* Version: .*/ * Version:           ${VERSION}/" plugin/plugin.php
+          sed -i "s/define( 'PEDIMENT_AI_VERSION', '[^']*' )/define( 'PEDIMENT_AI_VERSION', '${VERSION}' )/" plugin/plugin.php
+          cd plugin && npm pkg set version="${VERSION}"
+
+      - name: Stage and zip plugin
+        run: |
+          mkdir -p stage-plugin/pediment-ai
+          rsync -a --exclude-from=plugin/.distignore plugin/ stage-plugin/pediment-ai/
+          cd stage-plugin && zip -rq ../pediment-ai.zip pediment-ai
+
+      - name: Attach plugin zip
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ inputs.tag }}
+        run: gh release upload "$TAG" pediment-ai.zip --clobber

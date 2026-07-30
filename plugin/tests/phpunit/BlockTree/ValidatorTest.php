@@ -1,0 +1,222 @@
+<?php
+namespace PedimentAi\Tests\BlockTree;
+
+use PedimentAi\BlockTree\Validator;
+
+class ValidatorTest extends \WP_UnitTestCase {
+	private function schema(): array {
+		return [
+			'pediment/hero' => [
+				'description' => 'Hero',
+				'attributes'  => [ 'headline' => [ 'type' => 'string' ] ],
+				'allowsInnerBlocks' => false,
+			],
+			'pediment/faq' => [
+				'description'        => 'FAQ',
+				'attributes'         => [],
+				'allowsInnerBlocks'  => true,
+				'allowedChildBlocks' => [ 'pediment/faq-item' ],
+			],
+			'pediment/faq-item' => [
+				'description' => 'FAQ item',
+				'attributes'  => [],
+				'allowsInnerBlocks' => false,
+				'requiresParent'    => [ 'pediment/faq' ],
+			],
+		];
+	}
+
+	public function test_valid_tree_passes(): void {
+		$errors = ( new Validator( $this->schema() ) )->validate( [
+			[ 'name' => 'pediment/hero', 'attributes' => [ 'headline' => 'Hi' ], 'innerBlocks' => [] ],
+		] );
+		$this->assertSame( [], $errors );
+	}
+
+	public function test_unknown_block_fails(): void {
+		$errors = ( new Validator( $this->schema() ) )->validate( [
+			[ 'name' => 'pediment/nope', 'attributes' => [], 'innerBlocks' => [] ],
+		] );
+		$this->assertNotEmpty( $errors );
+		$this->assertStringContainsString( 'pediment/nope', $errors[0] );
+	}
+
+	public function test_inner_blocks_on_non_container_fail(): void {
+		$errors = ( new Validator( $this->schema() ) )->validate( [
+			[
+				'name'        => 'pediment/hero',
+				'attributes'  => [],
+				'innerBlocks' => [
+					[ 'name' => 'pediment/faq-item', 'attributes' => [], 'innerBlocks' => [] ],
+				],
+			],
+		] );
+		$this->assertNotEmpty( $errors );
+	}
+
+	public function test_disallowed_child_fails(): void {
+		$errors = ( new Validator( $this->schema() ) )->validate( [
+			[
+				'name'        => 'pediment/faq',
+				'attributes'  => [],
+				'innerBlocks' => [
+					[ 'name' => 'pediment/hero', 'attributes' => [], 'innerBlocks' => [] ],
+				],
+			],
+		] );
+		$this->assertNotEmpty( $errors );
+	}
+
+	public function test_attributes_not_object_fails(): void {
+		$errors = ( new Validator( $this->schema() ) )->validate( [
+			[ 'name' => 'pediment/hero', 'attributes' => 'oops', 'innerBlocks' => [] ],
+		] );
+		$this->assertNotEmpty( $errors );
+	}
+
+	public function test_validate_node_returns_no_errors_for_valid_block(): void {
+		$schema = [
+			'core/paragraph' => [ 'attributes' => [ 'content' => [ 'type' => 'string' ] ], 'allowsInnerBlocks' => false ],
+		];
+		$errors = ( new Validator( $schema ) )->validateNode(
+			[ 'name' => 'core/paragraph', 'attributes' => [ 'content' => 'hi' ], 'innerBlocks' => [] ]
+		);
+		$this->assertSame( [], $errors );
+	}
+
+	public function test_validate_node_rejects_unknown_block(): void {
+		$schema = [ 'core/paragraph' => [ 'attributes' => [], 'allowsInnerBlocks' => false ] ];
+		$errors = ( new Validator( $schema ) )->validateNode(
+			[ 'name' => 'core/nope', 'attributes' => [], 'innerBlocks' => [] ]
+		);
+		$this->assertNotEmpty( $errors );
+		$this->assertStringContainsString( 'core/nope', $errors[0] );
+	}
+
+	public function test_validate_node_rejects_inner_when_disallowed(): void {
+		$schema = [
+			'core/paragraph' => [ 'attributes' => [], 'allowsInnerBlocks' => false ],
+			'core/heading'   => [ 'attributes' => [], 'allowsInnerBlocks' => false ],
+		];
+		$errors = ( new Validator( $schema ) )->validateNode( [
+			'name'        => 'core/paragraph',
+			'attributes'  => [],
+			'innerBlocks' => [ [ 'name' => 'core/heading', 'attributes' => [], 'innerBlocks' => [] ] ],
+		] );
+		$this->assertNotEmpty( $errors );
+	}
+
+	// A parent-locked child block (requiresParent) must never be inserted on its own —
+	// the composer has no "insert into parent" op, so a top-level child is an orphan.
+	public function test_rejects_parent_locked_block_at_top_level(): void {
+		$errors = ( new Validator( $this->schema() ) )->validateNode(
+			[ 'name' => 'pediment/faq-item', 'attributes' => [], 'innerBlocks' => [] ]
+		);
+		$this->assertNotEmpty( $errors, 'A standalone parent-locked block must be rejected at the top level.' );
+		$joined = implode( ' ', $errors );
+		$this->assertStringContainsString( 'pediment/faq-item', $joined );
+		$this->assertStringContainsString( 'pediment/faq', $joined );
+		// The message must steer the model toward nesting via innerBlocks.
+		$this->assertStringContainsStringIgnoringCase( 'innerBlocks', $joined );
+	}
+
+	public function test_accepts_parent_locked_child_nested_in_its_parent(): void {
+		$errors = ( new Validator( $this->schema() ) )->validateNode( [
+			'name'        => 'pediment/faq',
+			'attributes'  => [],
+			'innerBlocks' => [
+				[ 'name' => 'pediment/faq-item', 'attributes' => [], 'innerBlocks' => [] ],
+				[ 'name' => 'pediment/faq-item', 'attributes' => [], 'innerBlocks' => [] ],
+			],
+		] );
+		$this->assertSame( [], $errors, 'A container populated with its nested children must validate clean.' );
+	}
+
+	// A container declaring allowedChildBlocks is meaningless empty — the composer
+	// cannot add children after it exists, so an empty grid/list is a dead block.
+	// Reject it so the model re-emits with its children nested in innerBlocks.
+	public function test_rejects_empty_container_that_requires_children(): void {
+		$errors = ( new Validator( $this->schema() ) )->validateNode(
+			[ 'name' => 'pediment/faq', 'attributes' => [], 'innerBlocks' => [] ]
+		);
+		$this->assertNotEmpty( $errors, 'A container that allows only specific children must not be empty.' );
+		$joined = implode( ' ', $errors );
+		$this->assertStringContainsString( 'pediment/faq', $joined );
+		$this->assertStringContainsString( 'pediment/faq-item', $joined );
+		$this->assertStringContainsStringIgnoringCase( 'innerBlocks', $joined );
+	}
+
+	public function test_full_tree_validate_flags_top_level_orphan_child(): void {
+		// validate() (whole-tree entry point) must also flag a child sitting at the root.
+		$errors = ( new Validator( $this->schema() ) )->validate( [
+			[ 'name' => 'pediment/hero', 'attributes' => [ 'headline' => 'Hi' ], 'innerBlocks' => [] ],
+			[ 'name' => 'pediment/faq-item', 'attributes' => [], 'innerBlocks' => [] ],
+		] );
+		$this->assertNotEmpty( $errors );
+		$this->assertStringContainsString( 'pediment/faq-item', implode( ' ', $errors ) );
+	}
+
+	private function columnsSchema(): array {
+		return [
+			'core/columns' => [
+				'description'        => 'Columns',
+				'attributes'         => [],
+				'allowsInnerBlocks'  => true,
+				'allowedChildBlocks' => [ 'core/column' ],
+			],
+			'core/column' => [
+				'description'       => 'Column',
+				'attributes'        => [],
+				'allowsInnerBlocks' => true,
+				'requiresParent'    => [ 'core/columns' ],
+			],
+			'core/paragraph' => [
+				'description' => 'Paragraph',
+				'attributes'  => [ 'content' => [ 'type' => 'string' ] ],
+				'allowsInnerBlocks' => false,
+			],
+		];
+	}
+
+	public function test_rejects_top_level_column(): void {
+		$errors = ( new Validator( $this->columnsSchema() ) )->validateNode(
+			[ 'name' => 'core/column', 'attributes' => [], 'innerBlocks' => [] ]
+		);
+		$this->assertNotEmpty( $errors, 'A bare top-level core/column must be rejected.' );
+		$joined = implode( ' ', $errors );
+		$this->assertStringContainsString( 'core/column', $joined );
+		$this->assertStringContainsString( 'core/columns', $joined );
+	}
+
+	public function test_rejects_empty_columns_container(): void {
+		$errors = ( new Validator( $this->columnsSchema() ) )->validateNode(
+			[ 'name' => 'core/columns', 'attributes' => [], 'innerBlocks' => [] ]
+		);
+		$this->assertNotEmpty( $errors, 'An empty core/columns must be rejected.' );
+		$this->assertStringContainsString( 'core/column', implode( ' ', $errors ) );
+	}
+
+	public function test_accepts_columns_with_columns_holding_content(): void {
+		$errors = ( new Validator( $this->columnsSchema() ) )->validateNode( [
+			'name'        => 'core/columns',
+			'attributes'  => [],
+			'innerBlocks' => [
+				[
+					'name'        => 'core/column',
+					'attributes'  => [],
+					'innerBlocks' => [
+						[ 'name' => 'core/paragraph', 'attributes' => [ 'content' => 'Left' ], 'innerBlocks' => [] ],
+					],
+				],
+				[
+					'name'        => 'core/column',
+					'attributes'  => [],
+					'innerBlocks' => [
+						[ 'name' => 'core/paragraph', 'attributes' => [ 'content' => 'Right' ], 'innerBlocks' => [] ],
+					],
+				],
+			],
+		] );
+		$this->assertSame( [], $errors, 'A populated columns/column/content tree must validate clean.' );
+	}
+}

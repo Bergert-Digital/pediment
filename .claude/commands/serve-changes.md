@@ -1,31 +1,31 @@
 ---
-description: Commit the current workspace's changes, fast-forward the local `development` branch onto them, and rebuild the parent-theme checkout so live-mount wp-envs serve them — no push.
+description: Commit the current workspace's changes, fast-forward the local `main` branch onto them, and rebuild the parent-theme checkout so live-mount wp-envs serve them — no push.
 argument-hint: "[commit subject]  — omit to derive a Conventional Commit message from the diff"
 allowed-tools: Bash(git:*), Bash(npm:*), Bash(cd:*), Bash(test:*), Bash(awk:*)
 ---
 
-# Serve changes: commit → integrate into `development` → rebuild
+# Serve changes: commit → integrate into `main` → rebuild
 
 **Goal:** take the work in the current Conductor workspace, commit it, fast-forward the
-local `development` branch onto it, and rebuild the parent-theme checkout that live-mount
+local `main` branch onto it, and rebuild the parent-theme checkout that live-mount
 wp-envs serve — so the change is live locally without a `git push`.
 
 **Context (why this is more than three commands):**
 
-- All pediment worktrees share one git object store. `development` is checked out in its
+- All pediment worktrees share one git object store. `main` is checked out in its
   own worktree (usually `/Users/jonas/Entwicklung/pediment`); child-theme envs mount that
   path via `"themes": [ …, "../pediment" ]`.
 - `build/blocks/**` is **gitignored and per-worktree**; `build/blocks-manifest.php` is
   **tracked** and must match source. So we build in the workspace (to refresh the tracked
-  manifest **before** committing) and again in the `development` checkout (to refresh its
+  manifest **before** committing) and again in the `main` checkout (to refresh its
   ignored `build/blocks/**` for serving).
 
 Follow these steps exactly. On **any** failure, stop and report — never claim success
 without the evidence.
 
 1. **Preflight.**
-   - `BR=$(git rev-parse --abbrev-ref HEAD)`. If `BR` is `development`, `main`, or `master`,
-     stop: this command integrates a *workspace* branch into `development`, so you must be
+   - `BR=$(git rev-parse --abbrev-ref HEAD)`. If `BR` is `main` or `master`,
+     stop: this command integrates a *workspace* branch into `main`, so you must be
      on one.
    - Confirm this is a pediment theme repo: `test -f style.css && test -d src/blocks`. If
      not, stop.
@@ -48,29 +48,29 @@ without the evidence.
    - If there was nothing to commit, say so and continue — the branch may already hold the
      work.
 
-4. **Locate the `development` worktree.**
-   - `DEV=$(git worktree list --porcelain | awk '/^worktree /{w=$2} /^branch refs\/heads\/development$/{print w}')`
-   - If `DEV` is empty, stop: `development` isn't checked out in any worktree — report and
+4. **Locate the `main` worktree.**
+   - `DEV=$(git worktree list --porcelain | awk '/^worktree /{w=$2} /^branch refs\/heads\/main$/{print w}')`
+   - If `DEV` is empty, stop: `main` isn't checked out in any worktree — report and
      ask how to proceed (don't guess a path or move the branch).
    - Verify it's clean: `git -C "$DEV" status --porcelain` must be empty. If it's dirty,
      stop and show the output — never disturb another worktree's working tree.
 
-5. **Fast-forward `development` onto this branch.**
+5. **Fast-forward `main` onto this branch.**
    - Try `git -C "$DEV" merge --ff-only "$BR"`.
-   - If that fails because `development` has advanced past this branch's base, make the
-     fast-forward possible by rebasing this workspace branch onto `development`, then retry:
+   - If that fails because `main` has advanced past this branch's base, make the
+     fast-forward possible by rebasing this workspace branch onto `main`, then retry:
      - **Guard first:** if `git rev-parse --abbrev-ref --symbolic-full-name @{u}` succeeds
        (this branch is pushed) *and* `git log @{u}..HEAD --oneline` is non-empty, warn the
        user that rebasing rewrites already-pushed history and **ask** before continuing.
-     - `git rebase development`. If it stops on conflicts, run `git rebase --abort` and
+     - `git rebase main`. If it stops on conflicts, run `git rebase --abort` and
        report — don't try to auto-resolve.
      - `git -C "$DEV" merge --ff-only "$BR"`.
 
-6. **Rebuild the `development` checkout** so the live-mount env serves it.
+6. **Rebuild the `main` checkout** so the live-mount env serves it.
    - `cd "$DEV" && npm run build`. If it fails, show the error and stop.
 
 7. **Report.**
-   - The short SHA now on `development`, the workspace branch it came from, and that `$DEV`
+   - The short SHA now on `main`, the workspace branch it came from, and that `$DEV`
      was rebuilt.
    - Remind: the child-theme wp-env (dev port 8890) serves `$DEV` via a bind mount — no
      restart needed. `src/blocks/**` changes needed the rebuild this command just ran;
