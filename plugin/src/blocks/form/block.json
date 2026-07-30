@@ -6,18 +6,42 @@
 	"category": "pediment",
 	"description": "A form that collects visitor input and delivers it to a configured destination. Add Form Field child blocks for each input. Use for contact, booking, registration, feedback, or signup forms.",
 	"textdomain": "pediment",
-	"supports": { "html": false, "align": [ "wide" ], "spacing": { "blockGap": true } },
+	"supports": {
+		"html": false,
+		"align": [ "wide" ],
+		"spacing": { "blockGap": true }
+	},
 	"allowedBlocks": [ "pediment/form-field" ],
 	"attributes": {
 		"destination": { "type": "string", "default": "" },
-		"successMessage": { "type": "string", "default": "Thanks — we'll be in touch shortly." },
+		"successMessage": {
+			"type": "string",
+			"default": "Thanks — we'll be in touch shortly."
+		},
 		"submitLabel": { "type": "string", "default": "Send" }
 	},
 	"example": {
-		"attributes": { "successMessage": "Thanks — we'll be in touch shortly." },
+		"attributes": {
+			"successMessage": "Thanks — we'll be in touch shortly."
+		},
 		"innerBlocks": [
-			{ "name": "pediment/form-field", "attributes": { "label": "Name", "fieldName": "name", "required": true } },
-			{ "name": "pediment/form-field", "attributes": { "fieldType": "email", "label": "Email", "fieldName": "email", "required": true } }
+			{
+				"name": "pediment/form-field",
+				"attributes": {
+					"label": "Name",
+					"fieldName": "name",
+					"required": true
+				}
+			},
+			{
+				"name": "pediment/form-field",
+				"attributes": {
+					"fieldType": "email",
+					"label": "Email",
+					"fieldName": "email",
+					"required": true
+				}
+			}
 		]
 	},
 	"editorScript": "file:./index.js",

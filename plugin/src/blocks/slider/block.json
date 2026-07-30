@@ -15,8 +15,16 @@
 	"example": {
 		"attributes": {
 			"slides": [
-				{ "eyebrow": "Lernen", "heading": "Lebenslanges Lernen", "body": "Wir bringen unser Organismus immer auf den neuesten Stand." },
-				{ "eyebrow": "Wachsen", "heading": "Gemeinsam wachsen", "body": "Tägliche Team-Updates und ein intensiver Austausch." }
+				{
+					"eyebrow": "Lernen",
+					"heading": "Lebenslanges Lernen",
+					"body": "Wir bringen unser Organismus immer auf den neuesten Stand."
+				},
+				{
+					"eyebrow": "Wachsen",
+					"heading": "Gemeinsam wachsen",
+					"body": "Tägliche Team-Updates und ein intensiver Austausch."
+				}
 			]
 		},
 		"viewportWidth": 1280

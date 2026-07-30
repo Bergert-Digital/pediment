@@ -136,7 +136,10 @@ const band = (
 		innerBlocks
 	);
 
-/** Run normalizeSections against an in-memory root, returning the new blocks. */
+/**
+ * Run normalizeSections against an in-memory root, returning the new blocks.
+ * @param root
+ */
 function run( root: Node[] ): { ids: string[]; blocks: any[] } | null {
 	const replaceBlocks = jest.fn();
 	let n = 0;
@@ -149,7 +152,9 @@ function run( root: Node[] ): { ids: string[]; blocks: any[] } | null {
 			clientId: 'fresh-' + n++,
 		} )
 	);
-	if ( replaceBlocks.mock.calls.length === 0 ) return null;
+	if ( replaceBlocks.mock.calls.length === 0 ) {
+		return null;
+	}
 	const [ ids, blocks ] = replaceBlocks.mock.calls[ 0 ];
 	return { ids, blocks };
 }
@@ -176,12 +181,12 @@ describe( 'normalizeSections applier — band model', () => {
 		} );
 		// No legacy section shape.
 		expect( res.blocks[ 0 ].attributes.tagName ).toBeUndefined();
-		expect( res.blocks[ 0 ].innerBlocks.map( ( x: any ) => x.name ) ).toEqual(
-			[ 'pediment/hero' ]
-		);
-		expect( res.blocks[ 1 ].innerBlocks.map( ( x: any ) => x.name ) ).toEqual(
-			[ 'core/heading', 'core/paragraph' ]
-		);
+		expect(
+			res.blocks[ 0 ].innerBlocks.map( ( x: any ) => x.name )
+		).toEqual( [ 'pediment/hero' ] );
+		expect(
+			res.blocks[ 1 ].innerBlocks.map( ( x: any ) => x.name )
+		).toEqual( [ 'core/heading', 'core/paragraph' ] );
 	} );
 
 	it( 'enforces band-shape attrs on kept bands while preserving the chosen band style and children', () => {
@@ -200,9 +205,9 @@ describe( 'normalizeSections applier — band model', () => {
 		expect( tokens ).toContain( 'starter-band' );
 		expect( tokens ).toContain( 'is-style-band-elevated' );
 		expect( tokens ).not.toContain( 'is-style-band-surface' );
-		expect( res.blocks[ 0 ].innerBlocks.map( ( x: any ) => x.name ) ).toEqual(
-			[ 'core/paragraph' ]
-		);
+		expect(
+			res.blocks[ 0 ].innerBlocks.map( ( x: any ) => x.name )
+		).toEqual( [ 'core/paragraph' ] );
 	} );
 
 	it( 'strips auto-derived layout/align classes and the legacy starter-section/tagName shape', () => {
@@ -245,9 +250,9 @@ describe( 'normalizeSections applier — band model', () => {
 				},
 			},
 		} );
-		expect(
-			res.blocks[ 0 ].attributes.className.split( /\s+/ )
-		).toEqual( expect.arrayContaining( [ 'brand', 'starter-band' ] ) );
+		expect( res.blocks[ 0 ].attributes.className.split( /\s+/ ) ).toEqual(
+			expect.arrayContaining( [ 'brand', 'starter-band' ] )
+		);
 	} );
 
 	it( 'HEALS the bug: a starter-section wrapping bands is unwrapped into a flat band list', () => {
@@ -285,8 +290,9 @@ describe( 'normalizeSections applier — band model', () => {
 			expect( bl.attributes.className.split( /\s+/ ) ).toContain(
 				'starter-band'
 			);
-			expect( bl.innerBlocks.some( ( c: any ) => c.name === 'core/group' ) )
-				.toBe( false );
+			expect(
+				bl.innerBlocks.some( ( c: any ) => c.name === 'core/group' )
+			).toBe( false );
 		} );
 	} );
 
@@ -323,9 +329,15 @@ describe( 'normalizeSections applier — band model', () => {
 		// stray loose content → one band; main's two bands lifted flat.
 		expect( res.blocks ).toHaveLength( 3 );
 		expect(
-			res.blocks.map( ( bl: any ) => bl.innerBlocks.map( ( c: any ) => c.name ) )
+			res.blocks.map( ( bl: any ) =>
+				bl.innerBlocks.map( ( c: any ) => c.name )
+			)
 		).toEqual( [
-			[ 'pediment/section-head', 'pediment/testimonial-grid', 'pediment/stat-grid' ],
+			[
+				'pediment/section-head',
+				'pediment/testimonial-grid',
+				'pediment/stat-grid',
+			],
 			[ 'pediment/hero' ],
 			[ 'pediment/cta' ],
 		] );
@@ -344,7 +356,9 @@ describe( 'normalizeSections applier — band model', () => {
 			band( 'feat', 'is-style-band-elevated', [
 				node( 'f0', 'pediment/feature-grid' ),
 			] ),
-			band( 'cta', 'is-style-band-navy', [ node( 'c0', 'pediment/cta' ) ] ),
+			band( 'cta', 'is-style-band-navy', [
+				node( 'c0', 'pediment/cta' ),
+			] ),
 		];
 		const res = run( root )!;
 		expect( res.blocks ).toHaveLength( 3 );
@@ -357,7 +371,11 @@ describe( 'normalizeSections applier — band model', () => {
 		] );
 		expect(
 			res.blocks.map( ( bl: any ) => bl.innerBlocks[ 0 ].name )
-		).toEqual( [ 'pediment/hero', 'pediment/feature-grid', 'pediment/cta' ] );
+		).toEqual( [
+			'pediment/hero',
+			'pediment/feature-grid',
+			'pediment/cta',
+		] );
 	} );
 
 	it( 'clones children so no new block reuses an original (removed) clientId', () => {
@@ -372,6 +390,8 @@ describe( 'normalizeSections applier — band model', () => {
 			...( bl.innerBlocks ?? [] ).flatMap( collect ),
 		];
 		const newIds = res.blocks.flatMap( collect );
-		for ( const id of newIds ) expect( res.ids ).not.toContain( id );
+		for ( const id of newIds ) {
+			expect( res.ids ).not.toContain( id );
+		}
 	} );
 } );

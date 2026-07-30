@@ -1,21 +1,21 @@
 {
-  "$schema": "https://schemas.wp.org/trunk/block.json",
-  "apiVersion": 3,
-  "name": "pediment/social-links",
-  "title": "Social Links",
-  "category": "pediment",
-  "description": "Renders a row of icon links to your social profiles. Add links in the block settings sidebar. Hides itself when none are configured.",
-  "textdomain": "pediment",
-  "supports": { "html": false, "align": [ "wide" ] },
-  "attributes": {
-    "links": {
-      "type": "array",
-      "default": []
-    }
-  },
-  "example": {},
-  "editorScript": "file:./index.js",
-  "editorStyle": "file:./style-index.css",
-  "style": "file:./style-index.css",
-  "render": "file:./render.php"
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "pediment/social-links",
+	"title": "Social Links",
+	"category": "pediment",
+	"description": "Renders a row of icon links to your social profiles. Add links in the block settings sidebar. Hides itself when none are configured.",
+	"textdomain": "pediment",
+	"supports": { "html": false, "align": [ "wide" ] },
+	"attributes": {
+		"links": {
+			"type": "array",
+			"default": []
+		}
+	},
+	"example": {},
+	"editorScript": "file:./index.js",
+	"editorStyle": "file:./style-index.css",
+	"style": "file:./style-index.css",
+	"render": "file:./render.php"
 }

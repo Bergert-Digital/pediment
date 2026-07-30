@@ -36,7 +36,10 @@
 		"innerBlocks": [
 			{
 				"name": "core/heading",
-				"attributes": { "level": 2, "content": "Wachstumskrisen bewältigen" }
+				"attributes": {
+					"level": 2,
+					"content": "Wachstumskrisen bewältigen"
+				}
 			},
 			{
 				"name": "core/paragraph",
@@ -47,8 +50,18 @@
 			{
 				"name": "core/list",
 				"innerBlocks": [
-					{ "name": "core/list-item", "attributes": { "content": "Prozesse und Abläufe analysieren" } },
-					{ "name": "core/list-item", "attributes": { "content": "Wachstumsschwellen überwinden" } }
+					{
+						"name": "core/list-item",
+						"attributes": {
+							"content": "Prozesse und Abläufe analysieren"
+						}
+					},
+					{
+						"name": "core/list-item",
+						"attributes": {
+							"content": "Wachstumsschwellen überwinden"
+						}
+					}
 				]
 			}
 		]

@@ -60,7 +60,10 @@ function listItemsFromLegacyHtml( html: string ): any[] {
 	if ( items.length === 0 ) {
 		const text = trimmed.replace( /<[^>]*>/g, '' ).trim();
 		if ( text ) {
-			items.push( { name: 'core/list-item', attributes: { content: text } } );
+			items.push( {
+				name: 'core/list-item',
+				attributes: { content: text },
+			} );
 		}
 	}
 	return items;
