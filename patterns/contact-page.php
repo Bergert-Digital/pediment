@@ -15,4 +15,9 @@
     <!-- wp:paragraph --><p>Prefer email? Reach us at <a href="mailto:hello@example.com">hello@example.com</a>.</p><!-- /wp:paragraph -->
 <!-- /wp:pediment/prose -->
 
-<!-- wp:pediment/contact-form {"includePhone":true} /-->
+<!-- wp:pediment/form {"successMessage":"Thanks — we'll be in touch shortly."} -->
+<!-- wp:pediment/form-field {"label":"Name","fieldName":"name","required":true} /-->
+<!-- wp:pediment/form-field {"fieldType":"email","label":"Email","fieldName":"email","required":true} /-->
+<!-- wp:pediment/form-field {"fieldType":"tel","label":"Phone","fieldName":"phone"} /-->
+<!-- wp:pediment/form-field {"fieldType":"textarea","label":"Message","fieldName":"message","required":true} /-->
+<!-- /wp:pediment/form -->
