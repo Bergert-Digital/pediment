@@ -23,20 +23,42 @@ add_action(
 );
 
 /**
+ * Read or set the message shown when a submission was rejected.
+ *
+ * A rejected submission must never look like an untouched page: on admin-only
+ * hosting this tab is the only way to seed a site, and an expired nonce is the
+ * likeliest thing to go wrong on a tab left open.
+ *
+ * @param string|null $set Message to store, or null to read the current one.
+ * @return string
+ */
+function pediment_seed_admin_notice( ?string $set = null ): string {
+	static $message = '';
+	if ( null !== $set ) {
+		$message = $set;
+	}
+	return $message;
+}
+
+/**
  * Handle a seed form submission.
  *
  * @return string|null Rendered report, or null when this is not a valid seed submission.
  */
 function pediment_seed_admin_handle_post(): ?string {
+	pediment_seed_admin_notice( '' );
+
 	$action = isset( $_POST['pediment_seed_action'] ) ? sanitize_key( wp_unslash( $_POST['pediment_seed_action'] ) ) : '';
 	if ( ! in_array( $action, array( 'preview', 'apply' ), true ) ) {
 		return null;
 	}
 	if ( ! current_user_can( 'manage_options' ) ) {
+		pediment_seed_admin_notice( __( 'You do not have permission to seed this site.', 'pediment' ) );
 		return null;
 	}
 	$nonce = isset( $_POST['_wpnonce'] ) ? sanitize_text_field( wp_unslash( $_POST['_wpnonce'] ) ) : '';
 	if ( ! wp_verify_nonce( $nonce, 'pediment_seed' ) ) {
+		pediment_seed_admin_notice( __( 'That form had expired, so nothing was run. Please try again.', 'pediment' ) );
 		return null;
 	}
 
@@ -59,6 +81,12 @@ function pediment_seed_admin_handle_post(): ?string {
  */
 function pediment_seed_admin_render_tab(): void {
 	$report = pediment_seed_admin_handle_post();
+
+	$notice = pediment_seed_admin_notice();
+
+	if ( '' !== $notice ) {
+		echo '<div class="notice notice-error"><p>' . esc_html( $notice ) . '</p></div>';
+	}
 
 	echo '<p>' . esc_html__(
 		'Applies the active theme\'s seed manifest. Structure (which pages exist, their slugs, nesting, menus) is owned by the theme; page content you have edited in the editor is never overwritten.',
