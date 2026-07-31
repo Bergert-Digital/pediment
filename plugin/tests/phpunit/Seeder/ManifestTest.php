@@ -48,6 +48,43 @@ class ManifestTest extends WP_UnitTestCase {
 		Manifest::fromArray( $raw, '/tmp/theme' );
 	}
 
+	public function test_an_empty_slug_is_a_validation_error() {
+		// sanitize_title('') === '' passes the round-trip check, WordPress then
+		// invents a slug from the title, and the Verifier reports a mismatch on
+		// every run forever with no fix that converges.
+		$raw                  = $this->raw();
+		$raw['pages']['faq/'] = [ 'title' => 'FAQ', 'content' => '' ];
+
+		$this->expectException( ManifestError::class );
+		$this->expectExceptionMessageMatches( '/slug/i' );
+		Manifest::fromArray( $raw, '/tmp/theme' );
+	}
+
+	public function test_an_unknown_top_level_section_is_a_validation_error() {
+		// `page` instead of `pages` used to seed nothing and report nothing.
+		$raw         = $this->raw();
+		$raw['page'] = [ 'ghost' => [ 'title' => 'Ghost', 'content' => '' ] ];
+
+		$this->expectException( ManifestError::class );
+		$this->expectExceptionMessageMatches( '/page/' );
+		Manifest::fromArray( $raw, '/tmp/theme' );
+	}
+
+	public function test_an_unknown_entry_key_is_a_validation_error() {
+		$raw                                 = $this->raw();
+		$raw['pages']['guide']['front-page'] = true;
+
+		$this->expectException( ManifestError::class );
+		$this->expectExceptionMessageMatches( '/front-page/' );
+		Manifest::fromArray( $raw, '/tmp/theme' );
+	}
+
+	public function test_the_documented_manifest_shape_still_validates() {
+		// The fixture manifest and docs/seeding.md use `version`; rejecting
+		// unknown sections must not reject the ones the product itself ships.
+		$this->assertNotNull( Manifest::fromArray( $this->raw(), '/tmp/theme' ) );
+	}
+
 	public function test_dependency_order_puts_parents_first() {
 		$keys = array_map(
 			static fn( $e ) => $e->key,

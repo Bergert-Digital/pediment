@@ -21,6 +21,17 @@ if ( ! defined( 'ABSPATH' ) ) {
 final class Manifest {
 	public const RELATIVE_PATH = 'seed/manifest.php';
 
+	/**
+	 * Top-level sections a manifest may declare.
+	 *
+	 * Silently ignoring the rest is a bad failure mode at migration scale:
+	 * `page` instead of `pages` seeds nothing and reports nothing.
+	 */
+	private const SECTIONS = [ 'version', 'pages', 'posts', 'entries', 'media', 'navs', 'post_types', 'site' ];
+
+	/** Keys an entry may declare. Same reasoning: `front-page` must not be a no-op. */
+	private const ENTRY_KEYS = [ 'title', 'slug', 'parent', 'pattern', 'content', 'post_type', 'front_page', 'posts_page', 'menu_order', 'terms' ];
+
 	/** @var self|null */
 	private static ?self $cache = null;
 
@@ -102,6 +113,12 @@ final class Manifest {
 	public static function fromArray( array $raw, string $baseDir, string $path = '(array)' ): self {
 		$baseDir = untrailingslashit( $baseDir );
 
+		foreach ( array_keys( $raw ) as $section ) {
+			if ( ! in_array( (string) $section, self::SECTIONS, true ) ) {
+				throw new ManifestError( "Unknown manifest section '{$section}'. Allowed: " . implode( ', ', self::SECTIONS ) . '.' ); // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- exception message for the operator, not echoed output.
+			}
+		}
+
 		$entries = [];
 		foreach ( [ 'pages' => 'page', 'posts' => 'post', 'entries' => '' ] as $section => $defaultType ) {
 			foreach ( (array) ( $raw[ $section ] ?? [] ) as $key => $declared ) {
@@ -181,6 +198,12 @@ final class Manifest {
 	 * @throws ManifestError When the entry fails validation.
 	 */
 	private static function entry( string $section, string $key, array $declared, string $defaultType ): EntrySpec {
+		foreach ( array_keys( $declared ) as $declaredKey ) {
+			if ( ! in_array( (string) $declaredKey, self::ENTRY_KEYS, true ) ) {
+				throw new ManifestError( "{$section}.{$key}: unknown key '{$declaredKey}'. Allowed: " . implode( ', ', self::ENTRY_KEYS ) . '.' ); // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- exception message for the operator, not echoed output.
+			}
+		}
+
 		$title = (string) ( $declared['title'] ?? '' );
 		if ( '' === $title ) {
 			throw new ManifestError( "{$section}.{$key}: 'title' is required." ); // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- exception message for the operator, not echoed output.
@@ -202,6 +225,12 @@ final class Manifest {
 
 		$segments = explode( '/', $key );
 		$slug     = (string) ( $declared['slug'] ?? end( $segments ) );
+		if ( '' === $slug ) {
+			// sanitize_title('') === '' passes the round-trip below, WordPress
+			// then invents a slug from the title, and the Verifier reports a
+			// mismatch on every run forever with no fix that converges.
+			throw new ManifestError( "{$section}.{$key}: the slug is empty — a key may not end in '/', and 'slug' may not be blank." ); // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- exception message for the operator, not echoed output.
+		}
 		if ( sanitize_title( $slug ) !== $slug ) {
 			throw new ManifestError( "{$section}.{$key}: slug '{$slug}' is not a valid post slug." ); // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- exception message for the operator, not echoed output.
 		}
