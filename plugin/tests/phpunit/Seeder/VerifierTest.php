@@ -67,6 +67,27 @@ class VerifierTest extends WP_UnitTestCase {
 		$this->assertStringContainsString( 'front page', implode( "\n", $problems ) );
 	}
 
+	public function test_a_child_whose_parent_has_no_post_is_a_problem() {
+		// The expectation used to fall back to 0 when the parent was missing, so
+		// a child sitting at the site root compared equal to it and the check
+		// could never fail.
+		$m = Manifest::fromArray(
+			[
+				'pages' => [
+					'guide'         => [ 'title' => 'Guide', 'content' => '' ],
+					'guide/pricing' => [ 'title' => 'Pricing', 'content' => '', 'parent' => 'guide' ],
+				],
+			],
+			'/tmp/theme'
+		);
+		$child = self::factory()->post->create( [ 'post_type' => 'page', 'post_name' => 'pricing', 'post_title' => 'Pricing', 'post_parent' => 0 ] );
+		update_post_meta( $child, Meta::KEY, 'guide/pricing' );
+
+		$problems = ( new Verifier( new NullProvider(), new NavSeeder( new NullProvider() ) ) )->verify( $m, $this->desired( $m ), [ 'guide/pricing|' => $child ], new MediaMap( [] ) );
+
+		$this->assertStringContainsString( 'landed at the site root', implode( "\n", $problems ) );
+	}
+
 	public function test_unresolved_media_is_a_problem() {
 		$dir = get_temp_dir() . 'pediment-verify-test';
 		wp_mkdir_p( $dir . '/seed/media' );

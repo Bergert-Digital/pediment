@@ -61,7 +61,12 @@ final class Verifier {
 			}
 
 			$expectedParent = null === $entry->parentKey ? 0 : (int) ( $ids[ $entry->parentKey . '|' . $entry->language ] ?? 0 );
-			if ( (int) $post->post_parent !== $expectedParent ) {
+			if ( null !== $entry->parentKey && 0 === $expectedParent ) {
+				// Falling back to 0 made this check unfailable: a child whose
+				// parent never got created lands at the site root, which then
+				// compares equal to the expectation.
+				$problems[] = sprintf( '%s: parent "%s" has no post — this entry landed at the site root.', $mapKey, $entry->parentKey );
+			} elseif ( (int) $post->post_parent !== $expectedParent ) {
 				$problems[] = sprintf( '%s: parent is %d, expected %d.', $mapKey, $post->post_parent, $expectedParent );
 			}
 
