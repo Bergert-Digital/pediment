@@ -104,4 +104,67 @@ class RunnerTest extends WP_UnitTestCase {
 		$this->assertCount( 1, $navs );
 		$this->assertStringContainsString( '"id":' . $result->ids['about|'], $navs[0]->post_content );
 	}
+
+	public function test_an_errored_plan_leaves_no_media_behind() {
+		// Media used to be applied before the plan was checked, so a duplicate
+		// seed key elsewhere still created attachments and moved the site logo
+		// while the run reported that nothing had been applied.
+		$dir = get_temp_dir() . 'pediment-runner-media';
+		wp_mkdir_p( $dir . '/seed/media' );
+		file_put_contents( $dir . '/seed/media/logo.svg', '<svg xmlns="http://www.w3.org/2000/svg"/>' );
+		add_filter( 'stylesheet_directory', static fn() => $dir );
+		$this->manifest['media'] = [ 'logo' => [ 'file' => 'seed/media/logo.svg' ] ];
+		$this->manifest['site']  = [ 'logo' => 'logo' ];
+
+		( new Runner() )->run();
+		$clone = self::factory()->post->create( [ 'post_type' => 'page', 'post_title' => 'Impostor' ] );
+		update_post_meta( $clone, Meta::KEY, 'home' );
+		$logoBefore = get_theme_mod( 'custom_logo' );
+
+		$result = ( new Runner() )->run();
+
+		remove_all_filters( 'stylesheet_directory' );
+		$this->assertFalse( $result->ok() );
+		$this->assertFalse( $result->applied );
+		$this->assertSame( $logoBefore, get_theme_mod( 'custom_logo' ), 'an errored plan writes nothing at all' );
+	}
+
+	public function test_a_post_type_only_manifest_still_flushes_rewrite_rules() {
+		global $wp_rewrite;
+
+		$this->manifest['post_types'] = [ 'project' => [ 'label' => 'Projects', 'has_archive' => true ] ];
+		// update_option() alone doesn't refresh the live $wp_rewrite object that
+		// flush_rewrite_rules() reads from.
+		$wp_rewrite->set_permalink_structure( '/%postname%/' );
+		// The `init` hook that normally registers manifest post types may not
+		// have fired for this manifest within the test process, and the
+		// manifest memo set_up() populated pre-dates 'project'; reset it so
+		// registration sees the current manifest.
+		\Pediment\Seeder\Manifest::resetCache();
+		\Pediment\Seeder\PostTypes::registerFromManifest();
+
+		( new Runner() )->run();
+
+		$this->assertStringContainsString( 'post_type=project', implode( "\n", (array) get_option( 'rewrite_rules' ) ) );
+		unregister_post_type( 'project' );
+	}
+
+	public function test_a_client_unpublishing_the_menu_is_reported() {
+		$result = ( new Runner() )->run();
+		$navs   = get_posts( [ 'post_type' => 'wp_navigation', 'posts_per_page' => -1 ] );
+		wp_update_post( [ 'ID' => $navs[0]->ID, 'post_status' => 'draft' ] );
+
+		$second = ( new Runner() )->run();
+
+		$this->assertFalse( $second->ok(), 'a menu that will not render is not a successful seed' );
+		$this->assertStringContainsString( 'navs.primary', implode( "\n", $second->problems ) );
+	}
+
+	public function test_errors_are_not_reported_twice() {
+		$this->manifest['media'] = [ 'logo' => [ 'file' => 'seed/media/nope.svg' ] ];
+
+		$result = ( new Runner() )->run();
+
+		$this->assertSame( array_values( array_unique( $result->errors ) ), $result->errors );
+	}
 }

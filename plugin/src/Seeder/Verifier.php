@@ -20,14 +20,15 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 final class Verifier {
-	public function __construct( private LanguageProvider $lang ) {}
+	public function __construct( private LanguageProvider $lang, private NavSeeder $navSeeder ) {}
 
 	/**
 	 * @param array<string,DesiredEntry> $desired
 	 * @param array<string,int>          $ids
+	 * @param array<string,int>          $navIds navKey|language => post ID
 	 * @return string[]
 	 */
-	public function verify( Manifest $manifest, array $desired, array $ids, MediaMap $media ): array {
+	public function verify( Manifest $manifest, array $desired, array $ids, MediaMap $media, array $navIds = [] ): array {
 		$problems = [];
 
 		foreach ( $desired as $mapKey => $entry ) {
@@ -75,8 +76,44 @@ final class Verifier {
 		}
 
 		foreach ( $manifest->media() as $key => $spec ) {
-			if ( $media->id( $key ) <= 0 ) {
+			$attachmentId = $media->id( $key );
+			if ( $attachmentId <= 0 ) {
 				$problems[] = sprintf( 'media.%s: no attachment was created for %s.', $key, basename( $spec->file ) );
+				continue;
+			}
+
+			// Re-read rather than trusting the map: the ID could name a row that
+			// no longer exists.
+			$attachment = get_post( $attachmentId );
+			if ( ! $attachment instanceof \WP_Post || 'attachment' !== $attachment->post_type || 'trash' === $attachment->post_status ) {
+				$problems[] = sprintf( 'media.%s: attachment %d is missing or trashed.', $key, $attachmentId );
+			}
+		}
+
+		// Navigation: the header rendering nothing while the seeder reports
+		// success is the exact incident this class exists to prevent, so the
+		// entities are re-read and their membership re-derived.
+		foreach ( $manifest->navs() as $key => $spec ) {
+			foreach ( $this->lang->languages() as $language ) {
+				$navId = (int) ( $navIds[ $key . '|' . $language ] ?? 0 );
+				if ( 0 === $navId ) {
+					$problems[] = sprintf( 'navs.%s: no navigation entity exists for this seed key.', $key );
+					continue;
+				}
+				$nav = get_post( $navId );
+				if ( ! $nav instanceof \WP_Post || 'wp_navigation' !== $nav->post_type ) {
+					$problems[] = sprintf( 'navs.%s: post %d is not a navigation entity.', $key, $navId );
+					continue;
+				}
+				if ( 'publish' !== $nav->post_status ) {
+					$problems[] = sprintf( 'navs.%s: entity %d is "%s" — the menu will not render.', $key, $navId, $nav->post_status );
+				}
+				if ( (string) get_post_meta( $navId, Meta::KEY, true ) !== $key ) {
+					$problems[] = sprintf( 'navs.%s: entity %d is missing its seed key.', $key, $navId );
+				}
+				if ( (string) $nav->post_content !== $this->navSeeder->serialize( $spec, $language, $ids ) ) {
+					$problems[] = sprintf( 'navs.%s: stored membership does not match the manifest.', $key );
+				}
 			}
 		}
 
