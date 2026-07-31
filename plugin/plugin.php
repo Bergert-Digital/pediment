@@ -98,6 +98,9 @@ if ( defined( 'WP_CLI' ) && WP_CLI ) {
 
 	require_once __DIR__ . '/wp-cli/SeedCommand.php';
 	\WP_CLI::add_command( 'pediment seed', \Pediment\Cli\SeedCommand::class );
+
+	require_once __DIR__ . '/wp-cli/AdoptCommand.php';
+	\WP_CLI::add_command( 'pediment adopt', \Pediment\Cli\AdoptCommand::class );
 }
 
 add_action(
