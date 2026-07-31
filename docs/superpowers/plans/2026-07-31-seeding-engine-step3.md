@@ -165,11 +165,13 @@ class ContentHashTest extends WP_UnitTestCase {
 	}
 
 	public function test_for_post_ignores_a_stale_object_cache() {
-		$id = self::factory()->post->create( [ 'post_type' => 'page', 'post_content' => 'one' ] );
-		get_post( $id ); // warm the cache
+		// The post factory generates a title when none is given, so read the
+		// stored title rather than assuming one.
+		$id    = self::factory()->post->create( [ 'post_type' => 'page', 'post_content' => 'one' ] );
+		$title = get_post( $id )->post_title; // also warms the cache
 		$GLOBALS['wpdb']->update( $GLOBALS['wpdb']->posts, [ 'post_content' => 'two' ], [ 'ID' => $id ] );
 
-		$this->assertSame( ContentHash::compute( '', 'two' ), ContentHash::forPost( $id ) );
+		$this->assertSame( ContentHash::compute( $title, 'two' ), ContentHash::forPost( $id ) );
 	}
 
 	public function test_matches_rejects_empty_and_foreign_versions() {
@@ -186,7 +188,7 @@ class ContentHashTest extends WP_UnitTestCase {
 }
 ```
 
-Note: `test_for_post_ignores_a_stale_object_cache` writes `post_content` with an empty title, so the expected hash uses `''` as the title.
+Note: `test_for_post_ignores_a_stale_object_cache` proves `forPost()` re-reads the row rather than trusting a warmed cache — the title is read back from the post because the factory supplies one.
 
 - [ ] **Step 2: Run it and watch it fail**
 
@@ -1134,7 +1136,9 @@ final class Manifest {
 - [ ] **Step 5: Run it green**
 
 Run: `... --filter ManifestTest`
-Expected: PASS (15 tests). `uasort` is stable in PHP 8, so equal-depth entries keep manifest order.
+Expected: PASS. `uasort` is stable in PHP 8, so equal-depth entries keep manifest order.
+
+Cover every declared failure mode, not only the ones written out above: the tests as listed leave four untested (neither `pattern` nor `content`; an invalid slug; two entries setting `posts_page`; a self-parent cycle) and three asserting only that *some* `ManifestError` was thrown. Add the missing tests and give every validation test an `expectExceptionMessageMatches()` — a reordered check must not be able to pass the suite by throwing a different error. That brings the file to 19 tests.
 
 - [ ] **Step 6: Commit**
 
