@@ -4907,6 +4907,39 @@ class ReporterTest extends WP_UnitTestCase {
 		$this->assertStringContainsString( 'home-2', $text );
 	}
 
+	public function test_a_partial_apply_does_not_claim_nothing_was_applied() {
+		$result = new RunResult( new Plan(), true, '', [ 'media.logo: could not copy' ] );
+
+		$text = Reporter::text( $result );
+
+		$this->assertStringContainsString( 'the run continued', $text );
+		$this->assertStringNotContainsString( 'nothing was applied', $text );
+	}
+
+	public function test_a_protected_item_states_its_note_once() {
+		$plan = new Plan(
+			[
+				new PlanItem(
+					PlanItem::PROTECTED,
+					PlanItem::KIND_ENTRY,
+					'about',
+					'',
+					9,
+					[],
+					[
+						'title'   => [ 'from' => 'About', 'to' => 'About us' ],
+						'content' => [ 'from' => '(database)', 'to' => '(manifest)' ],
+					],
+					'edited in the editor — content and title left alone'
+				),
+			]
+		);
+
+		$text = Reporter::text( new RunResult( $plan, false, '' ) );
+
+		$this->assertSame( 1, substr_count( $text, 'edited in the editor' ), 'one item, one explanation' );
+	}
+
 	public function test_summary_line_counts_writes_protections_and_orphans() {
 		// 2 creates (media hero-bg + page home) + 1 update (contact) = 3 writes.
 		$this->assertSame( '3 to write, 1 protected, 1 orphan, 1 unchanged.', Reporter::summaryLine( $this->result( true ) ) );
@@ -4960,16 +4993,27 @@ final class Reporter {
 			$lines[] = '';
 			$lines[] = $heading;
 			foreach ( $items as $item ) {
-				$lines[] = sprintf( '  %-11s %-16s %s', $item->action, $item->key, self::describe( $item ) );
-				foreach ( $item->protectedFields as $field => $change ) {
-					$lines[] = sprintf( '              ^ protected: %s (%s)', $field, $item->note );
+				$described = self::describe( $item );
+				$lines[]   = sprintf( '  %-11s %-16s %s', $item->action, $item->key, $described );
+
+				// When describe() already fell back to the note, the fields line
+				// would repeat that same sentence once per protected field — three
+				// identical sentences for the commonest shape on a live site.
+				if ( [] !== $item->protectedFields && $described !== $item->note ) {
+					$lines[] = sprintf( '              ^ protected: %s (%s)', implode( ', ', array_keys( $item->protectedFields ) ), $item->note );
 				}
 			}
 		}
 
 		if ( [] !== $result->errors ) {
 			$lines[] = '';
-			$lines[] = 'ERRORS (nothing was applied)';
+			// The Runner deliberately continues past a failed write so it can
+			// still verify and flush, so "nothing was applied" is only true
+			// before phase 4. Saying it afterwards would be a lie of exactly the
+			// kind this report exists to prevent.
+			$lines[] = $result->applied
+				? 'ERRORS (the run continued — see above for what landed)'
+				: 'ERRORS (nothing was applied)';
 			foreach ( $result->errors as $error ) {
 				$lines[] = '  - ' . $error;
 			}
@@ -5016,8 +5060,8 @@ final class Reporter {
 				continue;
 			}
 			$parts[] = null === $change['from']
-				? sprintf( '%s=%s', $field, self::scalar( $change['to'] ) )
-				: sprintf( '%s "%s" -> "%s"', $field, self::scalar( $change['from'] ), self::scalar( $change['to'] ) );
+				? sprintf( '%s=%s', $field, self::truncate( self::scalar( $change['to'] ) ) )
+				: self::change( $field, $change['from'], $change['to'] );
 		}
 		if ( [] === $parts && '' !== $item->note ) {
 			return $item->note;
@@ -5030,6 +5074,19 @@ final class Reporter {
 			return $value ? 'true' : 'false';
 		}
 		return (string) ( null === $value ? '' : $value );
+	}
+
+	/** Keeps one plan line readable when a title or slug is very long. */
+	private static function truncate( string $value, int $limit = 60 ): string {
+		return mb_strlen( $value ) > $limit ? mb_substr( $value, 0, $limit - 1 ) . '…' : $value;
+	}
+
+	private static function change( string $field, mixed $from, mixed $to ): string {
+		// Numbers read badly in quotes: `items 3 -> 4`, not `items "3" -> "4"`.
+		if ( is_int( $from ) && is_int( $to ) ) {
+			return sprintf( '%s %d -> %d', $field, $from, $to );
+		}
+		return sprintf( '%s "%s" -> "%s"', $field, self::truncate( self::scalar( $from ) ), self::truncate( self::scalar( $to ) ) );
 	}
 }
 ```
@@ -5085,30 +5142,55 @@ final class SeedCommand {
 	 */
 	public function __invoke( array $args, array $assocArgs ): void {
 		$result = ( new Runner() )->run( [ 'dry_run' => isset( $assocArgs['dry-run'] ) ] );
+		$output = self::render( $result, isset( $assocArgs['json'] ) );
 
-		if ( isset( $assocArgs['json'] ) ) {
-			\WP_CLI::line(
-				(string) wp_json_encode(
-					[
-						'applied'  => $result->applied,
-						'ok'       => $result->ok(),
-						'manifest' => $result->manifestPath,
-						'counts'   => $result->plan->counts(),
-						'errors'   => $result->errors,
-						'problems' => $result->problems,
-					],
-					JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES
-				)
-			);
-		} else {
-			\WP_CLI::line( Reporter::text( $result ) );
+		// Guarded like DumpSchemaCommand so the rendering is unit-testable
+		// without WP-CLI loaded.
+		if ( class_exists( '\WP_CLI' ) ) {
+			\WP_CLI::line( $output );
+
+			if ( ! $result->ok() ) {
+				\WP_CLI::error( 'Seeding did not complete cleanly. See the report above.' );
+			}
+
+			\WP_CLI::success( $result->applied ? 'Seed applied.' : 'Dry run complete — nothing was written.' );
+		}
+	}
+
+	/** The exact bytes the command prints, so the shape can be tested. */
+	public static function render( RunResult $result, bool $json = false ): string {
+		if ( ! $json ) {
+			return Reporter::text( $result );
 		}
 
-		if ( ! $result->ok() ) {
-			\WP_CLI::error( 'Seeding did not complete cleanly. See the report above.' );
+		$items = [];
+		foreach ( $result->plan->items() as $item ) {
+			$items[] = [
+				'kind'      => $item->kind,
+				'action'    => $item->action,
+				'key'       => $item->key,
+				'language'  => $item->language,
+				'post_id'   => $item->postId,
+				'changes'   => array_keys( $item->changes ),
+				'protected' => array_keys( $item->protectedFields ),
+				'note'      => $item->note,
+			];
 		}
 
-		\WP_CLI::success( $result->applied ? 'Seed applied.' : 'Dry run complete — nothing was written.' );
+		return (string) wp_json_encode(
+			[
+				'applied'  => $result->applied,
+				'ok'       => $result->ok(),
+				'manifest' => $result->manifestPath,
+				'counts'   => $result->plan->counts(),
+				// Counts alone cannot answer "which pages are protected?", which
+				// is the question anyone scripting against --json is asking.
+				'items'    => $items,
+				'errors'   => $result->errors,
+				'problems' => $result->problems,
+			],
+			JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES
+		);
 	}
 }
 ```
