@@ -8,12 +8,12 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 final class PlanItem {
-	public const CREATE    = 'create';
-	public const RESTORE   = 'restore';
-	public const UPDATE    = 'update';
-	public const PROTECTED = 'protected';
+	public const CREATE    = 'create'; // No post carries this key yet.
+	public const RESTORE   = 'restore'; // Exists but trashed.
+	public const UPDATE    = 'update'; // At least one field will be written.
+	public const PROTECTED = 'protected'; // Client-edited: nothing will be written.
 	public const UNCHANGED = 'unchanged';
-	public const ORPHAN    = 'orphan';
+	public const ORPHAN    = 'orphan'; // Carries a seed key the manifest dropped.
 
 	public const KIND_ENTRY = 'entry';
 	public const KIND_MEDIA = 'media';

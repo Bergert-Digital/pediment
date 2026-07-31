@@ -32,9 +32,11 @@ final class Differ {
 		$errors = [];
 
 		foreach ( $duplicates as $mapKey => $ids ) {
-			$errors[] = sprintf(
-				'Seed key "%s" is carried by %d posts (IDs %s). Identity must be unique — delete or re-key the extras before seeding.',
-				$mapKey,
+			[ $duplicateKey, $duplicateLanguage ] = array_pad( explode( '|', (string) $mapKey, 2 ), 2, '' );
+			$errors[]                             = sprintf(
+				'Seed key "%s"%s is carried by %d posts (IDs %s). Identity must be unique — delete or re-key the extras before seeding.',
+				$duplicateKey,
+				'' === $duplicateLanguage ? '' : sprintf( ' (language "%s")', $duplicateLanguage ),
 				count( $ids ),
 				implode( ', ', $ids )
 			);
@@ -108,10 +110,16 @@ final class Differ {
 			$parentDiffers = ( null === $want->parentKey && 0 !== $have->parentId )
 				|| ( null !== $want->parentKey && ( null === $wantParentId || $have->parentId !== $wantParentId ) );
 			if ( $parentDiffers ) {
-				$changes['parent'] = [ 'from' => $have->parentId, 'to' => $want->parentKey ];
+				// Named `parent_key`, not `parent`, because the values are a seed
+				// key and a post ID — descriptive, not directly writable. The
+				// applier resolves the real post_parent from the desired entry.
+				$changes['parent_key'] = [ 'from' => $have->parentId, 'to' => $want->parentKey ];
 			}
 
-			$restoring = in_array( $have->status, [ 'trash', 'draft', 'pending' ], true );
+			// Only `trash` is restored. `draft` and `pending` are editorial states
+			// — a client taking a page offline or holding a revision for review
+			// must not be overruled by the next seed run.
+			$restoring = 'trash' === $have->status;
 			if ( $restoring ) {
 				$changes['status'] = [ 'from' => $have->status, 'to' => 'publish' ];
 			}
@@ -126,7 +134,17 @@ final class Differ {
 				$action = PlanItem::PROTECTED;
 			}
 			if ( [] !== $protected ) {
-				$note = 'edited in the editor — content and title left alone';
+				// Three different situations reach rule 2, and telling an operator
+				// "the client edited this" about a database the seeder has simply
+				// never stamped is the difference between running `wp pediment
+				// adopt` and concluding the whole site was hand-edited.
+				if ( '' === $have->storedHash ) {
+					$note = 'never seeded by this engine — content left alone; run `wp pediment adopt` to take it into git';
+				} elseif ( ! str_starts_with( $have->storedHash, ContentHash::VERSION . ':' ) ) {
+					$note = 'seeded by an older hash version — content left alone; re-adopt to refresh it';
+				} else {
+					$note = 'edited in the editor — content and title left alone';
+				}
 			}
 
 			$items[] = new PlanItem(
