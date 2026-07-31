@@ -193,12 +193,22 @@ class ManifestTest extends WP_UnitTestCase {
 	}
 
 	public function test_load_returns_null_without_a_theme_manifest_and_honours_the_filter() {
+		// The active theme in this shared test install is not this test's to
+		// control — another theme in the environment (e.g. the e2e fixture
+		// theme) may legitimately ship a real seed/manifest.php. Point at an
+		// empty temp directory so "no manifest" is guaranteed, not incidental.
+		$dir = get_temp_dir() . 'pediment-manifest-none';
+		wp_mkdir_p( $dir );
+		add_filter( 'stylesheet_directory', static fn() => $dir );
+		Manifest::resetCache();
+
 		$this->assertNull( Manifest::load() );
 
 		Manifest::resetCache();
 		add_filter( 'pediment_seed_manifest', fn() => $this->raw() );
 		$m = Manifest::load();
 		remove_all_filters( 'pediment_seed_manifest' );
+		remove_all_filters( 'stylesheet_directory' );
 
 		$this->assertNotNull( $m );
 		$this->assertCount( 5, $m->entries() );

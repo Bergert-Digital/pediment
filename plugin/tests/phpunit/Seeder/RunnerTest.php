@@ -91,8 +91,18 @@ class RunnerTest extends WP_UnitTestCase {
 	public function test_no_manifest_reports_a_clear_error() {
 		remove_all_filters( 'pediment_seed_manifest' );
 
+		// The active theme in this shared test install is not this test's to
+		// control — another theme in the environment (e.g. the e2e fixture
+		// theme) may legitimately ship a real seed/manifest.php. Point at an
+		// empty temp directory so "no manifest" is guaranteed, not incidental.
+		$dir = get_temp_dir() . 'pediment-runner-no-manifest';
+		wp_mkdir_p( $dir );
+		add_filter( 'stylesheet_directory', static fn() => $dir );
+		\Pediment\Seeder\Manifest::resetCache();
+
 		$result = ( new Runner() )->run();
 
+		remove_all_filters( 'stylesheet_directory' );
 		$this->assertFalse( $result->ok() );
 		$this->assertStringContainsString( 'seed/manifest.php', $result->errors[0] );
 	}
