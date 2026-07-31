@@ -94,6 +94,9 @@ add_action(
 if ( defined( 'WP_CLI' ) && WP_CLI ) {
 	require_once __DIR__ . '/wp-cli/DumpSchemaCommand.php';
 	\WP_CLI::add_command( 'pediment dump-schema', \Pediment\Cli\DumpSchemaCommand::class );
+
+	require_once __DIR__ . '/wp-cli/SeedCommand.php';
+	\WP_CLI::add_command( 'pediment seed', \Pediment\Cli\SeedCommand::class );
 }
 
 add_action(
