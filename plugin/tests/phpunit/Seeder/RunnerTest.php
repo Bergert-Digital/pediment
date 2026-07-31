@@ -161,6 +161,24 @@ class RunnerTest extends WP_UnitTestCase {
 		unregister_post_type( 'project' );
 	}
 
+	public function test_a_non_public_post_type_entry_is_found_again_not_duplicated() {
+		// `post_type => 'any'` silently drops types with exclude_from_search, which
+		// register_post_type() derives from `public`. The row was then invisible to
+		// phase 2 and every run planned another CREATE.
+		$this->manifest['post_types'] = [ 'internal' => [ 'public' => false, 'label' => 'Internal' ] ];
+		$this->manifest['entries']    = [ 'brief' => [ 'title' => 'Brief', 'content' => '<p>b</p>', 'post_type' => 'internal' ] ];
+		\Pediment\Seeder\Manifest::resetCache();
+		\Pediment\Seeder\PostTypes::registerFromManifest();
+
+		( new Runner() )->run();
+		$second = ( new Runner() )->run();
+		$rows   = get_posts( [ 'post_type' => 'internal', 'post_status' => 'any', 'posts_per_page' => -1, 'fields' => 'ids' ] );
+
+		unregister_post_type( 'internal' );
+		$this->assertCount( 1, $rows, 'the second run must find the existing row, not create a second one' );
+		$this->assertTrue( $second->plan->isEmpty(), 'a re-seed of a non-public entry must plan no writes' );
+	}
+
 	public function test_a_client_unpublishing_the_menu_is_reported() {
 		$result = ( new Runner() )->run();
 		$navs   = get_posts( [ 'post_type' => 'wp_navigation', 'posts_per_page' => -1 ] );

@@ -47,9 +47,14 @@ final class StateReader {
 
 	/** @return \WP_Post[] */
 	private function query(): array {
+		// Not `any`: WP_Query expands that to types with exclude_from_search
+		// false, which register_post_type() derives from `public`. A manifest
+		// declaring a non-public post type would be invisible here and every run
+		// would plan another CREATE. EXCLUDED_TYPES stays the single source of
+		// truth for what is not an entry.
 		$args = $this->lang->unscopedQuery(
 			[
-				'post_type'      => 'any',
+				'post_type'      => array_values( array_diff( get_post_types(), self::EXCLUDED_TYPES ) ),
 				'post_status'    => [ 'publish', 'draft', 'pending', 'private', 'future', 'trash' ],
 				'posts_per_page' => -1,
 				'orderby'        => 'ID',
@@ -61,12 +66,7 @@ final class StateReader {
 			]
 		);
 
-		return array_values(
-			array_filter(
-				get_posts( $args ),
-				static fn( \WP_Post $post ): bool => ! in_array( $post->post_type, self::EXCLUDED_TYPES, true )
-			)
-		);
+		return get_posts( $args );
 	}
 
 	private function toEntry( \WP_Post $post ): ActualEntry {
