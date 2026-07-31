@@ -62,4 +62,42 @@ class SeedingAdminTest extends WP_UnitTestCase {
 		$this->assertNull( pediment_seed_admin_handle_post() );
 		$this->assertSame( [], get_posts( [ 'post_type' => 'page', 'fields' => 'ids' ] ) );
 	}
+
+	public function test_a_rejected_submission_says_so_instead_of_looking_untouched() {
+		wp_set_current_user( self::factory()->user->create( [ 'role' => 'administrator' ] ) );
+		$_POST['pediment_seed_action'] = 'apply';
+		$_POST['_wpnonce']             = 'nope';
+
+		ob_start();
+		pediment_seed_admin_render_tab();
+		$html = (string) ob_get_clean();
+
+		$this->assertStringContainsString( 'notice-error', $html );
+		$this->assertStringContainsString( 'expired', $html );
+	}
+
+	public function test_an_untouched_page_shows_no_error() {
+		wp_set_current_user( self::factory()->user->create( [ 'role' => 'administrator' ] ) );
+
+		ob_start();
+		pediment_seed_admin_render_tab();
+		$html = (string) ob_get_clean();
+
+		$this->assertStringNotContainsString( 'notice-error', $html );
+	}
+
+	public function test_both_buttons_submit_their_own_action_with_a_nonce() {
+		// The button wiring is the whole feature on admin-only hosting, and a
+		// dropped hidden input would otherwise pass the entire suite.
+		wp_set_current_user( self::factory()->user->create( [ 'role' => 'administrator' ] ) );
+
+		ob_start();
+		pediment_seed_admin_render_tab();
+		$html = (string) ob_get_clean();
+
+		$this->assertStringContainsString( 'name="pediment_seed_action" value="preview"', $html );
+		$this->assertStringContainsString( 'name="pediment_seed_action" value="apply"', $html );
+		$this->assertSame( 2, substr_count( $html, 'name="_wpnonce"' ), 'each form carries its own nonce' );
+		$this->assertSame( 2, substr_count( $html, '<form' ), 'two forms, one per action' );
+	}
 }
