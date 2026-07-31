@@ -110,6 +110,7 @@ final class MediaSeeder {
 					$this->errors[] = sprintf( 'media.%s: could not restore attachment %d — %s', $item->key, $item->postId, $restored->get_error_message() );
 					continue;
 				}
+				Meta::clearTrashBookkeeping( $item->postId );
 				$ids[ $item->key ] = $item->postId;
 				continue;
 			}

@@ -22,4 +22,17 @@ final class Meta {
 
 	/** Hash of the git-side INPUT the seeder last wrote; detects content changes. */
 	public const SOURCE = '_pediment_seed_source';
+
+	/**
+	 * Drop what wp_trash_post() left behind.
+	 *
+	 * Every restore in this engine writes post_status directly, which skips the
+	 * untrash hooks — so this bookkeeping would stay on the row forever and a
+	 * later real untrash would act on stale values.
+	 */
+	public static function clearTrashBookkeeping( int $postId ): void {
+		foreach ( [ '_wp_trash_meta_status', '_wp_trash_meta_time', '_wp_desired_post_slug' ] as $key ) {
+			delete_post_meta( $postId, $key );
+		}
+	}
 }

@@ -56,6 +56,22 @@ final class NavSeeder {
 					continue;
 				}
 
+				// A client who deleted the menu still owns the identity: without
+				// this the trashed entity keeps its seed key, a second one is
+				// created beside it, and the next run reports a duplicate — the
+				// `primary-2` shape this class exists to prevent.
+				if ( 'trash' === get_post_status( $postId ) ) {
+					$items[] = new PlanItem(
+						PlanItem::RESTORE,
+						PlanItem::KIND_NAV,
+						$key,
+						$language,
+						$postId,
+						[ 'status' => [ 'from' => 'trash', 'to' => 'publish' ] ]
+					);
+					continue;
+				}
+
 				$current = (string) get_post( $postId )->post_content;
 				$items[] = $current === $desired
 					? new PlanItem( PlanItem::UNCHANGED, PlanItem::KIND_NAV, $key, $language, $postId )
@@ -132,7 +148,7 @@ final class NavSeeder {
 								'post_type'    => 'wp_navigation',
 								'post_status'  => 'publish',
 								'post_title'   => $spec->title,
-								'post_name'    => sanitize_title( $spec->key . ( '' !== $item->language ? '-' . $item->language : '' ) ),
+								'post_name'    => $this->slugFor( $spec, $item->language ),
 								'post_content' => $content,
 							]
 						),
@@ -145,6 +161,27 @@ final class NavSeeder {
 					$postId = (int) $postId;
 					$this->lang->setLanguage( $postId, $item->language );
 					update_post_meta( $postId, Meta::KEY, $spec->key );
+				} elseif ( PlanItem::RESTORE === $item->action ) {
+					$postId = $item->postId;
+					// The slug is rewritten too: wp_trash_post() renames it to
+					// `primary__trashed`, and leaving that behind is what a later
+					// create would collide with.
+					$restored = wp_update_post(
+						wp_slash(
+							[
+								'ID'           => $postId,
+								'post_status'  => 'publish',
+								'post_name'    => $this->slugFor( $spec, $item->language ),
+								'post_content' => $content,
+							]
+						),
+						true
+					);
+					if ( is_wp_error( $restored ) ) {
+						$this->errors[] = sprintf( 'navs.%s: could not restore the navigation entity %d — %s', $spec->key, $postId, $restored->get_error_message() );
+						continue;
+					}
+					Meta::clearTrashBookkeeping( $postId );
 				} else {
 					$postId  = $item->postId;
 					$updated = wp_update_post( wp_slash( [ 'ID' => $postId, 'post_content' => $content ] ), true );
@@ -212,6 +249,10 @@ final class NavSeeder {
 		return implode( "\n", $links );
 	}
 
+	private function slugFor( NavSpec $spec, string $language ): string {
+		return sanitize_title( $spec->key . ( '' !== $language ? '-' . $language : '' ) );
+	}
+
 	/**
 	 * Entry keys this nav references that have no seeded post yet.
 	 *
@@ -250,7 +291,9 @@ final class NavSeeder {
 				$this->lang->unscopedQuery(
 					[
 						'post_type'      => 'wp_navigation',
-						'post_status'    => [ 'publish', 'draft' ],
+						// Trashed entities still hold their seed key: ignoring them
+						// would create a second nav under one identity.
+						'post_status'    => [ 'publish', 'draft', 'trash' ],
 						'posts_per_page' => -1,
 						'no_found_rows'  => true,
 						'orderby'        => 'ID',
