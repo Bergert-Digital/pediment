@@ -36,16 +36,27 @@ final class Reporter {
 			$lines[] = '';
 			$lines[] = $heading;
 			foreach ( $items as $item ) {
-				$lines[] = sprintf( '  %-11s %-16s %s', $item->action, $item->key, self::describe( $item ) );
-				foreach ( $item->protectedFields as $field => $change ) {
-					$lines[] = sprintf( '              ^ protected: %s (%s)', $field, $item->note );
+				$described = self::describe( $item );
+				$lines[]   = sprintf( '  %-11s %-16s %s', $item->action, $item->key, $described );
+
+				// When describe() already fell back to the note, the fields line
+				// would repeat that same sentence once per protected field — three
+				// identical sentences for the commonest shape on a live site.
+				if ( [] !== $item->protectedFields && $described !== $item->note ) {
+					$lines[] = sprintf( '              ^ protected: %s (%s)', implode( ', ', array_keys( $item->protectedFields ) ), $item->note );
 				}
 			}
 		}
 
 		if ( [] !== $result->errors ) {
 			$lines[] = '';
-			$lines[] = 'ERRORS (nothing was applied)';
+			// The Runner deliberately continues past a failed write so it can
+			// still verify and flush, so "nothing was applied" is only true
+			// before phase 4. Saying it afterwards would be a lie of exactly the
+			// kind this report exists to prevent.
+			$lines[] = $result->applied
+				? 'ERRORS (the run continued — see above for what landed)'
+				: 'ERRORS (nothing was applied)';
 			foreach ( $result->errors as $error ) {
 				$lines[] = '  - ' . $error;
 			}
@@ -92,8 +103,8 @@ final class Reporter {
 				continue;
 			}
 			$parts[] = null === $change['from']
-				? sprintf( '%s=%s', $field, self::scalar( $change['to'] ) )
-				: sprintf( '%s "%s" -> "%s"', $field, self::scalar( $change['from'] ), self::scalar( $change['to'] ) );
+				? sprintf( '%s=%s', $field, self::truncate( self::scalar( $change['to'] ) ) )
+				: self::change( $field, $change['from'], $change['to'] );
 		}
 		if ( [] === $parts && '' !== $item->note ) {
 			return $item->note;
@@ -106,5 +117,18 @@ final class Reporter {
 			return $value ? 'true' : 'false';
 		}
 		return (string) ( null === $value ? '' : $value );
+	}
+
+	/** Keeps one plan line readable when a title or slug is very long. */
+	private static function truncate( string $value, int $limit = 60 ): string {
+		return mb_strlen( $value ) > $limit ? mb_substr( $value, 0, $limit - 1 ) . '…' : $value;
+	}
+
+	private static function change( string $field, mixed $from, mixed $to ): string {
+		// Numbers read badly in quotes: `items 3 -> 4`, not `items "3" -> "4"`.
+		if ( is_int( $from ) && is_int( $to ) ) {
+			return sprintf( '%s %d -> %d', $field, $from, $to );
+		}
+		return sprintf( '%s "%s" -> "%s"', $field, self::truncate( self::scalar( $from ) ), self::truncate( self::scalar( $to ) ) );
 	}
 }

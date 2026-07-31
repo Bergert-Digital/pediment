@@ -65,4 +65,37 @@ class ReporterTest extends WP_UnitTestCase {
 		// 2 creates (media hero-bg + page home) + 1 update (contact) = 3 writes.
 		$this->assertSame( '3 to write, 1 protected, 1 orphan, 1 unchanged.', Reporter::summaryLine( $this->result( true ) ) );
 	}
+
+	public function test_a_partial_apply_does_not_claim_nothing_was_applied() {
+		$result = new RunResult( new Plan(), true, '', [ 'media.logo: could not copy' ] );
+
+		$text = Reporter::text( $result );
+
+		$this->assertStringContainsString( 'the run continued', $text );
+		$this->assertStringNotContainsString( 'nothing was applied', $text );
+	}
+
+	public function test_a_protected_item_states_its_note_once() {
+		$plan = new Plan(
+			[
+				new PlanItem(
+					PlanItem::PROTECTED,
+					PlanItem::KIND_ENTRY,
+					'about',
+					'',
+					9,
+					[],
+					[
+						'title'   => [ 'from' => 'About', 'to' => 'About us' ],
+						'content' => [ 'from' => '(database)', 'to' => '(manifest)' ],
+					],
+					'edited in the editor — content and title left alone'
+				),
+			]
+		);
+
+		$text = Reporter::text( new RunResult( $plan, false, '' ) );
+
+		$this->assertSame( 1, substr_count( $text, 'edited in the editor' ), 'one item, one explanation' );
+	}
 }
