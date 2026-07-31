@@ -876,6 +876,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 final class Manifest {
 	public const RELATIVE_PATH = 'seed/manifest.php';
 
+	private static ?self $cache = null;
+	private static bool $loaded = false;
+
 	/**
 	 * @param array<string,EntrySpec>    $entries
 	 * @param array<string,MediaSpec>    $media
@@ -892,7 +895,19 @@ final class Manifest {
 		private string $siteLogo
 	) {}
 
+	/**
+	 * Load and validate the active theme's manifest.
+	 *
+	 * Memoized per request: `PostTypes` calls this on every `init`, and without
+	 * the memo each page load would re-read the file, re-validate every entry,
+	 * and stat every declared media file. Seed runs and tests call
+	 * `resetCache()` first so they always see the file as it is now.
+	 */
 	public static function load(): ?self {
+		if ( self::$loaded ) {
+			return self::$cache;
+		}
+
 		$baseDir = untrailingslashit( get_stylesheet_directory() );
 		$path    = $baseDir . '/' . self::RELATIVE_PATH;
 		$raw     = is_readable( $path ) ? include $path : null;
@@ -906,10 +921,26 @@ final class Manifest {
 		$raw = apply_filters( 'pediment_seed_manifest', $raw, $baseDir );
 
 		if ( ! is_array( $raw ) ) {
+			self::$cache  = null;
+			self::$loaded = true;
 			return null;
 		}
 
-		return self::fromArray( $raw, $baseDir, is_readable( $path ) ? $path : 'pediment_seed_manifest filter' );
+		// fromArray() throws on an invalid manifest, and the memo is only set
+		// after it returns — an error is never cached, so fixing the file does
+		// not require a new request.
+		$manifest = self::fromArray( $raw, $baseDir, is_readable( $path ) ? $path : 'pediment_seed_manifest filter' );
+
+		self::$cache  = $manifest;
+		self::$loaded = true;
+
+		return $manifest;
+	}
+
+	/** Drop the per-request memo. Call before any read that must see current state. */
+	public static function resetCache(): void {
+		self::$cache  = null;
+		self::$loaded = false;
 	}
 
 	/** @param array<string,mixed> $raw */
@@ -3994,6 +4025,24 @@ class PostTypesTest extends WP_UnitTestCase {
 
 		$this->assertTrue( true, 'a broken manifest must not fatal on every request' );
 	}
+
+	public function test_register_wires_the_init_hook() {
+		// Without this, the whole Bootstrap line could be deleted and the rest of
+		// the suite would still pass while no CPT ever registered on a real site.
+		PostTypes::register();
+
+		$this->assertSame( 5, has_action( 'init', [ PostTypes::class, 'registerFromManifest' ] ) );
+	}
+
+	public function test_a_slug_another_plugin_owns_is_not_claimed_as_ours() {
+		register_post_type( 'listing', [ 'public' => false, 'show_in_rest' => false ] );
+		add_filter( 'pediment_seed_manifest', static fn() => [ 'post_types' => [ 'listing' => [ 'label' => 'Listings' ] ] ] );
+
+		PostTypes::registerFromManifest();
+
+		$this->assertNotContains( 'listing', PostTypes::registeredSlugs(), 'the manifest args were not applied, so do not claim it' );
+		$this->assertFalse( get_post_type_object( 'listing' )->show_in_rest, 'the other registration still owns the slug' );
+	}
 }
 ```
 
@@ -4024,11 +4073,24 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 final class PostTypes {
+	/** @var array<string,bool> Slugs this class registered, as opposed to ones already taken. */
+	private static array $registered = [];
+
 	public static function register(): void {
 		add_action( 'init', [ self::class, 'registerFromManifest' ], 5 );
 	}
 
+	/** @return string[] */
+	public static function registeredSlugs(): array {
+		return array_keys( self::$registered );
+	}
+
 	public static function registerFromManifest(): void {
+		// `init` already populated the per-request memo (PostTypes reads it on
+		// every request), and an operator who just edited the manifest expects
+		// this run to see the file as it is now.
+		Manifest::resetCache();
+
 		try {
 			$manifest = Manifest::load();
 		} catch ( ManifestError $e ) {
@@ -4043,10 +4105,15 @@ final class PostTypes {
 		}
 
 		foreach ( $manifest->postTypes() as $spec ) {
+			// `init` can fire more than once per request, and another plugin may
+			// already own the slug. Recording what WE registered lets the Verifier
+			// tell "registered from the manifest" from "someone else got there
+			// first, and the manifest's args were silently discarded".
 			if ( post_type_exists( $spec->slug ) ) {
 				continue;
 			}
 			register_post_type( $spec->slug, $spec->args );
+			self::$registered[ $spec->slug ] = true;
 		}
 	}
 }
@@ -4281,9 +4348,17 @@ final class Verifier {
 			}
 		}
 
+		$registeredByUs = \Pediment\Seeder\PostTypes::registeredSlugs();
 		foreach ( $manifest->postTypes() as $spec ) {
 			if ( ! post_type_exists( $spec->slug ) ) {
 				$problems[] = sprintf( 'post_types.%s: not registered — entries of this type are unreachable.', $spec->slug );
+				continue;
+			}
+			if ( ! in_array( $spec->slug, $registeredByUs, true ) ) {
+				$problems[] = sprintf(
+					'post_types.%s: already registered by something else — the manifest\'s settings (show_in_rest, supports, rewrite) were not applied.',
+					$spec->slug
+				);
 			}
 		}
 
@@ -4474,6 +4549,11 @@ final class Runner {
 	/** @param array{dry_run?:bool} $options */
 	public function run( array $options = [] ): RunResult {
 		$dryRun = ! empty( $options['dry_run'] );
+
+		// `init` already populated the per-request memo (PostTypes reads it on
+		// every request), and an operator who just edited the manifest expects
+		// this run to see the file as it is now.
+		Manifest::resetCache();
 
 		try {
 			$manifest = Manifest::load();
@@ -5262,6 +5342,11 @@ final class Adopter {
 	/** @return array{path:string,bytes:int,written:bool,errors:string[]} */
 	public function adopt( string $seedKey, string $language = '', bool $dryRun = false ): array {
 		$empty = [ 'path' => '', 'bytes' => 0, 'written' => false, 'errors' => [] ];
+
+		// `init` already populated the per-request memo (PostTypes reads it on
+		// every request), and an operator who just edited the manifest expects
+		// this run to see the file as it is now.
+		Manifest::resetCache();
 
 		try {
 			$manifest = Manifest::load();
