@@ -25,6 +25,7 @@ final class Bootstrap {
 	public function register(): void {
 		\Pediment\Templates\Registrar::register();
 		\Pediment\Tokens\Injector::register();
+		\Pediment\Seeder\PostTypes::register();
 
 		add_filter( 'register_block_type_args', static function ( $args ) {
 			\Pediment\Anthropic\SchemaBuilder::invalidate();
