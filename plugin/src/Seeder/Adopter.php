@@ -85,15 +85,20 @@ final class Adopter {
 			return array_merge( $empty, [ 'errors' => [ sprintf( 'Cannot write %s.', $file ) ] ] );
 		}
 
+		// A brand-new pattern file is invisible until the theme's pattern header
+		// cache expires (30 minutes), which is exactly the first-adopt case.
+		wp_get_theme()->delete_pattern_cache();
+
 		// Read the file back the way the pattern registry will, and hash THAT as
 		// the source. Hashing the database row instead leaves the two a newline
 		// apart, and the very next seed rewrites the page adopt just blessed.
 		$resolved = $this->resolveWritten( $file );
 		$header   = get_file_data( $file, [ 'slug' => 'Slug' ] );
 		if ( $header['slug'] !== $spec->pattern ) {
+			$this->rollback( $file, $backup );
 			return array_merge(
 				$empty,
-				[ 'errors' => [ sprintf( '%s: wrote %s but its Slug header reads "%s", not "%s" — the next seed would not find it.', $seedKey, $file, $header['slug'], (string) $spec->pattern ) ] ]
+				[ 'errors' => [ sprintf( '%s: wrote %s but its Slug header reads "%s", not "%s" — the next seed would not find it, so the write was rolled back.', $seedKey, $file, $header['slug'], (string) $spec->pattern ) ] ]
 			);
 		}
 
@@ -110,6 +115,17 @@ final class Adopter {
 		ob_start();
 		include $file;
 		return (string) ob_get_clean();
+	}
+
+	/** Put the file back the way it was when a post-write check fails. */
+	private function rollback( string $file, string $backup ): void {
+		if ( '' !== $backup && is_readable( $backup ) ) {
+			// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_copy -- developer-side export.
+			copy( $backup, $file );
+			wp_delete_file( $backup );
+			return;
+		}
+		wp_delete_file( $file );
 	}
 
 	/**
@@ -132,7 +148,9 @@ final class Adopter {
 			if ( '' !== $url ) {
 				$markup = str_replace( $url, '{{media_url:' . $key . '}}', $markup );
 			}
-			$markup = str_replace( '"id":' . $id, '"id":{{media_id:' . $key . '}}', $markup );
+			// Anchored on a non-digit: a bare str_replace of `"id":4` would also
+			// hit `"id":41` and corrupt an unrelated block's attributes.
+			$markup = (string) preg_replace( '/"id":' . $id . '(?![0-9])/', '"id":{{media_id:' . $key . '}}', $markup );
 		}
 
 		return $markup;

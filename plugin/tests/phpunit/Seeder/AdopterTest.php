@@ -134,6 +134,37 @@ class AdopterTest extends WP_UnitTestCase {
 		$this->assertStringNotContainsString( $url, $written, 'an environment-specific URL must not land in git' );
 	}
 
+	public function test_a_longer_attachment_id_is_not_corrupted_by_a_shorter_one() {
+		wp_mkdir_p( $this->dir . '/seed/media' );
+		file_put_contents( $this->dir . '/seed/media/hero.svg', '<svg xmlns="http://www.w3.org/2000/svg"/>' );
+		remove_all_filters( 'pediment_seed_manifest' );
+		add_filter(
+			'pediment_seed_manifest',
+			fn() => [
+				'pages' => [ 'home' => [ 'title' => 'Home', 'pattern' => 'acme/home' ] ],
+				'media' => [ 'hero' => [ 'file' => 'seed/media/hero.svg' ] ],
+			]
+		);
+		$ids    = ( new Runner() )->run()->ids;
+		$heroId = ( new MediaSeeder() )->map( Manifest::load() )->id( 'hero' );
+
+		// Guarantee the prefix relationship by construction rather than hoping
+		// two real attachment IDs happen to collide this way.
+		$unrelatedId = $heroId . '9';
+		wp_update_post(
+			[
+				'ID'           => $ids['home|'],
+				'post_content' => '<!-- wp:image {"id":' . $heroId . '} /--><!-- wp:image {"id":' . $unrelatedId . '} -->',
+			]
+		);
+
+		( new Adopter( new NullProvider() ) )->adopt( 'home' );
+
+		$written = (string) file_get_contents( $this->dir . '/patterns/home.php' );
+		$this->assertStringContainsString( '"id":{{media_id:hero}}', $written );
+		$this->assertStringContainsString( '"id":' . $unrelatedId, $written, 'a longer ID sharing the shorter one\'s digits as a prefix must survive untouched' );
+	}
+
 	public function test_an_existing_pattern_header_survives_a_re_adopt() {
 		file_put_contents(
 			$this->dir . '/patterns/home.php',
