@@ -100,6 +100,28 @@ class NavSeederTest extends WP_UnitTestCase {
 		$this->assertStringContainsString( 'home', $seeder->errors()[0] );
 	}
 
+	public function test_a_trashed_nav_is_restored_not_re_created() {
+		// A client deleting the menu used to leave the seed key on the trashed
+		// row while a second entity was created beside it — two navs under one
+		// identity, which the very next run reports as fatal.
+		$seeder = new NavSeeder( new NullProvider() );
+		$m      = $this->manifest( [ [ 'entry' => 'home' ] ] );
+		$ids    = [ 'home|' => self::factory()->post->create( [ 'post_type' => 'page' ] ) ];
+		$navIds = $seeder->apply( $seeder->plan( $m, $ids ), $m, $ids );
+		wp_trash_post( $navIds['primary|'] );
+
+		$plan  = $seeder->plan( $m, $ids );
+		$again = $seeder->apply( $plan, $m, $ids );
+
+		$this->assertSame( PlanItem::RESTORE, $plan->items()[0]->action );
+		$this->assertSame( $navIds['primary|'], $again['primary|'], 'restore in place, never re-create' );
+		$nav = get_post( $navIds['primary|'] );
+		$this->assertSame( 'publish', $nav->post_status );
+		$this->assertSame( 'primary', $nav->post_name, 'the __trashed suffix must not survive' );
+		$this->assertSame( '', get_post_meta( $navIds['primary|'], '_wp_trash_meta_status', true ) );
+		$this->assertCount( 1, get_posts( [ 'post_type' => 'wp_navigation', 'post_status' => 'any', 'posts_per_page' => -1, 'fields' => 'ids' ] ) );
+	}
+
 	public function test_two_entities_under_one_key_are_reported() {
 		$seeder = new NavSeeder( new NullProvider() );
 		$m      = $this->manifest( [ [ 'entry' => 'home' ] ] );

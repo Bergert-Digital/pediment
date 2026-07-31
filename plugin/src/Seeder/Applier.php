@@ -147,12 +147,8 @@ final class Applier {
 			}
 		}
 
-		// Restoring by writing post_status directly skips the untrash hooks, so
-		// wp_trash_post()'s bookkeeping would stay behind forever.
 		if ( isset( $postarr['post_status'] ) && 'trash' === $item->changes['status']['from'] ) {
-			foreach ( [ '_wp_trash_meta_status', '_wp_trash_meta_time', '_wp_desired_post_slug' ] as $trashMeta ) {
-				delete_post_meta( $item->postId, $trashMeta );
-			}
+			Meta::clearTrashBookkeeping( $item->postId );
 		}
 
 		if ( 1 === count( $postarr ) ) {
