@@ -21,6 +21,12 @@ if ( ! defined( 'ABSPATH' ) ) {
 final class Manifest {
 	public const RELATIVE_PATH = 'seed/manifest.php';
 
+	/** @var self|null */
+	private static ?self $cache = null;
+
+	/** @var bool */
+	private static bool $loaded = false;
+
 	/**
 	 * @param array<string,EntrySpec>    $entries
 	 * @param array<string,MediaSpec>    $media
@@ -37,7 +43,23 @@ final class Manifest {
 		private string $siteLogo
 	) {}
 
+	/**
+	 * Load and validate the active theme's manifest.
+	 *
+	 * Memoized per request: `PostTypes` calls this on every `init`, and without
+	 * the memo each page load would re-read the file, re-validate every entry,
+	 * and stat every declared media file. Seed runs and tests call
+	 * `resetCache()` first so they always see the file as it is now.
+	 *
+	 * @return self|null
+	 *
+	 * @throws ManifestError When the manifest fails validation.
+	 */
 	public static function load(): ?self {
+		if ( self::$loaded ) {
+			return self::$cache;
+		}
+
 		$baseDir = untrailingslashit( get_stylesheet_directory() );
 		$path    = $baseDir . '/' . self::RELATIVE_PATH;
 		$raw     = is_readable( $path ) ? include $path : null;
@@ -51,10 +73,26 @@ final class Manifest {
 		$raw = apply_filters( 'pediment_seed_manifest', $raw, $baseDir );
 
 		if ( ! is_array( $raw ) ) {
+			self::$cache  = null;
+			self::$loaded = true;
 			return null;
 		}
 
-		return self::fromArray( $raw, $baseDir, is_readable( $path ) ? $path : 'pediment_seed_manifest filter' );
+		// fromArray() throws on an invalid manifest, and the memo is only set
+		// after it returns — an error is never cached, so fixing the file does
+		// not require a new request.
+		$manifest = self::fromArray( $raw, $baseDir, is_readable( $path ) ? $path : 'pediment_seed_manifest filter' );
+
+		self::$cache  = $manifest;
+		self::$loaded = true;
+
+		return $manifest;
+	}
+
+	/** Drop the per-request memo. Call before any read that must see current state. */
+	public static function resetCache(): void {
+		self::$cache  = null;
+		self::$loaded = false;
 	}
 
 	/**

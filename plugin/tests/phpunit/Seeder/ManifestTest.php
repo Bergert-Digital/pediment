@@ -195,6 +195,7 @@ class ManifestTest extends WP_UnitTestCase {
 	public function test_load_returns_null_without_a_theme_manifest_and_honours_the_filter() {
 		$this->assertNull( Manifest::load() );
 
+		Manifest::resetCache();
 		add_filter( 'pediment_seed_manifest', fn() => $this->raw() );
 		$m = Manifest::load();
 		remove_all_filters( 'pediment_seed_manifest' );
