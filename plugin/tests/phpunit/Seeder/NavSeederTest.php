@@ -113,4 +113,29 @@ class NavSeederTest extends WP_UnitTestCase {
 		$this->assertTrue( $plan->hasErrors() );
 		$this->assertStringContainsString( 'primary', $plan->errors()[0] );
 	}
+
+	public function test_an_unresolved_link_is_still_reported_once_the_nav_stops_changing() {
+		// After the first run the nav's content matches, so the item is UNCHANGED
+		// — but the missing link is still missing, and silence would read as success.
+		$seeder = new NavSeeder( new NullProvider() );
+		$m      = $this->manifest( [ [ 'entry' => 'home' ] ] );
+		$seeder->apply( $seeder->plan( $m, [] ), $m, [] );
+
+		$plan = $seeder->plan( $m, [] );
+		$seeder->apply( $plan, $m, [] );
+
+		$this->assertSame( PlanItem::UNCHANGED, $plan->items()[0]->action );
+		$this->assertNotEmpty( $seeder->errors(), 'the problem persists, so the report must too' );
+		$this->assertStringContainsString( 'home', $seeder->errors()[0] );
+	}
+
+	public function test_serialize_has_no_side_effects() {
+		$seeder = new NavSeeder( new NullProvider() );
+		$m      = $this->manifest( [ [ 'entry' => 'home' ] ] );
+
+		$seeder->serialize( $m->navs()['primary'], '', [] );
+		$seeder->serialize( $m->navs()['primary'], '', [] );
+
+		$this->assertSame( [], $seeder->errors(), 'serialize() is a formatter, not a reporter' );
+	}
 }
