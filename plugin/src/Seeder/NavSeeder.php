@@ -98,7 +98,18 @@ final class NavSeeder {
 		try {
 			foreach ( $plan->byKind( PlanItem::KIND_NAV ) as $item ) {
 				$spec = $manifest->navs()[ $item->key ] ?? null;
-				if ( ! $spec instanceof NavSpec || PlanItem::UNCHANGED === $item->action ) {
+				if ( ! $spec instanceof NavSpec ) {
+					continue;
+				}
+
+				// Checked for every item, including UNCHANGED ones: a menu that
+				// quietly comes out short is worse than one that fails, and the
+				// problem persists across runs even though the nav stops changing.
+				foreach ( $this->unresolvedEntries( $spec, $item->language, $entryIds ) as $missing ) {
+					$this->errors[] = sprintf( 'navs.%s: "%s" has no seeded post yet — the link was left out.', $spec->key, $missing );
+				}
+
+				if ( PlanItem::UNCHANGED === $item->action ) {
 					continue;
 				}
 
@@ -155,9 +166,9 @@ final class NavSeeder {
 			if ( isset( $item['entry'] ) ) {
 				$postId = (int) ( $entryIds[ $item['entry'] . '|' . $language ] ?? 0 );
 				if ( 0 === $postId ) {
-					// A menu that quietly comes out short is worse than one that
-					// fails: the operator sees a working site missing a link.
-					$this->errors[] = sprintf( 'navs.%s: "%s" has no seeded post yet — the link was left out.', $spec->key, $item['entry'] );
+					// Reported by apply() via unresolvedEntries(), not from here:
+					// serialize() must stay pure, and an unresolved link has to be
+					// reported on EVERY run, not only the one that rewrites the nav.
 					continue;
 				}
 				$post    = get_post( $postId );
@@ -191,6 +202,22 @@ final class NavSeeder {
 		return implode( "\n", $links );
 	}
 
+	/**
+	 * Entry keys this nav references that have no seeded post yet.
+	 *
+	 * @param array<string,int> $entryIds
+	 * @return string[]
+	 */
+	private function unresolvedEntries( NavSpec $spec, string $language, array $entryIds ): array {
+		$missing = [];
+		foreach ( $spec->items as $item ) {
+			if ( isset( $item['entry'] ) && 0 === (int) ( $entryIds[ $item['entry'] . '|' . $language ] ?? 0 ) ) {
+				$missing[] = (string) $item['entry'];
+			}
+		}
+		return $missing;
+	}
+
 	/** @return array<string,int> navKey|language => post ID */
 	private function existing(): array {
 		$ids = [];
@@ -216,6 +243,8 @@ final class NavSeeder {
 						'post_status'    => [ 'publish', 'draft' ],
 						'posts_per_page' => -1,
 						'no_found_rows'  => true,
+						'orderby'        => 'ID',
+						'order'          => 'ASC',
 						// phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key -- seed identity lookup.
 						'meta_key'       => Meta::KEY,
 						'meta_compare'   => 'EXISTS',
