@@ -190,6 +190,41 @@ class RunnerTest extends WP_UnitTestCase {
 		$this->assertStringContainsString( 'navs.primary', implode( "\n", $second->problems ) );
 	}
 
+	public function test_a_typoed_media_key_is_reported_on_every_run() {
+		// Nothing else notices: the media plan has no such key and the Verifier
+		// only walks declared media, so the literal sentinel lands in the page
+		// and is hashed as if it were correct.
+		$dir = get_temp_dir() . 'pediment-runner-typo';
+		wp_mkdir_p( $dir . '/seed/media' );
+		file_put_contents( $dir . '/seed/media/hero.svg', '<svg xmlns="http://www.w3.org/2000/svg"/>' );
+		add_filter( 'stylesheet_directory', static fn() => $dir );
+		$this->manifest['media']                    = [ 'hero' => [ 'file' => 'seed/media/hero.svg' ] ];
+		$this->manifest['pages']['home']['content'] = '<img src="{{media_url:hreo}}" />';
+
+		$first  = ( new Runner() )->run();
+		$second = ( new Runner() )->run();
+
+		remove_all_filters( 'stylesheet_directory' );
+		$this->assertStringContainsString( 'hreo', implode( "\n", $first->problems ) );
+		$this->assertTrue( $second->plan->isEmpty(), 'nothing changed, so nothing is planned' );
+		$this->assertStringContainsString( 'hreo', implode( "\n", $second->problems ), 'a key that can never resolve must not go quiet after the first run' );
+		$this->assertFalse( $second->ok() );
+	}
+
+	public function test_a_declared_media_key_is_not_reported_as_a_typo_on_a_fresh_site() {
+		$dir = get_temp_dir() . 'pediment-runner-fresh-media';
+		wp_mkdir_p( $dir . '/seed/media' );
+		file_put_contents( $dir . '/seed/media/hero.svg', '<svg xmlns="http://www.w3.org/2000/svg"/>' );
+		add_filter( 'stylesheet_directory', static fn() => $dir );
+		$this->manifest['media']                    = [ 'hero' => [ 'file' => 'seed/media/hero.svg' ] ];
+		$this->manifest['pages']['home']['content'] = '<img src="{{media_url:hero}}" />';
+
+		$result = ( new Runner() )->run();
+
+		remove_all_filters( 'stylesheet_directory' );
+		$this->assertTrue( $result->ok(), implode( "\n", array_merge( $result->errors, $result->problems ) ) );
+	}
+
 	public function test_a_media_plan_error_is_reported_exactly_once() {
 		// A missing file is rejected at manifest load, which never reaches the
 		// media seeder. An unsupported extension on a file that DOES exist is a

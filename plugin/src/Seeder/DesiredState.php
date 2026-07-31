@@ -16,14 +16,23 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 final class DesiredState {
+	/** @var array<string,string[]> entry map key => media keys the manifest never declares */
+	private array $undeclaredMedia = [];
+
 	public function __construct(
 		private LanguageProvider $lang,
 		private ContentResolver $resolver
 	) {}
 
-	/** @return array<string,DesiredEntry> */
+	/**
+	 * @return array<string,DesiredEntry>
+	 *
+	 * @throws ManifestError When an entry's pattern is not registered.
+	 */
 	public function build( Manifest $manifest ): array {
-		$desired = [];
+		$desired               = [];
+		$this->undeclaredMedia = [];
+		$declared              = array_keys( $manifest->media() );
 
 		foreach ( $this->lang->languages() as $language ) {
 			foreach ( $manifest->entriesInDependencyOrder() as $spec ) {
@@ -46,9 +55,30 @@ final class DesiredState {
 				);
 
 				$desired[ $entry->id() ] = $entry;
+
+				// The resolver records what it could not resolve per call, so it
+				// has to be read here or it is overwritten by the next entry.
+				// Keys the manifest DOES declare are the fresh-site case — media
+				// simply has not been applied yet, and the MediaSeeder/Verifier
+				// own that. A key nobody declares is a typo that can never
+				// resolve: the literal sentinel lands in a live page and gets
+				// hashed as if it were correct.
+				$undeclared = array_values( array_diff( $this->resolver->unresolvedMediaKeys(), $declared ) );
+				if ( [] !== $undeclared ) {
+					$this->undeclaredMedia[ $entry->id() ] = $undeclared;
+				}
 			}
 		}
 
 		return $desired;
+	}
+
+	/**
+	 * Media keys the entries reference that the manifest never declares.
+	 *
+	 * @return array<string,string[]> entry map key => media keys
+	 */
+	public function undeclaredMediaKeys(): array {
+		return $this->undeclaredMedia;
 	}
 }
