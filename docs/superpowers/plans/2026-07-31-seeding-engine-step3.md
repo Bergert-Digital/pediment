@@ -3026,12 +3026,16 @@ git commit -m "feat(seeder): apply the plan with slash-safe writes and hash reco
 - Produces:
   ```php
   final class Pediment\Seeder\MediaSeeder {
-      public function plan( Manifest $manifest ): Plan;            // KIND_MEDIA items: create | unchanged
+      public function plan( Manifest $manifest ): Plan;            // KIND_MEDIA items: create | restore | unchanged
       public function apply( Plan $plan, Manifest $manifest ): MediaMap;
       public function map( Manifest $manifest ): MediaMap;         // existing attachments only; used for dry runs
+      /** @return string[] Failures from the most recent apply(); the Runner folds these into its result. */
+      public function errors(): array;
   }
   ```
-  Attachments carry `_pediment_seed_key` exactly like entries. Files are copied into `wp_upload_dir()` and inserted with an explicit MIME (SVG never passes `wp_check_filetype`, so the map is explicit). Raster files get `wp_generate_attachment_metadata()`; SVG does not. `site.logo` sets the `custom_logo` theme mod.
+  Attachments carry `_pediment_seed_key` exactly like entries. Files are copied into `wp_upload_dir()` and inserted with an explicit MIME (SVG never passes `wp_check_filetype`, so the map is explicit). Raster files get `wp_generate_attachment_metadata()`; SVG and PDF skip it. `site.logo` sets the `custom_logo` theme mod — the logo is an enforced default, not client content.
+
+  Three properties this seeder needs for the same reasons the entry path does: every `sideload()` failure is reported rather than returning a bare 0 (a silent partial seed is the failure mode the engine exists to prevent); a trashed attachment is restored instead of re-uploaded (otherwise two attachments end up carrying one seed key); and two attachments sharing a key is a plan error, exactly as it is for entries.
 
 - [ ] **Step 1: Write the failing test**
 
@@ -3114,6 +3118,65 @@ class MediaSeederTest extends WP_UnitTestCase {
 	public function test_map_sees_only_what_is_already_seeded() {
 		$this->assertSame( 0, ( new MediaSeeder() )->map( $this->manifest() )->id( 'logo' ) );
 	}
+
+	public function test_a_trashed_attachment_is_restored_rather_than_re_uploaded() {
+		$seeder = new MediaSeeder();
+		$m      = $this->manifest();
+		$first  = $seeder->apply( $seeder->plan( $m ), $m );
+		wp_trash_post( $first->id( 'logo' ) );
+
+		$plan   = $seeder->plan( $m );
+		$second = $seeder->apply( $plan, $m );
+
+		$this->assertSame( PlanItem::RESTORE, $plan->byAction( PlanItem::RESTORE )[0]->action );
+		$this->assertSame( $first->id( 'logo' ), $second->id( 'logo' ), 'restore, never re-upload' );
+		// get_post_status() resolves `inherit` on an unattached attachment to
+		// `publish`, so assert the raw column instead.
+		$this->assertSame( 'inherit', get_post_field( 'post_status', $second->id( 'logo' ) ) );
+		$this->assertCount(
+			1,
+			get_posts( [ 'post_type' => 'attachment', 'post_status' => 'any', 'fields' => 'ids', 'meta_key' => \Pediment\Seeder\Meta::KEY, 'meta_value' => 'logo' ] ),
+			'one seed key, one attachment'
+		);
+	}
+
+	public function test_two_attachments_under_one_key_are_reported() {
+		$seeder = new MediaSeeder();
+		$m      = $this->manifest();
+		$seeder->apply( $seeder->plan( $m ), $m );
+		$impostor = self::factory()->attachment->create_object( [ 'file' => 'copy.svg', 'post_mime_type' => 'image/svg+xml' ] );
+		update_post_meta( $impostor, \Pediment\Seeder\Meta::KEY, 'logo' );
+
+		$plan = $seeder->plan( $m );
+
+		$this->assertTrue( $plan->hasErrors() );
+		$this->assertStringContainsString( 'logo', $plan->errors()[0] );
+	}
+
+	public function test_a_sideload_failure_is_reported_rather_than_silently_skipped() {
+		$seeder = new MediaSeeder();
+		$m      = $this->manifest();
+		// Make wp_insert_attachment fail without touching the filesystem.
+		add_filter( 'wp_insert_post_empty_content', '__return_true' );
+
+		$map = $seeder->apply( $seeder->plan( $m ), $m );
+
+		remove_filter( 'wp_insert_post_empty_content', '__return_true' );
+		$this->assertSame( 0, $map->id( 'logo' ) );
+		$this->assertNotEmpty( $seeder->errors() );
+		$this->assertStringContainsString( 'logo', implode( "\n", $seeder->errors() ) );
+	}
+
+	public function test_an_errored_plan_writes_nothing() {
+		$seeder = new MediaSeeder();
+		$m      = $this->manifest();
+
+		$map = $seeder->apply( new \Pediment\Seeder\Plan( [], [ 'boom' ] ), $m );
+
+		$this->assertSame( 0, $map->id( 'logo' ) );
+		$this->assertSame( [ 'boom' ], $seeder->errors() );
+		$this->assertSame( [], get_posts( [ 'post_type' => 'attachment', 'post_status' => 'any', 'fields' => 'ids' ] ) );
+	}
 }
 ```
 
@@ -3142,6 +3205,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 final class MediaSeeder {
+	/** @var string[] Failures from the most recent apply(). */
+	private array $errors = [];
+
 	private const MIME = [
 		'jpg'  => 'image/jpeg',
 		'jpeg' => 'image/jpeg',
@@ -3158,6 +3224,15 @@ final class MediaSeeder {
 		$errors   = [];
 		$existing = $this->existing();
 
+		foreach ( $this->duplicates() as $key => $duplicateIds ) {
+			$errors[] = sprintf(
+				'media.%s is carried by %d attachments (IDs %s). Identity must be unique — delete or re-key the extras.',
+				$key,
+				count( $duplicateIds ),
+				implode( ', ', $duplicateIds )
+			);
+		}
+
 		foreach ( $manifest->media() as $key => $spec ) {
 			$extension = strtolower( (string) pathinfo( $spec->file, PATHINFO_EXTENSION ) );
 			if ( ! isset( self::MIME[ $extension ] ) ) {
@@ -3165,9 +3240,8 @@ final class MediaSeeder {
 				continue;
 			}
 
-			$items[] = isset( $existing[ $key ] )
-				? new PlanItem( PlanItem::UNCHANGED, PlanItem::KIND_MEDIA, $key, '', $existing[ $key ] )
-				: new PlanItem(
+			if ( ! isset( $existing[ $key ] ) ) {
+				$items[] = new PlanItem(
 					PlanItem::CREATE,
 					PlanItem::KIND_MEDIA,
 					$key,
@@ -3175,6 +3249,21 @@ final class MediaSeeder {
 					0,
 					[ 'file' => [ 'from' => null, 'to' => basename( $spec->file ) ] ]
 				);
+				continue;
+			}
+
+			// A trashed attachment still holds the key. Re-uploading would put two
+			// attachments under one identity; restore the one that already exists.
+			$items[] = 'trash' === get_post_status( $existing[ $key ] )
+				? new PlanItem(
+					PlanItem::RESTORE,
+					PlanItem::KIND_MEDIA,
+					$key,
+					'',
+					$existing[ $key ],
+					[ 'status' => [ 'from' => 'trash', 'to' => 'inherit' ] ]
+				)
+				: new PlanItem( PlanItem::UNCHANGED, PlanItem::KIND_MEDIA, $key, '', $existing[ $key ] );
 		}
 
 		return new Plan( $items, $errors );
@@ -3184,15 +3273,39 @@ final class MediaSeeder {
 		return new MediaMap( array_intersect_key( $this->existing(), $manifest->media() ) );
 	}
 
+	/** @return string[] */
+	public function errors(): array {
+		return $this->errors;
+	}
+
 	public function apply( Plan $plan, Manifest $manifest ): MediaMap {
-		$ids = $this->existing();
+		$this->errors = [];
+
+		// Same contract as Applier::apply(): an errored plan writes nothing.
+		if ( $plan->hasErrors() ) {
+			$this->errors = $plan->errors();
+			return $this->map( $manifest );
+		}
+
+		$ids = array_intersect_key( $this->existing(), $manifest->media() );
 
 		foreach ( $plan->byKind( PlanItem::KIND_MEDIA ) as $item ) {
-			if ( PlanItem::CREATE !== $item->action ) {
-				continue;
-			}
 			$spec = $manifest->media()[ $item->key ] ?? null;
 			if ( ! $spec instanceof MediaSpec ) {
+				continue;
+			}
+
+			if ( PlanItem::RESTORE === $item->action ) {
+				$restored = wp_update_post( [ 'ID' => $item->postId, 'post_status' => 'inherit' ], true );
+				if ( is_wp_error( $restored ) ) {
+					$this->errors[] = sprintf( 'media.%s: could not restore attachment %d — %s', $item->key, $item->postId, $restored->get_error_message() );
+					continue;
+				}
+				$ids[ $item->key ] = $item->postId;
+				continue;
+			}
+
+			if ( PlanItem::CREATE !== $item->action ) {
 				continue;
 			}
 			$id = $this->sideload( $spec );
@@ -3216,6 +3329,7 @@ final class MediaSeeder {
 
 		$uploads = wp_upload_dir();
 		if ( ! empty( $uploads['error'] ) ) {
+			$this->errors[] = sprintf( 'media.%s: the uploads directory is not writable — %s', $spec->key, $uploads['error'] );
 			return 0;
 		}
 
@@ -3225,6 +3339,7 @@ final class MediaSeeder {
 
 		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_copy -- seeding from a theme-shipped file, not user input.
 		if ( ! copy( $spec->file, $target ) ) {
+			$this->errors[] = sprintf( 'media.%s: could not copy %s into the uploads directory.', $spec->key, $spec->file );
 			return 0;
 		}
 
@@ -3240,6 +3355,7 @@ final class MediaSeeder {
 		);
 
 		if ( is_wp_error( $attachmentId ) ) {
+			$this->errors[] = sprintf( 'media.%s: could not insert the attachment — %s', $spec->key, $attachmentId->get_error_message() );
 			return 0;
 		}
 
@@ -3253,15 +3369,33 @@ final class MediaSeeder {
 		return $attachmentId;
 	}
 
-	/** @return array<string,int> */
+	/** @return array<string,int> First attachment per key, trashed ones included. */
 	private function existing(): array {
 		$ids = [];
+		foreach ( $this->keyed() as $key => $attachmentIds ) {
+			$ids[ $key ] = $attachmentIds[0];
+		}
+		return $ids;
+	}
+
+	/** @return array<string,int[]> Keys carried by more than one attachment. */
+	private function duplicates(): array {
+		return array_filter( $this->keyed(), static fn( array $ids ): bool => count( $ids ) > 1 );
+	}
+
+	/** @return array<string,int[]> */
+	private function keyed(): array {
+		$keyed = [];
 		foreach (
 			get_posts(
 				[
 					'post_type'      => 'attachment',
-					'post_status'    => 'inherit',
+					// Trashed attachments still hold their seed key: ignoring them
+					// would re-upload and leave two attachments under one identity.
+					'post_status'    => [ 'inherit', 'trash' ],
 					'posts_per_page' => -1,
+					'orderby'        => 'ID',
+					'order'          => 'ASC',
 					'no_found_rows'  => true,
 					// phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key -- seed identity lookup.
 					'meta_key'       => Meta::KEY,
@@ -3270,11 +3404,11 @@ final class MediaSeeder {
 			) as $attachment
 		) {
 			$key = (string) get_post_meta( $attachment->ID, Meta::KEY, true );
-			if ( '' !== $key && ! isset( $ids[ $key ] ) ) {
-				$ids[ $key ] = (int) $attachment->ID;
+			if ( '' !== $key ) {
+				$keyed[ $key ][] = (int) $attachment->ID;
 			}
 		}
-		return $ids;
+		return $keyed;
 	}
 }
 ```
@@ -4155,8 +4289,9 @@ final class Runner {
 
 		// Media first: page content references attachments by key, so the map
 		// has to exist before content is resolved.
-		$mediaPlan = $mediaSeeder->plan( $manifest );
-		$mediaMap  = $dryRun ? $mediaSeeder->map( $manifest ) : $mediaSeeder->apply( $mediaPlan, $manifest );
+		$mediaPlan   = $mediaSeeder->plan( $manifest );
+		$mediaMap    = $dryRun ? $mediaSeeder->map( $manifest ) : $mediaSeeder->apply( $mediaPlan, $manifest );
+		$mediaErrors = $dryRun ? [] : $mediaSeeder->errors();
 
 		try {
 			// Phase 1.
@@ -4181,13 +4316,13 @@ final class Runner {
 		$plan    = Plan::merge( $mediaPlan, $entryPlan, $navPlan );
 
 		if ( $dryRun || $plan->hasErrors() ) {
-			return new RunResult( $plan, false, $manifest->path(), $plan->errors(), [], $entryIds );
+			return new RunResult( $plan, false, $manifest->path(), array_merge( $plan->errors(), $mediaErrors ), [], $entryIds );
 		}
 
 		// Phase 4.
 		$applied = ( new Applier( $this->lang ) )->apply( $entryPlan, $desired );
-		if ( [] !== $applied->errors ) {
-			return new RunResult( $plan, true, $manifest->path(), $applied->errors, [], $applied->ids );
+		if ( [] !== $applied->errors || [] !== $mediaErrors ) {
+			return new RunResult( $plan, true, $manifest->path(), array_merge( $mediaErrors, $applied->errors ), [], $applied->ids );
 		}
 
 		// Nav links need the resolved page IDs, so nav is re-planned against them.
