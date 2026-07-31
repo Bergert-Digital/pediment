@@ -7,6 +7,7 @@ use Pediment\Seeder\DesiredState;
 use Pediment\Seeder\Manifest;
 use Pediment\Seeder\MediaMap;
 use Pediment\Seeder\Meta;
+use Pediment\Seeder\NavSeeder;
 use Pediment\Seeder\Verifier;
 
 class VerifierTest extends WP_UnitTestCase {
@@ -29,13 +30,13 @@ class VerifierTest extends WP_UnitTestCase {
 		update_option( 'show_on_front', 'page' );
 		update_option( 'page_on_front', $id );
 
-		$this->assertSame( [], ( new Verifier( new NullProvider() ) )->verify( $m, $this->desired( $m ), [ 'home|' => $id ], new MediaMap( [] ) ) );
+		$this->assertSame( [], ( new Verifier( new NullProvider(), new NavSeeder( new NullProvider() ) ) )->verify( $m, $this->desired( $m ), [ 'home|' => $id ], new MediaMap( [] ) ) );
 	}
 
 	public function test_a_missing_post_is_a_problem() {
 		$m = $this->manifest();
 
-		$problems = ( new Verifier( new NullProvider() ) )->verify( $m, $this->desired( $m ), [], new MediaMap( [] ) );
+		$problems = ( new Verifier( new NullProvider(), new NavSeeder( new NullProvider() ) ) )->verify( $m, $this->desired( $m ), [], new MediaMap( [] ) );
 
 		$this->assertNotEmpty( $problems );
 		$this->assertStringContainsString( 'home', $problems[0] );
@@ -50,7 +51,7 @@ class VerifierTest extends WP_UnitTestCase {
 		update_option( 'show_on_front', 'page' );
 		update_option( 'page_on_front', $id );
 
-		$problems = ( new Verifier( new NullProvider() ) )->verify( $m, $this->desired( $m ), [ 'home|' => $id ], new MediaMap( [] ) );
+		$problems = ( new Verifier( new NullProvider(), new NavSeeder( new NullProvider() ) ) )->verify( $m, $this->desired( $m ), [ 'home|' => $id ], new MediaMap( [] ) );
 
 		$this->assertStringContainsString( 'home-2', implode( "\n", $problems ) );
 	}
@@ -61,7 +62,7 @@ class VerifierTest extends WP_UnitTestCase {
 		update_post_meta( $id, Meta::KEY, 'home' );
 		update_option( 'show_on_front', 'posts' );
 
-		$problems = ( new Verifier( new NullProvider() ) )->verify( $m, $this->desired( $m ), [ 'home|' => $id ], new MediaMap( [] ) );
+		$problems = ( new Verifier( new NullProvider(), new NavSeeder( new NullProvider() ) ) )->verify( $m, $this->desired( $m ), [ 'home|' => $id ], new MediaMap( [] ) );
 
 		$this->assertStringContainsString( 'front page', implode( "\n", $problems ) );
 	}
@@ -72,7 +73,7 @@ class VerifierTest extends WP_UnitTestCase {
 		file_put_contents( $dir . '/seed/media/logo.svg', '<svg xmlns="http://www.w3.org/2000/svg"/>' );
 		$m = Manifest::fromArray( [ 'media' => [ 'logo' => [ 'file' => 'seed/media/logo.svg' ] ] ], $dir );
 
-		$problems = ( new Verifier( new NullProvider() ) )->verify( $m, [], [], new MediaMap( [] ) );
+		$problems = ( new Verifier( new NullProvider(), new NavSeeder( new NullProvider() ) ) )->verify( $m, [], [], new MediaMap( [] ) );
 
 		$this->assertStringContainsString( 'logo', implode( "\n", $problems ) );
 	}
