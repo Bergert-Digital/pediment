@@ -4208,13 +4208,13 @@ class VerifierTest extends WP_UnitTestCase {
 		update_option( 'show_on_front', 'page' );
 		update_option( 'page_on_front', $id );
 
-		$this->assertSame( [], ( new Verifier( new NullProvider() ) )->verify( $m, $this->desired( $m ), [ 'home|' => $id ], new MediaMap( [] ) ) );
+		$this->assertSame( [], ( new Verifier( new NullProvider(), new NavSeeder( new NullProvider() ) ) )->verify( $m, $this->desired( $m ), [ 'home|' => $id ], new MediaMap( [] ) ) );
 	}
 
 	public function test_a_missing_post_is_a_problem() {
 		$m = $this->manifest();
 
-		$problems = ( new Verifier( new NullProvider() ) )->verify( $m, $this->desired( $m ), [], new MediaMap( [] ) );
+		$problems = ( new Verifier( new NullProvider(), new NavSeeder( new NullProvider() ) ) )->verify( $m, $this->desired( $m ), [], new MediaMap( [] ) );
 
 		$this->assertNotEmpty( $problems );
 		$this->assertStringContainsString( 'home', $problems[0] );
@@ -4229,7 +4229,7 @@ class VerifierTest extends WP_UnitTestCase {
 		update_option( 'show_on_front', 'page' );
 		update_option( 'page_on_front', $id );
 
-		$problems = ( new Verifier( new NullProvider() ) )->verify( $m, $this->desired( $m ), [ 'home|' => $id ], new MediaMap( [] ) );
+		$problems = ( new Verifier( new NullProvider(), new NavSeeder( new NullProvider() ) ) )->verify( $m, $this->desired( $m ), [ 'home|' => $id ], new MediaMap( [] ) );
 
 		$this->assertStringContainsString( 'home-2', implode( "\n", $problems ) );
 	}
@@ -4240,7 +4240,7 @@ class VerifierTest extends WP_UnitTestCase {
 		update_post_meta( $id, Meta::KEY, 'home' );
 		update_option( 'show_on_front', 'posts' );
 
-		$problems = ( new Verifier( new NullProvider() ) )->verify( $m, $this->desired( $m ), [ 'home|' => $id ], new MediaMap( [] ) );
+		$problems = ( new Verifier( new NullProvider(), new NavSeeder( new NullProvider() ) ) )->verify( $m, $this->desired( $m ), [ 'home|' => $id ], new MediaMap( [] ) );
 
 		$this->assertStringContainsString( 'front page', implode( "\n", $problems ) );
 	}
@@ -4251,7 +4251,7 @@ class VerifierTest extends WP_UnitTestCase {
 		file_put_contents( $dir . '/seed/media/logo.svg', '<svg xmlns="http://www.w3.org/2000/svg"/>' );
 		$m = Manifest::fromArray( [ 'media' => [ 'logo' => [ 'file' => 'seed/media/logo.svg' ] ] ], $dir );
 
-		$problems = ( new Verifier( new NullProvider() ) )->verify( $m, [], [], new MediaMap( [] ) );
+		$problems = ( new Verifier( new NullProvider(), new NavSeeder( new NullProvider() ) ) )->verify( $m, [], [], new MediaMap( [] ) );
 
 		$this->assertStringContainsString( 'logo', implode( "\n", $problems ) );
 	}
@@ -4288,14 +4288,18 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 final class Verifier {
-	public function __construct( private LanguageProvider $lang ) {}
+	public function __construct(
+		private LanguageProvider $lang,
+		private NavSeeder $navSeeder
+	) {}
 
 	/**
 	 * @param array<string,DesiredEntry> $desired
 	 * @param array<string,int>          $ids
+	 * @param array<string,int>          $navIds navKey|language => post ID
 	 * @return string[]
 	 */
-	public function verify( Manifest $manifest, array $desired, array $ids, MediaMap $media ): array {
+	public function verify( Manifest $manifest, array $desired, array $ids, MediaMap $media, array $navIds = [] ): array {
 		$problems = [];
 
 		foreach ( $desired as $mapKey => $entry ) {
@@ -4343,8 +4347,43 @@ final class Verifier {
 		}
 
 		foreach ( $manifest->media() as $key => $spec ) {
-			if ( $media->id( $key ) <= 0 ) {
+			$attachmentId = $media->id( $key );
+			if ( $attachmentId <= 0 ) {
 				$problems[] = sprintf( 'media.%s: no attachment was created for %s.', $key, basename( $spec->file ) );
+				continue;
+			}
+			// Re-read rather than trusting the map: the ID could name a row that
+			// no longer exists.
+			$attachment = get_post( $attachmentId );
+			if ( ! $attachment instanceof \WP_Post || 'attachment' !== $attachment->post_type || 'trash' === $attachment->post_status ) {
+				$problems[] = sprintf( 'media.%s: attachment %d is missing or trashed.', $key, $attachmentId );
+			}
+		}
+
+		// Navigation: the header rendering nothing while the seeder reports
+		// success is the exact incident this class exists to prevent, so the
+		// entities are re-read and their membership re-derived.
+		foreach ( $manifest->navs() as $key => $spec ) {
+			foreach ( $this->lang->languages() as $language ) {
+				$navId = (int) ( $navIds[ $key . '|' . $language ] ?? 0 );
+				if ( 0 === $navId ) {
+					$problems[] = sprintf( 'navs.%s: no navigation entity exists for this seed key.', $key );
+					continue;
+				}
+				$nav = get_post( $navId );
+				if ( ! $nav instanceof \WP_Post || 'wp_navigation' !== $nav->post_type ) {
+					$problems[] = sprintf( 'navs.%s: post %d is not a navigation entity.', $key, $navId );
+					continue;
+				}
+				if ( 'publish' !== $nav->post_status ) {
+					$problems[] = sprintf( 'navs.%s: entity %d is "%s" — the menu will not render.', $key, $navId, $nav->post_status );
+				}
+				if ( (string) get_post_meta( $navId, Meta::KEY, true ) !== $key ) {
+					$problems[] = sprintf( 'navs.%s: entity %d is missing its seed key.', $key, $navId );
+				}
+				if ( (string) $nav->post_content !== $this->navSeeder->serialize( $spec, $language, $ids ) ) {
+					$problems[] = sprintf( 'navs.%s: stored membership does not match the manifest.', $key );
+				}
 			}
 		}
 
@@ -4475,6 +4514,80 @@ class RunnerTest extends WP_UnitTestCase {
 		$this->assertCount( 1, $navs );
 		$this->assertStringContainsString( '"id":' . $result->ids['about|'], $navs[0]->post_content );
 	}
+
+	public function test_an_errored_plan_leaves_no_media_behind() {
+		// Media used to be applied before the plan was checked, so an unrelated
+		// error still created attachments and moved the site logo while the run
+		// reported that nothing had been applied. The duplicate key and the
+		// unseeded media must both be present on the FIRST run, or the media is
+		// already `unchanged` and the regression cannot show.
+		$dir = get_temp_dir() . 'pediment-runner-media';
+		wp_mkdir_p( $dir . '/seed/media' );
+		file_put_contents( $dir . '/seed/media/logo.svg', '<svg xmlns="http://www.w3.org/2000/svg"/>' );
+		add_filter( 'stylesheet_directory', static fn() => $dir );
+		$this->manifest['media'] = [ 'logo' => [ 'file' => 'seed/media/logo.svg' ] ];
+		$this->manifest['site']  = [ 'logo' => 'logo' ];
+
+		foreach ( [ 1, 2 ] as $ignored ) {
+			$impostor = self::factory()->post->create( [ 'post_type' => 'page' ] );
+			update_post_meta( $impostor, Meta::KEY, 'home' );
+		}
+		$logoBefore = get_theme_mod( 'custom_logo' );
+
+		$result = ( new Runner() )->run();
+
+		remove_all_filters( 'stylesheet_directory' );
+		$this->assertFalse( $result->ok() );
+		$this->assertFalse( $result->applied );
+		$this->assertSame( [], get_posts( [ 'post_type' => 'attachment', 'post_status' => 'any', 'fields' => 'ids' ] ), 'an errored plan creates no attachments' );
+		$this->assertSame( $logoBefore, get_theme_mod( 'custom_logo' ), 'an errored plan writes nothing at all' );
+	}
+
+	public function test_a_post_type_only_manifest_still_flushes_rewrite_rules() {
+		// The plan must be EMPTY for this to prove anything: with pages still to
+		// create, the old `! $plan->isEmpty()` gate would flush anyway.
+		$GLOBALS['wp_rewrite']->set_permalink_structure( '/%postname%/' );
+		( new Runner() )->run();
+
+		$this->manifest['post_types'] = [ 'project' => [ 'label' => 'Projects', 'has_archive' => true ] ];
+		\Pediment\Seeder\Manifest::resetCache();
+		\Pediment\Seeder\PostTypes::registerFromManifest();
+		delete_option( 'rewrite_rules' );
+
+		$result = ( new Runner() )->run();
+
+		$this->assertTrue( $result->plan->isEmpty(), 'nothing but the post type changed' );
+		$this->assertStringContainsString( 'post_type=project', implode( "\n", (array) get_option( 'rewrite_rules' ) ) );
+		unregister_post_type( 'project' );
+	}
+
+	public function test_a_client_unpublishing_the_menu_is_reported() {
+		$result = ( new Runner() )->run();
+		$navs   = get_posts( [ 'post_type' => 'wp_navigation', 'posts_per_page' => -1 ] );
+		wp_update_post( [ 'ID' => $navs[0]->ID, 'post_status' => 'draft' ] );
+
+		$second = ( new Runner() )->run();
+
+		$this->assertFalse( $second->ok(), 'a menu that will not render is not a successful seed' );
+		$this->assertStringContainsString( 'navs.primary', implode( "\n", $second->problems ) );
+	}
+
+	public function test_a_media_plan_error_is_reported_exactly_once() {
+		// A missing file is rejected at manifest load, which never reaches the
+		// media seeder. An unsupported extension on a file that DOES exist is a
+		// media-plan error, which is the path that used to double-report.
+		$dir = get_temp_dir() . 'pediment-runner-mime';
+		wp_mkdir_p( $dir . '/seed/media' );
+		file_put_contents( $dir . '/seed/media/notes.txt', 'not an image' );
+		add_filter( 'stylesheet_directory', static fn() => $dir );
+		$this->manifest['media'] = [ 'notes' => [ 'file' => 'seed/media/notes.txt' ] ];
+
+		$result = ( new Runner() )->run();
+
+		remove_all_filters( 'stylesheet_directory' );
+		$this->assertFalse( $result->ok() );
+		$this->assertSame( 1, substr_count( implode( "\n", $result->errors ), 'media.notes' ), 'reported once, not once per channel' );
+	}
 }
 ```
 
@@ -4572,63 +4685,98 @@ final class Runner {
 
 		$mediaSeeder = new MediaSeeder();
 		$navSeeder   = new NavSeeder( $this->lang );
-
-		// Media first: page content references attachments by key, so the map
-		// has to exist before content is resolved.
 		$mediaPlan   = $mediaSeeder->plan( $manifest );
-		$mediaMap    = $dryRun ? $mediaSeeder->map( $manifest ) : $mediaSeeder->apply( $mediaPlan, $manifest );
-		$mediaErrors = $dryRun ? [] : $mediaSeeder->errors();
+		$reader      = new StateReader( $this->lang );
 
+		// Phases 1-3 are planned against the media that exists NOW, so the whole
+		// plan — media, entries and navs — is known before anything is written.
+		// Applying media first would mean an errored plan still left attachments
+		// and a changed site logo behind while reporting "nothing was applied".
 		try {
-			// Phase 1.
-			$desired = ( new DesiredState( $this->lang, new ContentResolver( $mediaMap ) ) )->build( $manifest );
+			$preview = ( new DesiredState( $this->lang, new ContentResolver( $mediaSeeder->map( $manifest ) ) ) )->build( $manifest );
 		} catch ( ManifestError $e ) {
 			return new RunResult( $mediaPlan, false, $manifest->path(), [ $e->getMessage() ] );
 		}
 
-		// Phase 2.
-		$reader = new StateReader( $this->lang );
-
-		// Phase 3.
-		$entryPlan = ( new Differ() )->diff( $desired, $reader->read(), $reader->duplicates() );
-
-		$entryIds = [];
-		foreach ( $entryPlan->byKind( PlanItem::KIND_ENTRY ) as $item ) {
-			if ( $item->postId > 0 && PlanItem::ORPHAN !== $item->action ) {
-				$entryIds[ $item->mapKey() ] = $item->postId;
-			}
-		}
-		$navPlan = $navSeeder->plan( $manifest, $entryIds );
-		$plan    = Plan::merge( $mediaPlan, $entryPlan, $navPlan );
+		$entryPlan = ( new Differ() )->diff( $preview, $reader->read(), $reader->duplicates() );
+		$entryIds  = $this->resolvedIds( $entryPlan );
+		$plan      = Plan::merge( $mediaPlan, $entryPlan, $navSeeder->plan( $manifest, $entryIds ) );
 
 		if ( $dryRun || $plan->hasErrors() ) {
-			return new RunResult( $plan, false, $manifest->path(), array_merge( $plan->errors(), $mediaErrors ), [], $entryIds );
+			return new RunResult( $plan, false, $manifest->path(), $plan->errors(), [], $entryIds );
 		}
 
-		// Phase 4.
-		$applied = ( new Applier( $this->lang ) )->apply( $entryPlan, $desired );
-		if ( [] !== $applied->errors || [] !== $mediaErrors ) {
-			return new RunResult( $plan, true, $manifest->path(), array_merge( $mediaErrors, $applied->errors ), [], $applied->ids );
+		// Phase 4. Media goes first here, because page content references
+		// attachments by key and the map has to be real before content is
+		// resolved for the write.
+		$mediaMap    = $mediaSeeder->apply( $mediaPlan, $manifest );
+		$mediaErrors = $mediaSeeder->errors();
+
+		try {
+			$desired = ( new DesiredState( $this->lang, new ContentResolver( $mediaMap ) ) )->build( $manifest );
+		} catch ( ManifestError $e ) {
+			return new RunResult( $plan, true, $manifest->path(), array_merge( $mediaErrors, [ $e->getMessage() ] ) );
 		}
 
-		// Nav links need the resolved page IDs, so nav is re-planned against them.
-		$navSeeder->apply( $navSeeder->plan( $manifest, $applied->ids ), $manifest, $applied->ids );
-		$navErrors = $navSeeder->errors();
-		if ( [] !== $navErrors ) {
-			return new RunResult( $plan, true, $manifest->path(), $navErrors, [], $applied->ids );
-		}
+		$entryPlan = ( new Differ() )->diff( $desired, $reader->read(), $reader->duplicates() );
+		$applied   = ( new Applier( $this->lang ) )->apply( $entryPlan, $desired );
 
-		// Phase 5.
-		$problems = ( new Verifier( $this->lang ) )->verify( $manifest, $desired, $applied->ids, $mediaMap );
+		// Nav links need the resolved page IDs, so nav is planned again against them.
+		$navPlan = $navSeeder->plan( $manifest, $applied->ids );
+		$navIds  = $navSeeder->apply( $navPlan, $manifest, $applied->ids );
+
+		// Report the plan that actually ran, not the preview.
+		$plan = Plan::merge( $mediaPlan, $entryPlan, $navPlan );
 
 		// Once, at the end, after every post type is registered. Soft flush: a
 		// hard flush rewrites .htaccess, and this engine never touches the
 		// permalink structure (see plugin/inc/bootstrap.php and pediment#47).
-		if ( ! $plan->isEmpty() ) {
+		// It runs on a partial failure too — writes that landed still need their
+		// rules — and when a manifest post type has no rules yet, which no plan
+		// item can express because post types produce none.
+		if ( ! $plan->isEmpty() || $this->postTypeRulesMissing( $manifest ) ) {
 			flush_rewrite_rules( false );
 		}
 
-		return new RunResult( $plan, true, $manifest->path(), [], $problems, $applied->ids );
+		// Phase 5 runs even when something failed: an operator debugging a
+		// partial apply needs to know what actually landed.
+		$problems = ( new Verifier( $this->lang, $navSeeder ) )->verify( $manifest, $desired, $applied->ids, $mediaMap, $navIds );
+		$errors   = array_values( array_unique( array_merge( $mediaErrors, $applied->errors, $navSeeder->errors() ) ) );
+
+		return new RunResult( $plan, true, $manifest->path(), $errors, $problems, $applied->ids );
+	}
+
+	/** @return array<string,int> mapKey => post ID for entries that already exist */
+	private function resolvedIds( Plan $entryPlan ): array {
+		$ids = [];
+		foreach ( $entryPlan->byKind( PlanItem::KIND_ENTRY ) as $item ) {
+			if ( $item->postId > 0 && PlanItem::ORPHAN !== $item->action ) {
+				$ids[ $item->mapKey() ] = $item->postId;
+			}
+		}
+		return $ids;
+	}
+
+	/**
+	 * Whether any manifest post type has no rewrite rules yet.
+	 *
+	 * Post types produce no plan items, so a manifest that adds a CPT and
+	 * nothing else would otherwise never flush, and its permalinks would 404
+	 * until someone re-saved Settings > Permalinks.
+	 */
+	private function postTypeRulesMissing( Manifest $manifest ): bool {
+		$postTypes = $manifest->postTypes();
+		if ( [] === $postTypes ) {
+			return false;
+		}
+
+		$rules = implode( "\n", array_values( (array) get_option( 'rewrite_rules', [] ) ) );
+		foreach ( $postTypes as $spec ) {
+			if ( ! str_contains( $rules, 'post_type=' . $spec->slug ) ) {
+				return true;
+			}
+		}
+		return false;
 	}
 }
 ```
