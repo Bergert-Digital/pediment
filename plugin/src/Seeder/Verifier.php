@@ -100,24 +100,27 @@ final class Verifier {
 		// entities are re-read and their membership re-derived.
 		foreach ( $manifest->navs() as $key => $spec ) {
 			foreach ( $this->lang->languages() as $language ) {
-				$navId = (int) ( $navIds[ $key . '|' . $language ] ?? 0 );
+				// Same key|language form the entry loop reports: without it a
+				// five-language site produces five identical lines.
+				$mapKey = $key . '|' . $language;
+				$navId  = (int) ( $navIds[ $mapKey ] ?? 0 );
 				if ( 0 === $navId ) {
-					$problems[] = sprintf( 'navs.%s: no navigation entity exists for this seed key.', $key );
+					$problems[] = sprintf( 'navs.%s: no navigation entity exists for this seed key.', $mapKey );
 					continue;
 				}
 				$nav = get_post( $navId );
 				if ( ! $nav instanceof \WP_Post || 'wp_navigation' !== $nav->post_type ) {
-					$problems[] = sprintf( 'navs.%s: post %d is not a navigation entity.', $key, $navId );
+					$problems[] = sprintf( 'navs.%s: post %d is not a navigation entity.', $mapKey, $navId );
 					continue;
 				}
 				if ( 'publish' !== $nav->post_status ) {
-					$problems[] = sprintf( 'navs.%s: entity %d is "%s" — the menu will not render.', $key, $navId, $nav->post_status );
+					$problems[] = sprintf( 'navs.%s: entity %d is "%s" — the menu will not render.', $mapKey, $navId, $nav->post_status );
 				}
 				if ( (string) get_post_meta( $navId, Meta::KEY, true ) !== $key ) {
-					$problems[] = sprintf( 'navs.%s: entity %d is missing its seed key.', $key, $navId );
+					$problems[] = sprintf( 'navs.%s: entity %d is missing its seed key.', $mapKey, $navId );
 				}
 				if ( (string) $nav->post_content !== $this->navSeeder->serialize( $spec, $language, $ids ) ) {
-					$problems[] = sprintf( 'navs.%s: stored membership does not match the manifest.', $key );
+					$problems[] = sprintf( 'navs.%s: stored membership does not match the manifest.', $mapKey );
 				}
 			}
 		}

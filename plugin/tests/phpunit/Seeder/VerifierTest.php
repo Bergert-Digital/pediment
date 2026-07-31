@@ -88,6 +88,25 @@ class VerifierTest extends WP_UnitTestCase {
 		$this->assertStringContainsString( 'landed at the site root', implode( "\n", $problems ) );
 	}
 
+	public function test_nav_problems_name_the_language() {
+		// Without the language a five-language site gets five identical lines,
+		// and no way to tell which menu is broken.
+		$lang = new class() extends NullProvider {
+			public function languages(): array {
+				return [ 'en', 'de' ];
+			}
+		};
+		$m = Manifest::fromArray(
+			[ 'navs' => [ 'primary' => [ 'title' => 'Primary', 'items' => [] ] ] ],
+			'/tmp/theme'
+		);
+
+		$problems = ( new Verifier( $lang, new NavSeeder( $lang ) ) )->verify( $m, [], [], new MediaMap( [] ) );
+
+		$this->assertContains( 'navs.primary|en: no navigation entity exists for this seed key.', $problems );
+		$this->assertContains( 'navs.primary|de: no navigation entity exists for this seed key.', $problems );
+	}
+
 	public function test_unresolved_media_is_a_problem() {
 		$dir = get_temp_dir() . 'pediment-verify-test';
 		wp_mkdir_p( $dir . '/seed/media' );
