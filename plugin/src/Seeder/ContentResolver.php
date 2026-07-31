@@ -19,6 +19,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 final class ContentResolver {
 	private const SENTINEL = 'PEDIMENT_SEED_MEDIA_URL:';
 
+	/** @var array<string,string> Media keys the last resolve() call could not resolve. */
+	private array $unresolved = [];
+
 	public function __construct( private MediaMap $media ) {}
 
 	/**
@@ -38,15 +41,26 @@ final class ContentResolver {
 		return $this->rewriteMedia( $content );
 	}
 
-	public function hasUnresolvedMedia( string $content ): bool {
-		return str_contains( $content, self::SENTINEL );
+	/** @return string[] */
+	public function unresolvedMediaKeys(): array {
+		return array_values( $this->unresolved );
 	}
 
+	/**
+	 * @throws ManifestError When the PCRE engine itself fails while rewriting placeholders.
+	 */
 	private function rewriteMedia( string $content ): string {
-		return (string) preg_replace_callback(
+		$this->unresolved = [];
+
+		$rewritten = preg_replace_callback(
 			'/\{\{media_(url|id):([a-z0-9_\-\/]+)\}\}/i',
 			function ( array $m ): string {
 				$key = $m[2];
+				if ( ! $this->media->has( $key ) ) {
+					// An unseeded id resolves to a bare 0, which no amount of
+					// scanning the output can tell from a real one — so record it.
+					$this->unresolved[ $key ] = $key;
+				}
 				if ( 'id' === strtolower( $m[1] ) ) {
 					return (string) $this->media->id( $key );
 				}
@@ -54,5 +68,13 @@ final class ContentResolver {
 			},
 			$content
 		);
+
+		if ( null === $rewritten ) {
+			// preg_replace_callback returns null on a PCRE failure. Falling back
+			// to '' here would seed an empty page — the exact failure this engine exists to prevent.
+			throw new ManifestError( 'Media placeholder rewriting failed (PCRE error: ' . preg_last_error_msg() . ').' ); // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- exception message for the operator, not echoed output.
+		}
+
+		return $rewritten;
 	}
 }
