@@ -19,9 +19,13 @@ if ( ! defined( 'ABSPATH' ) ) {
 final class Adopter {
 	public function __construct( private LanguageProvider $lang ) {}
 
-	/** @return array{path:string,bytes:int,written:bool,backup:string,errors:string[]} */
+	/**
+	 * @return array{path:string,bytes:int,written:bool,backup:string,errors:string[],warnings:string[]}
+	 *
+	 * @throws ManifestError When the PCRE engine fails while rewriting media placeholders.
+	 */
 	public function adopt( string $seedKey, string $language = '', bool $dryRun = false ): array {
-		$empty = [ 'path' => '', 'bytes' => 0, 'written' => false, 'backup' => '', 'errors' => [] ];
+		$empty = [ 'path' => '', 'bytes' => 0, 'written' => false, 'backup' => '', 'errors' => [], 'warnings' => [] ];
 
 		// `init` already populated the per-request memo (PostTypes reads it on
 		// every request), and an operator who just edited the manifest expects
@@ -60,11 +64,25 @@ final class Adopter {
 
 		$slugParts = explode( '/', $spec->pattern );
 		$file      = untrailingslashit( $manifest->baseDir() ) . '/patterns/' . end( $slugParts ) . '.php';
-		$markup    = $this->restoreMediaPlaceholders( $manifest, (string) $post->post_content );
+		$media     = ( new MediaSeeder() )->map( $manifest );
+		$markup    = $this->restoreMediaPlaceholders( $manifest, $media, (string) $post->post_content );
 		$contents  = $this->render( $spec, $markup, $file );
 
+		// Adopt takes the body into git, never the title — the manifest is a
+		// hand-edited file and the engine does not rewrite it. Saying so is the
+		// difference between a deliberate divergence and a silent one.
+		$warnings = [];
+		if ( (string) $post->post_title !== $spec->title ) {
+			$warnings[] = sprintf(
+				'%s: the live title is "%s" but the manifest still declares "%s" — adopt does not write titles back. Update the manifest by hand if git should carry the new name.',
+				$seedKey,
+				(string) $post->post_title,
+				$spec->title
+			);
+		}
+
 		if ( $dryRun ) {
-			return [ 'path' => $file, 'bytes' => strlen( $contents ), 'written' => false, 'backup' => '', 'errors' => [] ];
+			return [ 'path' => $file, 'bytes' => strlen( $contents ), 'written' => false, 'backup' => '', 'errors' => [], 'warnings' => $warnings ];
 		}
 
 		if ( ! wp_mkdir_p( dirname( $file ) ) ) {
@@ -103,11 +121,19 @@ final class Adopter {
 		}
 
 		// The live row is now the source of truth in git too, so it is no longer
-		// "edited" — the next seed will treat it as up to date.
+		// "edited" — the next seed will treat it as up to date. The source hash
+		// has to be the shape DesiredState will compute on that next run: the
+		// manifest's title (adopt never writes titles back) crossed with the
+		// pattern output AFTER media placeholders expand. Hashing the raw file
+		// bytes instead leaves every media-bearing page mismatched forever.
 		update_post_meta( $actual->id, Meta::HASH, ContentHash::forPost( $actual->id ) );
-		update_post_meta( $actual->id, Meta::SOURCE, ContentHash::compute( (string) $post->post_title, $resolved ) );
+		update_post_meta(
+			$actual->id,
+			Meta::SOURCE,
+			ContentHash::compute( $spec->title, ( new ContentResolver( $media ) )->rewriteMarkup( $resolved ) )
+		);
 
-		return [ 'path' => $file, 'bytes' => strlen( $contents ), 'written' => true, 'backup' => $backup, 'errors' => [] ];
+		return [ 'path' => $file, 'bytes' => strlen( $contents ), 'written' => true, 'backup' => $backup, 'errors' => [], 'warnings' => $warnings ];
 	}
 
 	/** The bytes the pattern registry will see, produced the way it produces them. */
@@ -136,9 +162,7 @@ final class Adopter {
 	 * attachments that do not exist there. Sized variants (`-300x200.jpg`) and
 	 * srcset entries are NOT mapped back — documented in docs/seeding.md.
 	 */
-	private function restoreMediaPlaceholders( Manifest $manifest, string $markup ): string {
-		$map = ( new MediaSeeder() )->map( $manifest );
-
+	private function restoreMediaPlaceholders( Manifest $manifest, MediaMap $map, string $markup ): string {
 		foreach ( array_keys( $manifest->media() ) as $key ) {
 			$id = $map->id( $key );
 			if ( $id <= 0 ) {

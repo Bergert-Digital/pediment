@@ -55,6 +55,10 @@ final class AdoptCommand {
 			\WP_CLI::error( 'Nothing was adopted.' );
 		}
 
+		foreach ( $result['warnings'] as $warning ) {
+			\WP_CLI::warning( $warning );
+		}
+
 		$backupNote = '' !== $result['backup'] ? sprintf( ' Previous contents backed up to %s.', $result['backup'] ) : '';
 
 		\WP_CLI::success(

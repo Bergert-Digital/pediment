@@ -112,6 +112,49 @@ class AdopterTest extends WP_UnitTestCase {
 		$this->assertSame( '<!-- wp:paragraph --><p>client copy</p><!-- /wp:paragraph -->', get_post( $ids['home|'] )->post_content );
 	}
 
+	public function test_the_next_seed_sees_an_adopted_page_with_media_as_unchanged() {
+		// The two halves of adopt — placeholder restoration and hash resetting —
+		// have to agree: the source hash it stores is compared against a hash the
+		// seeder computes AFTER placeholders expand.
+		wp_mkdir_p( $this->dir . '/seed/media' );
+		file_put_contents( $this->dir . '/seed/media/hero.svg', '<svg xmlns="http://www.w3.org/2000/svg"/>' );
+		remove_all_filters( 'pediment_seed_manifest' );
+		add_filter(
+			'pediment_seed_manifest',
+			fn() => [
+				'pages' => [ 'home' => [ 'title' => 'Home', 'pattern' => 'acme/home' ] ],
+				'media' => [ 'hero' => [ 'file' => 'seed/media/hero.svg' ] ],
+			]
+		);
+		unregister_block_pattern( 'acme/home' );
+		register_block_pattern( 'acme/home', [ 'title' => 'Home', 'content' => '<img src="{{media_url:hero}}" />' ] );
+		( new Runner() )->run();
+
+		( new Adopter( new NullProvider() ) )->adopt( 'home' );
+		$this->reregisterAdoptedPattern();
+		$result = ( new Runner() )->run();
+
+		$this->assertTrue( $result->plan->isEmpty(), 'a page with media must not be rewritten by the run after adopt' );
+	}
+
+	public function test_adopting_a_client_renamed_page_warns_that_the_manifest_still_has_the_old_title() {
+		$ids = ( new Runner() )->run()->ids;
+		wp_update_post( [ 'ID' => $ids['home|'], 'post_title' => 'Welcome' ] );
+
+		$result = ( new Adopter( new NullProvider() ) )->adopt( 'home' );
+
+		$this->assertSame( [], $result['errors'] );
+		$this->assertNotEmpty( $result['warnings'], 'a title adopt cannot carry into git must be reported' );
+		$this->assertStringContainsString( 'Welcome', $result['warnings'][0] );
+		$this->assertStringContainsString( 'Home', $result['warnings'][0] );
+
+		// And the run right after adopt must not put the manifest's old title back.
+		$this->reregisterAdoptedPattern();
+		( new Runner() )->run();
+
+		$this->assertSame( 'Welcome', get_post( $ids['home|'] )->post_title );
+	}
+
 	public function test_media_urls_are_written_back_as_placeholders() {
 		wp_mkdir_p( $this->dir . '/seed/media' );
 		file_put_contents( $this->dir . '/seed/media/hero.svg', '<svg xmlns="http://www.w3.org/2000/svg"/>' );
