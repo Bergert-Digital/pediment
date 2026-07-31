@@ -1767,7 +1767,7 @@ final class StateReader {
 - [ ] **Step 5: Run it green**
 
 Run: `... --filter StateReaderTest`
-Expected: PASS (7 tests). Note `post_status => 'any'` excludes trashed posts in `WP_Query`, so pass the explicit list if the trashed assertion fails: replace `'post_status' => 'any'` with `'post_status' => [ 'publish', 'draft', 'pending', 'private', 'future', 'trash' ]`.
+Expected: PASS (7 tests). `post_status => 'any'` excludes trashed posts in `WP_Query`, so the query above must use the explicit list `'post_status' => [ 'publish', 'draft', 'pending', 'private', 'future', 'trash' ]` — change it in the single shared `query()` method so `read()` and `duplicates()` can never see different post sets.
 
 - [ ] **Step 6: Commit**
 
