@@ -60,8 +60,9 @@ final class Runner {
 		// plan — media, entries and navs — is known before anything is written.
 		// Applying media first would mean an errored plan still left attachments
 		// and a changed site logo behind while reporting "nothing was applied".
+		$previewState = new DesiredState( $this->lang, new ContentResolver( $mediaSeeder->map( $manifest ) ) );
 		try {
-			$preview = ( new DesiredState( $this->lang, new ContentResolver( $mediaSeeder->map( $manifest ) ) ) )->build( $manifest );
+			$preview = $previewState->build( $manifest );
 		} catch ( ManifestError $e ) {
 			return new RunResult( $mediaPlan, false, $manifest->path(), [ $e->getMessage() ] );
 		}
@@ -71,7 +72,7 @@ final class Runner {
 		$plan      = Plan::merge( $mediaPlan, $entryPlan, $navSeeder->plan( $manifest, $entryIds ) );
 
 		if ( $dryRun || $plan->hasErrors() ) {
-			return new RunResult( $plan, false, $manifest->path(), $plan->errors(), [], $entryIds );
+			return new RunResult( $plan, false, $manifest->path(), $plan->errors(), $this->undeclaredMediaProblems( $previewState ), $entryIds );
 		}
 
 		// Phase 4. Media goes first here, because page content references
@@ -80,8 +81,9 @@ final class Runner {
 		$mediaMap    = $mediaSeeder->apply( $mediaPlan, $manifest );
 		$mediaErrors = $mediaSeeder->errors();
 
+		$state = new DesiredState( $this->lang, new ContentResolver( $mediaMap ) );
 		try {
-			$desired = ( new DesiredState( $this->lang, new ContentResolver( $mediaMap ) ) )->build( $manifest );
+			$desired = $state->build( $manifest );
 		} catch ( ManifestError $e ) {
 			return new RunResult( $plan, true, $manifest->path(), array_merge( $mediaErrors, [ $e->getMessage() ] ) );
 		}
@@ -108,10 +110,35 @@ final class Runner {
 
 		// Phase 5 runs even when something failed: an operator debugging a
 		// partial apply needs to know what actually landed.
-		$problems = ( new Verifier( $this->lang, $navSeeder ) )->verify( $manifest, $desired, $applied->ids, $mediaMap, $navIds );
+		$problems = array_merge(
+			( new Verifier( $this->lang, $navSeeder ) )->verify( $manifest, $desired, $applied->ids, $mediaMap, $navIds ),
+			$this->undeclaredMediaProblems( $state )
+		);
 		$errors   = array_values( array_unique( array_merge( $mediaErrors, $applied->errors, $navSeeder->errors() ) ) );
 
 		return new RunResult( $plan, true, $manifest->path(), $errors, $problems, $applied->ids );
+	}
+
+	/**
+	 * A pattern referencing a media key nobody declared resolves to a literal
+	 * sentinel (or a bare `0`) that gets written into a live page and hashed as
+	 * if it were correct. Nothing else in the engine notices: the media plan has
+	 * no such key and the Verifier only walks declared media.
+	 *
+	 * @return string[]
+	 */
+	private function undeclaredMediaProblems( DesiredState $state ): array {
+		$problems = [];
+		foreach ( $state->undeclaredMediaKeys() as $mapKey => $keys ) {
+			foreach ( $keys as $key ) {
+				$problems[] = sprintf(
+					'%s: references media key "%s", which the manifest does not declare — the placeholder was written out unresolved.',
+					$mapKey,
+					$key
+				);
+			}
+		}
+		return $problems;
 	}
 
 	/** @return array<string,int> mapKey => post ID for entries that already exist */
