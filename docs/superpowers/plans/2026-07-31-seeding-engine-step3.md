@@ -5535,6 +5535,11 @@ class AdopterTest extends WP_UnitTestCase {
 		parent::set_up();
 		$this->dir = get_temp_dir() . 'pediment-adopt-test';
 		wp_mkdir_p( $this->dir . '/patterns' );
+		// The directory is shared across tests in one process, so a file written
+		// by an earlier test would make the dry-run assertion meaningless.
+		foreach ( (array) glob( $this->dir . '/patterns/*.php' ) as $stale ) {
+			unlink( $stale );
+		}
 		add_filter(
 			'pediment_seed_manifest',
 			fn() => [ 'pages' => [ 'home' => [ 'title' => 'Home', 'pattern' => 'acme/home' ] ] ]
@@ -5571,10 +5576,29 @@ class AdopterTest extends WP_UnitTestCase {
 		( new Adopter( new NullProvider() ) )->adopt( 'home' );
 
 		$this->assertSame( ContentHash::forPost( $id ), get_post_meta( $id, Meta::HASH, true ) );
+		// SOURCE is hashed from what the pattern FILE resolves to, not from the
+		// row — that is what the next run will compare against.
 		$this->assertSame(
-			ContentHash::compute( get_post( $id )->post_title, get_post( $id )->post_content ),
+			ContentHash::compute( get_post( $id )->post_title, $this->patternFileContent() ),
 			get_post_meta( $id, Meta::SOURCE, true )
 		);
+	}
+
+	/** The bytes the pattern registry would read from the written file. */
+	private function patternFileContent(): string {
+		ob_start();
+		include $this->dir . '/patterns/home.php';
+		return (string) ob_get_clean();
+	}
+
+	/**
+	 * Model what a real next request does: the registry re-scans the theme's
+	 * patterns directory, so the adopted file becomes the registered pattern.
+	 * Inside one PHPUnit process `init` has already fired, so re-register by hand.
+	 */
+	private function reregisterAdoptedPattern(): void {
+		unregister_block_pattern( 'acme/home' );
+		register_block_pattern( 'acme/home', [ 'title' => 'Home', 'content' => $this->patternFileContent() ] );
 	}
 
 	public function test_dry_run_writes_no_file() {
@@ -5591,6 +5615,65 @@ class AdopterTest extends WP_UnitTestCase {
 
 		$this->assertNotEmpty( $result['errors'] );
 		$this->assertStringContainsString( 'ghost', $result['errors'][0] );
+	}
+
+	public function test_the_next_seed_sees_an_adopted_page_as_unchanged() {
+		// The promise of adopt: the client's version becomes the source of truth,
+		// so the run right after it must plan nothing.
+		$ids = ( new Runner() )->run()->ids;
+		wp_update_post( [ 'ID' => $ids['home|'], 'post_content' => '<!-- wp:paragraph --><p>client copy</p><!-- /wp:paragraph -->' ] );
+
+		( new Adopter( new NullProvider() ) )->adopt( 'home' );
+		$this->reregisterAdoptedPattern();
+		$result = ( new Runner() )->run();
+
+		$this->assertTrue( $result->plan->isEmpty(), 'adopt must leave nothing for the next run to write' );
+		$this->assertSame( '<!-- wp:paragraph --><p>client copy</p><!-- /wp:paragraph -->', get_post( $ids['home|'] )->post_content );
+	}
+
+	public function test_media_urls_are_written_back_as_placeholders() {
+		wp_mkdir_p( $this->dir . '/seed/media' );
+		file_put_contents( $this->dir . '/seed/media/hero.svg', '<svg xmlns="http://www.w3.org/2000/svg"/>' );
+		remove_all_filters( 'pediment_seed_manifest' );
+		add_filter(
+			'pediment_seed_manifest',
+			fn() => [
+				'pages' => [ 'home' => [ 'title' => 'Home', 'pattern' => 'acme/home' ] ],
+				'media' => [ 'hero' => [ 'file' => 'seed/media/hero.svg' ] ],
+			]
+		);
+		$ids = ( new Runner() )->run()->ids;
+		$url = wp_get_attachment_url( ( new MediaSeeder() )->map( \Pediment\Seeder\Manifest::load() )->id( 'hero' ) );
+		wp_update_post( [ 'ID' => $ids['home|'], 'post_content' => '<img src="' . $url . '" />' ] );
+
+		( new Adopter( new NullProvider() ) )->adopt( 'home' );
+
+		$written = (string) file_get_contents( $this->dir . '/patterns/home.php' );
+		$this->assertStringContainsString( '{{media_url:hero}}', $written );
+		$this->assertStringNotContainsString( $url, $written, 'an environment-specific URL must not land in git' );
+	}
+
+	public function test_an_existing_pattern_header_survives_a_re_adopt() {
+		file_put_contents(
+			$this->dir . '/patterns/home.php',
+			"<?php\n/**\n * Title: Home\n * Slug: acme/home\n * Description: Hand written.\n * Categories: pediment\n */\n\n?>\n<p>old</p>\n"
+		);
+		( new Runner() )->run();
+
+		( new Adopter( new NullProvider() ) )->adopt( 'home' );
+
+		$written = (string) file_get_contents( $this->dir . '/patterns/home.php' );
+		$this->assertStringContainsString( 'Description: Hand written.', $written );
+	}
+
+	public function test_an_overwrite_keeps_a_backup() {
+		file_put_contents( $this->dir . '/patterns/home.php', "<?php\n/**\n * Title: Home\n * Slug: acme/home\n */\n\n?>\n<p>previous</p>\n" );
+		( new Runner() )->run();
+
+		$result = ( new Adopter( new NullProvider() ) )->adopt( 'home' );
+
+		$this->assertNotSame( '', $result['backup'] );
+		$this->assertStringContainsString( 'previous', (string) file_get_contents( $result['backup'] ) );
 	}
 
 	public function test_an_entry_declared_with_literal_content_cannot_be_adopted() {
@@ -5675,7 +5758,8 @@ final class Adopter {
 
 		$slugParts = explode( '/', $spec->pattern );
 		$file      = untrailingslashit( $manifest->baseDir() ) . '/patterns/' . end( $slugParts ) . '.php';
-		$contents  = $this->render( $spec, (string) $post->post_content );
+		$markup    = $this->restoreMediaPlaceholders( $manifest, (string) $post->post_content );
+		$contents  = $this->render( $spec, $markup, $file );
 
 		if ( $dryRun ) {
 			return [ 'path' => $file, 'bytes' => strlen( $contents ), 'written' => false, 'errors' => [] ];
@@ -5684,20 +5768,105 @@ final class Adopter {
 		if ( ! wp_mkdir_p( dirname( $file ) ) ) {
 			return array_merge( $empty, [ 'errors' => [ sprintf( 'Cannot create %s.', dirname( $file ) ) ] ] );
 		}
+
+		// Overwriting a pattern file a developer is mid-edit would destroy work
+		// git may not have yet, so keep a sibling copy when the contents differ.
+		$backup = '';
+		if ( is_readable( $file ) && (string) file_get_contents( $file ) !== $contents ) { // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- developer-side export.
+			$backup = $file . '.bak';
+			// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_copy -- developer-side export.
+			copy( $file, $backup );
+		}
+
 		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents -- developer-side export, runs on a dev machine.
 		if ( false === file_put_contents( $file, $contents ) ) {
 			return array_merge( $empty, [ 'errors' => [ sprintf( 'Cannot write %s.', $file ) ] ] );
 		}
 
+		// Read the file back the way the pattern registry will, and hash THAT as
+		// the source. Hashing the database row instead leaves the two a newline
+		// apart, and the very next seed rewrites the page adopt just blessed.
+		// A brand-new pattern file is invisible until the theme's pattern header
+		// cache expires (30 minutes), which is exactly the first-adopt case.
+		wp_get_theme()->delete_pattern_cache();
+
+		$resolved = $this->resolveWritten( $file );
+		$header   = get_file_data( $file, [ 'slug' => 'Slug' ] );
+		if ( $header['slug'] !== $spec->pattern ) {
+			$this->rollback( $file, $backup );
+			return array_merge(
+				$empty,
+				[ 'errors' => [ sprintf( '%s: wrote %s but its Slug header reads "%s", not "%s" — the next seed would not find it, so the write was rolled back.', $seedKey, $file, $header['slug'], (string) $spec->pattern ) ] ]
+			);
+		}
+
 		// The live row is now the source of truth in git too, so it is no longer
 		// "edited" — the next seed will treat it as up to date.
 		update_post_meta( $actual->id, Meta::HASH, ContentHash::forPost( $actual->id ) );
-		update_post_meta( $actual->id, Meta::SOURCE, ContentHash::compute( (string) $post->post_title, (string) $post->post_content ) );
+		update_post_meta( $actual->id, Meta::SOURCE, ContentHash::compute( (string) $post->post_title, $resolved ) );
 
-		return [ 'path' => $file, 'bytes' => strlen( $contents ), 'written' => true, 'errors' => [] ];
+		return [ 'path' => $file, 'bytes' => strlen( $contents ), 'written' => true, 'backup' => $backup, 'errors' => [] ];
 	}
 
-	private function render( EntrySpec $spec, string $markup ): string {
+	/** Put the file back the way it was when a post-write check fails. */
+	private function rollback( string $file, string $backup ): void {
+		if ( '' !== $backup && is_readable( $backup ) ) {
+			// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_copy -- developer-side export.
+			copy( $backup, $file );
+			wp_delete_file( $backup );
+			return;
+		}
+		wp_delete_file( $file );
+	}
+
+	/** The bytes the pattern registry will see, produced the way it produces them. */
+	private function resolveWritten( string $file ): string {
+		ob_start();
+		include $file;
+		return (string) ob_get_clean();
+	}
+
+	/**
+	 * Turn concrete media references back into manifest placeholders.
+	 *
+	 * Without this, adopting a page with images commits environment-specific
+	 * URLs to git, and the same pattern seeded onto a fresh install points at
+	 * attachments that do not exist there. Sized variants (`-300x200.jpg`) and
+	 * srcset entries are NOT mapped back — documented in docs/seeding.md.
+	 */
+	private function restoreMediaPlaceholders( Manifest $manifest, string $markup ): string {
+		$map = ( new MediaSeeder() )->map( $manifest );
+
+		foreach ( array_keys( $manifest->media() ) as $key ) {
+			$id = $map->id( $key );
+			if ( $id <= 0 ) {
+				continue;
+			}
+			$url = $map->url( $key );
+			if ( '' !== $url ) {
+				$markup = str_replace( $url, '{{media_url:' . $key . '}}', $markup );
+			}
+			// Anchored on a non-digit: a bare str_replace of `"id":4` would also
+			// hit `"id":41` and corrupt an unrelated block's attributes.
+			$markup = (string) preg_replace( '/"id":' . $id . '(?![0-9])/', '"id":{{media_id:' . $key . '}}', $markup );
+		}
+
+		return $markup;
+	}
+
+	private function render( EntrySpec $spec, string $markup, string $existing = '' ): string {
+		// Keep whatever header the file already had — the shipped patterns carry
+		// Description, Keywords, Viewport Width and a phpcs:ignoreFile line that
+		// a regenerated header would silently drop.
+		if ( '' !== $existing && is_readable( $existing ) ) {
+			// phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- developer-side export.
+			$current = (string) file_get_contents( $existing );
+			$end     = strpos( $current, '?>' );
+			if ( false !== $end ) {
+				return substr( $current, 0, $end + 2 ) . "\n" . $markup . "\n";
+			}
+		}
+
 		return "<?php\n"
 			. "/**\n"
 			. ' * Title: ' . $spec->title . "\n"
