@@ -1,5 +1,4 @@
 <?php
-// plugin/tests/phpunit/Seeder/ApplierTest.php
 
 use Pediment\Language\NullProvider;
 use Pediment\Seeder\Applier;
@@ -10,12 +9,16 @@ use Pediment\Seeder\Differ;
 use Pediment\Seeder\Manifest;
 use Pediment\Seeder\MediaMap;
 use Pediment\Seeder\Meta;
+use Pediment\Seeder\PlanItem;
 use Pediment\Seeder\StateReader;
 
 class ApplierTest extends WP_UnitTestCase {
 
+	/** @var string[] */
+	private array $lastErrors = [];
+
 	/** Runs the four phases the way the Runner will, and returns the resolved IDs. */
-	private function seed( array $raw ): array {
+	private function seed( array $raw, bool $expectClean = true ): array {
 		$manifest = Manifest::fromArray( $raw, '/tmp/theme' );
 		$lang     = new NullProvider();
 		$desired  = ( new DesiredState( $lang, new ContentResolver( new MediaMap( [] ) ) ) )->build( $manifest );
@@ -23,8 +26,22 @@ class ApplierTest extends WP_UnitTestCase {
 		$plan     = ( new Differ() )->diff( $desired, $reader->read(), $reader->duplicates() );
 		$result   = ( new Applier( $lang ) )->apply( $plan, $desired );
 
-		$this->assertSame( [], $result->errors );
+		if ( $expectClean ) {
+			$this->assertSame( [], $result->errors );
+		}
+		$this->lastErrors = $result->errors;
+
 		return $result->ids;
+	}
+
+	/** Phases 1-3 only: the plan the Runner would compute, with nothing written. */
+	private function plan( array $raw ): \Pediment\Seeder\Plan {
+		$manifest = Manifest::fromArray( $raw, '/tmp/theme' );
+		$lang     = new NullProvider();
+		$desired  = ( new DesiredState( $lang, new ContentResolver( new MediaMap( [] ) ) ) )->build( $manifest );
+		$reader   = new StateReader( $lang );
+
+		return ( new Differ() )->diff( $desired, $reader->read(), $reader->duplicates() );
 	}
 
 	private function manifest( array $pages ): array {
@@ -58,15 +75,17 @@ class ApplierTest extends WP_UnitTestCase {
 		$this->assertSame( '<span class="accent">Hi</span>', $blocks[0]['attrs']['headline'] );
 	}
 
-	public function test_reseeding_unchanged_content_is_a_no_op() {
-		$m   = $this->manifest( [ 'home' => [ 'title' => 'Home', 'content' => '<p>hi</p>' ] ] );
-		$ids = $this->seed( $m );
-		$id  = $ids['home|'];
-		$modified = get_post( $id )->post_modified_gmt;
-
+	public function test_reseeding_unchanged_content_plans_nothing() {
+		// Asserting on post_modified_gmt would prove nothing: it has one-second
+		// granularity and both runs land inside the same second. Assert on the
+		// plan, which is what actually decides whether a write happens.
+		$m = $this->manifest( [ 'home' => [ 'title' => 'Home', 'content' => '<p>hi</p>' ] ] );
 		$this->seed( $m );
 
-		$this->assertSame( $modified, get_post( $id )->post_modified_gmt, 'a no-op run must not touch the row' );
+		$plan = $this->plan( $m );
+
+		$this->assertTrue( $plan->isEmpty(), 'a re-seed with no manifest change must plan no writes' );
+		$this->assertSame( PlanItem::UNCHANGED, $plan->byKind( PlanItem::KIND_ENTRY )[0]->action );
 	}
 
 	public function test_changed_manifest_content_is_written_and_rehashed() {
@@ -78,6 +97,27 @@ class ApplierTest extends WP_UnitTestCase {
 		$this->assertStringContainsString( 'two', get_post( $id )->post_content );
 		$this->assertSame( ContentHash::forPost( $id ), get_post_meta( $id, Meta::HASH, true ) );
 		$this->assertSame( ContentHash::compute( 'Home', '<p>two</p>' ), get_post_meta( $id, Meta::SOURCE, true ) );
+	}
+
+	public function test_a_structure_write_on_an_edited_page_never_restamps_the_hash() {
+		// The failure this guards: a client edits the body AND renames the slug.
+		// The Differ makes that an UPDATE carrying only the slug change, with the
+		// content protected. Re-stamping the hash there would adopt the client's
+		// prose as seeded, and the NEXT run would overwrite their page.
+		$ids = $this->seed( $this->manifest( [ 'home' => [ 'title' => 'Home', 'content' => '<p>one</p>' ] ] ) );
+		$id  = $ids['home|'];
+		wp_update_post( [ 'ID' => $id, 'post_content' => '<p>client copy</p>', 'post_name' => 'startseite' ] );
+		$hashBefore = get_post_meta( $id, Meta::HASH, true );
+
+		$this->seed( $this->manifest( [ 'home' => [ 'title' => 'Home', 'content' => '<p>two</p>' ] ] ) );
+
+		$this->assertSame( 'home', get_post( $id )->post_name, 'slug is structure and is reverted' );
+		$this->assertSame( '<p>client copy</p>', get_post( $id )->post_content );
+		$this->assertSame( $hashBefore, get_post_meta( $id, Meta::HASH, true ), 'a structure-only write must not adopt the client edit' );
+
+		// And the page is still protected on the run after that.
+		$this->seed( $this->manifest( [ 'home' => [ 'title' => 'Home', 'content' => '<p>three</p>' ] ] ) );
+		$this->assertSame( '<p>client copy</p>', get_post( $id )->post_content );
 	}
 
 	public function test_a_client_edit_is_never_overwritten() {
@@ -142,6 +182,8 @@ class ApplierTest extends WP_UnitTestCase {
 
 		$this->assertSame( $id, $again['home|'], 'restore, never re-create' );
 		$this->assertSame( 'publish', get_post( $id )->post_status );
+		$this->assertSame( 'home', get_post( $id )->post_name, 'wp_trash_post appends __trashed; the restore must undo it' );
+		$this->assertSame( '', get_post_meta( $id, '_wp_trash_meta_status', true ), 'trash bookkeeping must not survive the restore' );
 	}
 
 	public function test_errors_in_the_plan_block_every_write() {
@@ -154,5 +196,41 @@ class ApplierTest extends WP_UnitTestCase {
 
 		$this->assertSame( [ 'duplicate identity' ], $result->errors );
 		$this->assertSame( [], get_posts( [ 'post_type' => 'page', 'fields' => 'ids' ] ) );
+	}
+
+	public function test_a_slug_collision_is_reported_instead_of_churning_forever() {
+		// A pre-existing unseeded page holds /contact, so WordPress uniquifies the
+		// seeded one to contact-2. Unreported, the Differ would rewrite the row on
+		// every run and never converge.
+		self::factory()->post->create( [ 'post_type' => 'page', 'post_name' => 'contact', 'post_title' => 'Client contact' ] );
+
+		$this->seed( $this->manifest( [ 'contact' => [ 'title' => 'Contact', 'content' => '' ] ] ), false );
+
+		$this->assertNotEmpty( $this->lastErrors );
+		$this->assertStringContainsString( 'contact-2', $this->lastErrors[0] );
+	}
+
+	public function test_client_added_terms_survive_a_structure_only_write() {
+		$ids = $this->seed(
+			[ 'posts' => [ 'sample' => [ 'title' => 'Sample', 'content' => '', 'terms' => [ 'category' => [ 'insights' ] ] ] ] ]
+		);
+		$id    = $ids['sample|'];
+		$extra = self::factory()->category->create( [ 'slug' => 'client-pick' ] );
+		wp_set_object_terms( $id, [ $extra ], 'category', true );
+
+		wp_update_post( [ 'ID' => $id, 'post_name' => 'renamed-by-client' ] );
+		$this->seed( [ 'posts' => [ 'sample' => [ 'title' => 'Sample', 'content' => '', 'terms' => [ 'category' => [ 'insights' ] ] ] ] ] );
+
+		$this->assertContains( 'client-pick', wp_get_post_terms( $id, 'category', [ 'fields' => 'slugs' ] ) );
+	}
+
+	public function test_an_unregistered_taxonomy_is_reported_not_swallowed() {
+		$this->seed(
+			[ 'posts' => [ 'sample' => [ 'title' => 'Sample', 'content' => '', 'terms' => [ 'categories' => [ 'oops' ] ] ] ] ],
+			false
+		);
+
+		$this->assertNotEmpty( $this->lastErrors );
+		$this->assertStringContainsString( 'categories', $this->lastErrors[0] );
 	}
 }

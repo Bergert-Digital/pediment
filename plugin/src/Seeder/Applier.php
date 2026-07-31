@@ -56,13 +56,24 @@ final class Applier {
 					continue;
 				}
 
-				$postId = PlanItem::CREATE === $item->action
+				$isCreate = PlanItem::CREATE === $item->action;
+				$postId   = $isCreate
 					? $this->create( $entry, $ids, $errors )
 					: $this->update( $item, $entry, $ids, $errors );
 
 				if ( $postId > 0 ) {
 					$ids[ $item->mapKey() ] = $postId;
-					$this->applyTerms( $postId, $entry );
+					// Terms are create-only. Re-applying them on a structure-only
+					// write would use wp_set_object_terms(), which REPLACES the
+					// taxonomy's assignments — a client who filed a seeded post
+					// under an extra category would lose it on an unrelated slug
+					// revert. The Differ does not diff terms, so a manifest-side
+					// term change is not enforced either; that is documented, not
+					// accidental (docs/seeding.md).
+					if ( $isCreate ) {
+						$this->applyTerms( $postId, $entry, $errors );
+					}
+					$this->assertSlug( $postId, $entry, $errors );
 				}
 			}
 		} finally {
@@ -136,6 +147,14 @@ final class Applier {
 			}
 		}
 
+		// Restoring by writing post_status directly skips the untrash hooks, so
+		// wp_trash_post()'s bookkeeping would stay behind forever.
+		if ( isset( $postarr['post_status'] ) && 'trash' === $item->changes['status']['from'] ) {
+			foreach ( [ '_wp_trash_meta_status', '_wp_trash_meta_time', '_wp_desired_post_slug' ] as $trashMeta ) {
+				delete_post_meta( $item->postId, $trashMeta );
+			}
+		}
+
 		if ( 1 === count( $postarr ) ) {
 			return $item->postId;
 		}
@@ -168,9 +187,14 @@ final class Applier {
 		return (int) ( $ids[ $entry->parentKey . '|' . $entry->language ] ?? 0 );
 	}
 
-	private function applyTerms( int $postId, DesiredEntry $entry ): void {
+	/** @param string[] $errors */
+	private function applyTerms( int $postId, DesiredEntry $entry, array &$errors ): void {
 		foreach ( $entry->terms as $taxonomy => $slugs ) {
 			if ( ! taxonomy_exists( $taxonomy ) ) {
+				// Silence here would be indistinguishable from success: a typo'd
+				// taxonomy, or one whose post type has not registered yet, would
+				// produce a clean run with no terms assigned.
+				$errors[] = sprintf( '%s: taxonomy "%s" is not registered — no terms were assigned.', $entry->key, $taxonomy );
 				continue;
 			}
 			$termIds = [];
@@ -179,6 +203,7 @@ final class Applier {
 				if ( ! $term ) {
 					$created = wp_insert_term( ucfirst( str_replace( '-', ' ', $slug ) ), $taxonomy, [ 'slug' => $slug ] );
 					if ( is_wp_error( $created ) ) {
+						$errors[] = sprintf( '%s: could not create term "%s" in %s — %s', $entry->key, $slug, $taxonomy, $created->get_error_message() );
 						continue;
 					}
 					$termIds[] = (int) $created['term_id'];
@@ -186,8 +211,31 @@ final class Applier {
 				}
 				$termIds[] = (int) $term->term_id;
 			}
-			wp_set_object_terms( $postId, $termIds, $taxonomy );
+			$assigned = wp_set_object_terms( $postId, $termIds, $taxonomy );
+			if ( is_wp_error( $assigned ) ) {
+				$errors[] = sprintf( '%s: could not assign %s terms — %s', $entry->key, $taxonomy, $assigned->get_error_message() );
+			}
 		}
+	}
+
+	/**
+	 * WordPress uniquifies a colliding slug (`contact` -> `contact-2`) and reports
+	 * success. Left unreported, the Differ then sees a slug difference on EVERY
+	 * later run, rewrites the row, and never converges — silently, forever.
+	 *
+	 * @param string[] $errors
+	 */
+	private function assertSlug( int $postId, DesiredEntry $entry, array &$errors ): void {
+		$stored = (string) get_post_field( 'post_name', $postId );
+		if ( '' === $stored || $stored === $entry->slug ) {
+			return;
+		}
+		$errors[] = sprintf(
+			'%s: WordPress stored the slug "%s" instead of "%s" — another post already occupies it. Free that slug or declare a different one in the manifest.',
+			$entry->key,
+			$stored,
+			$entry->slug
+		);
 	}
 
 	/**
