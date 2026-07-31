@@ -34,6 +34,13 @@ half-seeded database. The engine also reads it fresh (`Manifest::resetCache()`)
 at the start of every `wp pediment seed` / `wp pediment adopt` run, so an
 operator who just edited the file always sees current results.
 
+"Strictly" includes rejecting keys it doesn't recognise, at both levels: the
+top-level sections are exactly `version`, `pages`, `posts`, `entries`, `media`,
+`navs`, `post_types`, `site`, and the per-entry keys are exactly the ones in
+the table below. `'page' =>` instead of `'pages' =>`, or `'front-page' =>`
+instead of `'front_page' =>`, is a `ManifestError` naming the offending key —
+never a section that silently seeds nothing.
+
 ```php
 return array(
 	'version' => 1,
@@ -82,7 +89,7 @@ Per-entry keys:
 | `title` | yes | — | Non-empty string. |
 | `pattern` **or** `content` | yes, exactly one | — | `pattern` is a registered block-pattern slug; `content` is literal block markup (an empty string is valid, e.g. the fixture's `contact` and `blog` pages). Declaring both, or neither, is a validation error. |
 | `post_type` | `pages`/`posts`: no; `entries`: yes | `page` / `post` | Never rewritten once a row exists — a mismatch between the manifest and the database is a hard error (see below). |
-| `slug` | no | the last `/`-segment of the key | Must already be a valid slug (`sanitize_title($slug) === $slug`); it is structure and gets reverted if an editor changes it. |
+| `slug` | no | the last `/`-segment of the key | Must already be a valid slug (`sanitize_title($slug) === $slug`) and non-empty, so a key may not end in `/`; it is structure and gets reverted if an editor changes it. |
 | `parent` | no | none | Another entry's key. Must be declared; parent cycles are rejected at load time. |
 | `front_page` | no | `false` | At most one entry site-wide may set this. |
 | `posts_page` | no | `false` | At most one entry site-wide may set this. |
@@ -126,10 +133,11 @@ via `_pediment_seed_key` on the attachment — never by filename.
 Each item is either `{ entry, label }` — a link to a manifest entry, resolved
 to that entry's live post ID and permalink at write time — or `{ url, label }`
 for an external/custom link. An `entry` that names an undeclared key fails
-validation immediately; an `entry` that's declared but not yet seeded (e.g. the
-manifest was just edited and the seed hasn't run yet) is reported on every
-run, not silently dropped, and the link is left out of the menu until it
-resolves.
+validation immediately; an `entry` that's declared but has no live post yet
+(e.g. its own write failed earlier in the same run) is reported on every run,
+and the whole navigation is left exactly as it is rather than written without
+that link — a menu that quietly comes out one item short is worse than one
+that visibly fails.
 
 ### `post_types`
 
@@ -158,7 +166,9 @@ reports this (see below), it doesn't fail silently.
 ```
 
 Names a `media` key; must already be declared there. On apply, that
-attachment becomes the site's custom logo (`theme_mod: custom_logo`).
+attachment becomes the site's custom logo (`theme_mod: custom_logo`) — and
+keeps becoming it: this is structure, re-asserted on every run, not a
+one-time default (see Limitations).
 
 ## What "structure" means, concretely
 
@@ -173,10 +183,14 @@ has done to a row:
 - **Front page / posts page** — `show_on_front` / `page_on_front` /
   `page_for_posts`, enforced for the default-language entry.
 - **Nav membership** — which entries a navigation menu links to, and in what
-  order (see Limitations: this one *does* revert an editor's menu edit).
+  order (see Limitations: this one *does* revert an editor's menu edit). A
+  trashed menu is restored in place, not replaced by a second entity.
 - **Custom post type registration** — the CPT exists and is reachable.
 - **Media presence** — a `media` key resolves to exactly one live attachment;
   trashed attachments are restored rather than re-uploaded.
+- **The site logo** — `site.logo` is re-asserted on every run whenever
+  `custom_logo` has drifted, including away from a value a client chose in the
+  Customizer (see Limitations).
 - **Editorial state** — only `trash` is reverted (restored to `publish`).
   `draft` and `pending` are left alone: a client taking a page offline, or
   holding a revision for review, is not overruled by the next seed.
@@ -345,7 +359,19 @@ the page as up to date rather than protected. Concretely, it:
 - reads the file back the way the pattern registry will, verifies the
   written `Slug:` header still matches what the manifest expects, and rolls
   back to the backup (or deletes the new file) if it doesn't — a mismatched
-  header would mean the next seed can't find the pattern at all.
+  header would mean the next seed can't find the pattern at all;
+- stores the source hash in exactly the shape the next seed will compute it —
+  the *manifest's* title crossed with the pattern output *after* media
+  placeholders expand. Hashing the file's raw bytes instead would leave every
+  media-bearing page mismatched, and hashing the live title would make the
+  next run write the manifest's old title back over a client's rename.
+
+**Adopt takes the body into git, never the title.** The manifest is a
+hand-edited file and the engine does not rewrite it, so adopting a page a
+client renamed prints a warning naming both titles and leaves the manifest
+alone. The next seed will not revert the rename (the source hash matches), but
+git and the database now disagree about the name until you edit the manifest
+yourself.
 
 **Known limitation:** sized image variants (`hero-300x200.jpg`) and `srcset`
 attributes are *not* rewritten to placeholders — only the exact attachment URL
@@ -400,11 +426,20 @@ Phase 5 re-reads the database after every apply and reports anything it
 claims to own that doesn't actually hold — this is deliberately paranoid,
 because the incident that justified writing it was a seed run reporting
 success while the live header rendered nothing. A `VERIFICATION FAILED`
-section names the specific problem per entry, e.g.:
+section names the specific problem per entry (keys are printed in the
+`key|language` form, so a multilingual site can tell its five copies of a menu
+apart), e.g.:
 
 - `home: is declared front page but the front page setting points elsewhere.`
 - `about: slug is "about-2" but the manifest says "about" (WordPress
   uniquifies colliding slugs).` — see below.
+- `guide/pricing: parent "guide" has no post — this entry landed at the site
+  root.`
+- `about: references media key "hreo", which the manifest does not declare —
+  the placeholder was written out unresolved.` — a typo in a
+  `{{media_url:…}}` / `{{media_id:…}}` placeholder. Nothing else catches it:
+  the media plan has no such key, so the literal sentinel would otherwise be
+  written into the page and hashed as if it were correct.
 - `navs.primary: stored membership does not match the manifest.`
 - `post_types.guide: already registered by something else — the manifest's
   settings (show_in_rest, supports, rewrite) were not applied.`
@@ -435,6 +470,11 @@ appear on top of either.
   has no seeded post yet is reported as unresolved on *every* run (not just
   the one that changes the nav), so a missing link doesn't silently disappear
   from the report once the nav itself stops needing a rewrite.
+- **The site logo is git-owned, not client-editable.** Like nav membership,
+  `site.logo` is re-asserted whenever `custom_logo` differs from the manifest's
+  media key, so a client who picks a different logo in the Customizer will see
+  it reverted on the next `wp pediment seed`. Change the manifest, not the
+  Customizer.
 - **Terms are create-only.** `wp_set_object_terms()` replaces a taxonomy's
   assignments rather than merging into them; re-applying the manifest's terms
   on every run would strip a category a client added by hand in the editor.
