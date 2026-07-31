@@ -50,15 +50,33 @@ class ContentResolverTest extends WP_UnitTestCase {
 
 		$this->assertStringContainsString( wp_get_attachment_url( $attachment ), $content );
 		$this->assertStringContainsString( 'data-id="' . $attachment . '"', $content );
-		$this->assertFalse( $resolver->hasUnresolvedMedia( $content ) );
+		$this->assertSame( [], $resolver->unresolvedMediaKeys() );
 	}
 
-	public function test_unseeded_media_resolves_to_a_reportable_sentinel() {
+	public function test_unseeded_media_url_resolves_to_a_reportable_sentinel() {
 		$resolver = new ContentResolver( new MediaMap( [] ) );
 
 		$content = $resolver->resolve( $this->entry( [ 'content' => '<img src="{{media_url:hero}}" />' ] ) );
 
 		$this->assertStringContainsString( 'PEDIMENT_SEED_MEDIA_URL:hero', $content );
-		$this->assertTrue( $resolver->hasUnresolvedMedia( $content ) );
+		$this->assertSame( [ 'hero' ], $resolver->unresolvedMediaKeys() );
+	}
+
+	public function test_an_unseeded_media_id_is_reported_even_though_it_emits_a_bare_zero() {
+		$resolver = new ContentResolver( new MediaMap( [] ) );
+
+		$content = $resolver->resolve( $this->entry( [ 'content' => '<!-- wp:image {"id":{{media_id:hero}}} /-->' ] ) );
+
+		$this->assertStringContainsString( '"id":0', $content );
+		$this->assertSame( [ 'hero' ], $resolver->unresolvedMediaKeys(), 'a bare 0 is invisible in the markup; the resolver must remember it' );
+	}
+
+	public function test_unresolved_keys_are_scoped_to_the_last_resolve_call() {
+		$resolver = new ContentResolver( new MediaMap( [] ) );
+		$resolver->resolve( $this->entry( [ 'content' => '{{media_url:hero}}' ] ) );
+
+		$resolver->resolve( $this->entry( [ 'content' => '<p>no media here</p>' ] ) );
+
+		$this->assertSame( [], $resolver->unresolvedMediaKeys() );
 	}
 }
