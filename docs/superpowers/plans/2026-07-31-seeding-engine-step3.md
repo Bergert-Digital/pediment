@@ -1168,10 +1168,13 @@ git commit -m "feat(seeder): load and validate the declarative seed manifest"
   final class Pediment\Seeder\ContentResolver {
       public function __construct( MediaMap $media );
       public function resolve( EntrySpec $entry ): string;   // throws ManifestError on a missing pattern
-      public function hasUnresolvedMedia( string $content ): bool;
+      /** @return string[] media keys the MOST RECENT resolve() call could not resolve */
+      public function unresolvedMediaKeys(): array;
   }
   ```
-  Placeholders in pattern markup: `{{media_url:<key>}}` and `{{media_id:<key>}}`. Unseeded keys resolve to the sentinels `PEDIMENT_SEED_MEDIA_URL:<key>` / `0` so a dry-run on a fresh site still produces a readable plan.
+  Placeholders in pattern markup: `{{media_url:<key>}}` and `{{media_id:<key>}}`. Unseeded keys resolve to `PEDIMENT_SEED_MEDIA_URL:<key>` and `0` respectively, so a dry-run on a fresh site still produces a readable plan.
+
+  Report unresolved media from the resolver's own record, not by scanning the output: an unseeded `{{media_id:…}}` resolves to `0`, which is indistinguishable from a legitimate zero in the emitted markup. `resolve()` records the keys it could not resolve and `unresolvedMediaKeys()` returns them, so an id-only reference is reported just like a url one.
 
 - [ ] **Step 1: Write the failing test**
 
@@ -1228,16 +1231,34 @@ class ContentResolverTest extends WP_UnitTestCase {
 
 		$this->assertStringContainsString( wp_get_attachment_url( $attachment ), $content );
 		$this->assertStringContainsString( 'data-id="' . $attachment . '"', $content );
-		$this->assertFalse( $resolver->hasUnresolvedMedia( $content ) );
+		$this->assertSame( [], $resolver->unresolvedMediaKeys() );
 	}
 
-	public function test_unseeded_media_resolves_to_a_reportable_sentinel() {
+	public function test_unseeded_media_url_resolves_to_a_reportable_sentinel() {
 		$resolver = new ContentResolver( new MediaMap( [] ) );
 
 		$content = $resolver->resolve( $this->entry( [ 'content' => '<img src="{{media_url:hero}}" />' ] ) );
 
 		$this->assertStringContainsString( 'PEDIMENT_SEED_MEDIA_URL:hero', $content );
-		$this->assertTrue( $resolver->hasUnresolvedMedia( $content ) );
+		$this->assertSame( [ 'hero' ], $resolver->unresolvedMediaKeys() );
+	}
+
+	public function test_an_unseeded_media_id_is_reported_even_though_it_emits_a_bare_zero() {
+		$resolver = new ContentResolver( new MediaMap( [] ) );
+
+		$content = $resolver->resolve( $this->entry( [ 'content' => '<!-- wp:image {"id":{{media_id:hero}}} /-->' ] ) );
+
+		$this->assertStringContainsString( '"id":0', $content );
+		$this->assertSame( [ 'hero' ], $resolver->unresolvedMediaKeys(), 'a bare 0 is invisible in the markup; the resolver must remember it' );
+	}
+
+	public function test_unresolved_keys_are_scoped_to_the_last_resolve_call() {
+		$resolver = new ContentResolver( new MediaMap( [] ) );
+		$resolver->resolve( $this->entry( [ 'content' => '{{media_url:hero}}' ] ) );
+
+		$resolver->resolve( $this->entry( [ 'content' => '<p>no media here</p>' ] ) );
+
+		$this->assertSame( [], $resolver->unresolvedMediaKeys() );
 	}
 }
 ```
@@ -1306,6 +1327,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 final class ContentResolver {
 	private const SENTINEL = 'PEDIMENT_SEED_MEDIA_URL:';
 
+	/** @var array<string,string> Media keys the last resolve() call could not resolve. */
+	private array $unresolved = [];
+
 	public function __construct( private MediaMap $media ) {}
 
 	public function resolve( EntrySpec $entry ): string {
@@ -1324,15 +1348,23 @@ final class ContentResolver {
 		return $this->rewriteMedia( $content );
 	}
 
-	public function hasUnresolvedMedia( string $content ): bool {
-		return str_contains( $content, self::SENTINEL );
+	/** @return string[] */
+	public function unresolvedMediaKeys(): array {
+		return array_values( $this->unresolved );
 	}
 
 	private function rewriteMedia( string $content ): string {
-		return (string) preg_replace_callback(
+		$this->unresolved = [];
+
+		$rewritten = preg_replace_callback(
 			'/\{\{media_(url|id):([a-z0-9_\-\/]+)\}\}/i',
 			function ( array $m ): string {
 				$key = $m[2];
+				if ( ! $this->media->has( $key ) ) {
+					// An unseeded id resolves to a bare 0, which no amount of
+					// scanning the output can tell from a real one — so record it.
+					$this->unresolved[ $key ] = $key;
+				}
 				if ( 'id' === strtolower( $m[1] ) ) {
 					return (string) $this->media->id( $key );
 				}
@@ -1340,6 +1372,14 @@ final class ContentResolver {
 			},
 			$content
 		);
+
+		if ( null === $rewritten ) {
+			// preg_replace_callback returns null on a PCRE failure. Falling back
+			// to '' here would seed an empty page — the exact failure this engine exists to prevent.
+			throw new ManifestError( 'Media placeholder rewriting failed (PCRE error: ' . preg_last_error_msg() . ').' );
+		}
+
+		return $rewritten;
 	}
 }
 ```
