@@ -44,7 +44,7 @@ final class Applier {
 			}
 		}
 
-		$kses = $this->suspendKses();
+		$kses = Kses::suspend();
 
 		try {
 			foreach ( $plan->byKind( PlanItem::KIND_ENTRY ) as $item ) {
@@ -77,7 +77,7 @@ final class Applier {
 				}
 			}
 		} finally {
-			$this->restoreKses( $kses );
+			Kses::restore( $kses );
 		}
 
 		$this->applyReadingOptions( $desired, $ids );
@@ -260,20 +260,6 @@ final class Applier {
 			if ( $entry->postsPage && (int) get_option( 'page_for_posts' ) !== $ids[ $mapKey ] ) {
 				update_option( 'page_for_posts', $ids[ $mapKey ] );
 			}
-		}
-	}
-
-	private function suspendKses(): bool {
-		$active = false !== has_filter( 'content_save_pre', 'wp_filter_post_kses' );
-		if ( $active ) {
-			kses_remove_filters();
-		}
-		return $active;
-	}
-
-	private function restoreKses( bool $wasActive ): void {
-		if ( $wasActive ) {
-			kses_init_filters();
 		}
 	}
 }
