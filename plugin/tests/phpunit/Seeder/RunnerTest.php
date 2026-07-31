@@ -106,9 +106,11 @@ class RunnerTest extends WP_UnitTestCase {
 	}
 
 	public function test_an_errored_plan_leaves_no_media_behind() {
-		// Media used to be applied before the plan was checked, so a duplicate
-		// seed key elsewhere still created attachments and moved the site logo
-		// while the run reported that nothing had been applied.
+		// Media used to be applied before the plan was checked, so an unrelated
+		// error still created attachments and moved the site logo while the run
+		// reported that nothing had been applied. The duplicate key and the
+		// unseeded media must both be present on the FIRST run, or the media is
+		// already `unchanged` and the regression cannot show.
 		$dir = get_temp_dir() . 'pediment-runner-media';
 		wp_mkdir_p( $dir . '/seed/media' );
 		file_put_contents( $dir . '/seed/media/logo.svg', '<svg xmlns="http://www.w3.org/2000/svg"/>' );
@@ -116,9 +118,10 @@ class RunnerTest extends WP_UnitTestCase {
 		$this->manifest['media'] = [ 'logo' => [ 'file' => 'seed/media/logo.svg' ] ];
 		$this->manifest['site']  = [ 'logo' => 'logo' ];
 
-		( new Runner() )->run();
-		$clone = self::factory()->post->create( [ 'post_type' => 'page', 'post_title' => 'Impostor' ] );
-		update_post_meta( $clone, Meta::KEY, 'home' );
+		foreach ( [ 1, 2 ] as $ignored ) {
+			$impostor = self::factory()->post->create( [ 'post_type' => 'page' ] );
+			update_post_meta( $impostor, Meta::KEY, 'home' );
+		}
 		$logoBefore = get_theme_mod( 'custom_logo' );
 
 		$result = ( new Runner() )->run();
@@ -126,25 +129,24 @@ class RunnerTest extends WP_UnitTestCase {
 		remove_all_filters( 'stylesheet_directory' );
 		$this->assertFalse( $result->ok() );
 		$this->assertFalse( $result->applied );
+		$this->assertSame( [], get_posts( [ 'post_type' => 'attachment', 'post_status' => 'any', 'fields' => 'ids' ] ), 'an errored plan creates no attachments' );
 		$this->assertSame( $logoBefore, get_theme_mod( 'custom_logo' ), 'an errored plan writes nothing at all' );
 	}
 
 	public function test_a_post_type_only_manifest_still_flushes_rewrite_rules() {
-		global $wp_rewrite;
-
-		$this->manifest['post_types'] = [ 'project' => [ 'label' => 'Projects', 'has_archive' => true ] ];
-		// update_option() alone doesn't refresh the live $wp_rewrite object that
-		// flush_rewrite_rules() reads from.
-		$wp_rewrite->set_permalink_structure( '/%postname%/' );
-		// The `init` hook that normally registers manifest post types may not
-		// have fired for this manifest within the test process, and the
-		// manifest memo set_up() populated pre-dates 'project'; reset it so
-		// registration sees the current manifest.
-		\Pediment\Seeder\Manifest::resetCache();
-		\Pediment\Seeder\PostTypes::registerFromManifest();
-
+		// The plan must be EMPTY for this to prove anything: with pages still to
+		// create, the old `! $plan->isEmpty()` gate would flush anyway.
+		$GLOBALS['wp_rewrite']->set_permalink_structure( '/%postname%/' );
 		( new Runner() )->run();
 
+		$this->manifest['post_types'] = [ 'project' => [ 'label' => 'Projects', 'has_archive' => true ] ];
+		\Pediment\Seeder\Manifest::resetCache();
+		\Pediment\Seeder\PostTypes::registerFromManifest();
+		delete_option( 'rewrite_rules' );
+
+		$result = ( new Runner() )->run();
+
+		$this->assertTrue( $result->plan->isEmpty(), 'nothing but the post type changed' );
 		$this->assertStringContainsString( 'post_type=project', implode( "\n", (array) get_option( 'rewrite_rules' ) ) );
 		unregister_post_type( 'project' );
 	}
@@ -160,11 +162,20 @@ class RunnerTest extends WP_UnitTestCase {
 		$this->assertStringContainsString( 'navs.primary', implode( "\n", $second->problems ) );
 	}
 
-	public function test_errors_are_not_reported_twice() {
-		$this->manifest['media'] = [ 'logo' => [ 'file' => 'seed/media/nope.svg' ] ];
+	public function test_a_media_plan_error_is_reported_exactly_once() {
+		// A missing file is rejected at manifest load, which never reaches the
+		// media seeder. An unsupported extension on a file that DOES exist is a
+		// media-plan error, which is the path that used to double-report.
+		$dir = get_temp_dir() . 'pediment-runner-mime';
+		wp_mkdir_p( $dir . '/seed/media' );
+		file_put_contents( $dir . '/seed/media/notes.txt', 'not an image' );
+		add_filter( 'stylesheet_directory', static fn() => $dir );
+		$this->manifest['media'] = [ 'notes' => [ 'file' => 'seed/media/notes.txt' ] ];
 
 		$result = ( new Runner() )->run();
 
-		$this->assertSame( array_values( array_unique( $result->errors ) ), $result->errors );
+		remove_all_filters( 'stylesheet_directory' );
+		$this->assertFalse( $result->ok() );
+		$this->assertSame( 1, substr_count( implode( "\n", $result->errors ), 'media.notes' ), 'reported once, not once per channel' );
 	}
 }
