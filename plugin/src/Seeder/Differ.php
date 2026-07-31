@@ -56,7 +56,7 @@ final class Differ {
 						'title'      => [ 'from' => null, 'to' => $want->title ],
 						'content'    => [ 'from' => null, 'to' => $want->content ],
 						'slug'       => [ 'from' => null, 'to' => $want->slug ],
-						'parent'     => [ 'from' => null, 'to' => $want->parentKey ],
+						'parent_key' => [ 'from' => null, 'to' => $want->parentKey ],
 						'status'     => [ 'from' => null, 'to' => 'publish' ],
 						'menu_order' => [ 'from' => null, 'to' => $want->menuOrder ],
 					]
