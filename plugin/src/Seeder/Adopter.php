@@ -19,9 +19,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 final class Adopter {
 	public function __construct( private LanguageProvider $lang ) {}
 
-	/** @return array{path:string,bytes:int,written:bool,errors:string[]} */
+	/** @return array{path:string,bytes:int,written:bool,backup:string,errors:string[]} */
 	public function adopt( string $seedKey, string $language = '', bool $dryRun = false ): array {
-		$empty = [ 'path' => '', 'bytes' => 0, 'written' => false, 'errors' => [] ];
+		$empty = [ 'path' => '', 'bytes' => 0, 'written' => false, 'backup' => '', 'errors' => [] ];
 
 		// `init` already populated the per-request memo (PostTypes reads it on
 		// every request), and an operator who just edited the manifest expects
@@ -60,29 +60,97 @@ final class Adopter {
 
 		$slugParts = explode( '/', $spec->pattern );
 		$file      = untrailingslashit( $manifest->baseDir() ) . '/patterns/' . end( $slugParts ) . '.php';
-		$contents  = $this->render( $spec, (string) $post->post_content );
+		$markup    = $this->restoreMediaPlaceholders( $manifest, (string) $post->post_content );
+		$contents  = $this->render( $spec, $markup, $file );
 
 		if ( $dryRun ) {
-			return [ 'path' => $file, 'bytes' => strlen( $contents ), 'written' => false, 'errors' => [] ];
+			return [ 'path' => $file, 'bytes' => strlen( $contents ), 'written' => false, 'backup' => '', 'errors' => [] ];
 		}
 
 		if ( ! wp_mkdir_p( dirname( $file ) ) ) {
 			return array_merge( $empty, [ 'errors' => [ sprintf( 'Cannot create %s.', dirname( $file ) ) ] ] );
 		}
+
+		// Overwriting a pattern file a developer is mid-edit would destroy work
+		// git may not have yet, so keep a sibling copy when the contents differ.
+		$backup = '';
+		if ( is_readable( $file ) && (string) file_get_contents( $file ) !== $contents ) { // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- developer-side export.
+			$backup = $file . '.bak';
+			// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_copy -- developer-side export.
+			copy( $file, $backup );
+		}
+
 		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents -- developer-side export, runs on a dev machine.
 		if ( false === file_put_contents( $file, $contents ) ) {
 			return array_merge( $empty, [ 'errors' => [ sprintf( 'Cannot write %s.', $file ) ] ] );
 		}
 
+		// Read the file back the way the pattern registry will, and hash THAT as
+		// the source. Hashing the database row instead leaves the two a newline
+		// apart, and the very next seed rewrites the page adopt just blessed.
+		$resolved = $this->resolveWritten( $file );
+		$header   = get_file_data( $file, [ 'slug' => 'Slug' ] );
+		if ( $header['slug'] !== $spec->pattern ) {
+			return array_merge(
+				$empty,
+				[ 'errors' => [ sprintf( '%s: wrote %s but its Slug header reads "%s", not "%s" — the next seed would not find it.', $seedKey, $file, $header['slug'], (string) $spec->pattern ) ] ]
+			);
+		}
+
 		// The live row is now the source of truth in git too, so it is no longer
 		// "edited" — the next seed will treat it as up to date.
 		update_post_meta( $actual->id, Meta::HASH, ContentHash::forPost( $actual->id ) );
-		update_post_meta( $actual->id, Meta::SOURCE, ContentHash::compute( (string) $post->post_title, (string) $post->post_content ) );
+		update_post_meta( $actual->id, Meta::SOURCE, ContentHash::compute( (string) $post->post_title, $resolved ) );
 
-		return [ 'path' => $file, 'bytes' => strlen( $contents ), 'written' => true, 'errors' => [] ];
+		return [ 'path' => $file, 'bytes' => strlen( $contents ), 'written' => true, 'backup' => $backup, 'errors' => [] ];
 	}
 
-	private function render( EntrySpec $spec, string $markup ): string {
+	/** The bytes the pattern registry will see, produced the way it produces them. */
+	private function resolveWritten( string $file ): string {
+		ob_start();
+		include $file;
+		return (string) ob_get_clean();
+	}
+
+	/**
+	 * Turn concrete media references back into manifest placeholders.
+	 *
+	 * Without this, adopting a page with images commits environment-specific
+	 * URLs to git, and the same pattern seeded onto a fresh install points at
+	 * attachments that do not exist there. Sized variants (`-300x200.jpg`) and
+	 * srcset entries are NOT mapped back — documented in docs/seeding.md.
+	 */
+	private function restoreMediaPlaceholders( Manifest $manifest, string $markup ): string {
+		$map = ( new MediaSeeder() )->map( $manifest );
+
+		foreach ( array_keys( $manifest->media() ) as $key ) {
+			$id = $map->id( $key );
+			if ( $id <= 0 ) {
+				continue;
+			}
+			$url = $map->url( $key );
+			if ( '' !== $url ) {
+				$markup = str_replace( $url, '{{media_url:' . $key . '}}', $markup );
+			}
+			$markup = str_replace( '"id":' . $id, '"id":{{media_id:' . $key . '}}', $markup );
+		}
+
+		return $markup;
+	}
+
+	private function render( EntrySpec $spec, string $markup, string $existing = '' ): string {
+		// Keep whatever header the file already had — the shipped patterns carry
+		// Description, Keywords, Viewport Width and a phpcs:ignoreFile line that
+		// a regenerated header would silently drop.
+		if ( '' !== $existing && is_readable( $existing ) ) {
+			// phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- developer-side export.
+			$current = (string) file_get_contents( $existing );
+			$end     = strpos( $current, '?>' );
+			if ( false !== $end ) {
+				return substr( $current, 0, $end + 2 ) . "\n" . $markup . "\n";
+			}
+		}
+
 		return "<?php\n"
 			. "/**\n"
 			. ' * Title: ' . $spec->title . "\n"
