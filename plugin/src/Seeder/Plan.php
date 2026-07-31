@@ -29,6 +29,11 @@ final class Plan {
 	}
 
 	public function isEmpty(): bool {
+		// An errored plan is blocked, not idle — never let a caller report
+		// "nothing to do" for a plan that could not be computed.
+		if ( $this->hasErrors() ) {
+			return false;
+		}
 		foreach ( $this->items as $item ) {
 			if ( $item->writes() ) {
 				return false;
@@ -47,9 +52,12 @@ final class Plan {
 		return array_values( array_filter( $this->items, static fn( PlanItem $i ): bool => $i->kind === $kind ) );
 	}
 
-	/** @return array<string,int> */
+	/** @return array<string,int> Every action, including the ones with no items. */
 	public function counts(): array {
-		$counts = [];
+		$counts = array_fill_keys(
+			[ PlanItem::CREATE, PlanItem::RESTORE, PlanItem::UPDATE, PlanItem::PROTECTED, PlanItem::UNCHANGED, PlanItem::ORPHAN ],
+			0
+		);
 		foreach ( $this->items as $item ) {
 			$counts[ $item->action ] = ( $counts[ $item->action ] ?? 0 ) + 1;
 		}

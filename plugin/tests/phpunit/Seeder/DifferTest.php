@@ -1,10 +1,10 @@
 <?php
-// plugin/tests/phpunit/Seeder/DifferTest.php
 
 use Pediment\Seeder\ActualEntry;
 use Pediment\Seeder\ContentHash;
 use Pediment\Seeder\DesiredEntry;
 use Pediment\Seeder\Differ;
+use Pediment\Seeder\Plan;
 use Pediment\Seeder\PlanItem;
 
 class DifferTest extends WP_UnitTestCase {
@@ -151,7 +151,7 @@ class DifferTest extends WP_UnitTestCase {
 			$items[ $planned->key ] = $planned;
 		}
 
-		$this->assertSame( 'guide', $items['guide/faq']->changes['parent']['to'] );
+		$this->assertSame( 'guide', $items['guide/faq']->changes['parent_key']['to'] );
 		$this->assertSame( 3, $items['guide/faq']->changes['menu_order']['to'] );
 		$this->assertSame( PlanItem::UNCHANGED, $items['guide']->action );
 	}
@@ -202,5 +202,55 @@ class DifferTest extends WP_UnitTestCase {
 		$this->assertSame( 1, $plan->counts()[ PlanItem::CREATE ] );
 		$this->assertSame( 1, $plan->counts()[ PlanItem::UNCHANGED ] );
 		$this->assertFalse( $plan->isEmpty() );
+	}
+
+	public function test_draft_and_pending_are_editorial_states_the_seeder_leaves_alone() {
+		foreach ( [ 'draft', 'pending' ] as $status ) {
+			$item = $this->item(
+				[ 'home|' => $this->desired( [ 'content' => '<p>old</p>' ] ) ],
+				[ 'home|' => $this->actual( [ 'status' => $status ] ) ]
+			);
+
+			$this->assertSame( PlanItem::UNCHANGED, $item->action, $status );
+			$this->assertArrayNotHasKey( 'status', $item->changes, $status );
+		}
+	}
+
+	public function test_a_changed_title_propagates_when_the_row_is_untouched() {
+		$item = $this->item(
+			[ 'home|' => $this->desired( [ 'title' => 'Welcome' ] ) ],
+			[ 'home|' => $this->actual() ]
+		);
+
+		$this->assertSame( PlanItem::UPDATE, $item->action );
+		$this->assertSame( [ 'from' => 'Home', 'to' => 'Welcome' ], $item->changes['title'] );
+	}
+
+	public function test_a_never_seeded_row_is_not_reported_as_client_edited() {
+		$item = $this->item( [ 'home|' => $this->desired() ], [ 'home|' => $this->actual( [ 'storedHash' => '' ] ) ] );
+
+		$this->assertStringContainsString( 'never seeded', $item->note );
+		$this->assertStringNotContainsString( 'edited in the editor', $item->note );
+	}
+
+	public function test_a_foreign_hash_version_says_so_rather_than_blaming_the_client() {
+		$actual = $this->actual( [ 'storedHash' => '2:' . str_repeat( 'a', 64 ) ] );
+
+		$this->assertStringContainsString( 'older hash version', $this->item( [ 'home|' => $this->desired() ], [ 'home|' => $actual ] )->note );
+	}
+
+	public function test_plan_helpers_slice_and_merge() {
+		$create = new PlanItem( PlanItem::CREATE, PlanItem::KIND_ENTRY, 'home', '', 0, [ 'slug' => [ 'from' => null, 'to' => 'home' ] ] );
+		$media  = new PlanItem( PlanItem::UNCHANGED, PlanItem::KIND_MEDIA, 'logo', '', 4 );
+		$plan   = Plan::merge( new Plan( [ $create ] ), new Plan( [ $media ], [ 'boom' ] ) );
+
+		$this->assertSame( [ $create ], $plan->byAction( PlanItem::CREATE ) );
+		$this->assertSame( [ $media ], $plan->byKind( PlanItem::KIND_MEDIA ) );
+		$this->assertSame( 'home|', $create->mapKey() );
+		$this->assertTrue( $create->writes() );
+		$this->assertFalse( $media->writes() );
+		$this->assertSame( [ 'boom' ], $plan->errors() );
+		$this->assertFalse( $plan->isEmpty(), 'an errored plan is blocked, not idle' );
+		$this->assertSame( 0, $plan->counts()[ PlanItem::PROTECTED ], 'counts() reports every action, including empty ones' );
 	}
 }
