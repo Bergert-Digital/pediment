@@ -20,6 +20,11 @@ theme exists only for wp-env and integration tests.
   `style.scss`, plus PHPUnit coverage for valid and empty attributes.
 - Client themes extend through normal WordPress theme facilities. Never depend
   on editing plugin files for client-specific behavior.
+- Content seeding is declarative now (see `docs/seeding.md`): edit the client
+  theme's `seed/manifest.php` and its `patterns/*.php` files, then run
+  `wp pediment seed`. Never write pages with `wp post create` / `wp post update`
+  — the seeder owns identity (`_pediment_seed_key`) and the content-arbitration
+  hashes, and a hand-written post bypasses both.
 
 ## Environment and verification
 
