@@ -1990,7 +1990,7 @@ class DifferTest extends WP_UnitTestCase {
 			$items[ $planned->key ] = $planned;
 		}
 
-		$this->assertSame( 'guide', $items['guide/faq']->changes['parent']['to'] );
+		$this->assertSame( 'guide', $items['guide/faq']->changes['parent_key']['to'] );
 		$this->assertSame( 3, $items['guide/faq']->changes['menu_order']['to'] );
 		$this->assertSame( PlanItem::UNCHANGED, $items['guide']->action );
 	}
@@ -2000,6 +2000,56 @@ class DifferTest extends WP_UnitTestCase {
 
 		$this->assertSame( PlanItem::RESTORE, $item->action );
 		$this->assertSame( [ 'from' => 'trash', 'to' => 'publish' ], $item->changes['status'] );
+	}
+
+	public function test_draft_and_pending_are_editorial_states_the_seeder_leaves_alone() {
+		foreach ( [ 'draft', 'pending' ] as $status ) {
+			$item = $this->item(
+				[ 'home|' => $this->desired( [ 'content' => '<p>old</p>' ] ) ],
+				[ 'home|' => $this->actual( [ 'status' => $status ] ) ]
+			);
+
+			$this->assertSame( PlanItem::UNCHANGED, $item->action, $status );
+			$this->assertArrayNotHasKey( 'status', $item->changes, $status );
+		}
+	}
+
+	public function test_a_changed_title_propagates_when_the_row_is_untouched() {
+		$item = $this->item(
+			[ 'home|' => $this->desired( [ 'title' => 'Welcome' ] ) ],
+			[ 'home|' => $this->actual() ]
+		);
+
+		$this->assertSame( PlanItem::UPDATE, $item->action );
+		$this->assertSame( [ 'from' => 'Home', 'to' => 'Welcome' ], $item->changes['title'] );
+	}
+
+	public function test_a_never_seeded_row_is_not_reported_as_client_edited() {
+		$item = $this->item( [ 'home|' => $this->desired() ], [ 'home|' => $this->actual( [ 'storedHash' => '' ] ) ] );
+
+		$this->assertStringContainsString( 'never seeded', $item->note );
+		$this->assertStringNotContainsString( 'edited in the editor', $item->note );
+	}
+
+	public function test_a_foreign_hash_version_says_so_rather_than_blaming_the_client() {
+		$actual = $this->actual( [ 'storedHash' => '2:' . str_repeat( 'a', 64 ) ] );
+
+		$this->assertStringContainsString( 'older hash version', $this->item( [ 'home|' => $this->desired() ], [ 'home|' => $actual ] )->note );
+	}
+
+	public function test_plan_helpers_slice_and_merge() {
+		$create = new PlanItem( PlanItem::CREATE, PlanItem::KIND_ENTRY, 'home', '', 0, [ 'slug' => [ 'from' => null, 'to' => 'home' ] ] );
+		$media  = new PlanItem( PlanItem::UNCHANGED, PlanItem::KIND_MEDIA, 'logo', '', 4 );
+		$plan   = Plan::merge( new Plan( [ $create ] ), new Plan( [ $media ], [ 'boom' ] ) );
+
+		$this->assertSame( [ $create ], $plan->byAction( PlanItem::CREATE ) );
+		$this->assertSame( [ $media ], $plan->byKind( PlanItem::KIND_MEDIA ) );
+		$this->assertSame( 'home|', $create->mapKey() );
+		$this->assertTrue( $create->writes() );
+		$this->assertFalse( $media->writes() );
+		$this->assertSame( [ 'boom' ], $plan->errors() );
+		$this->assertFalse( $plan->isEmpty(), 'an errored plan is blocked, not idle' );
+		$this->assertSame( 0, $plan->counts()[ PlanItem::PROTECTED ], 'counts() reports every action, including empty ones' );
 	}
 
 	public function test_orphans_are_reported_and_never_deleted() {
@@ -2131,6 +2181,11 @@ final class Plan {
 	}
 
 	public function isEmpty(): bool {
+		// An errored plan is blocked, not idle — never let a caller report
+		// "nothing to do" for a plan that could not be computed.
+		if ( $this->hasErrors() ) {
+			return false;
+		}
 		foreach ( $this->items as $item ) {
 			if ( $item->writes() ) {
 				return false;
@@ -2149,9 +2204,12 @@ final class Plan {
 		return array_values( array_filter( $this->items, static fn( PlanItem $i ): bool => $i->kind === $kind ) );
 	}
 
-	/** @return array<string,int> */
+	/** @return array<string,int> Every action, including the ones with no items. */
 	public function counts(): array {
-		$counts = [];
+		$counts = array_fill_keys(
+			[ PlanItem::CREATE, PlanItem::RESTORE, PlanItem::UPDATE, PlanItem::PROTECTED, PlanItem::UNCHANGED, PlanItem::ORPHAN ],
+			0
+		);
 		foreach ( $this->items as $item ) {
 			$counts[ $item->action ] = ( $counts[ $item->action ] ?? 0 ) + 1;
 		}
@@ -2207,9 +2265,11 @@ final class Differ {
 		$errors = [];
 
 		foreach ( $duplicates as $mapKey => $ids ) {
+			[ $duplicateKey, $duplicateLanguage ] = array_pad( explode( '|', (string) $mapKey, 2 ), 2, '' );
 			$errors[] = sprintf(
-				'Seed key "%s" is carried by %d posts (IDs %s). Identity must be unique — delete or re-key the extras before seeding.',
-				$mapKey,
+				'Seed key "%s"%s is carried by %d posts (IDs %s). Identity must be unique — delete or re-key the extras before seeding.',
+				$duplicateKey,
+				'' === $duplicateLanguage ? '' : sprintf( ' (language "%s")', $duplicateLanguage ),
 				count( $ids ),
 				implode( ', ', $ids )
 			);
@@ -2229,7 +2289,7 @@ final class Differ {
 						'title'      => [ 'from' => null, 'to' => $want->title ],
 						'content'    => [ 'from' => null, 'to' => $want->content ],
 						'slug'       => [ 'from' => null, 'to' => $want->slug ],
-						'parent'     => [ 'from' => null, 'to' => $want->parentKey ],
+						'parent_key' => [ 'from' => null, 'to' => $want->parentKey ],
 						'status'     => [ 'from' => null, 'to' => 'publish' ],
 						'menu_order' => [ 'from' => null, 'to' => $want->menuOrder ],
 					]
@@ -2283,10 +2343,16 @@ final class Differ {
 			$parentDiffers = ( null === $want->parentKey && 0 !== $have->parentId )
 				|| ( null !== $want->parentKey && ( null === $wantParentId || $have->parentId !== $wantParentId ) );
 			if ( $parentDiffers ) {
-				$changes['parent'] = [ 'from' => $have->parentId, 'to' => $want->parentKey ];
+				// Named `parent_key`, not `parent`, because the values are a seed
+				// key and a post ID — descriptive, not directly writable. The
+				// applier resolves the real post_parent from the desired entry.
+				$changes['parent_key'] = [ 'from' => $have->parentId, 'to' => $want->parentKey ];
 			}
 
-			$restoring = in_array( $have->status, [ 'trash', 'draft', 'pending' ], true );
+			// Only `trash` is restored. `draft` and `pending` are editorial states
+			// — a client taking a page offline or holding a revision for review
+			// must not be overruled by the next seed run.
+			$restoring = 'trash' === $have->status;
 			if ( $restoring ) {
 				$changes['status'] = [ 'from' => $have->status, 'to' => 'publish' ];
 			}
@@ -2301,7 +2367,17 @@ final class Differ {
 				$action = PlanItem::PROTECTED;
 			}
 			if ( [] !== $protected ) {
-				$note = 'edited in the editor — content and title left alone';
+				// Three different situations reach rule 2, and telling an operator
+				// "the client edited this" about a database the seeder has simply
+				// never stamped is the difference between running `wp pediment
+				// adopt` and concluding the whole site was hand-edited.
+				if ( '' === $have->storedHash ) {
+					$note = 'never seeded by this engine — content left alone; run `wp pediment adopt` to take it into git';
+				} elseif ( ! str_starts_with( $have->storedHash, ContentHash::VERSION . ':' ) ) {
+					$note = 'seeded by an older hash version — content left alone; re-adopt to refresh it';
+				} else {
+					$note = 'edited in the editor — content and title left alone';
+				}
 			}
 
 			$items[] = new PlanItem(
@@ -2690,7 +2766,9 @@ final class Applier {
 				case 'slug':
 					$postarr['post_name'] = $entry->slug;
 					break;
-				case 'parent':
+				case 'parent_key':
+					// The change record carries a seed key for display; the real
+					// post_parent is resolved here from the desired entry.
 					$postarr['post_parent'] = $this->parentId( $entry, $ids );
 					break;
 				case 'menu_order':
@@ -3699,8 +3777,10 @@ final class Verifier {
 				$problems[] = sprintf( '%s: post ID %d does not exist.', $mapKey, $postId );
 				continue;
 			}
-			if ( 'publish' !== $post->post_status ) {
-				$problems[] = sprintf( '%s: post %d is "%s", expected "publish".', $mapKey, $postId, $post->post_status );
+			// Only trash is a problem: `draft` and `pending` are editorial states
+			// a client is entitled to set, and the Differ deliberately leaves them.
+			if ( 'trash' === $post->post_status ) {
+				$problems[] = sprintf( '%s: post %d is in the trash.', $mapKey, $postId );
 			}
 			if ( $post->post_name !== $entry->slug ) {
 				$problems[] = sprintf(
