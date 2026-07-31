@@ -39,6 +39,15 @@ class ManifestTest extends WP_UnitTestCase {
 		$this->assertSame( 'handbook', Manifest::fromArray( $raw, '/tmp/theme' )->entries()['guide']->slug );
 	}
 
+	public function test_invalid_slug_is_a_validation_error() {
+		$raw                           = $this->raw();
+		$raw['pages']['guide']['slug'] = 'Not A Slug';
+
+		$this->expectException( ManifestError::class );
+		$this->expectExceptionMessageMatches( '/slug/i' );
+		Manifest::fromArray( $raw, '/tmp/theme' );
+	}
+
 	public function test_dependency_order_puts_parents_first() {
 		$keys = array_map(
 			static fn( $e ) => $e->key,
@@ -61,6 +70,16 @@ class ManifestTest extends WP_UnitTestCase {
 		$raw['pages']['guide']['pattern'] = 'pediment/prose-article';
 
 		$this->expectException( ManifestError::class );
+		$this->expectExceptionMessageMatches( '/pattern.*content/i' );
+		Manifest::fromArray( $raw, '/tmp/theme' );
+	}
+
+	public function test_neither_pattern_nor_content_is_a_validation_error() {
+		$raw = $this->raw();
+		unset( $raw['pages']['guide']['content'] );
+
+		$this->expectException( ManifestError::class );
+		$this->expectExceptionMessageMatches( '/pattern.*content/i' );
 		Manifest::fromArray( $raw, '/tmp/theme' );
 	}
 
@@ -86,6 +105,18 @@ class ManifestTest extends WP_UnitTestCase {
 		Manifest::fromArray( $raw, '/tmp/theme' );
 	}
 
+	public function test_self_parent_cycle_is_a_validation_error() {
+		$raw = [
+			'pages' => [
+				'a' => [ 'title' => 'A', 'content' => '', 'parent' => 'a' ],
+			],
+		];
+
+		$this->expectException( ManifestError::class );
+		$this->expectExceptionMessageMatches( '/cycle/i' );
+		Manifest::fromArray( $raw, '/tmp/theme' );
+	}
+
 	public function test_a_key_reused_across_sections_is_a_validation_error() {
 		$raw                    = $this->raw();
 		$raw['posts']['home']   = [ 'title' => 'Clash', 'content' => '' ];
@@ -100,6 +131,16 @@ class ManifestTest extends WP_UnitTestCase {
 		$raw['pages']['guide']['front_page'] = true;
 
 		$this->expectException( ManifestError::class );
+		$this->expectExceptionMessageMatches( '/front_page/i' );
+		Manifest::fromArray( $raw, '/tmp/theme' );
+	}
+
+	public function test_more_than_one_posts_page_is_a_validation_error() {
+		$raw                               = $this->raw();
+		$raw['pages']['guide']['posts_page'] = true;
+
+		$this->expectException( ManifestError::class );
+		$this->expectExceptionMessageMatches( '/posts_page/i' );
 		Manifest::fromArray( $raw, '/tmp/theme' );
 	}
 
@@ -125,6 +166,7 @@ class ManifestTest extends WP_UnitTestCase {
 
 	public function test_site_logo_must_reference_a_declared_media_key() {
 		$this->expectException( ManifestError::class );
+		$this->expectExceptionMessageMatches( '/logo/i' );
 		Manifest::fromArray( [ 'site' => [ 'logo' => 'nope' ] ], '/tmp/theme' );
 	}
 
