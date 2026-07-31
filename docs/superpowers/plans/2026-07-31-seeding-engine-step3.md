@@ -3430,13 +3430,18 @@ git commit -m "feat(seeder): seed media attachments and the site logo by key"
 ### Task 10: Navigation membership by seed key
 
 **Files:**
-- Create: `plugin/src/Seeder/NavSeeder.php`
+- Create: `plugin/src/Seeder/NavSeeder.php`, `plugin/src/Seeder/Kses.php`
+- Modify: `plugin/src/Seeder/Applier.php` (its private `suspendKses()`/`restoreKses()` move into the shared `Kses` helper)
 - Test: `plugin/tests/phpunit/Seeder/NavSeederTest.php`
 
 **Interfaces:**
 - Consumes: `Manifest`, `NavSpec`, `Plan`, `PlanItem`, `Meta`, `LanguageProvider`.
 - Produces:
   ```php
+  final class Pediment\Seeder\Kses {
+      public static function suspend(): bool;      // removes the filters if active; returns whether it did
+      public static function restore( bool $wasActive ): void;
+  }
   final class Pediment\Seeder\NavSeeder {
       public function __construct( LanguageProvider $lang );
       /** @param array<string,int> $entryIds mapKey => post ID */
@@ -3444,9 +3449,15 @@ git commit -m "feat(seeder): seed media attachments and the site logo by key"
       public function apply( Plan $plan, Manifest $manifest, array $entryIds ): array; // navKey|lang => post ID
       /** @param array<string,int> $entryIds */
       public function serialize( NavSpec $spec, string $language, array $entryIds ): string;
+      /** @return string[] Failures from the most recent apply(). */
+      public function errors(): array;
   }
   ```
   A `wp_navigation` entity per `(nav key, language)`, identified by `_pediment_seed_key`, published. Membership is structure the seeder owns outright (see "Design decisions", item 3): when the serialized items differ, the entity is rewritten and the plan says so.
+
+  Two traps this path shares with the entry path, both proven by a failing test here:
+  - **KSES rewrites the stored markup.** With no `unfiltered_html` user — every WP-CLI run, and PHPUnit — `wp_filter_post_kses()` strips the `\/` escapes out of the navigation-link JSON on save. Comparing a freshly serialized string against the stored one then differs forever, so every nav is rewritten on every run. Writes go through the shared `Kses` helper, and `serialize()` emits `JSON_UNESCAPED_SLASHES` so the markup matches what the block editor itself writes.
+  - **Silent failures.** A failed insert/update, an item whose entry never resolved, and two nav entities sharing one seed key are all reported, exactly as the entry and media paths report theirs.
 
 - [ ] **Step 1: Write the failing test**
 
@@ -3516,6 +3527,68 @@ class NavSeederTest extends WP_UnitTestCase {
 		$this->assertSame( 2, substr_count( get_post( $again['primary|'] )->post_content, 'wp:navigation-link' ) );
 	}
 
+	public function test_a_nav_with_slashes_in_its_urls_is_not_rewritten_forever() {
+		// The trap: KSES strips the `\/` escapes out of the stored JSON, so a
+		// freshly serialized string never matches what is in the database and the
+		// entity is rewritten on every single run.
+		$seeder = new NavSeeder( new NullProvider() );
+		$m      = $this->manifest( [ [ 'url' => '/contact/us', 'label' => 'Contact' ] ] );
+		$seeder->apply( $seeder->plan( $m, [] ), $m, [] );
+
+		$plan = $seeder->plan( $m, [] );
+
+		$this->assertSame( PlanItem::UNCHANGED, $plan->items()[0]->action );
+	}
+
+	public function test_an_item_whose_entry_is_not_seeded_is_reported() {
+		$seeder = new NavSeeder( new NullProvider() );
+		$m      = $this->manifest( [ [ 'entry' => 'home' ] ] );
+
+		$seeder->apply( $seeder->plan( $m, [] ), $m, [] );
+
+		$this->assertNotEmpty( $seeder->errors() );
+		$this->assertStringContainsString( 'home', $seeder->errors()[0] );
+	}
+
+	public function test_an_unresolved_link_is_still_reported_once_the_nav_stops_changing() {
+		// After the first run the nav's content matches, so the item is UNCHANGED
+		// — but the missing link is still missing, and silence would read as success.
+		$seeder = new NavSeeder( new NullProvider() );
+		$m      = $this->manifest( [ [ 'entry' => 'home' ] ] );
+		$seeder->apply( $seeder->plan( $m, [] ), $m, [] );
+
+		$plan = $seeder->plan( $m, [] );
+		$seeder->apply( $plan, $m, [] );
+
+		$this->assertSame( PlanItem::UNCHANGED, $plan->items()[0]->action );
+		$this->assertNotEmpty( $seeder->errors(), 'the problem persists, so the report must too' );
+		$this->assertStringContainsString( 'home', $seeder->errors()[0] );
+	}
+
+	public function test_serialize_has_no_side_effects() {
+		$seeder = new NavSeeder( new NullProvider() );
+		$m      = $this->manifest( [ [ 'entry' => 'home' ] ] );
+
+		$seeder->serialize( $m->navs()['primary'], '', [] );
+		$seeder->serialize( $m->navs()['primary'], '', [] );
+
+		$this->assertSame( [], $seeder->errors(), 'serialize() is a formatter, not a reporter' );
+	}
+
+	public function test_two_entities_under_one_key_are_reported() {
+		$seeder = new NavSeeder( new NullProvider() );
+		$m      = $this->manifest( [ [ 'entry' => 'home' ] ] );
+		$ids    = [ 'home|' => self::factory()->post->create( [ 'post_type' => 'page' ] ) ];
+		$seeder->apply( $seeder->plan( $m, $ids ), $m, $ids );
+		$impostor = self::factory()->post->create( [ 'post_type' => 'wp_navigation' ] );
+		update_post_meta( $impostor, \Pediment\Seeder\Meta::KEY, 'primary' );
+
+		$plan = $seeder->plan( $m, $ids );
+
+		$this->assertTrue( $plan->hasErrors() );
+		$this->assertStringContainsString( 'primary', $plan->errors()[0] );
+	}
+
 	public function test_an_unchanged_nav_is_not_rewritten() {
 		$seeder = new NavSeeder( new NullProvider() );
 		$m      = $this->manifest( [ [ 'entry' => 'home' ] ] );
@@ -3560,12 +3633,25 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 final class NavSeeder {
+	/** @var string[] Failures from the most recent apply(). */
+	private array $errors = [];
+
 	public function __construct( private LanguageProvider $lang ) {}
 
 	/** @param array<string,int> $entryIds */
 	public function plan( Manifest $manifest, array $entryIds ): Plan {
 		$items    = [];
+		$errors   = [];
 		$existing = $this->existing();
+
+		foreach ( $this->duplicates() as $mapKey => $duplicateIds ) {
+			$errors[] = sprintf(
+				'navs.%s is carried by %d navigation entities (IDs %s). Identity must be unique — delete or re-key the extras.',
+				explode( '|', (string) $mapKey )[0],
+				count( $duplicateIds ),
+				implode( ', ', $duplicateIds )
+			);
+		}
 
 		foreach ( $this->lang->languages() as $language ) {
 			foreach ( $manifest->navs() as $key => $spec ) {
@@ -3601,7 +3687,12 @@ final class NavSeeder {
 			}
 		}
 
-		return new Plan( $items );
+		return new Plan( $items, $errors );
+	}
+
+	/** @return string[] */
+	public function errors(): array {
+		return $this->errors;
 	}
 
 	/**
@@ -3609,41 +3700,74 @@ final class NavSeeder {
 	 * @return array<string,int> navKey|language => post ID
 	 */
 	public function apply( Plan $plan, Manifest $manifest, array $entryIds ): array {
+		$this->errors = [];
+
+		// Same contract as Applier::apply(): an errored plan writes nothing.
+		if ( $plan->hasErrors() ) {
+			$this->errors = $plan->errors();
+			return $this->existing();
+		}
+
 		$ids = $this->existing();
 
-		foreach ( $plan->byKind( PlanItem::KIND_NAV ) as $item ) {
-			$spec = $manifest->navs()[ $item->key ] ?? null;
-			if ( ! $spec instanceof NavSpec || PlanItem::UNCHANGED === $item->action ) {
-				continue;
-			}
+		// Without this, wp_filter_post_kses() strips the escapes out of the
+		// navigation-link JSON on save, the stored markup never matches a fresh
+		// serialize(), and every nav is rewritten on every run.
+		$kses = Kses::suspend();
 
-			$content = $this->serialize( $spec, $item->language, $entryIds );
-
-			if ( PlanItem::CREATE === $item->action ) {
-				$postId = wp_insert_post(
-					wp_slash(
-						[
-							'post_type'    => 'wp_navigation',
-							'post_status'  => 'publish',
-							'post_title'   => $spec->title,
-							'post_name'    => sanitize_title( $spec->key . ( '' !== $item->language ? '-' . $item->language : '' ) ),
-							'post_content' => $content,
-						]
-					),
-					true
-				);
-				if ( is_wp_error( $postId ) ) {
+		try {
+			foreach ( $plan->byKind( PlanItem::KIND_NAV ) as $item ) {
+				$spec = $manifest->navs()[ $item->key ] ?? null;
+				if ( ! $spec instanceof NavSpec ) {
 					continue;
 				}
-				$postId = (int) $postId;
-				$this->lang->setLanguage( $postId, $item->language );
-				update_post_meta( $postId, Meta::KEY, $spec->key );
-			} else {
-				$postId = $item->postId;
-				wp_update_post( wp_slash( [ 'ID' => $postId, 'post_content' => $content ] ), true );
-			}
 
-			$ids[ $item->mapKey() ] = $postId;
+				// Checked for every item, including UNCHANGED ones: a menu that
+				// quietly comes out short is worse than one that fails, and the
+				// problem persists across runs even though the nav stops changing.
+				foreach ( $this->unresolvedEntries( $spec, $item->language, $entryIds ) as $missing ) {
+					$this->errors[] = sprintf( 'navs.%s: "%s" has no seeded post yet — the link was left out.', $spec->key, $missing );
+				}
+
+				if ( PlanItem::UNCHANGED === $item->action ) {
+					continue;
+				}
+
+				$content = $this->serialize( $spec, $item->language, $entryIds );
+
+				if ( PlanItem::CREATE === $item->action ) {
+					$postId = wp_insert_post(
+						wp_slash(
+							[
+								'post_type'    => 'wp_navigation',
+								'post_status'  => 'publish',
+								'post_title'   => $spec->title,
+								'post_name'    => sanitize_title( $spec->key . ( '' !== $item->language ? '-' . $item->language : '' ) ),
+								'post_content' => $content,
+							]
+						),
+						true
+					);
+					if ( is_wp_error( $postId ) ) {
+						$this->errors[] = sprintf( 'navs.%s: could not create the navigation entity — %s', $spec->key, $postId->get_error_message() );
+						continue;
+					}
+					$postId = (int) $postId;
+					$this->lang->setLanguage( $postId, $item->language );
+					update_post_meta( $postId, Meta::KEY, $spec->key );
+				} else {
+					$postId  = $item->postId;
+					$updated = wp_update_post( wp_slash( [ 'ID' => $postId, 'post_content' => $content ] ), true );
+					if ( is_wp_error( $updated ) ) {
+						$this->errors[] = sprintf( 'navs.%s: could not update the navigation entity — %s', $spec->key, $updated->get_error_message() );
+						continue;
+					}
+				}
+
+				$ids[ $item->mapKey() ] = $postId;
+			}
+		} finally {
+			Kses::restore( $kses );
 		}
 
 		return $ids;
@@ -3657,9 +3781,14 @@ final class NavSeeder {
 			if ( isset( $item['entry'] ) ) {
 				$postId = (int) ( $entryIds[ $item['entry'] . '|' . $language ] ?? 0 );
 				if ( 0 === $postId ) {
+					// Reported by apply() via unresolvedEntries(), not from here:
+					// serialize() must stay pure, and an unresolved link has to be
+					// reported on EVERY run, not only the one that rewrites the nav.
 					continue;
 				}
 				$post    = get_post( $postId );
+				// JSON_UNESCAPED_SLASHES matches what the block editor writes, and
+				// keeps the markup stable under KSES, which strips `\/` on save.
 				$links[] = '<!-- wp:navigation-link ' . wp_json_encode(
 					[
 						'label' => (string) ( $item['label'] ?? ( $post ? $post->post_title : '' ) ),
@@ -3667,7 +3796,8 @@ final class NavSeeder {
 						'id'    => $postId,
 						'kind'  => 'post-type',
 						'url'   => (string) get_permalink( $postId ),
-					]
+					],
+					JSON_UNESCAPED_SLASHES
 				) . ' /-->';
 				continue;
 			}
@@ -3677,16 +3807,47 @@ final class NavSeeder {
 					'label' => (string) $item['label'],
 					'url'   => (string) $item['url'],
 					'kind'  => 'custom',
-				]
+				],
+				JSON_UNESCAPED_SLASHES
 			) . ' /-->';
 		}
 
 		return implode( "\n", $links );
 	}
 
+	/**
+	 * Entry keys this nav references that have no seeded post yet.
+	 *
+	 * @param array<string,int> $entryIds
+	 * @return string[]
+	 */
+	private function unresolvedEntries( NavSpec $spec, string $language, array $entryIds ): array {
+		$missing = [];
+		foreach ( $spec->items as $item ) {
+			if ( isset( $item['entry'] ) && 0 === (int) ( $entryIds[ $item['entry'] . '|' . $language ] ?? 0 ) ) {
+				$missing[] = (string) $item['entry'];
+			}
+		}
+		return $missing;
+	}
+
 	/** @return array<string,int> navKey|language => post ID */
 	private function existing(): array {
 		$ids = [];
+		foreach ( $this->keyed() as $mapKey => $navIds ) {
+			$ids[ $mapKey ] = $navIds[0];
+		}
+		return $ids;
+	}
+
+	/** @return array<string,int[]> map keys carried by more than one entity */
+	private function duplicates(): array {
+		return array_filter( $this->keyed(), static fn( array $ids ): bool => count( $ids ) > 1 );
+	}
+
+	/** @return array<string,int[]> */
+	private function keyed(): array {
+		$keyed = [];
 		foreach (
 			get_posts(
 				$this->lang->unscopedQuery(
@@ -3694,6 +3855,8 @@ final class NavSeeder {
 						'post_type'      => 'wp_navigation',
 						'post_status'    => [ 'publish', 'draft' ],
 						'posts_per_page' => -1,
+						'orderby'        => 'ID',
+						'order'          => 'ASC',
 						'no_found_rows'  => true,
 						// phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key -- seed identity lookup.
 						'meta_key'       => Meta::KEY,
@@ -3713,12 +3876,55 @@ final class NavSeeder {
 					break;
 				}
 			}
-			$ids[ $key . '|' . $language ] = (int) $nav->ID;
+			$keyed[ $key . '|' . $language ][] = (int) $nav->ID;
 		}
-		return $ids;
+		return $keyed;
 	}
 }
 ```
+
+The shared KSES helper, extracted from `Applier`'s private methods so both writers share one implementation:
+
+```php
+<?php
+/**
+ * KSES suspension for seeder writes.
+ *
+ * Seeded content is git-authored markup, not user input. Under WP-CLI there is
+ * no current user, so kses_init_filters() is active and rewrites what it stores
+ * — which both corrupts block-comment JSON and makes stored content differ from
+ * what the seeder computed, so the same rows are rewritten on every run.
+ *
+ * @package Pediment
+ */
+
+declare(strict_types=1);
+
+namespace Pediment\Seeder;
+
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
+
+final class Kses {
+	/** @return bool Whether the filters were active — pass this back to restore(). */
+	public static function suspend(): bool {
+		$active = false !== has_filter( 'content_save_pre', 'wp_filter_post_kses' );
+		if ( $active ) {
+			kses_remove_filters();
+		}
+		return $active;
+	}
+
+	public static function restore( bool $wasActive ): void {
+		if ( $wasActive ) {
+			kses_init_filters();
+		}
+	}
+}
+```
+
+`Applier`'s private `suspendKses()`/`restoreKses()` are deleted and their two call sites become `Kses::suspend()` / `Kses::restore( $kses )`. Behaviour is unchanged; the point is that one helper is easier to keep correct than two copies.
 
 - [ ] **Step 4: Run it green**
 
@@ -4327,6 +4533,10 @@ final class Runner {
 
 		// Nav links need the resolved page IDs, so nav is re-planned against them.
 		$navSeeder->apply( $navSeeder->plan( $manifest, $applied->ids ), $manifest, $applied->ids );
+		$navErrors = $navSeeder->errors();
+		if ( [] !== $navErrors ) {
+			return new RunResult( $plan, true, $manifest->path(), $navErrors, [], $applied->ids );
+		}
 
 		// Phase 5.
 		$problems = ( new Verifier( $this->lang ) )->verify( $manifest, $desired, $applied->ids, $mediaMap );
