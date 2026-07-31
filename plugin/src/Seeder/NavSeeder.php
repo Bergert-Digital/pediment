@@ -105,8 +105,18 @@ final class NavSeeder {
 				// Checked for every item, including UNCHANGED ones: a menu that
 				// quietly comes out short is worse than one that fails, and the
 				// problem persists across runs even though the nav stops changing.
-				foreach ( $this->unresolvedEntries( $spec, $item->language, $entryIds ) as $missing ) {
-					$this->errors[] = sprintf( 'navs.%s: "%s" has no seeded post yet — the link was left out.', $spec->key, $missing );
+				$unresolved = $this->unresolvedEntries( $spec, $item->language, $entryIds );
+				foreach ( $unresolved as $missing ) {
+					$this->errors[] = sprintf( 'navs.%s: "%s" has no seeded post yet — the link is missing from the menu.', $spec->key, $missing );
+				}
+
+				// Never write a half-truth. serialize() skips a link it cannot
+				// resolve, so writing here would REPLACE the live menu with a
+				// shortened one — an entry whose create failed earlier in the same
+				// run would silently delete a link from the header. Leave the
+				// entity exactly as it is and let phase 5 report the mismatch.
+				if ( [] !== $unresolved ) {
+					continue;
 				}
 
 				if ( PlanItem::UNCHANGED === $item->action ) {

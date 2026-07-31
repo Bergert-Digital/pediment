@@ -115,11 +115,15 @@ class NavSeederTest extends WP_UnitTestCase {
 	}
 
 	public function test_an_unresolved_link_is_still_reported_once_the_nav_stops_changing() {
-		// After the first run the nav's content matches, so the item is UNCHANGED
-		// — but the missing link is still missing, and silence would read as success.
+		// A nav that is ALREADY short (seeded before this rule existed, or written
+		// by hand) plans as UNCHANGED — the missing link is still missing, and
+		// silence would read as success.
 		$seeder = new NavSeeder( new NullProvider() );
 		$m      = $this->manifest( [ [ 'entry' => 'home' ] ] );
-		$seeder->apply( $seeder->plan( $m, [] ), $m, [] );
+		$navId  = self::factory()->post->create(
+			[ 'post_type' => 'wp_navigation', 'post_content' => $seeder->serialize( $m->navs()['primary'], '', [] ) ]
+		);
+		update_post_meta( $navId, Meta::KEY, 'primary' );
 
 		$plan = $seeder->plan( $m, [] );
 		$seeder->apply( $plan, $m, [] );
@@ -127,6 +131,28 @@ class NavSeederTest extends WP_UnitTestCase {
 		$this->assertSame( PlanItem::UNCHANGED, $plan->items()[0]->action );
 		$this->assertNotEmpty( $seeder->errors(), 'the problem persists, so the report must too' );
 		$this->assertStringContainsString( 'home', $seeder->errors()[0] );
+	}
+
+	public function test_a_nav_is_left_untouched_rather_than_written_short() {
+		// An entry whose write failed earlier in the same run is absent from the
+		// id map. serialize() drops the link, so writing would replace the live
+		// menu with a shortened one — the header quietly losing an item.
+		$seeder = new NavSeeder( new NullProvider() );
+		$ids    = [
+			'home|'  => self::factory()->post->create( [ 'post_type' => 'page' ] ),
+			'about|' => self::factory()->post->create( [ 'post_type' => 'page' ] ),
+		];
+		$m      = $this->manifest( [ [ 'entry' => 'home' ], [ 'entry' => 'about' ] ] );
+		$navIds = $seeder->apply( $seeder->plan( $m, $ids ), $m, $ids );
+		$before = get_post( $navIds['primary|'] )->post_content;
+
+		$partial = [ 'home|' => $ids['home|'] ];
+		$plan    = $seeder->plan( $m, $partial );
+		$seeder->apply( $plan, $m, $partial );
+
+		$this->assertSame( PlanItem::UPDATE, $plan->items()[0]->action );
+		$this->assertSame( $before, get_post( $navIds['primary|'] )->post_content, 'a failed entry write must not delete a link from the live menu' );
+		$this->assertStringContainsString( 'about', implode( "\n", $seeder->errors() ) );
 	}
 
 	public function test_serialize_has_no_side_effects() {
