@@ -2468,8 +2468,18 @@ use Pediment\Seeder\StateReader;
 
 class ApplierTest extends WP_UnitTestCase {
 
+	/** Phases 1-3 only: the plan the Runner would compute, with nothing written. */
+	private function plan( array $raw ): \Pediment\Seeder\Plan {
+		$manifest = Manifest::fromArray( $raw, '/tmp/theme' );
+		$lang     = new NullProvider();
+		$desired  = ( new DesiredState( $lang, new ContentResolver( new MediaMap( [] ) ) ) )->build( $manifest );
+		$reader   = new StateReader( $lang );
+
+		return ( new Differ() )->diff( $desired, $reader->read(), $reader->duplicates() );
+	}
+
 	/** Runs the four phases the way the Runner will, and returns the resolved IDs. */
-	private function seed( array $raw ): array {
+	private function seed( array $raw, bool $expectClean = true ): array {
 		$manifest = Manifest::fromArray( $raw, '/tmp/theme' );
 		$lang     = new NullProvider();
 		$desired  = ( new DesiredState( $lang, new ContentResolver( new MediaMap( [] ) ) ) )->build( $manifest );
@@ -2477,9 +2487,16 @@ class ApplierTest extends WP_UnitTestCase {
 		$plan     = ( new Differ() )->diff( $desired, $reader->read(), $reader->duplicates() );
 		$result   = ( new Applier( $lang ) )->apply( $plan, $desired );
 
-		$this->assertSame( [], $result->errors );
+		if ( $expectClean ) {
+			$this->assertSame( [], $result->errors );
+		}
+		$this->lastErrors = $result->errors;
+
 		return $result->ids;
 	}
+
+	/** @var string[] */
+	private array $lastErrors = [];
 
 	private function manifest( array $pages ): array {
 		return [ 'pages' => $pages ];
@@ -2512,15 +2529,17 @@ class ApplierTest extends WP_UnitTestCase {
 		$this->assertSame( '<span class="accent">Hi</span>', $blocks[0]['attrs']['headline'] );
 	}
 
-	public function test_reseeding_unchanged_content_is_a_no_op() {
-		$m   = $this->manifest( [ 'home' => [ 'title' => 'Home', 'content' => '<p>hi</p>' ] ] );
-		$ids = $this->seed( $m );
-		$id  = $ids['home|'];
-		$modified = get_post( $id )->post_modified_gmt;
-
+	public function test_reseeding_unchanged_content_plans_nothing() {
+		// Asserting on post_modified_gmt would prove nothing: it has one-second
+		// granularity and both runs land inside the same second. Assert on the
+		// plan, which is what actually decides whether a write happens.
+		$m = $this->manifest( [ 'home' => [ 'title' => 'Home', 'content' => '<p>hi</p>' ] ] );
 		$this->seed( $m );
 
-		$this->assertSame( $modified, get_post( $id )->post_modified_gmt, 'a no-op run must not touch the row' );
+		$plan = $this->plan( $m );
+
+		$this->assertTrue( $plan->isEmpty(), 'a re-seed with no manifest change must plan no writes' );
+		$this->assertSame( PlanItem::UNCHANGED, $plan->byKind( PlanItem::KIND_ENTRY )[0]->action );
 	}
 
 	public function test_changed_manifest_content_is_written_and_rehashed() {
@@ -2543,6 +2562,63 @@ class ApplierTest extends WP_UnitTestCase {
 
 		$this->assertSame( '<p>client copy</p>', get_post( $id )->post_content );
 		$this->assertSame( 'Client title', get_post( $id )->post_title );
+	}
+
+	public function test_a_structure_write_on_an_edited_page_never_restamps_the_hash() {
+		// The failure this guards: a client edits the body AND renames the slug.
+		// The Differ makes that an UPDATE carrying only the slug change, with the
+		// content protected. Re-stamping the hash there would adopt the client's
+		// prose as seeded, and the NEXT run would overwrite their page.
+		$ids = $this->seed( $this->manifest( [ 'home' => [ 'title' => 'Home', 'content' => '<p>one</p>' ] ] ) );
+		$id  = $ids['home|'];
+		wp_update_post( [ 'ID' => $id, 'post_content' => '<p>client copy</p>', 'post_name' => 'startseite' ] );
+		$hashBefore = get_post_meta( $id, Meta::HASH, true );
+
+		$this->seed( $this->manifest( [ 'home' => [ 'title' => 'Home', 'content' => '<p>two</p>' ] ] ) );
+
+		$this->assertSame( 'home', get_post( $id )->post_name, 'slug is structure and is reverted' );
+		$this->assertSame( '<p>client copy</p>', get_post( $id )->post_content );
+		$this->assertSame( $hashBefore, get_post_meta( $id, Meta::HASH, true ), 'a structure-only write must not adopt the client edit' );
+
+		// And the page is still protected on the run after that.
+		$this->seed( $this->manifest( [ 'home' => [ 'title' => 'Home', 'content' => '<p>three</p>' ] ] ) );
+		$this->assertSame( '<p>client copy</p>', get_post( $id )->post_content );
+	}
+
+	public function test_a_slug_collision_is_reported_instead_of_churning_forever() {
+		// A pre-existing unseeded page holds /contact, so WordPress uniquifies the
+		// seeded one to contact-2. Unreported, the Differ would rewrite the row on
+		// every run and never converge.
+		self::factory()->post->create( [ 'post_type' => 'page', 'post_name' => 'contact', 'post_title' => 'Client contact' ] );
+
+		$this->seed( $this->manifest( [ 'contact' => [ 'title' => 'Contact', 'content' => '' ] ] ), false );
+
+		$this->assertNotEmpty( $this->lastErrors );
+		$this->assertStringContainsString( 'contact-2', $this->lastErrors[0] );
+	}
+
+	public function test_client_added_terms_survive_a_structure_only_write() {
+		$ids = $this->seed(
+			[ 'posts' => [ 'sample' => [ 'title' => 'Sample', 'content' => '', 'terms' => [ 'category' => [ 'insights' ] ] ] ] ]
+		);
+		$id    = $ids['sample|'];
+		$extra = self::factory()->category->create( [ 'slug' => 'client-pick' ] );
+		wp_set_object_terms( $id, [ $extra ], 'category', true );
+
+		wp_update_post( [ 'ID' => $id, 'post_name' => 'renamed-by-client' ] );
+		$this->seed( [ 'posts' => [ 'sample' => [ 'title' => 'Sample', 'content' => '', 'terms' => [ 'category' => [ 'insights' ] ] ] ] ] );
+
+		$this->assertContains( 'client-pick', wp_get_post_terms( $id, 'category', [ 'fields' => 'slugs' ] ) );
+	}
+
+	public function test_an_unregistered_taxonomy_is_reported_not_swallowed() {
+		$this->seed(
+			[ 'posts' => [ 'sample' => [ 'title' => 'Sample', 'content' => '', 'terms' => [ 'categories' => [ 'oops' ] ] ] ] ],
+			false
+		);
+
+		$this->assertNotEmpty( $this->lastErrors );
+		$this->assertStringContainsString( 'categories', $this->lastErrors[0] );
 	}
 
 	public function test_a_client_slug_change_is_reverted() {
@@ -2596,6 +2672,8 @@ class ApplierTest extends WP_UnitTestCase {
 
 		$this->assertSame( $id, $again['home|'], 'restore, never re-create' );
 		$this->assertSame( 'publish', get_post( $id )->post_status );
+		$this->assertSame( 'home', get_post( $id )->post_name, 'wp_trash_post appends __trashed; the restore must undo it' );
+		$this->assertSame( '', get_post_meta( $id, '_wp_trash_meta_status', true ), 'trash bookkeeping must not survive the restore' );
 	}
 
 	public function test_errors_in_the_plan_block_every_write() {
@@ -2700,13 +2778,24 @@ final class Applier {
 					continue;
 				}
 
-				$postId = PlanItem::CREATE === $item->action
+				$isCreate = PlanItem::CREATE === $item->action;
+				$postId   = $isCreate
 					? $this->create( $entry, $ids, $errors )
 					: $this->update( $item, $entry, $ids, $errors );
 
 				if ( $postId > 0 ) {
 					$ids[ $item->mapKey() ] = $postId;
-					$this->applyTerms( $postId, $entry );
+					// Terms are create-only. Re-applying them on a structure-only
+					// write would use wp_set_object_terms(), which REPLACES the
+					// taxonomy's assignments — a client who filed a seeded post
+					// under an extra category would lose it on an unrelated slug
+					// revert. The Differ does not diff terms, so a manifest-side
+					// term change is not enforced either; that is documented, not
+					// accidental (docs/seeding.md).
+					if ( $isCreate ) {
+						$this->applyTerms( $postId, $entry, $errors );
+					}
+					$this->assertSlug( $postId, $entry, $errors );
 				}
 			}
 		} finally {
@@ -2780,6 +2869,14 @@ final class Applier {
 			}
 		}
 
+		// Restoring by writing post_status directly skips the untrash hooks, so
+		// wp_trash_post()'s bookkeeping would stay behind forever.
+		if ( isset( $postarr['post_status'] ) && 'trash' === $item->changes['status']['from'] ) {
+			foreach ( [ '_wp_trash_meta_status', '_wp_trash_meta_time', '_wp_desired_post_slug' ] as $trashMeta ) {
+				delete_post_meta( $item->postId, $trashMeta );
+			}
+		}
+
 		if ( 1 === count( $postarr ) ) {
 			return $item->postId;
 		}
@@ -2812,9 +2909,14 @@ final class Applier {
 		return (int) ( $ids[ $entry->parentKey . '|' . $entry->language ] ?? 0 );
 	}
 
-	private function applyTerms( int $postId, DesiredEntry $entry ): void {
+	/** @param string[] $errors */
+	private function applyTerms( int $postId, DesiredEntry $entry, array &$errors ): void {
 		foreach ( $entry->terms as $taxonomy => $slugs ) {
+			// Silence here would be indistinguishable from success: a typo'd
+			// taxonomy, or one whose post type has not registered yet, would
+			// produce a clean run with no terms assigned.
 			if ( ! taxonomy_exists( $taxonomy ) ) {
+				$errors[] = sprintf( '%s: taxonomy "%s" is not registered — no terms were assigned.', $entry->key, $taxonomy );
 				continue;
 			}
 			$termIds = [];
@@ -2823,6 +2925,7 @@ final class Applier {
 				if ( ! $term ) {
 					$created = wp_insert_term( ucfirst( str_replace( '-', ' ', $slug ) ), $taxonomy, [ 'slug' => $slug ] );
 					if ( is_wp_error( $created ) ) {
+						$errors[] = sprintf( '%s: could not create term "%s" in %s — %s', $entry->key, $slug, $taxonomy, $created->get_error_message() );
 						continue;
 					}
 					$termIds[] = (int) $created['term_id'];
@@ -2830,8 +2933,31 @@ final class Applier {
 				}
 				$termIds[] = (int) $term->term_id;
 			}
-			wp_set_object_terms( $postId, $termIds, $taxonomy );
+			$assigned = wp_set_object_terms( $postId, $termIds, $taxonomy );
+			if ( is_wp_error( $assigned ) ) {
+				$errors[] = sprintf( '%s: could not assign %s terms — %s', $entry->key, $taxonomy, $assigned->get_error_message() );
+			}
 		}
+	}
+
+	/**
+	 * WordPress uniquifies a colliding slug (`contact` -> `contact-2`) and reports
+	 * success. Left unreported, the Differ then sees a slug difference on EVERY
+	 * later run, rewrites the row, and never converges — silently, forever.
+	 *
+	 * @param string[] $errors
+	 */
+	private function assertSlug( int $postId, DesiredEntry $entry, array &$errors ): void {
+		$stored = (string) get_post_field( 'post_name', $postId );
+		if ( '' === $stored || $stored === $entry->slug ) {
+			return;
+		}
+		$errors[] = sprintf(
+			'%s: WordPress stored the slug "%s" instead of "%s" — another post already occupies it. Free that slug or declare a different one in the manifest.',
+			$entry->key,
+			$stored,
+			$entry->slug
+		);
 	}
 
 	/**
