@@ -55,12 +55,15 @@ final class AdoptCommand {
 			\WP_CLI::error( 'Nothing was adopted.' );
 		}
 
+		$backupNote = '' !== $result['backup'] ? sprintf( ' Previous contents backed up to %s.', $result['backup'] ) : '';
+
 		\WP_CLI::success(
 			sprintf(
-				'%s %s (%d bytes).',
+				'%s %s (%d bytes).%s',
 				$result['written'] ? 'Wrote' : 'Would write',
 				$result['path'],
-				$result['bytes']
+				$result['bytes'],
+				$backupNote
 			)
 		);
 	}
