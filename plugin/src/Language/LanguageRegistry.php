@@ -21,14 +21,20 @@ final class LanguageRegistry {
 			return self::$provider;
 		}
 
+		// Detection, not configuration: an activated-but-unconfigured Polylang
+		// is NOT multilingual, and treating it as one crosses the manifest with
+		// zero languages and writes nothing while reporting success.
+		$detected = PolylangProvider::isActive() ? new PolylangProvider() : new NullProvider();
+
 		/**
 		 * Filter the active language provider.
 		 *
-		 * @param LanguageProvider $provider Defaults to the monolingual NullProvider.
+		 * @param LanguageProvider $provider PolylangProvider when Polylang is
+		 *                                   active and configured, else NullProvider.
 		 */
-		$filtered = apply_filters( 'pediment_language_provider', new NullProvider() );
+		$filtered = apply_filters( 'pediment_language_provider', $detected );
 
-		self::$provider = $filtered instanceof LanguageProvider ? $filtered : new NullProvider();
+		self::$provider = $filtered instanceof LanguageProvider ? $filtered : $detected;
 
 		return self::$provider;
 	}

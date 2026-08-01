@@ -57,4 +57,9 @@ class LanguageProviderTest extends WP_UnitTestCase {
 
 		$this->assertInstanceOf( LanguageProvider::class, LanguageRegistry::provider() );
 	}
+
+	public function test_null_provider_when_polylang_is_absent() {
+		LanguageRegistry::reset();
+		$this->assertInstanceOf( NullProvider::class, LanguageRegistry::provider() );
+	}
 }
