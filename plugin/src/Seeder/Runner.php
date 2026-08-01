@@ -167,19 +167,46 @@ final class Runner {
 		}
 
 		$configured = $this->lang->languages();
-		sort( $declared );
 
-		$sortedConfigured = $configured;
-		sort( $sortedConfigured );
+		$declaredSorted = $declared;
+		sort( $declaredSorted );
 
-		if ( $declared === $sortedConfigured ) {
+		$configuredSorted = $configured;
+		sort( $configuredSorted );
+
+		// Sorting erases order, so the set comparison above says nothing
+		// about WHICH language is default — and everything downstream
+		// (slug derivation, the front-page write, the adopt suffix) reads
+		// $this->lang->defaultLanguage(), never the manifest's. A manifest
+		// declaring `de` as default against a site configured with `en`
+		// default must fail here, or Manifest::defaultLanguage() is silently
+		// inert until someone happens to re-run `wp pediment languages`.
+		$setsMatch     = $declaredSorted === $configuredSorted;
+		$defaultsMatch = $manifest->defaultLanguage() === $this->lang->defaultLanguage();
+
+		if ( $setsMatch && $defaultsMatch ) {
 			return null;
 		}
 
+		$problems = [];
+		if ( ! $setsMatch ) {
+			$problems[] = sprintf(
+				'declares [%s] but this site has [%s] configured',
+				implode( ', ', $declared ),
+				'' === implode( '', $configured ) ? 'none' : implode( ', ', $configured )
+			);
+		}
+		if ( ! $defaultsMatch ) {
+			$problems[] = sprintf(
+				'declares "%s" as the default language but this site\'s default is "%s"',
+				$manifest->defaultLanguage(),
+				$this->lang->defaultLanguage()
+			);
+		}
+
 		return sprintf(
-			'Language mismatch: the manifest declares [%s] but this site has [%s] configured. Run `wp pediment languages` first — seeding into the wrong language set writes content no translation lookup can find.',
-			implode( ', ', $declared ),
-			'' === implode( '', $configured ) ? 'none' : implode( ', ', $configured )
+			'Language mismatch: the manifest %s. Run `wp pediment languages` first — seeding into the wrong language set writes content no translation lookup can find.',
+			implode( ', and it also ', $problems )
 		);
 	}
 
