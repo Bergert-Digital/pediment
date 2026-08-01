@@ -489,7 +489,10 @@ correct write look like it silently failed. See `PolylangSetup::configure()` in
 `plugin/src/Language/PolylangSetup.php`.
 **Catch it early.** `PolylangSetupTest::test_an_already_configured_site_reports_no_changes`
 and `::test_language_roots_serve_the_front_page` (`plugin/tests/polylang/PolylangSetupTest.php`)
-both fail if the write path regresses to `update_option()` or the cache-clean is dropped.
+both fail if the write path regresses to `update_option()`. Neither covers a dropped
+`clean_languages_cache()` call: both read `PLL()->options[...]` directly, which that call
+does not affect — it only clears the language OBJECTS cache (home URLs and the like), not
+the options array. Nothing in this suite currently catches a dropped cache-clean.
 
 ---
 
@@ -581,8 +584,12 @@ top-level pages in different languages still compete for one shared slug space.
 not a numeric suffix) rather than reusing the default language's slug, unless a
 per-language `slug` override is declared. See `EntrySpec::slugFor()`
 (`plugin/src/Seeder/EntrySpec.php`) and `NavSeeder`'s private `slugFor()`
-(`plugin/src/Seeder/NavSeeder.php`) — same idiom, same reason, in both places identity
-needs a `post_name` no other language's row will ever ask for.
+(`plugin/src/Seeder/NavSeeder.php`) — same problem, not quite the same idiom:
+`EntrySpec::slugFor()` skips the `-<lang>` suffix for the default language, so the
+default keeps its bare slug; `NavSeeder::slugFor()` appends it for every non-empty
+language, including the default. Both exist so identity has a `post_name` no other
+language's row will ever ask for — `EntrySpec`'s version additionally keeps the
+default language's own URL unsuffixed, `NavSeeder`'s does not.
 **Catch it early.** `ManifestTest::test_a_missing_slug_derives_a_distinct_one`
 (`plugin/tests/phpunit/Seeder/ManifestTest.php`); `VerifierTest::test_a_uniquified_slug_is_a_problem`
 covers the same-slug-collision failure mode this rule exists to avoid in the first place.
