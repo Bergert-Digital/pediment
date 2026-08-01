@@ -446,3 +446,275 @@ nothing. PHPUnit runs the write and the re-seed in one process, so it can't repr
 real cross-process cache staleness — after touching `Adopter`, also manually verify with
 two separate `wp` invocations: `wp pediment adopt <key>` then `wp pediment seed --dry-run`
 and confirm the adopted pattern resolves instead of reporting "not registered".
+
+---
+
+## `suppress_filters` does not escape Polylang's query scoping
+
+**Symptom.** A `WP_Query`/`get_posts()` call built with `suppress_filters => true`,
+intended to read rows across every language in one pass, still comes back scoped to
+whatever language Polylang thinks is current.
+**Cause.** Polylang doesn't scope queries the way `suppress_filters` is designed to
+block (the `posts_where`/`posts_join` filter chain). It hooks `parse_query` and mutates
+`query_vars['tax_query']` directly; `WP_Query::get_posts()` re-parses that stored tax
+query on a branch gated on `! $this->is_singular`, and nothing on that branch consults
+`suppress_filters`. What Polylang *does* honour is the `lang` query var:
+`PLL_Query::is_already_filtered()` treats `isset( $qvars['lang'] )` — not its value —
+as "the caller already decided the scope."
+**Fix.** Pass `'lang' => ''` explicitly (not omitted) alongside `suppress_filters =>
+true` — the empty string satisfies `isset()` and tells Polylang to stand down; omitting
+the key leaves it unscoped and Polylang re-applies its own current-language filtering.
+See `LanguageProvider::unscopedQuery()` in `plugin/src/Language/PolylangProvider.php`.
+**Catch it early.** `PolylangProviderTest::test_suppress_filters_alone_does_not_escape_the_scoping`
+and `::test_unscoped_query_sees_every_language` (`plugin/tests/polylang/PolylangProviderTest.php`).
+
+---
+
+## Polylang holds its options in memory until `shutdown`
+
+**Symptom.** Writing one of Polylang's settings mid-request appears to succeed —
+no error, no exception — but the very next read in the same request returns the old
+value, and the write never reaches the database at all.
+**Cause.** Since Polylang 3.7, its settings object holds every option in a plain PHP
+array and only flushes it to the `wp_options` row on the `shutdown` hook. A raw
+`update_option()` call is invisible to the rest of the same request (Polylang never
+re-reads the row) AND gets overwritten by that same stale in-memory copy when
+`shutdown` fires — the correct write and the wrong one race, and the wrong one is
+scheduled to run last.
+**Fix.** Write through Polylang's own options object — `PLL()->options->merge( [...] )`
+then `PLL()->options->save()` — never `update_option()`. Follow with
+`PLL()->model->clean_languages_cache()`: language objects cache home URLs derived from
+those options, and that cache outlives the write, so skipping it makes a genuinely
+correct write look like it silently failed. See `PolylangSetup::configure()` in
+`plugin/src/Language/PolylangSetup.php`.
+**Catch it early.** `PolylangSetupTest::test_an_already_configured_site_reports_no_changes`
+and `::test_language_roots_serve_the_front_page` (`plugin/tests/polylang/PolylangSetupTest.php`)
+both fail if the write path regresses to `update_option()` or the cache-clean is dropped.
+
+---
+
+## `pll_save_post_translations()` replaces the whole translation group
+
+**Symptom.** Linking a post's translations one language at a time — call the linking
+function once per language, right after each is written — leaves only the languages
+from the last call or two actually linked; earlier ones fall silently out of the group.
+**Cause.** `pll_save_post_translations()` doesn't add to a translation group, it
+REPLACES it with exactly the map handed to it. A per-language call's map only ever
+contains the language just written, so every language written before it gets unlinked
+by the next call. Invisible with two languages (the second call just looks like the
+first "didn't work yet"); silent data loss with five.
+**Fix.** Accumulate every language's post ID first, then call the link function exactly
+once with the complete map, after every language has been written. See
+`Applier::linkTranslationGroups()` and `NavSeeder::linkTranslationGroups()` (both in
+`plugin/src/Seeder/`) and `LanguageProvider::linkTranslations()` in
+`plugin/src/Language/PolylangProvider.php`.
+**Catch it early.** `PolylangProviderTest::test_link_translations_makes_each_side_findable_from_the_other`.
+Also see `docs/BACKLOG.md` (Medium) for the residual hazard this creates even when the
+full map is always passed: dropping a language from the manifest and Polylang's own
+config in the same run still unlinks it from every group site-wide, because the map
+that run builds never contains that language for anyone.
+
+---
+
+## `wp_navigation` cannot be made translatable by clicking
+
+**Symptom.** Polylang's Languages → Settings screen never lists `wp_navigation` among
+the post types that can be made translatable — there's no checkbox to enable, no matter
+what else is configured.
+**Cause.** Polylang's settings screen only offers post types registered
+`public => true` AND `_builtin => false`. WordPress core registers `wp_navigation` as
+`public => false, _builtin => true` — it fails both conditions — and Polylang ships no
+`wp_navigation`-specific handling of its own; its menu-translation UI targets classic
+`nav_menu` terms, which a block theme's Site Editor doesn't use.
+**Fix.** Filter `pll_get_post_types` and add `wp_navigation` only when
+`$is_settings === false` — Polylang's "programmatically active" path. This shows up in
+the UI as an always-on, disabled checkbox rather than one a site owner could untick and
+silently lose every translated menu to. See
+`pediment_polylang_translate_navigation_menus()` in `plugin/inc/polylang-compat.php`.
+**Catch it early.** `PolylangSetupTest::test_wp_navigation_is_translatable` asserts
+`wp_navigation` is present in Polylang's stored `post_types` option after
+`wp pediment languages` runs.
+
+---
+
+## A ref-less `core/navigation` block resolves to the newest `wp_navigation` post
+
+**Symptom.** A header built from `<!-- wp:navigation /-->` with no `ref` attribute
+renders a menu nobody chose for that page — not necessarily the wrong language's menu,
+but an unrelated one in the SAME language, most often right after a client creates a
+new menu in the Site Editor.
+**Cause.** Core resolves a ref-less `core/navigation` block through
+`block_core_navigation_get_fallback_ref()`, which picks the most-recently-created
+`wp_navigation` post by date, with no language awareness of its own. On a multilingual
+site this looks safer than it is: Polylang's own query scoping already restricts that
+fallback to the CURRENT language, so the danger is not "the wrong language's navigation
+shows up everywhere" — it's a same-language collision. Any newer `wp_navigation` post
+in the same language outranks the one the seeder wrote, and the most realistic source
+of a newer one is a client making an unrelated menu in the Site Editor.
+**Fix.** Bind the header's navigation block explicitly, per language, before core's own
+fallback ever runs: filter `render_block_data` for a ref-less `core/navigation` block
+and set `attrs.ref` to the seeded nav's post ID for the current language, falling back
+to the default language and then to an unscoped lookup — never to nothing, since an
+empty header is worse than a wrong-but-present menu. See
+`pediment_bind_navigation_ref()` in `plugin/inc/nav-language.php`.
+**Catch it early.** `NavBindingTest::test_german_gets_the_german_menu` and
+`::test_english_gets_the_english_menu` (`plugin/tests/polylang/NavBindingTest.php`)
+cover the language-scoped resolution; the Playwright fixture's same-language decoy-menu
+test (added Task 15, `plugin/tests/e2e/`) proves the binding still holds against a
+same-language `wp_navigation` post created after the seeded one, and was shown RED
+without the binding and GREEN with it.
+
+---
+
+## Polylang does not hook `wp_unique_post_slug`
+
+**Symptom.** Two languages declaring the same top-level slug (e.g. both wanting
+`about`) land as `about` and `about-2` — a real slug collision the seeder cannot
+distinguish from any other — and a slug-enforcing engine rewrites the row on every
+single run without ever converging, because the rewrite gets re-uniquified identically
+every time.
+**Cause.** WordPress's slug uniquification (`wp_unique_post_slug()`) checks across the
+whole `post_name` namespace, not scoped per language. Polylang gives every language its
+own URL prefix but does not extend slug uniqueness checks to be language-aware, so
+top-level pages in different languages still compete for one shared slug space.
+**Fix.** Derive a non-default language's slug as `<slug>-<lang>` (the language *code*,
+not a numeric suffix) rather than reusing the default language's slug, unless a
+per-language `slug` override is declared. See `EntrySpec::slugFor()`
+(`plugin/src/Seeder/EntrySpec.php`) and `NavSeeder`'s private `slugFor()`
+(`plugin/src/Seeder/NavSeeder.php`) — same idiom, same reason, in both places identity
+needs a `post_name` no other language's row will ever ask for.
+**Catch it early.** `ManifestTest::test_a_missing_slug_derives_a_distinct_one`
+(`plugin/tests/phpunit/Seeder/ManifestTest.php`); `VerifierTest::test_a_uniquified_slug_is_a_problem`
+covers the same-slug-collision failure mode this rule exists to avoid in the first place.
+
+---
+
+## Polylang's option sanitizer silently strips `_builtin` post types
+
+**Symptom.** Writing `wp_navigation` into Polylang's `post_types` option via
+`PLL()->options->merge()` reports success — no error, `is_wp_error()` is false — but
+reading the option straight back afterward shows `wp_navigation` is simply not there.
+**Cause.** `Options\Business\Post_Types::get_object_types()`, which every `merge()`/
+`set()` call is routed through (not only the settings screen), intersects whatever is
+passed against `get_post_types( [ '_builtin' => false ] )`. WordPress core registers
+`wp_navigation` with `_builtin => true` (`wp-includes/post.php`,
+`create_initial_post_types()`), so it fails that filter and gets silently dropped from
+the value being stored — the write "succeeds" and stores everything except the one
+entry the caller actually needed. The RUNTIME read path Polylang uses to decide whether
+a post type is translatable does not gate on `_builtin`, so once a value is actually
+stored, `wp_navigation` is genuinely treated as translatable — the bug is purely in the
+write path's sanitizer, not in how the setting is later honoured.
+**Fix.** Flip WordPress's own registered post-type object's `_builtin` flag to `false`
+for the span of the single `merge()` call, then restore it immediately — nothing else
+observes the flip, and every other `_builtin` check core makes for `wp_navigation`
+elsewhere in the same request (admin menus, capability mapping, REST) keeps seeing
+`true`. See `PolylangSetup::configure()` (`plugin/src/Language/PolylangSetup.php`,
+around the `$navigationType->_builtin` lines).
+**Catch it early.** `PolylangSetupTest::test_wp_navigation_is_translatable` reads the
+option back after `configure()` runs, which is the only way to catch a sanitizer that
+accepts a write and then quietly discards part of it.
+
+---
+
+## Polylang's boolean options return PHP `bool` from `get()`, not `0`/`1`
+
+**Symptom.** An idempotency check that compares Polylang's current option value
+against the integer `0` or `1` (Polylang's own historic wire format for these settings)
+never reports "no change" — it reports a pending write on every single call, including
+immediately after applying that exact write.
+**Cause.** `media_support`, `redirect_lang`, and `hide_default` round-trip through
+Polylang's `Options\Primitive\Abstract_Boolean` type, which normalizes the stored
+`0`/`1` into a real PHP `bool` on the way out of `get()`. `(array) false !== (array) 0`
+is true in PHP forever, so a diff written against integers treats an already-configured
+site as different from itself on every check — not a rare edge case, but the return
+value of `get()` for these three keys unconditionally.
+**Fix.** Cast the current value to `int` before comparing, whenever the current value
+is a `bool`:  `if ( is_bool( $current ) ) { $current = (int) $current; }`. See
+`PolylangSetup::configure()` (`plugin/src/Language/PolylangSetup.php`) — the diff loop
+just above the `merge()` call.
+**Catch it early.** `PolylangSetupTest::test_an_already_configured_site_reports_no_changes`
+— configures the site twice and asserts the second call's `changes` array is empty; it
+fails immediately if this cast regresses.
+
+---
+
+## Polylang auto-tags a translated post type's posts on save
+
+**Symptom.** A test fixture built to model an untagged, pre-Polylang legacy post (no
+language assigned) behaves exactly like a normal English post instead — a code path
+meant to exercise "no language tag at all" is never actually reached, and the test
+passes for the wrong reason.
+**Cause.** `PLL_CRUD_Posts::save_post()` assigns the site's default language to ANY
+post of a translated post type that's saved without one. Once `wp_navigation` is made
+translatable (previous entry), every `wp_navigation` post created through the normal
+factory/insert path — including test fixtures meant to be untagged — is auto-tagged the
+default language on creation, silently. This makes a test non-discriminating without
+making it fail: the assertion still passes, but it's exercising the wrong branch of the
+code under test.
+**Fix.** To model a genuinely untagged post, explicitly strip the language term after
+creation: `wp_delete_object_term_relationships( $id, 'language' )`. See
+`NavBindingTest::test_an_untagged_legacy_nav_is_found_by_the_unscoped_fallback`
+(`plugin/tests/polylang/NavBindingTest.php`).
+**Catch it early.** There is no automated catch for this one — it's a silent test-gap,
+not a runtime failure. When writing a Polylang PHPUnit fixture that needs to model "no
+language assigned," always call `wp_delete_object_term_relationships()` after creation
+and confirm with a white-box assertion (query with `lang => ''`) that the post is
+actually unscoped, rather than trusting that omitting the language on create left it
+that way.
+
+---
+
+## `pll_current_language()` fires no filter
+
+**Symptom.** `add_filter( 'pll_current_language', $callback )` in a test, meant to pin
+the "current" language for the duration of an assertion, has no effect at all — the
+function under test keeps behaving as though the site's default language is current, no
+matter what the filter returns.
+**Cause.** `pll_current_language()` reads `PLL()->curlang` directly and never routes
+its return value through `apply_filters()`. It looks like every other WordPress
+accessor, but the filter hook of the same name simply doesn't exist on the read path —
+`add_filter()` registers a callback that's never called.
+**Fix.** Set the property directly, and restore it afterward:
+`PLL()->curlang = PLL()->model->get_language( $language );` — this is also what every
+real request path (frontend, REST, admin) does to establish the current language, so
+it's the correct simulation, not a workaround. See
+`NavBindingTest::switchTo()` (`plugin/tests/polylang/NavBindingTest.php`).
+**Catch it early.** Any test asserting language-scoped behavior that appears to pass
+regardless of which language it "sets" via `add_filter( 'pll_current_language', ... )`
+is a red flag — rewrite it to set `PLL()->curlang` and confirm the test goes RED for the
+wrong language before it goes GREEN for the right one.
+
+---
+
+## An `enum` inside a block attribute's `items.properties` makes core drop the whole array
+
+**Symptom.** A block attribute holding an array of objects (e.g. a list of social links,
+each `{ platform, url }`) renders completely empty — not just the one entry with an
+unexpected value, every entry in the array — the moment any single item's value falls
+outside a declared `enum`, even an empty string.
+**Cause.** For attributes not sourced from markup, `WP_Block_Type::prepare_attributes_for_render()`
+validates the ENTIRE attribute value against its `block.json` schema via
+`rest_validate_value_from_schema()`. If validation fails anywhere inside a nested
+array/object — one item's `platform` not matching the declared `enum` — WordPress
+`unset()`s the whole top-level attribute and reverts it to its schema default (`[]` for
+an array), not just the offending item. `items` in `block.json` is NOT inert metadata:
+core actively validates against it for any attribute that round-trips through post meta
+or block attributes rather than parsed markup.
+**Fix.** Don't declare `enum` on an `items.properties` sub-key unless the value is
+genuinely closed — if the block's own `render.php` supports arbitrary values with a
+fallback (as `pediment/social-links` does for `platform`, rendering a text-label
+fallback for any unrecognized value), omit that property from `items.properties`
+entirely rather than constraining it. `rest_validate_object_value_from_schema()` skips
+properties present in the runtime value but not listed in the schema — omission is
+silently safe; a mismatched `enum` is silently catastrophic. See
+`plugin/src/blocks/social-links/block.json` (only `url` is declared; `platform` is
+deliberately absent — a first attempt declared it with an `enum` and was reverted after
+this exact regression surfaced in `SocialLinksTest`).
+**Corollary.** Nothing about `items` being "just JSON Schema metadata for tooling" is
+true in WordPress specifically — treat any new `items.properties` sub-key as something
+core will enforce at render time, not merely document.
+**Catch it early.** `SocialLinksTest::test_unknown_platform_renders_text_label_fallback_with_ucfirst`
+and `::test_skips_entries_with_empty_platform_or_url` — both regressed to a fully empty
+`links` array the one time `platform` briefly carried an `enum` during development; run
+the full PHPUnit suite after adding or changing any `items.properties` entry, not just a
+lint pass, since no linter in this repo checks block-attribute schemas for this hazard.

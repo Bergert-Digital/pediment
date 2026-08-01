@@ -170,6 +170,177 @@ attachment becomes the site's custom logo (`theme_mod: custom_logo`) — and
 keeps becoming it: this is structure, re-asserted on every run, not a
 one-time default (see Limitations).
 
+## Languages
+
+A monolingual manifest declares no `languages` section and nothing below
+applies — `Manifest::languages()` returns `[]`, `DesiredState` crosses every
+entry with exactly one (empty) language, and every command's behavior is
+unchanged. The moment a `languages` section exists, the site is multilingual
+and the rules in this section become load-bearing.
+
+```php
+'languages' => array(
+	'en' => array( 'name' => 'English', 'locale' => 'en_US', 'flag' => 'gb', 'default' => true ),
+	'de' => array( 'name' => 'Deutsch', 'locale' => 'de_DE', 'flag' => 'de' ),
+),
+```
+
+Every language declares `locale` (e.g. `de_DE`); `name` and `flag` are
+optional and default to `strtoupper($slug)` / `''`. Exactly one language may
+set `default => true`; if none does, the first one declared becomes the
+default. **Declaration order matters even when a `default` key is present**:
+the engine re-orders the parsed list so the default is always first, and
+everything downstream depends on a language having a well-defined position —
+`Applier::linkTranslationGroups()` and `NavSeeder`'s equivalent build one
+translation group per seed key from whichever languages exist, and the
+Applier resolves a child's `post_parent` and the front-page option from the
+*default* language's IDs specifically, so a default that was somehow written
+after its children would try to parent them onto a post that doesn't exist
+yet. A language slug must already be a valid `sanitize_title()` slug (`en`,
+`pt-br`) — Polylang builds URL prefixes from it directly, and it is also the
+literal suffix a derived per-language slug carries (next section).
+
+### Per-entry overrides
+
+Any `pages`/`posts`/`entries` item may declare a `languages` sub-section
+keyed by language code, overriding `title`, `slug`, and/or `pattern` for that
+one language:
+
+```php
+'about' => array(
+	'title'     => 'About',
+	'pattern'   => 'pediment-fixture/about',
+	'languages' => array(
+		'de' => array( 'title' => 'Über uns', 'slug' => 'ueber-uns' ),
+	),
+),
+```
+
+Two shapes are rejected outright, both because they would otherwise fail
+silently:
+
+- **An empty `title` override.** `EntrySpec::titleFor()` falls back to the
+  default language's title with `??`, which only catches a missing key, not
+  an empty string — a stored `''` would pass straight through as the post
+  title with no warning anywhere.
+- **A `pattern` override on an entry declared with literal `content`.** That
+  entry has no pattern to translate; the resolver would discard the override
+  unconditionally and the operator would never learn their translation was
+  thrown away.
+
+Omitting a language's override entirely is not an error — the page renders
+the default language's title/content/slug and the run reports it as a
+notice, not a failure (see "Reading a plan" below).
+
+### The derived slug rule, and why
+
+A non-default language with no declared `slug` override does **not** reuse
+the default language's slug. It gets `<slug>-<lang>` instead:
+
+```
+en: about        (declared)
+de: about-de     (derived — no `slug` override in the `de` block above)
+```
+
+The reason is structural, not cosmetic: **Polylang does not hook
+`wp_unique_post_slug`.** WordPress's own slug-uniquification only fires
+within one language's rows; all top-level pages across every language still
+share one `post_name` namespace regardless of which language owns them. Two
+languages both asking for the literal slug `about` land as `about` and
+`about-2` — indistinguishable from any other slug collision — and once that
+happens `Verifier::verify()` reports a mismatch on every run forever, because
+retrying would just get re-uniquified identically on the next write (see
+"Failure modes" above). `EntrySpec::slugFor()`
+(`plugin/src/Seeder/EntrySpec.php`) and `NavSeeder`'s private `slugFor()`
+(`plugin/src/Seeder/NavSeeder.php`) both apply the same `<key>-<lang>` idiom
+for the same reason — the derived suffix is the language *code*, so `about`
+in `de` becomes `about-de`, not `about-2`.
+
+### The pattern file convention
+
+A non-default language's pattern, absent a `pattern` override, is looked up
+by the same `<pattern>-<lang>` convention:
+
+```
+patterns/about.php       Slug: pediment-fixture/about
+patterns/about.de.php    Slug: pediment-fixture/about-de
+```
+
+**The filename suffix and the `Slug:` header suffix must agree.** The
+filename (`about.de.php`) is how a developer finds the file; the `Slug:`
+header (`pediment-fixture/about-de`) is what `WP_Block_Patterns_Registry`
+actually indexes on and what `EntrySpec::patternFor()` computes and asks for.
+A file with the right name but a header that doesn't carry the `-de` suffix
+registers under the wrong slug, and the translated pattern is reported
+missing exactly as if the file didn't exist.
+
+### `wp pediment languages`
+
+```
+wp pediment languages [--dry-run]
+```
+
+Configures Polylang itself from the manifest's `languages` section — creates
+missing languages, sets `default_lang`, makes `wp_navigation` translatable,
+and locks `media_support`/`taxonomies` off and `redirect_lang`/`hide_default`
+on (see the Polylang traps in `docs/WORDPRESS_TRAPS.md` for why each of
+those). This is deliberately its own command, run **before** seeding, not a
+phase inside `wp pediment seed`: phase 4 of a seed run has to stay
+inspectable by `--dry-run`, and writing another plugin's settings inside it
+would not be.
+
+**`wp pediment seed` hard-errors if the manifest's languages and Polylang's
+configured languages disagree** — it will not seed content into a language
+set the site doesn't actually have. The exact message
+(`Runner::languageMismatch()`, `plugin/src/Seeder/Runner.php`):
+
+```
+Language mismatch: the manifest declares [de, en] but this site has [en]
+configured. Run `wp pediment languages` first — seeding into the wrong
+language set writes content no translation lookup can find.
+```
+
+Run `wp pediment languages` (without `--dry-run`) to close the gap, then
+re-run `wp pediment seed`. A manifest with no `languages` section imposes
+nothing here — a site may run Polylang for its own reasons and still seed a
+single-language theme.
+
+### The `TRANSLATIONS` section of a dry-run plan
+
+A language that's missing a title or a pattern is not a validation error —
+the page is real, navigable, and renders the default language's content in
+the meantime. `wp pediment seed --dry-run` reports it as a notice instead:
+
+```
+TRANSLATIONS
+  - about (fr): no title declared — the page carries the default language title "About".
+  - contact (fr): no pattern `pediment-fixture/contact-fr` is registered — the page
+    carries the default language content. Create patterns/contact.fr.php with
+    `Slug: pediment-fixture/contact-fr`, or run
+    `wp pediment adopt contact --language=fr` once it is translated in the editor.
+```
+
+**Notices never fail the run.** `RunResult::ok()` only inspects `errors` and
+`problems`; a fresh site that just added a language would otherwise fail its
+very first seed on the exact gap the notice exists to describe. Read the
+`TRANSLATIONS` section as a translation to-do list, not as something to fix
+before `wp pediment seed` will run.
+
+### `wp pediment adopt <key> --language=de`
+
+```
+wp pediment adopt <key> [--language=<code>] [--dry-run]
+```
+
+Same export as the monolingual case, scoped to one language: it reads the
+live `<key>|<language>` post and writes (or refreshes) exactly the pattern
+file the convention above expects —
+`patterns/<stem>.<lang>.php` with `Slug: <pattern>-<lang>` — using whichever
+per-language title the manifest already declares (`adopt` never writes
+titles). For the default language, or on a monolingual site, `--language` is
+omitted or matches the default and the file has no suffix, same as before
+this step existed.
+
 ## What "structure" means, concretely
 
 Everything the seeder re-asserts on every run, regardless of what an editor
@@ -500,3 +671,20 @@ appear on top of either.
   pending write here, there simply isn't one.
 - **The wp-admin "Apply plan" button has no confirmation step.** It runs on
   click, same as the CLI without `--dry-run`. Preview first.
+- **Media and taxonomies are not translated.** One attachment and one term
+  set serve every language — `wp pediment languages` locks Polylang's
+  `media_support` off and `taxonomies` to `[]` for exactly this reason
+  (`PolylangSetup::configure()`). `MediaMap` keys media globally, and the
+  engine's terms are create-only (above); per-language copies of either would
+  have nothing to reconcile them against and would drift on the first edit.
+- **Only Polylang is implemented.** Everything Polylang-specific lives behind
+  the `LanguageProvider` interface (`plugin/src/Language/LanguageProvider.php`)
+  — `PolylangProvider`, `PolylangSetup`, and the two files under `plugin/inc/`
+  that touch the front end are the only code that may call a `pll_*`
+  function. That seam is where a WPML adapter would go; nothing in the
+  seeding engine itself assumes Polylang.
+- **Translation *content* is not generated.** The seeder never writes prose —
+  it resolves what the manifest and pattern files already declare, reports
+  what's missing in the `TRANSLATIONS` section of a dry-run plan, and
+  `wp pediment adopt <key> --language=<code>` is how an editor's translation,
+  once written in the block editor, comes back into git as a pattern file.
