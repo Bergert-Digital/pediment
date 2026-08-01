@@ -101,6 +101,9 @@ if ( defined( 'WP_CLI' ) && WP_CLI ) {
 
 	require_once __DIR__ . '/wp-cli/AdoptCommand.php';
 	\WP_CLI::add_command( 'pediment adopt', \Pediment\Cli\AdoptCommand::class );
+
+	require_once __DIR__ . '/wp-cli/LanguagesCommand.php';
+	\WP_CLI::add_command( 'pediment languages', \Pediment\Cli\LanguagesCommand::class );
 }
 
 add_action(
