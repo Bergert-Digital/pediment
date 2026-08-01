@@ -1,6 +1,7 @@
 <?php
 // plugin/tests/phpunit/Seeder/ManifestTest.php
 
+use Pediment\Seeder\EntrySpec;
 use Pediment\Seeder\Manifest;
 use Pediment\Seeder\ManifestError;
 
@@ -335,5 +336,82 @@ class ManifestTest extends WP_UnitTestCase {
 			[ 'languages' => [ 'de DE' => [ 'name' => 'Deutsch', 'locale' => 'de_DE' ] ] ],
 			get_stylesheet_directory()
 		);
+	}
+
+	private function bilingual( array $pageDeclaration ): EntrySpec {
+		$manifest = Manifest::fromArray(
+			[
+				'languages' => [ 'en' => [ 'name' => 'English', 'locale' => 'en_US', 'default' => true ], 'de' => [ 'name' => 'Deutsch', 'locale' => 'de_DE' ] ],
+				'pages'     => [ 'about' => $pageDeclaration ],
+			],
+			get_stylesheet_directory()
+		);
+		return $manifest->entries()['about'];
+	}
+
+	public function test_language_overrides_are_parsed() {
+		$spec = $this->bilingual(
+			[
+				'title'     => 'About',
+				'pattern'   => 'x/about',
+				'languages' => [ 'de' => [ 'title' => 'Über uns', 'slug' => 'ueber-uns' ] ],
+			]
+		);
+
+		$this->assertSame( 'Über uns', $spec->titleFor( 'de', 'en' ) );
+		$this->assertSame( 'ueber-uns', $spec->slugFor( 'de', 'en' ) );
+		$this->assertSame( 'About', $spec->titleFor( 'en', 'en' ) );
+		$this->assertSame( 'about', $spec->slugFor( 'en', 'en' ) );
+	}
+
+	public function test_a_missing_title_falls_back_to_the_default_language() {
+		$spec = $this->bilingual( [ 'title' => 'About', 'pattern' => 'x/about' ] );
+
+		$this->assertSame( 'About', $spec->titleFor( 'de', 'en' ) );
+	}
+
+	public function test_a_missing_slug_derives_a_distinct_one() {
+		// Polylang does not hook wp_unique_post_slug: two languages sharing a
+		// slug land as `about` and `about-2`, and the Verifier then reports a
+		// mismatch on every run forever with no fix that converges.
+		$spec = $this->bilingual( [ 'title' => 'About', 'pattern' => 'x/about' ] );
+
+		$this->assertSame( 'about-de', $spec->slugFor( 'de', 'en' ) );
+	}
+
+	public function test_a_pattern_override_is_used_verbatim() {
+		$spec = $this->bilingual(
+			[ 'title' => 'About', 'pattern' => 'x/about', 'languages' => [ 'de' => [ 'pattern' => 'x/about-german' ] ] ]
+		);
+
+		$this->assertSame( 'x/about-german', $spec->patternFor( 'de', 'en' ) );
+		$this->assertSame( 'x/about', $spec->patternFor( 'en', 'en' ) );
+	}
+
+	public function test_pattern_for_returns_null_for_a_content_entry() {
+		$spec = $this->bilingual( [ 'title' => 'About', 'content' => '' ] );
+
+		$this->assertNull( $spec->patternFor( 'de', 'en' ) );
+	}
+
+	public function test_an_unknown_language_override_key_is_rejected() {
+		$this->expectException( ManifestError::class );
+		$this->expectExceptionMessageMatches( "/pages\.about\.languages\.de: unknown key 'titel'/" );
+
+		$this->bilingual( [ 'title' => 'About', 'content' => '', 'languages' => [ 'de' => [ 'titel' => 'x' ] ] ] );
+	}
+
+	public function test_an_override_slug_must_be_a_valid_slug() {
+		$this->expectException( ManifestError::class );
+		$this->expectExceptionMessageMatches( "/pages\.about\.languages\.de: slug 'Über Uns' is not a valid post slug/" );
+
+		$this->bilingual( [ 'title' => 'About', 'content' => '', 'languages' => [ 'de' => [ 'slug' => 'Über Uns' ] ] ] );
+	}
+
+	public function test_an_override_for_an_undeclared_language_is_rejected() {
+		$this->expectException( ManifestError::class );
+		$this->expectExceptionMessageMatches( "/pages\.about\.languages\.fr: 'fr' is not a declared site language/" );
+
+		$this->bilingual( [ 'title' => 'About', 'content' => '', 'languages' => [ 'fr' => [ 'title' => 'À propos' ] ] ] );
 	}
 }
