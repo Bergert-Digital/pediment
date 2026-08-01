@@ -414,4 +414,38 @@ class ManifestTest extends WP_UnitTestCase {
 
 		$this->bilingual( [ 'title' => 'About', 'content' => '', 'languages' => [ 'fr' => [ 'title' => 'À propos' ] ] ] );
 	}
+
+	public function test_an_empty_title_override_is_rejected() {
+		// titleFor() falls back with `??`, which only catches null. A stored ''
+		// would pass straight through as the post title with no error — the
+		// same silent no-op the top-level 'title' required-check exists to stop.
+		$this->expectException( ManifestError::class );
+		$this->expectExceptionMessageMatches( "/pages\.about\.languages\.de: 'title' may not be empty/" );
+
+		$this->bilingual( [ 'title' => 'About', 'content' => '', 'languages' => [ 'de' => [ 'title' => '' ] ] ] );
+	}
+
+	public function test_a_pattern_override_on_a_content_entry_is_rejected() {
+		// content-declared entries have no pattern to translate; patternFor()
+		// would discard the override unconditionally with no feedback.
+		$this->expectException( ManifestError::class );
+		$this->expectExceptionMessageMatches( "/pages\.about\.languages\.de: 'pattern' cannot be overridden/" );
+
+		$this->bilingual( [ 'title' => 'About', 'content' => '', 'languages' => [ 'de' => [ 'pattern' => 'x/about-de' ] ] ] );
+	}
+
+	public function test_the_resolvers_work_for_the_monolingual_empty_language() {
+		// The path every single-language site runs: no 'languages' section
+		// declared at all, so Manifest::defaultLanguage() is '' and every
+		// resolver is called with $language === $default === ''.
+		$manifest = Manifest::fromArray(
+			[ 'pages' => [ 'about' => [ 'title' => 'About', 'pattern' => 'x/about' ] ] ],
+			get_stylesheet_directory()
+		);
+		$spec = $manifest->entries()['about'];
+
+		$this->assertSame( 'About', $spec->titleFor( '', '' ) );
+		$this->assertSame( 'about', $spec->slugFor( '', '' ) );
+		$this->assertSame( 'x/about', $spec->patternFor( '', '' ) );
+	}
 }

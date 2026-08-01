@@ -27,7 +27,15 @@ final class EntrySpec {
 		public readonly array $translations = []
 	) {}
 
-	/** The declared title for a language, falling back to the default language's. */
+	/**
+	 * The declared title for a language, falling back to the default language's.
+	 *
+	 * $default is accepted but deliberately unread: it exists for signature
+	 * symmetry with slugFor()/patternFor() so the three resolvers can be called
+	 * as a set without a caller needing to remember which one is asymmetric.
+	 * There is only ever one top-level title to fall back to, regardless of
+	 * which language is the manifest's default.
+	 */
 	public function titleFor( string $language, string $default ): string {
 		return (string) ( $this->translations[ $language ]['title'] ?? $this->title );
 	}
