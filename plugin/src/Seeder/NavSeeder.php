@@ -193,11 +193,13 @@ final class NavSeeder {
 
 				$ids[ $item->mapKey() ] = $postId;
 			}
+
+			$this->linkTranslationGroups( $ids );
+
+			return $ids;
 		} finally {
 			Kses::restore( $kses );
 		}
-
-		return $ids;
 	}
 
 	/** @return string[] Failures from the most recent apply(). */
@@ -251,6 +253,42 @@ final class NavSeeder {
 
 	private function slugFor( NavSpec $spec, string $language ): string {
 		return sanitize_title( $spec->key . ( '' !== $language ? '-' . $language : '' ) );
+	}
+
+	/**
+	 * Put every language of a nav key into one translation group.
+	 *
+	 * Same rule as entries: pll_save_post_translations() replaces the whole
+	 * group, so this runs once with the full map after every entity is written.
+	 *
+	 * Without it, a translated menu is invisible to pll_get_post(), the header's
+	 * per-language lookup falls back to whichever nav was saved last, and every
+	 * language renders one language's navigation — the outage this engine's nav
+	 * identity model exists to prevent.
+	 *
+	 * @param array<string,int> $ids navKey|language => post ID
+	 */
+	private function linkTranslationGroups( array $ids ): void {
+		if ( count( $this->lang->languages() ) < 2 ) {
+			return;
+		}
+
+		$byKey = [];
+		foreach ( $ids as $mapKey => $postId ) {
+			// array_pad(explode('|', ...), 2, '') does not truncate if a nav key
+			// or language code ever contained '|' itself — not reachable today
+			// (both come from manifest identifiers), same caveat as
+			// Applier::linkTranslationGroups().
+			[ $key, $language ] = array_pad( explode( '|', (string) $mapKey ), 2, '' );
+			if ( '' === $language || $postId <= 0 ) {
+				continue;
+			}
+			$byKey[ $key ][ $language ] = $postId;
+		}
+
+		foreach ( $byKey as $map ) {
+			$this->lang->linkTranslations( $map );
+		}
 	}
 
 	/**
