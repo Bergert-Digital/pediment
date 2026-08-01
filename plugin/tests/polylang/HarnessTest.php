@@ -1,6 +1,6 @@
 <?php
 
-class HarnessTest extends WP_UnitTestCase {
+class HarnessTest extends PolylangTestCase {
 
 	public function test_polylang_is_loaded() {
 		$this->assertTrue( function_exists( 'pll_languages_list' ), 'Polylang did not load.' );
