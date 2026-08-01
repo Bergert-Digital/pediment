@@ -32,6 +32,7 @@ jobs:
       - run: npm run lint:colors
       - run: npm run lint:icons
       - run: npm run lint:js
+      - run: node tools/generate-wpml-config.mjs --check
 
   phpunit:
     runs-on: ubuntu-latest

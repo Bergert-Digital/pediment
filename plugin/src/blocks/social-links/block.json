@@ -10,7 +10,13 @@
 	"attributes": {
 		"links": {
 			"type": "array",
-			"default": []
+			"default": [],
+			"items": {
+				"type": "object",
+				"properties": {
+					"url": { "type": "string" }
+				}
+			}
 		}
 	},
 	"example": {},

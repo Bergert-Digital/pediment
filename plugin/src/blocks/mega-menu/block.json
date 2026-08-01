@@ -10,7 +10,27 @@
 	"supports": { "html": false, "reusable": false },
 	"attributes": {
 		"label": { "type": "string", "default": "" },
-		"columns": { "type": "array", "default": [] }
+		"columns": {
+			"type": "array",
+			"default": [],
+			"items": {
+				"type": "object",
+				"properties": {
+					"heading": { "type": "string" },
+					"links": {
+						"type": "array",
+						"items": {
+							"type": "object",
+							"properties": {
+								"label": { "type": "string" },
+								"description": { "type": "string" },
+								"url": { "type": "string" }
+							}
+						}
+					}
+				}
+			}
+		}
 	},
 	"editorScript": "file:./index.js",
 	"editorStyle": "file:./index.css",
