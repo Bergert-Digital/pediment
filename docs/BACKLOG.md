@@ -28,21 +28,35 @@ _(none currently known — verify by running a user-journey audit)_
   `VERIFICATION FAILED` heading even though phase 5 never ran — the finding is real and
   pre-write, the heading is not.
 - [ ] **A coordinated language removal silently unlinks that language's translation
-  groups.** Found by review during migration step 4, Task 10. `Applier::apply()` excludes
-  `ORPHAN` plan items from the ID map it hands to `linkTranslationGroups()`, even when
-  their `postId` is still valid; `DesiredState` crosses every seed key with every
-  configured language, so a single language cannot go missing for one isolated page — but
-  dropping a language from both the manifest and Polylang's own config in the same run
-  passes the Runner's language gate (the two sets still match), and every post in that
-  language becomes `ORPHAN` everywhere at once. Each key's map then omits that language,
-  and `pll_save_post_translations()` replaces group membership, unlinking those posts
-  site-wide — even though the plan reports them as `orphan`, i.e. "left in place." A
-  `--dry-run` does not surface this: it shows the same `orphan` line it always shows for a
-  manifest-dropped key, which reads as "nothing happened," not "this post is about to lose
-  its translation-group membership." Fix, if wanted, is either to preserve group
-  membership for no-longer-configured languages, or to report the unlinking as an explicit
-  plan item. Narrow and deliberate-removal-only, not a routine-editing risk — not fixed
-  here on purpose.
+  groups.** Found by review during migration step 4, Task 10, for entries; the same
+  outcome was confirmed for navigation entities during Task 11 review, reached by a
+  different route. Both share the same root mechanism: `pll_save_post_translations()`
+  REPLACES the whole group, so Polylang's own `save_translations()` diffs the new map
+  against the group's *current* membership and deletes anything absent from it — a post
+  whose row never changed can still be unlinked just because it was left out of the map
+  handed to `linkTranslations()` on a run that touched its siblings.
+  - **Entries** (`Applier::apply()`): excludes `ORPHAN` plan items from the ID map it hands
+    to `linkTranslationGroups()`, even when their `postId` is still valid; `DesiredState`
+    crosses every seed key with every configured language, so a single language cannot go
+    missing for one isolated page — but dropping a language from both the manifest and
+    Polylang's own config in the same run passes the Runner's language gate (the two sets
+    still match), and every post in that language becomes `ORPHAN` everywhere at once. Each
+    key's map then omits that language, and the group-replacing write unlinks those posts
+    site-wide — even though the plan reports them as `orphan`, i.e. "left in place."
+  - **Navigation entities** (`NavSeeder::keyed()` / `linkTranslationGroups()`): has no
+    `ORPHAN` concept at all — `keyed()` detects a nav's language by matching it against the
+    *currently configured* language list, so a nav in a just-dropped language matches no
+    candidate and is filed under the empty-language key (`navKey|''`) instead of its real
+    one. `linkTranslationGroups()`'s own `'' === $language` guard (there to skip malformed
+    map keys) then excludes it from the map, and the same still-configured-siblings write
+    unlinks it from its group, exactly as for entries.
+  - A `--dry-run` does not surface either path: it shows the same `orphan` line (entries) or
+    no line at all (navs — a nav that stops matching any configured language is not
+    reported as changing) it always shows, which reads as "nothing happened," not "this post
+    is about to lose its translation-group membership." Fix, if wanted, is either to
+    preserve group membership for no-longer-configured languages, or to report the unlinking
+    as an explicit plan item, for both paths. Narrow and deliberate-removal-only, not a
+    routine-editing risk — not fixed here on purpose.
 - [ ] **Seeding gaps the plan deferred.** A dry run says nothing about front-page, term,
   or site-logo drift (the Applier owns those and they produce no plan items); terms are
   create-only by design, so a manifest-side term change is never applied to an existing
