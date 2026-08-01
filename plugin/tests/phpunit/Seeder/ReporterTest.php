@@ -98,4 +98,14 @@ class ReporterTest extends WP_UnitTestCase {
 
 		$this->assertSame( 1, substr_count( $text, 'edited in the editor' ), 'one item, one explanation' );
 	}
+
+	public function test_notices_print_without_failing_the_run() {
+		$result = new RunResult( new Plan(), true, '/x/manifest.php', [], [], [], [ 'home (de): no pattern `x/home-de` is registered — the German page carries the default language content.' ] );
+
+		$text = Reporter::text( $result );
+
+		$this->assertStringContainsString( 'TRANSLATIONS', $text );
+		$this->assertStringContainsString( 'x/home-de', $text );
+		$this->assertTrue( $result->ok(), 'A missing translation must not fail the run.' );
+	}
 }
