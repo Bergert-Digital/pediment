@@ -80,6 +80,8 @@ final class Applier {
 			Kses::restore( $kses );
 		}
 
+		$this->linkTranslationGroups( $ids );
+
 		$this->applyReadingOptions( $desired, $ids );
 
 		return new ApplyResult( $ids, $errors );
@@ -232,6 +234,41 @@ final class Applier {
 			$stored,
 			$entry->slug
 		);
+	}
+
+	/**
+	 * Put every language of a seed key into one translation group.
+	 *
+	 * Runs after the write loop, not inside it: a group is only meaningful once
+	 * every language exists, and pll_save_post_translations() REPLACES the
+	 * whole group — calling it per language as each one is written would unlink
+	 * the ones written before it. Invisible with two languages, silent data
+	 * loss with five.
+	 *
+	 * Passing the full map every run is also what repairs a group an editor
+	 * broke by hand, and what links a language added later to the ones that
+	 * were already there.
+	 *
+	 * @param array<string,int> $ids mapKey => post ID
+	 */
+	private function linkTranslationGroups( array $ids ): void {
+		$languages = $this->lang->languages();
+		if ( count( $languages ) < 2 ) {
+			return;
+		}
+
+		$byKey = [];
+		foreach ( $ids as $mapKey => $postId ) {
+			[ $key, $language ] = array_pad( explode( '|', (string) $mapKey ), 2, '' );
+			if ( '' === $language || $postId <= 0 ) {
+				continue;
+			}
+			$byKey[ $key ][ $language ] = $postId;
+		}
+
+		foreach ( $byKey as $map ) {
+			$this->lang->linkTranslations( $map );
+		}
 	}
 
 	/**
