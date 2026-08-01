@@ -43,8 +43,12 @@ final class ContentResolver {
 
 			// A language with no translated pattern is a normal state on a site
 			// that just added one — it renders the default language's content and
-			// says so, rather than seeding a blank page or blocking the run.
-			if ( ( ! is_array( $pattern ) || ! isset( $pattern['content'] ) ) && $wanted !== $entry->pattern ) {
+			// says so, rather than seeding a blank page or blocking the run. Gated
+			// on the LANGUAGE, not on whether $wanted differs from $entry->pattern:
+			// patternFor() checks a per-language override before it checks
+			// default-ness, so a default-language override that is not registered
+			// must still throw below, not soft-fallback into a false negative.
+			if ( ( ! is_array( $pattern ) || ! isset( $pattern['content'] ) ) && $language !== $default ) {
 				$this->missingPatterns[ $entry->key . '|' . $language ] = $wanted;
 				$pattern                                                = $registry->get_registered( (string) $entry->pattern );
 			}

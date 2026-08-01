@@ -119,7 +119,7 @@ final class DesiredState {
 				$key,
 				$language,
 				$pattern,
-				$this->fileStem( $pattern ),
+				$this->fileStem( $pattern, $language ),
 				$language,
 				$pattern,
 				$key,
@@ -130,10 +130,20 @@ final class DesiredState {
 		return $lines;
 	}
 
-	/** `theme/about-de` -> `about` — the stem the file convention uses. */
-	private function fileStem( string $pattern ): string {
-		$parts = explode( '/', $pattern );
-		$last  = (string) end( $parts );
-		return (string) preg_replace( '/-[a-z0-9-]+$/', '', $last );
+	/**
+	 * `theme/sample-post-de` -> `sample-post` — the stem the file convention
+	 * uses. Strips the exact known `-<language>` suffix rather than the last
+	 * hyphen run: a hyphen-run regex eats real multi-word stems (`contact-page`,
+	 * `hero-cta-faq`) because it is unanchored and matches from the FIRST
+	 * hyphen, not the last.
+	 */
+	private function fileStem( string $pattern, string $language ): string {
+		$parts  = explode( '/', $pattern );
+		$last   = (string) end( $parts );
+		$suffix = '-' . $language;
+		if ( '' !== $language && str_ends_with( $last, $suffix ) ) {
+			return substr( $last, 0, -strlen( $suffix ) );
+		}
+		return $last;
 	}
 }

@@ -11,10 +11,12 @@ class DesiredStateLanguageTest extends PolylangTestCase {
 	public function set_up(): void {
 		parent::set_up();
 		register_block_pattern( 'x/home', [ 'title' => 'Home', 'content' => '<p>english</p>' ] );
+		register_block_pattern( 'x/sample-post', [ 'title' => 'Sample post', 'content' => '<p>english</p>' ] );
 	}
 
 	public function tear_down(): void {
 		unregister_block_pattern( 'x/home' );
+		unregister_block_pattern( 'x/sample-post' );
 		Manifest::resetCache();
 		parent::tear_down();
 	}
@@ -59,5 +61,27 @@ class DesiredStateLanguageTest extends PolylangTestCase {
 		$this->assertStringContainsString( 'home', $notices );
 		$this->assertStringContainsString( 'de', $notices );
 		$this->assertStringContainsString( 'x/home-de', $notices );
+	}
+
+	public function test_a_missing_translated_pattern_names_the_correct_file_for_a_hyphenated_slug() {
+		$manifest = Manifest::fromArray(
+			[
+				'languages' => [ 'en' => [ 'name' => 'English', 'locale' => 'en_US', 'default' => true ], 'de' => [ 'name' => 'Deutsch', 'locale' => 'de_DE' ] ],
+				'pages'     => [ 'sample' => [ 'title' => 'Sample post', 'pattern' => 'x/sample-post' ] ],
+			],
+			get_stylesheet_directory()
+		);
+
+		$state = new DesiredState( new PolylangProvider(), new ContentResolver( new MediaMap( [] ) ) );
+		$state->build( $manifest );
+
+		$notices = implode( "\n", $state->missingTranslations() );
+
+		// A hyphen-run regex strips from the FIRST hyphen ('x/sample-post-de'
+		// -> 'sample'), naming a file the operator would never create. The
+		// correct stem keeps the whole multi-word slug and only drops the
+		// known '-de' suffix.
+		$this->assertStringContainsString( 'patterns/sample-post.de.php', $notices );
+		$this->assertStringNotContainsString( 'patterns/sample.de.php', $notices );
 	}
 }
