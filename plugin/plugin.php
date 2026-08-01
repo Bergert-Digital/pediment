@@ -51,6 +51,7 @@ require_once PEDIMENT_AI_PLUGIN_DIR . '/inc/block-styles.php';
 require_once PEDIMENT_AI_PLUGIN_DIR . '/inc/hero-variants.php';
 require_once PEDIMENT_AI_PLUGIN_DIR . '/inc/layout-variations.php';
 require_once PEDIMENT_AI_PLUGIN_DIR . '/inc/nav-active.php';
+require_once PEDIMENT_AI_PLUGIN_DIR . '/inc/nav-language.php';
 require_once PEDIMENT_AI_PLUGIN_DIR . '/inc/mega-menu.php';
 
 // Polylang cannot be told wp_navigation is translatable by clicking anything
