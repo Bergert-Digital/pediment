@@ -48,7 +48,10 @@ final class EntrySpec {
 	 * top-level pages share one slug namespace regardless of language: two
 	 * languages both asking for `about` land as `about` and `about-2`, the
 	 * Verifier reports a slug mismatch on every run, and no re-run converges.
-	 * NavSeeder::slugFor() uses the same idiom for the same reason.
+	 * NavSeeder's private slugFor() derives a per-language slug for the same
+	 * reason, but not with the same rule: it suffixes every non-empty
+	 * language, including the default, where this method leaves the default
+	 * language's slug bare.
 	 */
 	public function slugFor( string $language, string $default ): string {
 		$declared = (string) ( $this->translations[ $language ]['slug'] ?? '' );
