@@ -88,6 +88,32 @@ _(none currently known — verify by running a user-journey audit)_
   Phosphor catalog (virtualized list + search from B's icon-name manifest), wired into
   `pediment/mega-link`'s `icon` attribute and reusable across blocks. Depends on B; until
   then the field is a relocated `TextControl`. Deferred from sub-project A.
+- [ ] **A WPML adapter for the `LanguageProvider` seam.** Migration step 4 built the
+  Polylang implementation only; `LanguageProvider`
+  (`plugin/src/Language/LanguageProvider.php`) is the interface the seeding engine
+  actually depends on, and everything Polylang-specific lives behind it
+  (`PolylangProvider`, `PolylangSetup`, and the two `inc/` files that call `pll_*`
+  directly). A WPML implementation is roughly 150 lines against the same interface —
+  build it when a client site actually needs WPML, not speculatively now.
+- [ ] **Per-language media and taxonomy translation.** Migration step 4 deliberately
+  ships one attachment and one term set per site, locked off in Polylang's own config
+  (`media_support => 0`, `taxonomies => []`, see `docs/seeding.md#languages`). Revisit
+  only if step 6 shows a real client site (Workation is the currently planned one)
+  actually needs per-language images or taxonomies — building it speculatively risks
+  guessing wrong about the shape client themes need.
+- [ ] **`wp pediment translate` — an AI command that writes the missing pattern file a
+  seed notice names.** `wp pediment seed --dry-run`'s `TRANSLATIONS` section already
+  names exactly which `patterns/<slug>.<lang>.php` file is missing and what `Slug:`
+  header it needs (`docs/seeding.md#the-translations-section-of-a-dry-run-plan`); today
+  closing that gap is manual (write the file, or translate in the editor and
+  `wp pediment adopt --language`). A command that drafts the missing file via the
+  existing AI editor plumbing would close the loop end to end.
+- [ ] **Language-aware `Verifier` post-conditions.** The Verifier re-reads the database
+  after every apply and reports what it claims to own that doesn't actually hold (see
+  `docs/seeding.md`'s "Verification problems"), but nothing today checks that a
+  language's root URL actually serves that language's front page — a language root
+  serving the wrong (or the default language's) front page produces no seed-time
+  problem, only an e2e failure once someone happens to check the rendered page.
 - [ ] **`tools/generate-wpml-config.mjs`'s translatability heuristics need a first-party
   declaration mechanism.** Found by review during migration step 4, Task 14. Two related
   gaps, both accepted for now because the task's edit scope forbade touching block.json

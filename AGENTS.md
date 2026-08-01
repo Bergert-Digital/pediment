@@ -25,6 +25,9 @@ theme exists only for wp-env and integration tests.
   `wp pediment seed`. Never write pages with `wp post create` / `wp post update`
   — the seeder owns identity (`_pediment_seed_key`) and the content-arbitration
   hashes, and a hand-written post bypasses both.
+- Languages are declared in the manifest's `languages` section and configured
+  with `wp pediment languages` before seeding, never after — see
+  [docs/seeding.md#languages](docs/seeding.md#languages).
 
 ## Environment and verification
 
