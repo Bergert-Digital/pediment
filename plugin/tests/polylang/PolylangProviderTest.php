@@ -58,6 +58,28 @@ class PolylangProviderTest extends PolylangTestCase {
 		$this->assertSame( $id, $this->provider->translationOf( $id, 'de' ) );
 	}
 
+	public function test_has_language_is_true_once_tagged() {
+		$id = self::factory()->post->create( [ 'post_type' => 'page' ] );
+		$this->provider->setLanguage( $id, 'de' );
+
+		$this->assertTrue( $this->provider->hasLanguage( $id ) );
+	}
+
+	/**
+	 * `pll_get_post_language()` returns `false` for an untagged post — the
+	 * signal this method is built on. A post created straight through
+	 * `wp_insert_post()` outside this suite's factories would already be
+	 * auto-tagged by Polylang's own save hook (WORDPRESS_TRAPS.md), so
+	 * modelling "genuinely untagged" means stripping the language term back
+	 * off after creation, the same way NavBindingTest does for a legacy nav.
+	 */
+	public function test_has_language_is_false_for_an_untagged_post() {
+		$id = self::factory()->post->create( [ 'post_type' => 'page' ] );
+		wp_delete_object_term_relationships( $id, 'language' );
+
+		$this->assertFalse( $this->provider->hasLanguage( $id ) );
+	}
+
 	public function test_translation_of_returns_zero_when_there_is_none() {
 		$id = self::factory()->post->create( [ 'post_type' => 'page' ] );
 		$this->provider->setLanguage( $id, 'en' );
@@ -77,13 +99,36 @@ class PolylangProviderTest extends PolylangTestCase {
 		$this->assertSame( $en, $this->provider->translationOf( $de, 'en' ) );
 	}
 
-	public function test_link_translations_ignores_unresolved_ids() {
+	/**
+	 * Not "the 0 is ignored" — Polylang's own sanitize_int_ids_list() already
+	 * drops a 0 regardless of any guard here, so
+	 * assertSame( 0, translationOf( $en, 'de' ) ) would pass identically with
+	 * the count($clean) < 2 guard deleted, and this test could never fail.
+	 * The guard exists to stop a map with fewer than 2 real IDs from ever
+	 * reaching pll_save_post_translations() at all — otherwise a single
+	 * resolved ID would still be handed off, and Polylang's own
+	 * save_translations() would replace whatever group that post already
+	 * belonged to with a "group of one," unlinking every language that
+	 * really was there. Assert on that: link a real two-language group
+	 * first, then call linkTranslations() again with one ID unresolved, and
+	 * check the EXISTING link survives.
+	 */
+	public function test_link_translations_does_not_unlink_an_existing_group_when_only_one_id_resolves() {
 		$en = self::factory()->post->create( [ 'post_type' => 'page' ] );
+		$de = self::factory()->post->create( [ 'post_type' => 'page' ] );
 		$this->provider->setLanguage( $en, 'en' );
+		$this->provider->setLanguage( $de, 'de' );
+		$this->provider->linkTranslations( [ 'en' => $en, 'de' => $de ] );
 
+		// Simulate a later run where German's ID failed to resolve (e.g. its
+		// write failed this time).
 		$this->provider->linkTranslations( [ 'en' => $en, 'de' => 0 ] );
 
-		$this->assertSame( 0, $this->provider->translationOf( $en, 'de' ) );
+		$this->assertSame(
+			$de,
+			$this->provider->translationOf( $en, 'de' ),
+			'A single resolved ID must not replace an existing translation group with a group of one.'
+		);
 	}
 
 	public function test_unscoped_query_sees_every_language() {

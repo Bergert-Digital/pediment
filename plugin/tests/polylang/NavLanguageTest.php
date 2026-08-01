@@ -6,6 +6,17 @@ use Pediment\Seeder\NavSeeder;
 
 class NavLanguageTest extends PolylangTestCase {
 
+	/** term_id of a language added mid-test, so tear_down() can remove it again. */
+	private ?int $addedLanguageId = null;
+
+	public function tear_down(): void {
+		if ( null !== $this->addedLanguageId ) {
+			PLL()->model->delete_language( $this->addedLanguageId );
+			$this->addedLanguageId = null;
+		}
+		parent::tear_down();
+	}
+
 	public function test_wp_navigation_is_translatable_outside_the_settings_screen() {
 		$this->assertContains( 'wp_navigation', (array) apply_filters( 'pll_get_post_types', [], false ) );
 	}
@@ -55,6 +66,59 @@ class NavLanguageTest extends PolylangTestCase {
 
 		$this->assertStringContainsString( '"id":' . $de, get_post( $ids['primary|de'] )->post_content );
 		$this->assertStringNotContainsString( '"id":' . $en, get_post( $ids['primary|de'] )->post_content );
+	}
+
+	/**
+	 * NavSeeder::linkTranslationGroups() has the same partial-map guard as
+	 * Applier's, fixed for the same reason, in its own method by explicit
+	 * decision (see NavSeeder.php's docblock). Force the French nav's create
+	 * to fail while English and German succeed, and assert the 2-of-3 map is
+	 * not linked — mirrors ApplierTranslationTest's equivalent for entries.
+	 */
+	public function test_a_failed_create_does_not_partially_link_the_nav_group() {
+		$fr                    = PLL()->model->add_language( [ 'slug' => 'fr', 'name' => 'Français', 'locale' => 'fr_FR', 'flag' => 'fr', 'rtl' => 0, 'term_group' => 2 ] );
+		$this->addedLanguageId = $fr instanceof WP_Error ? null : (int) $fr->term_id;
+		PLL()->model->clean_languages_cache();
+
+		$manifest = Manifest::fromArray(
+			[
+				'languages' => [
+					'en' => [ 'name' => 'English', 'locale' => 'en_US', 'default' => true ],
+					'de' => [ 'name' => 'Deutsch', 'locale' => 'de_DE' ],
+					'fr' => [ 'name' => 'Français', 'locale' => 'fr_FR' ],
+				],
+				'pages'     => [ 'about' => [ 'title' => 'About', 'content' => '' ] ],
+				'navs'      => [ 'primary' => [ 'title' => 'Primary', 'items' => [ [ 'entry' => 'about' ] ] ] ],
+			],
+			get_stylesheet_directory()
+		);
+
+		$lang     = new PolylangProvider();
+		$seeder   = new NavSeeder( $lang );
+		$entryIds = [
+			'about|en' => $this->page( 'en' ),
+			'about|de' => $this->page( 'de' ),
+			'about|fr' => $this->page( 'fr' ),
+		];
+
+		// NavSeeder::slugFor() appends the language suffix unconditionally
+		// (`docs/WORDPRESS_TRAPS.md`), so 'primary-fr' names the French nav's
+		// insert uniquely regardless of default-language status.
+		$fail = static function ( $maybe_empty, $postarr ) {
+			return ( $postarr['post_name'] ?? '' ) === 'primary-fr' ? true : $maybe_empty;
+		};
+		add_filter( 'wp_insert_post_empty_content', $fail, 10, 2 );
+		$ids = $seeder->apply( $seeder->plan( $manifest, $entryIds ), $manifest, $entryIds );
+		remove_filter( 'wp_insert_post_empty_content', $fail, 10 );
+
+		$this->assertArrayNotHasKey( 'primary|fr', $ids, 'Precondition: the French nav create must actually have failed.' );
+		$this->assertNotEmpty( $seeder->errors() );
+
+		$this->assertSame(
+			0,
+			$lang->translationOf( $ids['primary|en'], 'de' ),
+			'A 2-of-3 map must not be linked just because the failure left English and German behind.'
+		);
 	}
 
 	private function page( string $language ): int {

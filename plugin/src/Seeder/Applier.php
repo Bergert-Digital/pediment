@@ -9,6 +9,13 @@
  *     is active and mangles block comments. Seeded content is git-authored, not
  *     user input.
  *   - The language is set in the same write as creation, never after (8593c73).
+ *   - A pre-existing post that reaches this class through any non-CREATE
+ *     action (UPDATE, UNCHANGED, PROTECTED, RESTORE) may still have NO
+ *     language at all — the migration case, where a page predates this
+ *     seeder's language tagging. repairLanguage() tags it if and only if it
+ *     is currently untagged; it never re-tags or moves a post that already
+ *     carries one. Skipping this is what left existing-site pages invisible
+ *     to every translation lookup after `wp pediment languages` + reseed.
  *   - _pediment_seed_hash comes from the PERSISTED row, _pediment_seed_source
  *     from the input.
  *
@@ -79,6 +86,8 @@ final class Applier {
 		} finally {
 			Kses::restore( $kses );
 		}
+
+		$this->repairLanguage( $plan, $desired, $ids );
 
 		$this->linkTranslationGroups( $ids );
 
@@ -282,7 +291,58 @@ final class Applier {
 		}
 
 		foreach ( $byKey as $map ) {
+			// A map missing even one configured language must never reach
+			// linkTranslations(): pll_save_post_translations() REPLACES the
+			// whole group, so Polylang's own save_translations() diffs this
+			// partial map against the group's CURRENT membership and unlinks
+			// whichever language got left out — even though that language's
+			// post never changed. count($map) >= 2 let a 2-of-3 map through
+			// on an ordinary single-language write failure; only "the map
+			// covers every configured language" is safe. This does not
+			// change the documented coordinated-removal case just above:
+			// there, $languages shrinks along with the map, so the count
+			// still matches — that consequence is intentionally left as is.
+			if ( count( $map ) !== count( $languages ) ) {
+				continue;
+			}
 			$this->lang->linkTranslations( $map );
+		}
+	}
+
+	/**
+	 * Tag a pre-existing post that has no language at all.
+	 *
+	 * Only entries that did NOT just go through create() reach here — a
+	 * CREATE already tags its post in the same write (see the class
+	 * docblock). Everything else (UPDATE, UNCHANGED, PROTECTED, RESTORE) may
+	 * be a post that predates this seeder's language tagging entirely: the
+	 * existing-site migration case. hasLanguage() is the only check — a post
+	 * that already carries a (possibly different) language is left exactly
+	 * as it is, because re-tagging or moving it is an editorial decision,
+	 * not this engine's to make.
+	 *
+	 * A no-op on a monolingual site: NullProvider::hasLanguage() always
+	 * returns true.
+	 *
+	 * @param array<string,DesiredEntry> $desired
+	 * @param array<string,int>          $ids
+	 */
+	private function repairLanguage( Plan $plan, array $desired, array $ids ): void {
+		foreach ( $plan->byKind( PlanItem::KIND_ENTRY ) as $item ) {
+			if ( PlanItem::CREATE === $item->action || PlanItem::ORPHAN === $item->action ) {
+				continue;
+			}
+			$postId = $ids[ $item->mapKey() ] ?? 0;
+			if ( $postId <= 0 ) {
+				continue;
+			}
+			$entry = $desired[ $item->mapKey() ] ?? null;
+			if ( ! $entry instanceof DesiredEntry ) {
+				continue;
+			}
+			if ( ! $this->lang->hasLanguage( $postId ) ) {
+				$this->lang->setLanguage( $postId, $entry->language );
+			}
 		}
 	}
 
