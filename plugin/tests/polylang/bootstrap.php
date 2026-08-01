@@ -4,7 +4,7 @@
  *
  * Separate from tests/phpunit/bootstrap.php on purpose: loading Polylang adds a
  * `language` taxonomy and a parse_query filter to every query in the process,
- * which would change the meaning of the 545 monolingual tests. One process per
+ * which would change the meaning of the 558 monolingual tests. One process per
  * world.
  */
 
@@ -25,18 +25,6 @@ tests_add_filter( 'muplugins_loaded', function () {
 		echo "Polylang is not installed at {$polylang}. Run `npm run env:start` first.\n";
 		exit( 1 );
 	}
-
-	/*
-	 * The WP core test suite reinstalls a bare database for every run (a
-	 * separate `install.php` process, before this one even starts), so
-	 * `active_plugins` is empty even though Polylang is force-required
-	 * below. Polylang's `Options` class treats itself as inactive unless
-	 * `pll_is_plugin_active()` sees its basename in that option, and an
-	 * "inactive" option silently no-ops every write to it — so the
-	 * `PLL()->options->merge()` call further down would do nothing without
-	 * this line, without raising any error.
-	 */
-	update_option( 'active_plugins', array( 'polylang/polylang.php' ) );
 
 	require $polylang;
 
