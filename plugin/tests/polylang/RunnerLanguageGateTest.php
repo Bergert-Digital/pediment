@@ -36,6 +36,36 @@ class RunnerLanguageGateTest extends PolylangTestCase {
 		$this->assertStringContainsString( 'wp pediment languages', $result->errors[0] );
 	}
 
+	/**
+	 * Sorting the two language lists before comparing erases which one is
+	 * default — a manifest declaring `de` as default against a site
+	 * configured with `en` default has an identical SET (`en`, `de` either
+	 * way) and used to pass the gate outright. Everything downstream reads
+	 * $this->lang->defaultLanguage(), never the manifest's, so a mismatch
+	 * here means Manifest::defaultLanguage() is silently inert until someone
+	 * happens to re-run `wp pediment languages`.
+	 */
+	public function test_a_default_language_mismatch_blocks_the_run() {
+		$this->withManifest(
+			[
+				'languages' => [
+					'en' => [ 'name' => 'English', 'locale' => 'en_US' ],
+					'de' => [ 'name' => 'Deutsch', 'locale' => 'de_DE', 'default' => true ],
+				],
+				'pages'     => [ 'home' => [ 'title' => 'Home', 'content' => '' ] ],
+			]
+		);
+
+		$result = ( new Runner() )->run();
+
+		$this->assertFalse( $result->applied );
+		$this->assertNotEmpty( $result->errors );
+		$this->assertStringContainsString( 'de', $result->errors[0] );
+		$this->assertStringContainsString( 'en', $result->errors[0] );
+		$this->assertStringContainsString( 'default', $result->errors[0] );
+		$this->assertStringContainsString( 'wp pediment languages', $result->errors[0] );
+	}
+
 	public function test_a_matching_set_runs() {
 		$this->withManifest(
 			[

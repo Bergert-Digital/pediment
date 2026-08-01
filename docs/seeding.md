@@ -139,6 +139,24 @@ and the whole navigation is left exactly as it is rather than written without
 that link — a menu that quietly comes out one item short is worse than one
 that visibly fails.
 
+`label` is optional on an `{ entry, … }` item. When it is omitted,
+`NavSeeder::serialize()` falls back to the linked entry's own `post_title` —
+which is already resolved per language — instead of a fixed string. On a
+multilingual site this is the difference between a header nav whose items
+translate and one that renders the same English text in every language: a
+declared `label` is a fixed string written into every language's menu
+verbatim, so a *bilingual* menu should omit `label` on every `entry` item and
+let each language's own title carry it. `{ url, … }` items have no linked
+entry to fall back to, so `label` is effectively required there.
+
+The header template part's ref-less `core/navigation` block binds to
+whichever nav is keyed `primary` (`plugin/inc/nav-language.php`,
+`pediment_seeded_nav_id()`) — this is the one nav key the engine treats as a
+contract, not a coincidence: nothing else in `Manifest`/`NavSpec` requires it,
+so a theme is free to key its other menus however it likes, but the menu it
+wants bound to the header's ref-less block must be called `primary`, or must
+opt out via the `pediment_primary_nav_key` filter.
+
 ### `post_types`
 
 Not exercised by the fixture manifest above — client themes that need a custom

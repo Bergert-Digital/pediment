@@ -20,6 +20,31 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
+ * The seed key that binds a ref-less header navigation block to a seeded menu.
+ *
+ * Nothing in Manifest, NavSpec, or docs/seeding.md#navs requires the header
+ * nav be keyed `primary` — nav keys are otherwise free-form. `primary` is a
+ * documented CONTRACT for this specific binding (docs/seeding.md#navs), not
+ * something the engine derives, because deriving it would mean loading the
+ * manifest on every front-end request that renders a ref-less navigation
+ * block — Manifest::load() is memoized per request, but "per request" still
+ * means every uncached page view, for a value that changes only when a theme
+ * is built. A theme whose header nav is keyed differently can opt out via the
+ * `pediment_primary_nav_key` filter instead of forking this file.
+ *
+ * @return string
+ */
+function pediment_primary_nav_key(): string {
+	/**
+	 * The seed key `pediment_bind_navigation_ref()` binds a ref-less header
+	 * navigation block to.
+	 *
+	 * @param string $key Defaults to 'primary'.
+	 */
+	return (string) apply_filters( 'pediment_primary_nav_key', 'primary' );
+}
+
+/**
  * The seeded navigation entity for a language, by seed key.
  *
  * Identity is the seed key, never the slug: a stray post holding `primary`
@@ -44,7 +69,7 @@ function pediment_seeded_nav_id( string $language ): int {
 		'order'          => 'ASC',
 		// phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key -- indexed seed-identity lookup, once per request.
 		'meta_key'       => \Pediment\Seeder\Meta::KEY,
-		'meta_value'     => 'primary', // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_value -- see above.
+		'meta_value'     => pediment_primary_nav_key(), // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_value -- see above.
 		// Set unconditionally, including '' for the unscoped lookup. Polylang's
 		// PLL_Query::is_already_filtered() (src/query.php) treats
 		// isset( $qvars['lang'] ) — not its value — as "the caller has already
@@ -88,6 +113,17 @@ function pediment_bind_navigation_ref( $parsed_block ) {
 		return $parsed_block;
 	}
 	if ( ! empty( $parsed_block['attrs']['ref'] ) ) {
+		return $parsed_block;
+	}
+	if ( ! empty( $parsed_block['innerBlocks'] ) ) {
+		// Core's own render path (wp-includes/blocks/navigation.php:307-310)
+		// does `if ( array_key_exists( 'ref', $attributes ) ) { $inner_blocks =
+		// get_inner_blocks_from_navigation_post( $attributes ); }` with NO
+		// empty()/isset() guard on $inner_blocks — a ref we inject here would
+		// unconditionally override any inline children the block was
+		// authored with (patterns/mega-menu-header.php ships a navigation
+		// block with an inline pediment/mega-menu child and no ref, for
+		// exactly this reason).
 		return $parsed_block;
 	}
 

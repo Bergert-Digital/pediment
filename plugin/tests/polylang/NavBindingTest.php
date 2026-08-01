@@ -90,6 +90,25 @@ class NavBindingTest extends PolylangTestCase {
 		$this->assertSame( $block, pediment_bind_navigation_ref( $block ) );
 	}
 
+	/**
+	 * Core's own render path (wp-includes/blocks/navigation.php:307-310) has
+	 * no empty()/isset() guard: `if ( array_key_exists( 'ref', $attributes )
+	 * ) { $inner_blocks = get_inner_blocks_from_navigation_post( $attributes
+	 * ); }` — a ref injected here would unconditionally REPLACE any inline
+	 * children the block already has. patterns/mega-menu-header.php ships
+	 * exactly this shape: a core/navigation block with an inline
+	 * pediment/mega-menu child and no ref.
+	 */
+	public function test_a_block_with_inner_blocks_is_untouched() {
+		$block = [
+			'blockName'   => 'core/navigation',
+			'attrs'       => [],
+			'innerBlocks' => [ [ 'blockName' => 'pediment/mega-menu', 'attrs' => [] ] ],
+		];
+
+		$this->assertSame( $block, pediment_bind_navigation_ref( $block ) );
+	}
+
 	public function test_a_language_with_no_menu_falls_back_to_the_default() {
 		// A real third language, properly configured in Polylang, but with no
 		// navigation seeded for it yet (e.g. just added in Settings, seeding not
