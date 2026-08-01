@@ -24,6 +24,15 @@ Define `ANTHROPIC_API_KEY` in `wp-config.php` — the plugin reads the constant 
 
 The editor and PHP runtime use the `pediment/v1` REST namespace.
 
+## Seeding
+
+Client themes declare their pages, posts, media, navigation, and custom post types in a
+`seed/manifest.php` file; content itself lives in the theme's `patterns/` directory.
+`wp pediment seed` makes the database match the manifest without ever overwriting
+content a client has edited, and `wp pediment adopt <key>` exports a live page's edited
+markup back into its pattern file. See [docs/seeding.md](../docs/seeding.md) for the full
+manifest reference, the arbitration rules, and how to read a dry-run plan.
+
 ## Web fetch
 
 The model has access to Anthropic's `web_fetch_20250910` server tool during Compose and Edit. It may fetch URLs the user mentions or that it decides are relevant. Fetched URLs appear as pills in the editor.

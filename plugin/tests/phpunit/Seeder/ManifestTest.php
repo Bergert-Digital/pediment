@@ -1,0 +1,253 @@
+<?php
+// plugin/tests/phpunit/Seeder/ManifestTest.php
+
+use Pediment\Seeder\Manifest;
+use Pediment\Seeder\ManifestError;
+
+class ManifestTest extends WP_UnitTestCase {
+
+	private function raw(): array {
+		return [
+			'version' => 1,
+			'pages'   => [
+				'home'      => [ 'title' => 'Home', 'pattern' => 'pediment/pediment-landing', 'front_page' => true ],
+				'blog'      => [ 'title' => 'Blog', 'content' => '', 'posts_page' => true ],
+				'guide'     => [ 'title' => 'Guide', 'content' => '<p>g</p>' ],
+				'guide/faq' => [ 'title' => 'FAQ', 'content' => '<p>f</p>', 'parent' => 'guide' ],
+			],
+			'posts'   => [
+				'sample-one' => [ 'title' => 'Sample one', 'content' => '<p>s</p>', 'terms' => [ 'category' => [ 'insights' ] ] ],
+			],
+		];
+	}
+
+	public function test_defaults_are_derived_from_the_key() {
+		$m   = Manifest::fromArray( $this->raw(), '/tmp/theme' );
+		$faq = $m->entries()['guide/faq'];
+
+		$this->assertSame( 'faq', $faq->slug, 'slug defaults to the last key segment' );
+		$this->assertSame( 'guide', $faq->parent );
+		$this->assertSame( 'page', $faq->postType );
+		$this->assertSame( 0, $faq->menuOrder );
+		$this->assertSame( 'post', $m->entries()['sample-one']->postType );
+		$this->assertSame( [ 'category' => [ 'insights' ] ], $m->entries()['sample-one']->terms );
+	}
+
+	public function test_explicit_slug_wins_so_a_page_can_be_renamed_without_losing_identity() {
+		$raw                            = $this->raw();
+		$raw['pages']['guide']['slug']  = 'handbook';
+		$this->assertSame( 'handbook', Manifest::fromArray( $raw, '/tmp/theme' )->entries()['guide']->slug );
+	}
+
+	public function test_invalid_slug_is_a_validation_error() {
+		$raw                           = $this->raw();
+		$raw['pages']['guide']['slug'] = 'Not A Slug';
+
+		$this->expectException( ManifestError::class );
+		$this->expectExceptionMessageMatches( '/slug/i' );
+		Manifest::fromArray( $raw, '/tmp/theme' );
+	}
+
+	public function test_an_empty_slug_is_a_validation_error() {
+		// sanitize_title('') === '' passes the round-trip check, WordPress then
+		// invents a slug from the title, and the Verifier reports a mismatch on
+		// every run forever with no fix that converges.
+		$raw                  = $this->raw();
+		$raw['pages']['faq/'] = [ 'title' => 'FAQ', 'content' => '' ];
+
+		$this->expectException( ManifestError::class );
+		$this->expectExceptionMessageMatches( '/slug/i' );
+		Manifest::fromArray( $raw, '/tmp/theme' );
+	}
+
+	public function test_an_unknown_top_level_section_is_a_validation_error() {
+		// `page` instead of `pages` used to seed nothing and report nothing.
+		$raw         = $this->raw();
+		$raw['page'] = [ 'ghost' => [ 'title' => 'Ghost', 'content' => '' ] ];
+
+		$this->expectException( ManifestError::class );
+		$this->expectExceptionMessageMatches( '/page/' );
+		Manifest::fromArray( $raw, '/tmp/theme' );
+	}
+
+	public function test_an_unknown_entry_key_is_a_validation_error() {
+		$raw                                 = $this->raw();
+		$raw['pages']['guide']['front-page'] = true;
+
+		$this->expectException( ManifestError::class );
+		$this->expectExceptionMessageMatches( '/front-page/' );
+		Manifest::fromArray( $raw, '/tmp/theme' );
+	}
+
+	public function test_the_documented_manifest_shape_still_validates() {
+		// The fixture manifest and docs/seeding.md use `version`; rejecting
+		// unknown sections must not reject the ones the product itself ships.
+		$this->assertNotNull( Manifest::fromArray( $this->raw(), '/tmp/theme' ) );
+	}
+
+	public function test_dependency_order_puts_parents_first() {
+		$keys = array_map(
+			static fn( $e ) => $e->key,
+			Manifest::fromArray( $this->raw(), '/tmp/theme' )->entriesInDependencyOrder()
+		);
+		$this->assertLessThan( array_search( 'guide/faq', $keys, true ), array_search( 'guide', $keys, true ) );
+	}
+
+	public function test_missing_title_is_a_validation_error() {
+		$raw = $this->raw();
+		unset( $raw['pages']['home']['title'] );
+
+		$this->expectException( ManifestError::class );
+		$this->expectExceptionMessageMatches( '/pages\.home.*title/' );
+		Manifest::fromArray( $raw, '/tmp/theme' );
+	}
+
+	public function test_both_pattern_and_content_is_a_validation_error() {
+		$raw                            = $this->raw();
+		$raw['pages']['guide']['pattern'] = 'pediment/prose-article';
+
+		$this->expectException( ManifestError::class );
+		$this->expectExceptionMessageMatches( '/pattern.*content/i' );
+		Manifest::fromArray( $raw, '/tmp/theme' );
+	}
+
+	public function test_neither_pattern_nor_content_is_a_validation_error() {
+		$raw = $this->raw();
+		unset( $raw['pages']['guide']['content'] );
+
+		$this->expectException( ManifestError::class );
+		$this->expectExceptionMessageMatches( '/pattern.*content/i' );
+		Manifest::fromArray( $raw, '/tmp/theme' );
+	}
+
+	public function test_unknown_parent_is_a_validation_error() {
+		$raw                                = $this->raw();
+		$raw['pages']['guide/faq']['parent'] = 'nope';
+
+		$this->expectException( ManifestError::class );
+		$this->expectExceptionMessageMatches( '/nope/' );
+		Manifest::fromArray( $raw, '/tmp/theme' );
+	}
+
+	public function test_parent_cycle_is_a_validation_error() {
+		$raw = [
+			'pages' => [
+				'a' => [ 'title' => 'A', 'content' => '', 'parent' => 'b' ],
+				'b' => [ 'title' => 'B', 'content' => '', 'parent' => 'a' ],
+			],
+		];
+
+		$this->expectException( ManifestError::class );
+		$this->expectExceptionMessageMatches( '/cycle/i' );
+		Manifest::fromArray( $raw, '/tmp/theme' );
+	}
+
+	public function test_self_parent_cycle_is_a_validation_error() {
+		$raw = [
+			'pages' => [
+				'a' => [ 'title' => 'A', 'content' => '', 'parent' => 'a' ],
+			],
+		];
+
+		$this->expectException( ManifestError::class );
+		$this->expectExceptionMessageMatches( '/cycle/i' );
+		Manifest::fromArray( $raw, '/tmp/theme' );
+	}
+
+	public function test_a_key_reused_across_sections_is_a_validation_error() {
+		$raw                    = $this->raw();
+		$raw['posts']['home']   = [ 'title' => 'Clash', 'content' => '' ];
+
+		$this->expectException( ManifestError::class );
+		$this->expectExceptionMessageMatches( '/duplicate seed key/i' );
+		Manifest::fromArray( $raw, '/tmp/theme' );
+	}
+
+	public function test_more_than_one_front_page_is_a_validation_error() {
+		$raw                                = $this->raw();
+		$raw['pages']['guide']['front_page'] = true;
+
+		$this->expectException( ManifestError::class );
+		$this->expectExceptionMessageMatches( '/front_page/i' );
+		Manifest::fromArray( $raw, '/tmp/theme' );
+	}
+
+	public function test_more_than_one_posts_page_is_a_validation_error() {
+		$raw                               = $this->raw();
+		$raw['pages']['guide']['posts_page'] = true;
+
+		$this->expectException( ManifestError::class );
+		$this->expectExceptionMessageMatches( '/posts_page/i' );
+		Manifest::fromArray( $raw, '/tmp/theme' );
+	}
+
+	public function test_media_paths_resolve_against_the_manifest_directory() {
+		$dir = get_temp_dir() . 'pediment-manifest-test';
+		wp_mkdir_p( $dir . '/seed/media' );
+		file_put_contents( $dir . '/seed/media/logo.svg', '<svg xmlns="http://www.w3.org/2000/svg"/>' );
+
+		$m = Manifest::fromArray(
+			[ 'media' => [ 'logo' => [ 'file' => 'seed/media/logo.svg', 'title' => 'Logo' ] ], 'site' => [ 'logo' => 'logo' ] ],
+			$dir
+		);
+
+		$this->assertSame( $dir . '/seed/media/logo.svg', $m->media()['logo']->file );
+		$this->assertSame( 'logo', $m->siteLogo() );
+	}
+
+	public function test_missing_media_file_is_a_validation_error() {
+		$this->expectException( ManifestError::class );
+		$this->expectExceptionMessageMatches( '/gone\.jpg/' );
+		Manifest::fromArray( [ 'media' => [ 'x' => [ 'file' => 'seed/media/gone.jpg' ] ] ], '/tmp/theme' );
+	}
+
+	public function test_site_logo_must_reference_a_declared_media_key() {
+		$this->expectException( ManifestError::class );
+		$this->expectExceptionMessageMatches( '/logo/i' );
+		Manifest::fromArray( [ 'site' => [ 'logo' => 'nope' ] ], '/tmp/theme' );
+	}
+
+	public function test_nav_items_must_reference_declared_entries() {
+		$raw         = $this->raw();
+		$raw['navs'] = [ 'primary' => [ 'title' => 'Primary', 'items' => [ [ 'entry' => 'ghost' ] ] ] ];
+
+		$this->expectException( ManifestError::class );
+		$this->expectExceptionMessageMatches( '/ghost/' );
+		Manifest::fromArray( $raw, '/tmp/theme' );
+	}
+
+	public function test_post_types_are_parsed_with_sane_defaults() {
+		$m = Manifest::fromArray(
+			[ 'post_types' => [ 'listing' => [ 'label' => 'Listings', 'has_archive' => true ] ] ],
+			'/tmp/theme'
+		);
+		$spec = $m->postTypes()['listing'];
+
+		$this->assertSame( 'listing', $spec->slug );
+		$this->assertTrue( $spec->args['public'] );
+		$this->assertTrue( $spec->args['show_in_rest'], 'CPT entries must be block-editable' );
+		$this->assertSame( 'Listings', $spec->args['label'] );
+	}
+
+	public function test_load_returns_null_without_a_theme_manifest_and_honours_the_filter() {
+		// The active theme in this shared test install is not this test's to
+		// control — another theme in the environment (e.g. the e2e fixture
+		// theme) may legitimately ship a real seed/manifest.php. Point at an
+		// empty temp directory so "no manifest" is guaranteed, not incidental.
+		$dir = get_temp_dir() . 'pediment-manifest-none';
+		wp_mkdir_p( $dir );
+		add_filter( 'stylesheet_directory', static fn() => $dir );
+		Manifest::resetCache();
+
+		$this->assertNull( Manifest::load() );
+
+		Manifest::resetCache();
+		add_filter( 'pediment_seed_manifest', fn() => $this->raw() );
+		$m = Manifest::load();
+		remove_all_filters( 'pediment_seed_manifest' );
+		remove_all_filters( 'stylesheet_directory' );
+
+		$this->assertNotNull( $m );
+		$this->assertCount( 5, $m->entries() );
+	}
+}

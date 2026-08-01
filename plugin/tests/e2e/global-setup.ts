@@ -3,7 +3,7 @@ const WP_ENV_CWD = process.env.WP_ENV_CWD || process.cwd();
 
 /**
  * Prepare the wp-env site so the e2e suite is deterministic:
- * active fixture theme, pretty permalinks, inline demo fixtures (pages/posts/nav/logo),
+ * active fixture theme, pretty permalinks, manifest-seeded demo content (pages/posts/nav/logo),
  * static front page, dismissed editor welcome guides (otherwise the Site/Post
  * Editor never attaches its canvas iframe on a fresh wp-env, hanging every
  * editor-canvas test). Idempotent — safe to run repeatedly.
@@ -27,11 +27,9 @@ export default async function globalSetup(): Promise< void > {
 
 	wp( `rewrite structure '/%postname%/' --hard` );
 
-	// Build the minimal demo content the suite depends on. The standalone
-	// `wp pediment seed` command was removed when seeding moved to the child
-	// theme; these fixtures source canonical page markup from the registered
-	// patterns. eval-file runs inside the container against the mapped plugin dir.
-	wp( `eval-file wp-content/plugins/pediment-ai/tests/e2e/fixtures.php` );
+	// Content comes from the fixture theme's seed manifest, applied by the real
+	// engine — the suite exercises `wp pediment seed` on every run.
+	wp( `pediment seed` );
 
 	wp( `rewrite flush --hard` );
 

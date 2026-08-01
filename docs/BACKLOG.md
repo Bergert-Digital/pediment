@@ -20,6 +20,20 @@ _(none currently known — verify by running a user-journey audit)_
 
 ## 🟢 Medium
 
+- [ ] **Seeding follow-ups from the step-3 final review.** Neither blocks a merge, both
+  were parked deliberately: (a) a site that already carries a trashed nav *and* a
+  re-created one under the same seed key now aborts the whole run on duplicate identity
+  until an operator deletes the trashed row — correct behaviour, but an upgrade surprise
+  worth a release note; (b) `--dry-run` prints unresolved-media problems under a
+  `VERIFICATION FAILED` heading even though phase 5 never ran — the finding is real and
+  pre-write, the heading is not.
+- [ ] **Seeding gaps the plan deferred.** A dry run says nothing about front-page, term,
+  or site-logo drift (the Applier owns those and they produce no plan items); terms are
+  create-only by design, so a manifest-side term change is never applied to an existing
+  entry; `post_author` is 0 for entries created under WP-CLI; `adopt` does not map sized
+  image variants or `srcset` entries back to `{{media_*}}` placeholders. All are
+  documented in [docs/seeding.md](seeding.md) — revisit when migration step 6 shows which
+  actually hurt.
 - [ ] **History purge of the removed `docs/images/*.jpg`.** The 11 tracked Unsplash JPEGs
   (~46 MB) were `git rm`'d going forward (monorepo step 1, Task 7) but still bloat every
   clone via history. A full purge (`git filter-repo` or similar) would force-push and
