@@ -249,6 +249,17 @@ final class Applier {
 	 * broke by hand, and what links a language added later to the ones that
 	 * were already there.
 	 *
+	 * Known consequence, not a bug fixed here: $ids excludes ORPHAN items
+	 * (mapKeys the current manifest no longer generates) even when their
+	 * postId is still valid, and DesiredState crosses every seed key with
+	 * every configured language. So dropping a language from both the
+	 * manifest and Polylang's own config in the same run — passing the
+	 * Runner's gate because the two sets still match — turns every post in
+	 * that language into an ORPHAN everywhere at once, drops it out of every
+	 * key's map here, and pll_save_post_translations() then unlinks it from
+	 * its group site-wide, even though the plan reports those posts as left
+	 * in place. See docs/BACKLOG.md (Medium, step-4 Task 10 review).
+	 *
 	 * @param array<string,int> $ids mapKey => post ID
 	 */
 	private function linkTranslationGroups( array $ids ): void {
@@ -259,6 +270,10 @@ final class Applier {
 
 		$byKey = [];
 		foreach ( $ids as $mapKey => $postId ) {
+			// array_pad(explode('|', ...), 2, '') does not truncate if a seed key
+			// or language code ever contained '|' itself — not reachable today
+			// (both come from manifest identifiers), flagged in case a future
+			// caller feeds this the same shape with looser input.
 			[ $key, $language ] = array_pad( explode( '|', (string) $mapKey ), 2, '' );
 			if ( '' === $language || $postId <= 0 ) {
 				continue;
