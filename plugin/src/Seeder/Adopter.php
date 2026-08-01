@@ -64,8 +64,7 @@ final class Adopter {
 
 		$default  = $this->lang->defaultLanguage();
 		$pattern  = (string) $spec->patternFor( $language, $default );
-		$stemBits = explode( '/', (string) $spec->pattern );
-		$stem     = (string) end( $stemBits );
+		$stem     = $this->fileStem( $pattern, $language );
 		$suffix   = ( '' === $language || $language === $default ) ? '' : '.' . $language;
 		$file     = untrailingslashit( $manifest->baseDir() ) . '/patterns/' . $stem . $suffix . '.php';
 		$media    = ( new MediaSeeder() )->map( $manifest );
@@ -142,6 +141,29 @@ final class Adopter {
 		);
 
 		return [ 'path' => $file, 'bytes' => strlen( $contents ), 'written' => true, 'backup' => $backup, 'errors' => [], 'warnings' => $warnings ];
+	}
+
+	/**
+	 * `theme/sample-post-de` -> `sample-post` — the file stem the on-disk
+	 * naming convention uses. Derived from the SAME `$pattern` value that
+	 * becomes the file's `Slug:` header (patternFor()'s resolved value, which
+	 * may be a per-language override, not always `$spec->pattern`) — a stem
+	 * computed from `$spec->pattern` instead would diverge from the header
+	 * whenever a per-language `pattern` override is declared, breaking the
+	 * documented "filename and Slug suffix must agree" convention the next
+	 * seed relies on to find the file again. Mirrors
+	 * DesiredState::fileStem()'s exact stripping rule (strip the known
+	 * `-<language>` suffix, not the last hyphen run, which would eat a real
+	 * multi-word stem like `contact-page`).
+	 */
+	private function fileStem( string $pattern, string $language ): string {
+		$parts  = explode( '/', $pattern );
+		$last   = (string) end( $parts );
+		$suffix = '-' . $language;
+		if ( '' !== $language && str_ends_with( $last, $suffix ) ) {
+			return substr( $last, 0, -strlen( $suffix ) );
+		}
+		return $last;
 	}
 
 	/** The bytes the pattern registry will see, produced the way it produces them. */
