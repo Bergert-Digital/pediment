@@ -51,6 +51,11 @@ final class Runner {
 			);
 		}
 
+		$mismatch = $this->languageMismatch( $manifest );
+		if ( null !== $mismatch ) {
+			return new RunResult( new Plan(), false, $manifest->path(), [ $mismatch ] );
+		}
+
 		$mediaSeeder = new MediaSeeder();
 		$navSeeder   = new NavSeeder( $this->lang );
 		$mediaPlan   = $mediaSeeder->plan( $manifest );
@@ -139,6 +144,43 @@ final class Runner {
 			}
 		}
 		return $problems;
+	}
+
+	/**
+	 * Whether the configured languages disagree with the manifest's.
+	 *
+	 * Seeding into a language set the site does not actually have is the
+	 * failure this returns instead of: content written with no language, which
+	 * is invisible to every translation lookup and has previously removed a
+	 * live site's navigation outright. The manifest is the declaration; the
+	 * plugin's configuration must already match it (spec §4.3).
+	 *
+	 * @return string|null The operator-facing message, or null when they agree.
+	 */
+	private function languageMismatch( Manifest $manifest ): ?string {
+		$declared = array_keys( $manifest->languages() );
+
+		// A monolingual manifest imposes nothing: a site may run Polylang for
+		// reasons of its own and still seed a single-language theme.
+		if ( [] === $declared ) {
+			return null;
+		}
+
+		$configured = $this->lang->languages();
+		sort( $declared );
+
+		$sortedConfigured = $configured;
+		sort( $sortedConfigured );
+
+		if ( $declared === $sortedConfigured ) {
+			return null;
+		}
+
+		return sprintf(
+			'Language mismatch: the manifest declares [%s] but this site has [%s] configured. Run `wp pediment languages` first — seeding into the wrong language set writes content no translation lookup can find.',
+			implode( ', ', $declared ),
+			'' === implode( '', $configured ) ? 'none' : implode( ', ', $configured )
+		);
 	}
 
 	/** @return array<string,int> mapKey => post ID for entries that already exist */

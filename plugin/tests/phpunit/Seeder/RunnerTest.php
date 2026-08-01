@@ -225,6 +225,22 @@ class RunnerTest extends WP_UnitTestCase {
 		$this->assertTrue( $result->ok(), implode( "\n", array_merge( $result->errors, $result->problems ) ) );
 	}
 
+	public function test_a_manifest_declaring_languages_without_a_multilingual_plugin_is_blocked() {
+		add_filter(
+			'pediment_seed_manifest',
+			static fn() => [
+				'languages' => [ 'en' => [ 'name' => 'English', 'locale' => 'en_US', 'default' => true ], 'de' => [ 'name' => 'Deutsch', 'locale' => 'de_DE' ] ],
+				'pages'     => [ 'home' => [ 'title' => 'Home', 'content' => '' ] ],
+			]
+		);
+		\Pediment\Seeder\Manifest::resetCache();
+
+		$result = ( new Runner() )->run();
+
+		$this->assertFalse( $result->applied );
+		$this->assertNotEmpty( $result->errors );
+	}
+
 	public function test_a_media_plan_error_is_reported_exactly_once() {
 		// A missing file is rejected at manifest load, which never reaches the
 		// media seeder. An unsupported extension on a file that DOES exist is a
