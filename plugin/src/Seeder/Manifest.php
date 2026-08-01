@@ -30,10 +30,13 @@ final class Manifest {
 	private const SECTIONS = [ 'version', 'languages', 'pages', 'posts', 'entries', 'media', 'navs', 'post_types', 'site' ];
 
 	/** Keys an entry may declare. Same reasoning: `front-page` must not be a no-op. */
-	private const ENTRY_KEYS = [ 'title', 'slug', 'parent', 'pattern', 'content', 'post_type', 'front_page', 'posts_page', 'menu_order', 'terms' ];
+	private const ENTRY_KEYS = [ 'title', 'slug', 'parent', 'pattern', 'content', 'post_type', 'front_page', 'posts_page', 'menu_order', 'terms', 'languages' ];
 
 	/** Keys a language may declare. */
 	private const LANGUAGE_KEYS = [ 'name', 'locale', 'flag', 'default' ];
+
+	/** Keys a per-language entry override may declare. */
+	private const TRANSLATION_KEYS = [ 'title', 'slug', 'pattern' ];
 
 	/** @var self|null */
 	private static ?self $cache = null;
@@ -134,7 +137,7 @@ final class Manifest {
 				if ( isset( $entries[ $key ] ) ) {
 					throw new ManifestError( "Duplicate seed key '{$key}' (declared more than once across pages/posts/entries)." ); // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- exception message for the operator, not echoed output.
 				}
-				$entries[ $key ] = self::entry( $section, $key, (array) $declared, $defaultType );
+				$entries[ $key ] = self::entry( $section, $key, (array) $declared, $defaultType, array_keys( $languages ) );
 			}
 		}
 
@@ -281,9 +284,10 @@ final class Manifest {
 
 	/**
 	 * @param array<string,mixed> $declared
+	 * @param string[]            $declaredLanguages
 	 * @throws ManifestError When the entry fails validation.
 	 */
-	private static function entry( string $section, string $key, array $declared, string $defaultType ): EntrySpec {
+	private static function entry( string $section, string $key, array $declared, string $defaultType, array $declaredLanguages = [] ): EntrySpec {
 		foreach ( array_keys( $declared ) as $declaredKey ) {
 			if ( ! in_array( (string) $declaredKey, self::ENTRY_KEYS, true ) ) {
 				throw new ManifestError( "{$section}.{$key}: unknown key '{$declaredKey}'. Allowed: " . implode( ', ', self::ENTRY_KEYS ) . '.' ); // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- exception message for the operator, not echoed output.
@@ -326,6 +330,31 @@ final class Manifest {
 			$terms[ (string) $taxonomy ] = array_values( array_map( 'strval', (array) $slugs ) );
 		}
 
+		$translations = [];
+		foreach ( (array) ( $declared['languages'] ?? [] ) as $language => $override ) {
+			$language = (string) $language;
+			$override = (array) $override;
+
+			if ( ! in_array( $language, $declaredLanguages, true ) ) {
+				throw new ManifestError( "{$section}.{$key}.languages.{$language}: '{$language}' is not a declared site language. Add it to the manifest's `languages` section first." ); // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- exception message for the operator, not echoed output.
+			}
+
+			foreach ( array_keys( $override ) as $overrideKey ) {
+				if ( ! in_array( (string) $overrideKey, self::TRANSLATION_KEYS, true ) ) {
+					throw new ManifestError( "{$section}.{$key}.languages.{$language}: unknown key '{$overrideKey}'. Allowed: " . implode( ', ', self::TRANSLATION_KEYS ) . '.' ); // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- exception message for the operator, not echoed output.
+				}
+			}
+
+			if ( isset( $override['slug'] ) ) {
+				$overrideSlug = (string) $override['slug'];
+				if ( '' === $overrideSlug || sanitize_title( $overrideSlug ) !== $overrideSlug ) {
+					throw new ManifestError( "{$section}.{$key}.languages.{$language}: slug '{$overrideSlug}' is not a valid post slug." ); // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- exception message for the operator, not echoed output.
+				}
+			}
+
+			$translations[ $language ] = array_intersect_key( $override, array_flip( self::TRANSLATION_KEYS ) );
+		}
+
 		return new EntrySpec(
 			$key,
 			$postType,
@@ -337,7 +366,8 @@ final class Manifest {
 			! empty( $declared['front_page'] ),
 			! empty( $declared['posts_page'] ),
 			(int) ( $declared['menu_order'] ?? 0 ),
-			$terms
+			$terms,
+			$translations
 		);
 	}
 
