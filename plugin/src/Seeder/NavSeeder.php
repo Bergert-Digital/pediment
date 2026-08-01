@@ -287,7 +287,8 @@ final class NavSeeder {
 	 * @param array<string,int> $ids navKey|language => post ID
 	 */
 	private function linkTranslationGroups( array $ids ): void {
-		if ( count( $this->lang->languages() ) < 2 ) {
+		$languages = $this->lang->languages();
+		if ( count( $languages ) < 2 ) {
 			return;
 		}
 
@@ -305,6 +306,20 @@ final class NavSeeder {
 		}
 
 		foreach ( $byKey as $map ) {
+			// Same fix as Applier::linkTranslationGroups(), applied here
+			// separately by explicit decision (see this class's own top
+			// docblock): a map missing even one configured language must
+			// never reach linkTranslations(), or an ordinary write failure
+			// (one language's create errors while the others succeed)
+			// silently unlinks whichever language got left out of a group
+			// that already existed. count($map) >= 2 let a 2-of-3 map
+			// through; only "covers every configured language" is safe. This
+			// does not change the documented empty-language-bucket
+			// consequence above: there, $languages shrinks along with the
+			// map, so the count still matches.
+			if ( count( $map ) !== count( $languages ) ) {
+				continue;
+			}
 			$this->lang->linkTranslations( $map );
 		}
 	}

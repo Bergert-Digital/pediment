@@ -63,14 +63,27 @@ final class PolylangProvider implements LanguageProvider {
 	}
 
 	/**
+	 * Whether a post carries a language term at all.
+	 *
+	 * `pll_get_post_language()` returns `false`, not `''`, for a post that
+	 * has no language term at all — that is the one signal Polylang gives
+	 * for "never tagged" as distinct from "tagged with the default
+	 * language," and it is the only thing that makes the untagged-post
+	 * repair in Applier safe to run unconditionally on every seed.
+	 */
+	public function hasLanguage( int $postId ): bool {
+		return $postId > 0 && false !== pll_get_post_language( $postId );
+	}
+
+	/**
 	 * @param array<string,int> $map language code => post ID
 	 */
 	public function linkTranslations( array $map ): void {
 		// pll_save_post_translations() REPLACES the whole group. Handing it a
-		// map containing a 0 files "no post" under a real language key, which
-		// Polylang's validate_translations() then drops — taking whatever post
-		// really held that key out of the group with it. Invisible with two
-		// languages, silent data loss with five.
+		// map that files a 0 — "no post" — under a real language key would let
+		// Polylang's validate_translations() drop that key, taking whatever
+		// post really held it out of the group along with it. Invisible with
+		// two languages, silent data loss with five.
 		$clean = array_filter(
 			$map,
 			static fn( $postId, $language ): bool => is_int( $postId ) && $postId > 0 && '' !== $language,
