@@ -646,11 +646,11 @@ meant to exercise "no language tag at all" is never actually reached, and the te
 passes for the wrong reason.
 **Cause.** `PLL_CRUD_Posts::save_post()` assigns the site's default language to ANY
 post of a translated post type that's saved without one. Once `wp_navigation` is made
-translatable (previous entry), every `wp_navigation` post created through the normal
-factory/insert path — including test fixtures meant to be untagged — is auto-tagged the
-default language on creation, silently. This makes a test non-discriminating without
-making it fail: the assertion still passes, but it's exercising the wrong branch of the
-code under test.
+translatable (see "`wp_navigation` cannot be made translatable by clicking," above),
+every `wp_navigation` post created through the normal factory/insert path — including
+test fixtures meant to be untagged — is auto-tagged the default language on creation,
+silently. This makes a test non-discriminating without making it fail: the assertion
+still passes, but it's exercising the wrong branch of the code under test.
 **Fix.** To model a genuinely untagged post, explicitly strip the language term after
 creation: `wp_delete_object_term_relationships( $id, 'language' )`. See
 `NavBindingTest::test_an_untagged_legacy_nav_is_found_by_the_unscoped_fallback`

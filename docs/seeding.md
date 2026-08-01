@@ -198,7 +198,8 @@ Applier resolves a child's `post_parent` and the front-page option from the
 after its children would try to parent them onto a post that doesn't exist
 yet. A language slug must already be a valid `sanitize_title()` slug (`en`,
 `pt-br`) — Polylang builds URL prefixes from it directly, and it is also the
-literal suffix a derived per-language slug carries (next section).
+literal suffix a derived per-language slug carries ("The derived slug rule,
+and why," below).
 
 ### Per-entry overrides
 
@@ -235,26 +236,31 @@ notice, not a failure (see "Reading a plan" below).
 ### The derived slug rule, and why
 
 A non-default language with no declared `slug` override does **not** reuse
-the default language's slug. It gets `<slug>-<lang>` instead:
+the default language's slug. It gets `<slug>-<lang>` instead. None of the
+fixture manifest's six sample posts
+(`tests/fixtures/client-theme/seed/manifest.php`) declare a `languages`
+override at all, so `sample-insight-one`'s German slug is entirely derived:
 
 ```
-en: about        (declared)
-de: about-de     (derived — no `slug` override in the `de` block above)
+en: sample-insight-one        (declared)
+de: sample-insight-one-de     (derived — this post declares no `languages` override)
 ```
 
 The reason is structural, not cosmetic: **Polylang does not hook
 `wp_unique_post_slug`.** WordPress's own slug-uniquification only fires
 within one language's rows; all top-level pages across every language still
-share one `post_name` namespace regardless of which language owns them. Two
-languages both asking for the literal slug `about` land as `about` and
-`about-2` — indistinguishable from any other slug collision — and once that
-happens `Verifier::verify()` reports a mismatch on every run forever, because
-retrying would just get re-uniquified identically on the next write (see
-"Failure modes" above). `EntrySpec::slugFor()`
-(`plugin/src/Seeder/EntrySpec.php`) and `NavSeeder`'s private `slugFor()`
-(`plugin/src/Seeder/NavSeeder.php`) both apply the same `<key>-<lang>` idiom
-for the same reason — the derived suffix is the language *code*, so `about`
-in `de` becomes `about-de`, not `about-2`.
+share one `post_name` namespace regardless of which language owns them. If
+`slugFor()` instead reused the default's slug verbatim, two languages both
+asking for the literal slug `sample-insight-one` would land as
+`sample-insight-one` and `sample-insight-one-2` — indistinguishable from any
+other slug collision — and once that happens `Verifier::verify()` reports a
+mismatch on every run forever, because retrying would just get
+re-uniquified identically on the next write (see "Failure modes" below).
+`EntrySpec::slugFor()` (`plugin/src/Seeder/EntrySpec.php`) and `NavSeeder`'s
+private `slugFor()` (`plugin/src/Seeder/NavSeeder.php`) both apply the same
+`<key>-<lang>` idiom for the same reason — the derived suffix is the
+language *code*, which is what actually keeps `sample-insight-one-de`
+distinct from `sample-insight-one-2`.
 
 ### The pattern file convention
 
