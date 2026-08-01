@@ -113,20 +113,24 @@ class NavBindingTest extends PolylangTestCase {
 		// an untagged 'primary'-keyed nav exists: mid-migration from a
 		// pre-Task-11 single nav, or one created by hand and never assigned a
 		// language. The unscoped ('') candidate is the safety net for exactly
-		// this gap. This proves the candidate is REACHED under Polylang (it
-		// would not be, against the original `array_filter( [...,  '' ] )`
-		// form that drops '' whenever it collides with a non-empty candidate);
-		// see test_the_unscoped_candidate_queries_with_lang_set_not_omitted()
-		// below for the narrower isset()-vs-empty-string distinction, which
-		// this scenario cannot discriminate (both forms return the same rows
-		// for this exact query shape in this Polylang version — verified by
-		// instrumenting `parse_query`, see the fix report).
+		// this gap.
 		wp_delete_post( $this->en, true );
 		wp_delete_post( $this->de, true );
 
 		$legacy = self::factory()->post->create( [ 'post_type' => 'wp_navigation', 'post_title' => 'Legacy Primary', 'post_status' => 'publish' ] );
 		update_post_meta( $legacy, Meta::KEY, 'primary' );
-		// Deliberately no pll_set_post_language() call.
+
+		// `wp_navigation` is a translated post type (inc/polylang-compat.php),
+		// so PLL_CRUD_Posts::save_post() auto-assigns the default language to
+		// ANY post of a translated type saved without one — the factory's
+		// create() call above already left $legacy tagged 'en', not untagged.
+		// A genuinely pre-Polylang legacy nav has no language term at all, so
+		// the auto-assignment has to be undone explicitly to model that state;
+		// without this line the scoped 'en' candidate finds the post first and
+		// the unscoped ('') candidate this test means to exercise is never
+		// reached — which is why earlier attempts at this test passed against
+		// both the fixed and the pre-fix code and proved nothing.
+		wp_delete_object_term_relationships( $legacy, 'language' );
 
 		$this->switchTo( 'en' );
 
@@ -140,14 +144,13 @@ class NavBindingTest extends PolylangTestCase {
 	 * whether a query is already language-scoped by `isset( $qvars['lang'] )`
 	 * alone — an empty string counts, an absent key does not. Omitting the
 	 * key for the unscoped candidate therefore hands Polylang's own
-	 * current-language auto-scoping a query it thinks nobody has claimed yet.
-	 * This asserts pediment_seeded_nav_id( '' ) sets `lang` explicitly rather
-	 * than omitting it, which is the one part of that contract this suite can
-	 * verify with certainty: instrumenting `parse_query` (see the fix report)
-	 * shows Polylang's own resulting tax_query mutation does not survive into
-	 * this call's SQL in this Polylang version either way, so the two forms
-	 * are not distinguishable by their query RESULTS here — only by the args
-	 * actually sent, which is what this test checks.
+	 * current-language auto-scoping a query it thinks nobody has claimed yet,
+	 * which is what test_an_untagged_legacy_nav_is_found_by_the_unscoped_fallback()
+	 * above exercises end to end. This is a narrower, supplementary check of
+	 * the same fix: it asserts pediment_seeded_nav_id( '' ) sends `lang => ''`
+	 * explicitly rather than omitting the key, which is the literal condition
+	 * the source-level reasoning above turns on, independent of any particular
+	 * fixture's data.
 	 */
 	public function test_the_unscoped_candidate_queries_with_lang_set_not_omitted() {
 		$seen = null;
