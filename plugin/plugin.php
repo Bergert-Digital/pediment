@@ -53,6 +53,11 @@ require_once PEDIMENT_AI_PLUGIN_DIR . '/inc/layout-variations.php';
 require_once PEDIMENT_AI_PLUGIN_DIR . '/inc/nav-active.php';
 require_once PEDIMENT_AI_PLUGIN_DIR . '/inc/mega-menu.php';
 
+// Polylang cannot be told wp_navigation is translatable by clicking anything
+// in its UI (step 4 of the language-provider migration); this filter is the
+// only path, and it is a no-op when Polylang is inactive.
+require_once PEDIMENT_AI_PLUGIN_DIR . '/inc/polylang-compat.php';
+
 // Templates, patterns (incl. the footer pattern), the header-seeding
 // bootstrap, and global CSS/JS enqueues moved from the theme (Task 6 of the
 // plugin-absorbs-theme migration): the theme.json tokens (Pediment\Tokens\Injector)
