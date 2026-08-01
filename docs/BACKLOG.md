@@ -130,6 +130,35 @@ _(none currently known — verify by running a user-journey audit)_
   first-party declaration in `block.json` itself (e.g. an `x-translatable: false` flag on
   the attribute) over both the regex heuristic and the out-of-band list.
 
+- [ ] **`Runner::languageMismatch()` sorts language codes with plain `sort()`.**
+  Found by the final review of migration step 4. Byte-order comparison, not
+  locale-aware (`SORT_LOCALE_STRING`/`Collator`) — harmless today because every
+  language slug is lowercase ASCII (`Manifest::parseLanguages()` requires
+  `sanitize_title($slug) === $slug`), but worth a second look if that
+  constraint ever loosens (e.g. a slug containing digits or extra hyphens
+  sorting unintuitively next to a plain two-letter code).
+- [ ] **`wp pediment adopt --language=<code>` does not validate the code
+  against the site's configured languages.** Found by the final review of
+  migration step 4. Today an unrecognised code fails downstream, inside
+  `Adopter::adopt()`, with "No seeded post carries the key" — technically
+  correct but not the clearest message for what is actually a bad `--language`
+  value; validating against `LanguageRegistry::provider()->languages()` before
+  calling `Adopter` would fail faster and say so directly.
+- [ ] **`linkTranslationGroups()` sits on opposite sides of the Kses-suspended
+  region in `Applier` and `NavSeeder`.** Found by the final review of
+  migration step 4. `NavSeeder::apply()` calls it INSIDE the `try` block,
+  before `Kses::restore()` runs in `finally`; `Applier::apply()` calls it
+  AFTER the `finally` block has already restored Kses. `pll_save_post_translations()`
+  can call `wp_insert_term()` with a serialized-array `description`, and term
+  descriptions go through the same `kses_init_filters()`-installed filtering
+  under WP-CLI (no current user) that motivates suspending Kses around
+  `post_content` writes elsewhere in both classes. Not shown to cause an
+  actual corruption in either position by this review — the description is
+  `maybe_serialize()`d PHP, not block-comment markup, so this may be a
+  non-issue — but the two classes disagree on placement for what is
+  documented as "the same rule" in both docblocks, and that alone is worth
+  resolving one way or the other rather than leaving accidental.
+
 ## 🔵 Ideas / later
 
 - [ ] Pattern coverage: only 3 patterns exist (`contact-page`, `hero-cta-faq`,
