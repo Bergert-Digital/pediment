@@ -43,7 +43,7 @@ const NON_PROSE = new Set( [
 	'pediment/feature.icon', // icon-library slug passed to pediment_icon(), not text
 	'pediment/form.destination', // id of a configured form destination (see inc/forms-destinations.php)
 	'pediment/form-field.fieldType', // closed set of field-kind tokens: text/email/tel/textarea/select/checkbox/radio/number/date
-	'pediment/form-field.fieldName', // slugified into the rendered <input name>, not shown to visitors
+	'pediment/form-field.fieldName', // a form-field identifier, slug-cased rather than prose (slugified into the rendered <input name>) — but render.php:29 falls back to it as the visible label when `label` is left empty, so it does surface to visitors on that path
 	'pediment/media-text.mediaPosition', // layout token: 'left' | 'right'
 	'pediment/section-head.maxWidth', // raw CSS length (e.g. "600px"), fed to safecss_filter_attr()
 	'pediment/slider.mediaPosition', // layout token: 'left' | 'right'

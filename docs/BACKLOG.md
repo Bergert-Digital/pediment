@@ -88,6 +88,21 @@ _(none currently known — verify by running a user-journey audit)_
   Phosphor catalog (virtualized list + search from B's icon-name manifest), wired into
   `pediment/mega-link`'s `icon` attribute and reusable across blocks. Depends on B; until
   then the field is a relocated `TextControl`. Deferred from sub-project A.
+- [ ] **`tools/generate-wpml-config.mjs`'s translatability heuristics need a first-party
+  declaration mechanism.** Found by review during migration step 4, Task 14. Two related
+  gaps, both accepted for now because the task's edit scope forbade touching block.json
+  attributes outside adding `items` to arrays: (a) `isReference()`'s `/ids?$/i` matches
+  any string attribute ending in `id`/`ids`, not just a camelCase `Id`/`Ids` suffix —
+  nothing currently triggers this, but a future attribute named e.g. `grid` or `valid`
+  would be silently excluded from translation with no explanation; (b) the `NON_PROSE`
+  denylist of known-non-prose scalar attributes (icon slugs, layout tokens, colors, CSS
+  lengths, reference ids that don't match the `Id`/`Ids` suffix) lives in the generator
+  script itself rather than in each block's own `block.json` — correct under the current
+  constraint, but a future block with a similar non-prose string attribute will be
+  silently marked translatable until someone remembers to update a list in a file block
+  authors have no reason to open. Once the edit-scope constraint is lifted, prefer a
+  first-party declaration in `block.json` itself (e.g. an `x-translatable: false` flag on
+  the attribute) over both the regex heuristic and the out-of-band list.
 
 ## 🔵 Ideas / later
 
