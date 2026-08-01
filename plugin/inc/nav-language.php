@@ -36,16 +36,28 @@ function pediment_seeded_nav_id( string $language ): int {
 		'posts_per_page' => 1,
 		'no_found_rows'  => true,
 		'fields'         => 'ids',
+		// Oldest wins on a tie. NavSeeder::plan() reports a duplicate seed key
+		// as an error rather than letting one through, so this ordering exists
+		// only to make an already-broken state deterministic instead of
+		// leaving it to the database's unspecified default order.
 		'orderby'        => 'ID',
 		'order'          => 'ASC',
 		// phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key -- indexed seed-identity lookup, once per request.
 		'meta_key'       => \Pediment\Seeder\Meta::KEY,
 		'meta_value'     => 'primary', // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_value -- see above.
+		// Set unconditionally, including '' for the unscoped lookup. Polylang's
+		// PLL_Query::is_already_filtered() (src/query.php) treats
+		// isset( $qvars['lang'] ) — not its value — as "the caller has already
+		// decided the language scope"; omitting the key for '' would leave that
+		// check false and hand the query to Polylang's own current-language
+		// auto-scoping instead, defeating the point of an unscoped lookup. Same
+		// idiom as LanguageProvider::unscopedQuery(). Instrumented verification
+		// of this exact call shape did not show the auto-scoping actually
+		// altering the returned rows in this Polylang version (see the task-12
+		// report), but matching the documented contract and the codebase's own
+		// precedent costs nothing and removes the dependency on that detail.
+		'lang'           => $language,
 	];
-
-	if ( '' !== $language ) {
-		$args['lang'] = $language;
-	}
 
 	$found = get_posts( $args );
 
