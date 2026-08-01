@@ -364,3 +364,85 @@ band's wrapper, head, alignwide, feature grid, columns, h2, kicker. The side-by-
 **Catch it early.** Re-run the audit when you finish a fix; compare metrics.json
 before/after; only claim "matches the mockup" when the screenshots agree visually AND
 the metrics agree numerically.
+
+---
+
+## Hashing seeded content before the write disables all future updates
+
+**Symptom.** Every page reports "protected" on the first re-seed after the initial seed,
+even though nothing was ever edited in the editor.
+**Cause.** WordPress normalizes markup on write (KSES, wptexturize, block-comment
+round-trips), so a hash computed from the intended input never matches a hash computed
+from the persisted row — the two diverge on the very first write, and every page looks
+client-edited forever after.
+**Fix.** Hash the row WordPress actually stored, after the write:
+`ContentHash::forPost()` (`plugin/src/Seeder/ContentHash.php`). A separate hash,
+`_pediment_seed_source`, is computed from the git-side input and answers a different
+question ("did the manifest change?") — never conflate the two.
+**Catch it early.** `ApplierTest::test_reseeding_unchanged_content_plans_nothing`.
+
+---
+
+## KSES is active under WP-CLI and mangles block-comment JSON
+
+**Symptom.** Seeded pages render as raw markup on the front end, or the request fatals
+in `block-supports/align.php`.
+**Cause.** `kses_init_filters()` is normally only active for logged-in users without
+`unfiltered_html`; under WP-CLI there is no current user, so it runs on every
+`wp_insert_post()` / `wp_update_post()` call and strips the backslashes out of
+block-attribute JSON.
+**Fix.** `Applier::apply()` suspends KSES for the duration of the write
+(`Kses::suspend()` / `Kses::restore()`, `plugin/src/Seeder/Kses.php`), and every write
+goes through `wp_slash()` first — seeded content is git-authored, not user input.
+**Catch it early.** `ApplierTest::test_block_attribute_json_survives_the_write`.
+
+---
+
+## WordPress uniquifies a colliding post slug and the seeder looks successful
+
+**Symptom.** A page seeded with slug `about` ends up served at `/about-2/`, with no
+error anywhere in the seed report.
+**Cause.** `wp_unique_post_slug()` silently renames a colliding slug instead of
+erroring; a plan/apply step that only checks for a WP_Error return sees success.
+**Fix.** The Verifier re-reads `post_name` after the write and compares it against the
+manifest's declared slug, reporting a problem instead of retrying forever (a retry would
+rewrite the row — and get uniquified again — on every single run without converging).
+See `Applier::assertSlug()` and `Verifier::verify()` in `plugin/src/Seeder/`.
+**Catch it early.** `VerifierTest::test_a_uniquified_slug_is_a_problem`.
+
+---
+
+## `get_post_status()` resolves an unattached attachment's raw status to `publish`
+
+**Symptom.** A test asserts an attachment was "restored from trash" by checking
+`get_post_status()`, and the assertion passes even when the restore silently failed to
+flip the row back to `inherit`.
+**Cause.** `get_post_status()` has special-case logic for attachments: an `inherit`
+status with no living parent post resolves to `publish` for display purposes. That
+resolution hides the real stored value from anything that trusts the helper.
+**Fix.** Read the raw column instead: `get_post_field( 'post_status', $id )`. Restoring
+a trashed attachment writes `post_status = 'inherit'` directly
+(`plugin/src/Seeder/MediaSeeder.php`); assert against that literal value, not the
+resolved one.
+**Catch it early.** `MediaSeederTest::test_a_trashed_attachment_is_restored_rather_than_re_uploaded`.
+
+---
+
+## A theme's `patterns/` header metadata is cached for 30 minutes
+
+**Symptom.** `wp pediment adopt` writes a brand-new pattern file to the theme's
+`patterns/` directory, but the very next request (including the next `wp pediment seed`
+in the same test run) still can't find it — `ContentResolver` reports the pattern as
+unregistered.
+**Cause.** WordPress caches a theme's scanned pattern-file headers in a site transient
+for 30 minutes so it isn't re-reading every pattern file's docblock on every request. A
+file written after that scan populated is invisible until the transient expires or is
+explicitly cleared.
+**Fix.** `Adopter::adopt()` calls `wp_get_theme()->delete_pattern_cache()` right after
+writing the file, before returning.
+**Catch it early.** `AdopterTest::test_the_next_seed_sees_an_adopted_page_as_unchanged`
+models a fresh request's pattern re-scan and asserts the follow-up `Runner` run plans
+nothing. PHPUnit runs the write and the re-seed in one process, so it can't reproduce the
+real cross-process cache staleness — after touching `Adopter`, also manually verify with
+two separate `wp` invocations: `wp pediment adopt <key>` then `wp pediment seed --dry-run`
+and confirm the adopted pattern resolves instead of reporting "not registered".
