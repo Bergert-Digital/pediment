@@ -27,6 +27,22 @@ _(none currently known — verify by running a user-journey audit)_
   worth a release note; (b) `--dry-run` prints unresolved-media problems under a
   `VERIFICATION FAILED` heading even though phase 5 never ran — the finding is real and
   pre-write, the heading is not.
+- [ ] **A coordinated language removal silently unlinks that language's translation
+  groups.** Found by review during migration step 4, Task 10. `Applier::apply()` excludes
+  `ORPHAN` plan items from the ID map it hands to `linkTranslationGroups()`, even when
+  their `postId` is still valid; `DesiredState` crosses every seed key with every
+  configured language, so a single language cannot go missing for one isolated page — but
+  dropping a language from both the manifest and Polylang's own config in the same run
+  passes the Runner's language gate (the two sets still match), and every post in that
+  language becomes `ORPHAN` everywhere at once. Each key's map then omits that language,
+  and `pll_save_post_translations()` replaces group membership, unlinking those posts
+  site-wide — even though the plan reports them as `orphan`, i.e. "left in place." A
+  `--dry-run` does not surface this: it shows the same `orphan` line it always shows for a
+  manifest-dropped key, which reads as "nothing happened," not "this post is about to lose
+  its translation-group membership." Fix, if wanted, is either to preserve group
+  membership for no-longer-configured languages, or to report the unlinking as an explicit
+  plan item. Narrow and deliberate-removal-only, not a routine-editing risk — not fixed
+  here on purpose.
 - [ ] **Seeding gaps the plan deferred.** A dry run says nothing about front-page, term,
   or site-logo drift (the Applier owns those and they produce no plan items); terms are
   create-only by design, so a manifest-side term change is never applied to an existing
