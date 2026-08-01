@@ -2,44 +2,9 @@
 
 use Pediment\Language\PolylangProvider;
 
-class PolylangProviderTest extends WP_UnitTestCase {
+class PolylangProviderTest extends PolylangTestCase {
 
 	private PolylangProvider $provider;
-
-	/**
-	 * The core test framework's tear_down_after_class() calls the shared
-	 * `_delete_all_data()` helper after every WP_UnitTestCase class finishes,
-	 * and that helper deletes every taxonomy term except term_id 1 — then
-	 * COMMITS the deletion (it is not part of the per-test rollback). That
-	 * permanently wipes the en/de language terms tests/polylang/bootstrap.php
-	 * seeded, for any test class that is not the first one PHPUnit happens to
-	 * run. Polylang's own in-memory language cache survives the wipe (it is
-	 * plain PHP state, unaffected by a DB DELETE), so pll_languages_list()
-	 * keeps reporting en/de as if nothing happened while the underlying terms
-	 * are gone — wp_set_object_terms() then silently no-ops against term IDs
-	 * that no longer exist. Reseed defensively so this class doesn't depend on
-	 * running before/after any particular sibling class.
-	 *
-	 * @param WP_UnitTest_Factory $factory
-	 */
-	public static function wpSetUpBeforeClass( $factory ): void {
-		if ( [] !== get_terms( [ 'taxonomy' => 'language', 'hide_empty' => false, 'fields' => 'ids' ] ) ) {
-			return;
-		}
-
-		$seed_model = new PLL_Model( new \WP_Syntex\Polylang\Options\Options() );
-
-		foreach ( [
-			[ 'slug' => 'en', 'name' => 'English', 'locale' => 'en_US', 'flag' => 'gb', 'rtl' => 0, 'term_group' => 0 ],
-			[ 'slug' => 'de', 'name' => 'Deutsch', 'locale' => 'de_DE', 'flag' => 'de', 'rtl' => 0, 'term_group' => 1 ],
-		] as $language ) {
-			$seed_model->add_language( $language );
-		}
-
-		PLL()->options->merge( [ 'default_lang' => 'en', 'hide_default' => 1, 'force_lang' => 1, 'media_support' => 0 ] );
-		PLL()->options->save();
-		PLL()->model->clean_languages_cache();
-	}
 
 	public function set_up(): void {
 		parent::set_up();

@@ -18,6 +18,7 @@ if ( ! defined( 'WP_TESTS_PHPUNIT_POLYFILLS_PATH' ) ) {
 }
 
 require_once $_tests_dir . '/includes/functions.php';
+require_once __DIR__ . '/language-definitions.php';
 
 tests_add_filter( 'muplugins_loaded', function () {
 	$polylang = WP_PLUGIN_DIR . '/polylang/polylang.php';
@@ -47,10 +48,7 @@ tests_add_filter( 'muplugins_loaded', function () {
 	add_action( 'pll_init_options_for_blog', array( \WP_Syntex\Polylang\Options\Registry::class, 'register' ) );
 	$seed_model = new PLL_Model( new \WP_Syntex\Polylang\Options\Options() );
 
-	foreach ( [
-		[ 'slug' => 'en', 'name' => 'English', 'locale' => 'en_US', 'flag' => 'gb', 'rtl' => 0, 'term_group' => 0 ],
-		[ 'slug' => 'de', 'name' => 'Deutsch', 'locale' => 'de_DE', 'flag' => 'de', 'rtl' => 0, 'term_group' => 1 ],
-	] as $language ) {
+	foreach ( pediment_test_language_definitions() as $language ) {
 		$seed_model->add_language( $language );
 	}
 
@@ -59,6 +57,15 @@ tests_add_filter( 'muplugins_loaded', function () {
 } );
 
 require $_tests_dir . '/includes/bootstrap.php';
+
+/*
+ * WP_UnitTestCase exists now, so the shared base every class in this
+ * directory extends can be declared. It has to be required here rather than
+ * autoloaded: these test classes are not namespaced, so Composer's PSR-4
+ * autoloading (which only covers src/) doesn't reach them, and it must be
+ * declared before PHPUnit `include_once`s any file that extends it.
+ */
+require __DIR__ . '/PolylangTestCase.php';
 
 do_action( 'rest_api_init' );
 
@@ -79,5 +86,5 @@ PLL()->model->clean_languages_cache();
 
 /** @return string[] The slugs this harness configured. */
 function pediment_test_languages(): array {
-	return [ 'en', 'de' ];
+	return wp_list_pluck( pediment_test_language_definitions(), 'slug' );
 }
