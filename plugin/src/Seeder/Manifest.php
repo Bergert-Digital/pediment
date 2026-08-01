@@ -352,6 +352,20 @@ final class Manifest {
 				}
 			}
 
+			if ( isset( $override['title'] ) && '' === (string) $override['title'] ) {
+				// titleFor() falls back with `??`, which only catches null — a
+				// stored '' would pass straight through as the post title, the
+				// same silent no-op ENTRY_KEYS/SECTIONS exist to prevent.
+				throw new ManifestError( "{$section}.{$key}.languages.{$language}: 'title' may not be empty — omit the key to inherit the default language's title." ); // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- exception message for the operator, not echoed output.
+			}
+
+			if ( isset( $override['pattern'] ) && $hasContent ) {
+				// This entry has no pattern to translate — patternFor() would
+				// discard the override unconditionally, and the operator would
+				// never learn their translation was thrown away.
+				throw new ManifestError( "{$section}.{$key}.languages.{$language}: 'pattern' cannot be overridden — this entry declares literal 'content', which has no pattern to translate." ); // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- exception message for the operator, not echoed output.
+			}
+
 			$translations[ $language ] = array_intersect_key( $override, array_flip( self::TRANSLATION_KEYS ) );
 		}
 
