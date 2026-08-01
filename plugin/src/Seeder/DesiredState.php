@@ -36,6 +36,7 @@ final class DesiredState {
 		$desired               = [];
 		$this->undeclaredMedia = [];
 		$this->missingTitles   = [];
+		$this->resolver->resetMissingPatterns();
 		$declared              = array_keys( $manifest->media() );
 		$default               = $this->lang->defaultLanguage();
 

@@ -68,6 +68,22 @@ final class ContentResolver {
 	}
 
 	/**
+	 * Clear the accumulated missing-pattern report.
+	 *
+	 * The missingPatterns() report accumulates across every resolve() call
+	 * because DesiredState reports it once for the whole build() — but that means a
+	 * second build() on the SAME DesiredState/ContentResolver pair (not
+	 * reachable from Runner today, which always constructs a fresh
+	 * ContentResolver) would double-report every language whose pattern was
+	 * already missing on the first pass. DesiredState::build() resets
+	 * $missingTitles the same way at the start of every call; this keeps
+	 * ContentResolver consistent with that.
+	 */
+	public function resetMissingPatterns(): void {
+		$this->missingPatterns = [];
+	}
+
+	/**
 	 * Patterns a language wanted but does not have.
 	 *
 	 * Accumulates across resolve() calls (unlike unresolvedMediaKeys(), which is
