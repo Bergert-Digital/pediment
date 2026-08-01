@@ -266,6 +266,24 @@ final class NavSeeder {
 	 * language renders one language's navigation — the outage this engine's nav
 	 * identity model exists to prevent.
 	 *
+	 * Known consequence, not a bug fixed here: keyed() detects a nav's language
+	 * by matching it against $this->lang->languages() — the currently
+	 * configured set — so a nav whose own Polylang language term names a
+	 * language no longer configured matches no candidate and is filed under
+	 * the empty-language key (`key|''`). The guard just above
+	 * (`'' === $language`) then excludes it from every map handed to
+	 * linkTranslations(). Its row is untouched, still carrying the dropped
+	 * language in Polylang's own post-language term, but the still-configured
+	 * siblings under the same key get relinked here on every run, and
+	 * pll_save_post_translations() REPLACES the whole group: Polylang's own
+	 * save_translations() diffs the new map against the group's current
+	 * membership and deletes anything absent from it, so the dropped-language
+	 * nav is unlinked from its group site-wide even though nothing about its
+	 * row changed. Same mechanism Applier::linkTranslationGroups() documents
+	 * for entries (there: an ORPHAN plan item excluded from $ids), reached
+	 * here by a different route (an empty-language bucket, not a plan
+	 * action). See docs/BACKLOG.md (Medium, step-4 Task 10 review).
+	 *
 	 * @param array<string,int> $ids navKey|language => post ID
 	 */
 	private function linkTranslationGroups( array $ids ): void {
