@@ -10,27 +10,22 @@ const wp = ( cmd: string ) =>
 
 test.describe( 'multilingual seeding', () => {
 	test( 'both languages exist and are configured', () => {
-		// Not `pediment seed --dry-run --json`: WP-CLI 2.12 rewrites ANY
-		// `--json` assoc-arg to `--format=json` before a command's own
-		// synopsis is validated (wp-cli core, the `--json -> --format=json`
-		// shorthand in Runner::run_command()) — confirmed by `wp post list
-		// --json` and `wp post list --format=json` producing identical output.
-		// SeedCommand declares its own `--json` flag but no `--format`, so the
-		// rewritten arg always fails validation with "unknown --format
-		// parameter". This is a pre-existing bug in wp-cli/SeedCommand.php
-		// (predates step 4 — see commit e7ea6ce), reported rather than fixed
-		// here per this task's constraints. `wp eval` calls the exact same
-		// render() path the CLI flag would, without going through WP-CLI's
-		// own arg-rewriting layer where the collision lives — which also means
-		// this deliberately bypasses SeedCommand::__invoke()'s own
-		// `isset($assocArgs['json'])` / `isset($assocArgs['dry-run'])` wiring.
-		// A regression there, independent of the --format collision above,
-		// would not be caught by this test.
-		const json = JSON.parse(
-			wp(
-				`eval '$r = ( new \\Pediment\\Seeder\\Runner() )->run( [ "dry_run" => true ] ); echo \\Pediment\\Cli\\SeedCommand::render( $r, true );'`
-			)
-		);
+		// Goes through the real `wp` binary and its argument parser — this is
+		// exactly the path that was broken until wp-cli/SeedCommand.php learned
+		// to declare `--format=<format>` instead of a bespoke `--json` flag.
+		// WP-CLI 2.12 unconditionally rewrites any `--json` assoc-arg to
+		// `--format=json` before a command's own synopsis is validated (wp-cli
+		// core, the `--json -> --format=json` shorthand in
+		// Runner::run_command()); a command that declares `--json` itself but
+		// never declares `--format` fails that rewritten validation every time
+		// (see commit e7ea6ce, fixed alongside this comment). Exercising the
+		// real CLI dispatch here — rather than calling
+		// SeedCommand::render() directly, as the PHPUnit suite does — is what
+		// would have caught it. `--quiet` suppresses the trailing
+		// `Success: …` line WP_CLI::success() writes to the same stdout
+		// stream, which would otherwise trail the JSON blob and break
+		// JSON.parse.
+		const json = JSON.parse( wp( `pediment seed --dry-run --json --quiet` ) );
 		const languages = new Set(
 			json.items.filter( ( i ) => i.kind === 'entry' ).map( ( i ) => i.language )
 		);
