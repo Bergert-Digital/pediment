@@ -77,7 +77,7 @@ final class Runner {
 		$plan      = Plan::merge( $mediaPlan, $entryPlan, $navSeeder->plan( $manifest, $entryIds ) );
 
 		if ( $dryRun || $plan->hasErrors() ) {
-			return new RunResult( $plan, false, $manifest->path(), $plan->errors(), $this->undeclaredMediaProblems( $previewState ), $entryIds );
+			return new RunResult( $plan, false, $manifest->path(), $plan->errors(), $this->undeclaredMediaProblems( $previewState ), $entryIds, $previewState->missingTranslations() );
 		}
 
 		// Phase 4. Media goes first here, because page content references
@@ -121,7 +121,7 @@ final class Runner {
 		);
 		$errors   = array_values( array_unique( array_merge( $mediaErrors, $applied->errors, $navSeeder->errors() ) ) );
 
-		return new RunResult( $plan, true, $manifest->path(), $errors, $problems, $applied->ids );
+		return new RunResult( $plan, true, $manifest->path(), $errors, $problems, $applied->ids, $state->missingTranslations() );
 	}
 
 	/**
