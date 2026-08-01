@@ -250,4 +250,90 @@ class ManifestTest extends WP_UnitTestCase {
 		$this->assertNotNull( $m );
 		$this->assertCount( 5, $m->entries() );
 	}
+
+	public function test_languages_default_to_none() {
+		$manifest = Manifest::fromArray(
+			[ 'pages' => [ 'home' => [ 'title' => 'Home', 'content' => '' ] ] ],
+			get_stylesheet_directory()
+		);
+
+		$this->assertSame( [], $manifest->languages() );
+		$this->assertSame( '', $manifest->defaultLanguage() );
+	}
+
+	public function test_languages_are_parsed_default_first() {
+		$manifest = Manifest::fromArray(
+			[
+				'languages' => [
+					'de' => [ 'name' => 'Deutsch', 'locale' => 'de_DE', 'flag' => 'de' ],
+					'en' => [ 'name' => 'English', 'locale' => 'en_US', 'flag' => 'gb', 'default' => true ],
+				],
+				'pages'     => [ 'home' => [ 'title' => 'Home', 'content' => '' ] ],
+			],
+			get_stylesheet_directory()
+		);
+
+		$this->assertSame( [ 'en', 'de' ], array_keys( $manifest->languages() ) );
+		$this->assertSame( 'en', $manifest->defaultLanguage() );
+		$this->assertSame( 'Deutsch', $manifest->languages()['de']->name );
+		$this->assertSame( 'de_DE', $manifest->languages()['de']->locale );
+		$this->assertTrue( $manifest->languages()['en']->isDefault );
+	}
+
+	public function test_the_first_declared_language_is_the_default_when_none_says_so() {
+		$manifest = Manifest::fromArray(
+			[
+				'languages' => [ 'nl' => [ 'name' => 'Nederlands', 'locale' => 'nl_NL' ], 'fr' => [ 'name' => 'Français', 'locale' => 'fr_FR' ] ],
+				'pages'     => [ 'home' => [ 'title' => 'Home', 'content' => '' ] ],
+			],
+			get_stylesheet_directory()
+		);
+
+		$this->assertSame( 'nl', $manifest->defaultLanguage() );
+	}
+
+	public function test_two_defaults_are_rejected() {
+		$this->expectException( ManifestError::class );
+		$this->expectExceptionMessageMatches( '/only one language may be the default/i' );
+
+		Manifest::fromArray(
+			[
+				'languages' => [
+					'en' => [ 'name' => 'English', 'locale' => 'en_US', 'default' => true ],
+					'de' => [ 'name' => 'Deutsch', 'locale' => 'de_DE', 'default' => true ],
+				],
+			],
+			get_stylesheet_directory()
+		);
+	}
+
+	public function test_a_language_needs_a_locale() {
+		$this->expectException( ManifestError::class );
+		$this->expectExceptionMessageMatches( "/languages\.de: 'locale' is required/" );
+
+		Manifest::fromArray(
+			[ 'languages' => [ 'de' => [ 'name' => 'Deutsch' ] ] ],
+			get_stylesheet_directory()
+		);
+	}
+
+	public function test_an_unknown_language_key_is_rejected() {
+		$this->expectException( ManifestError::class );
+		$this->expectExceptionMessageMatches( "/languages\.de: unknown key 'lokale'/" );
+
+		Manifest::fromArray(
+			[ 'languages' => [ 'de' => [ 'name' => 'Deutsch', 'locale' => 'de_DE', 'lokale' => 'x' ] ] ],
+			get_stylesheet_directory()
+		);
+	}
+
+	public function test_a_language_slug_must_be_a_slug() {
+		$this->expectException( ManifestError::class );
+		$this->expectExceptionMessageMatches( '/is not a valid language code/' );
+
+		Manifest::fromArray(
+			[ 'languages' => [ 'de DE' => [ 'name' => 'Deutsch', 'locale' => 'de_DE' ] ] ],
+			get_stylesheet_directory()
+		);
+	}
 }
