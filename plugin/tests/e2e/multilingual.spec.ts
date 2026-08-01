@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { execSync } from 'node:child_process';
+import { createNavigationEntityWithContent, deleteNavigationEntityById } from './utils';
 
 const WP_ENV_CWD = process.env.WP_ENV_CWD || process.cwd();
 const wp = ( cmd: string ) =>
@@ -77,20 +78,16 @@ test.describe( 'multilingual seeding', () => {
 		);
 	} );
 
-	// Mirrors the German assertion above so this file is self-discriminating:
-	// with the seed key -> language binding gone, deleting just the German
-	// half would still pass (Polylang's own query scoping happens to resolve
-	// core's ref-less-navigation fallback to the right language in today's
-	// simple two-nav fixture — verified by temporarily removing
-	// pediment_bind_navigation_ref() at runtime and hitting both language
-	// pages, no failure either way). What the binding actually guards against,
-	// confirmed the same way with a decoy English wp_navigation post created
-	// after the seeded one: WITHOUT the binding, the English page's header
-	// silently switched to the newer, un-seeded post; WITH it restored, it
-	// switched back. That is Task 12's own point (nav identity is the seed
-	// key, never "most recently created") and only an English-side assertion
-	// can observe an English-side regression of it. Don't delete either half
-	// as "redundant" with the German one — they check different failures.
+	// Mirrors the German assertion above: a plain correctness canary, not a
+	// regression detector on its own. Deleting pediment_bind_navigation_ref()
+	// entirely does NOT break either language on today's fixture — Polylang's
+	// own query scoping already restricts core's ref-less-navigation fallback
+	// to the current language, so a bare "is the binding still there" check
+	// can't observe its absence. The test below ('the English header keeps
+	// the seeded menu…') is the one that actually discriminates: it
+	// reproduces the specific failure the binding exists to prevent and is
+	// verified RED without the binding, GREEN with it (see task-15-report.md).
+	// Keep both — they check different things.
 	test( 'the header navigation links to English pages on an English page', async ( { page } ) => {
 		await page.goto( '/about/' );
 
@@ -103,6 +100,53 @@ test.describe( 'multilingual seeding', () => {
 		await expect(
 			nav.getByRole( 'link', { name: 'Contact', exact: true } )
 		).toHaveAttribute( 'href', /\/contact\/?$/ );
+	} );
+
+	test.describe( 'nav identity survives a newer same-language decoy', () => {
+		// The realistic failure Task 12's binding exists to prevent: a client
+		// opens the Site Editor and creates a menu. That post becomes the
+		// newest `wp_navigation` in its language; core's ref-less-navigation
+		// fallback (WP_Navigation_Fallback::get_most_recently_published_navigation(),
+		// `orderby => date, order => DESC`) picks it over the seeded one; the
+		// header changes without anyone touching the theme. This reproduces
+		// that: a same-language `wp_navigation` post, no seed-key meta,
+		// created after seeding, with content that appears nowhere in the
+		// seeded menu — then asserts the seeded menu still wins.
+		let decoyId = 0;
+
+		test.afterEach( () => {
+			// Force-delete, not trash: NavSeeder's keyed() lookup (NavSeeder.php)
+			// treats a trashed nav as still holding its identity, and this suite
+			// runs against a persistent wp-env database — a leaked decoy would
+			// sit here for every later run and could distort other specs.
+			// Runs even if the assertion above failed.
+			if ( decoyId ) {
+				deleteNavigationEntityById( decoyId );
+				decoyId = 0;
+			}
+		} );
+
+		test( 'the English header keeps the seeded menu, not a newer un-seeded one', async ( {
+			page,
+		} ) => {
+			decoyId = createNavigationEntityWithContent(
+				`decoy-nav-${ Date.now() }`,
+				'Decoy Nav',
+				'<!-- wp:navigation-link {"label":"ZZZ-DECOY-LINK","url":"https://example.invalid/decoy","kind":"custom"} /-->'
+			);
+			wp( `eval 'pll_set_post_language( ${ decoyId }, "en" );'` );
+
+			await page.goto( '/about/' );
+			const nav = page.locator( 'header .wp-block-navigation' ).first();
+
+			// Positive AND negative, per review: the seeded label is still
+			// there, and the decoy's distinctive label is nowhere in the nav —
+			// not "no navigation-link count changed", but "this specific menu".
+			await expect(
+				nav.getByRole( 'link', { name: 'Contact', exact: true } )
+			).toHaveAttribute( 'href', /\/contact\/?$/ );
+			await expect( nav.getByRole( 'link', { name: 'ZZZ-DECOY-LINK' } ) ).toHaveCount( 0 );
+		} );
 	} );
 
 	test( 'the two About pages are one translation group', () => {
