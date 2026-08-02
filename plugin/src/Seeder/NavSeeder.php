@@ -193,11 +193,13 @@ final class NavSeeder {
 
 				$ids[ $item->mapKey() ] = $postId;
 			}
+
+			$this->linkTranslationGroups( $ids );
+
+			return $ids;
 		} finally {
 			Kses::restore( $kses );
 		}
-
-		return $ids;
 	}
 
 	/** @return string[] Failures from the most recent apply(). */
@@ -251,6 +253,75 @@ final class NavSeeder {
 
 	private function slugFor( NavSpec $spec, string $language ): string {
 		return sanitize_title( $spec->key . ( '' !== $language ? '-' . $language : '' ) );
+	}
+
+	/**
+	 * Put every language of a nav key into one translation group.
+	 *
+	 * Same rule as entries: pll_save_post_translations() replaces the whole
+	 * group, so this runs once with the full map after every entity is written.
+	 *
+	 * Without it, a translated menu is invisible to pll_get_post(), the header's
+	 * per-language lookup falls back to whichever nav was saved last, and every
+	 * language renders one language's navigation — the outage this engine's nav
+	 * identity model exists to prevent.
+	 *
+	 * Known consequence, not a bug fixed here: keyed() detects a nav's language
+	 * by matching it against $this->lang->languages() — the currently
+	 * configured set — so a nav whose own Polylang language term names a
+	 * language no longer configured matches no candidate and is filed under
+	 * the empty-language key (`key|''`). The guard just above
+	 * (`'' === $language`) then excludes it from every map handed to
+	 * linkTranslations(). Its row is untouched, still carrying the dropped
+	 * language in Polylang's own post-language term, but the still-configured
+	 * siblings under the same key get relinked here on every run, and
+	 * pll_save_post_translations() REPLACES the whole group: Polylang's own
+	 * save_translations() diffs the new map against the group's current
+	 * membership and deletes anything absent from it, so the dropped-language
+	 * nav is unlinked from its group site-wide even though nothing about its
+	 * row changed. Same mechanism Applier::linkTranslationGroups() documents
+	 * for entries (there: an ORPHAN plan item excluded from $ids), reached
+	 * here by a different route (an empty-language bucket, not a plan
+	 * action). See docs/BACKLOG.md (Medium, step-4 Task 10 review).
+	 *
+	 * @param array<string,int> $ids navKey|language => post ID
+	 */
+	private function linkTranslationGroups( array $ids ): void {
+		$languages = $this->lang->languages();
+		if ( count( $languages ) < 2 ) {
+			return;
+		}
+
+		$byKey = [];
+		foreach ( $ids as $mapKey => $postId ) {
+			// array_pad(explode('|', ...), 2, '') does not truncate if a nav key
+			// or language code ever contained '|' itself — not reachable today
+			// (both come from manifest identifiers), same caveat as
+			// Applier::linkTranslationGroups().
+			[ $key, $language ] = array_pad( explode( '|', (string) $mapKey ), 2, '' );
+			if ( '' === $language || $postId <= 0 ) {
+				continue;
+			}
+			$byKey[ $key ][ $language ] = $postId;
+		}
+
+		foreach ( $byKey as $map ) {
+			// Same fix as Applier::linkTranslationGroups(), applied here
+			// separately by explicit decision (see this class's own top
+			// docblock): a map missing even one configured language must
+			// never reach linkTranslations(), or an ordinary write failure
+			// (one language's create errors while the others succeed)
+			// silently unlinks whichever language got left out of a group
+			// that already existed. count($map) >= 2 let a 2-of-3 map
+			// through; only "covers every configured language" is safe. This
+			// does not change the documented empty-language-bucket
+			// consequence above: there, $languages shrinks along with the
+			// map, so the count still matches.
+			if ( count( $map ) !== count( $languages ) ) {
+				continue;
+			}
+			$this->lang->linkTranslations( $map );
+		}
 	}
 
 	/**

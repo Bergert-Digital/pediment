@@ -30,8 +30,12 @@ Client themes declare their pages, posts, media, navigation, and custom post typ
 `seed/manifest.php` file; content itself lives in the theme's `patterns/` directory.
 `wp pediment seed` makes the database match the manifest without ever overwriting
 content a client has edited, and `wp pediment adopt <key>` exports a live page's edited
-markup back into its pattern file. See [docs/seeding.md](../docs/seeding.md) for the full
-manifest reference, the arbitration rules, and how to read a dry-run plan.
+markup back into its pattern file. A manifest that declares a `languages` section makes
+the site multilingual (via Polylang); `wp pediment languages` configures Polylang from
+that section before the first seed, and `wp pediment adopt <key> --language=de` adopts
+one language's translation. See [docs/seeding.md](../docs/seeding.md) for the full
+manifest reference, the arbitration rules, the languages section, and how to read a
+dry-run plan.
 
 ## Web fetch
 

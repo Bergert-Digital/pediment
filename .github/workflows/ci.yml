@@ -32,6 +32,7 @@ jobs:
       - run: npm run lint:colors
       - run: npm run lint:icons
       - run: npm run lint:js
+      - run: node tools/generate-wpml-config.mjs --check
 
   phpunit:
     runs-on: ubuntu-latest
@@ -51,6 +52,7 @@ jobs:
       - run: cd plugin && npm ci && npm run build
       - run: npm run env:start
       - run: npx wp-env run tests-wordpress --env-cwd=wp-content/plugins/pediment-ai ./vendor/bin/phpunit
+      - run: npx wp-env run tests-wordpress --env-cwd=wp-content/plugins/pediment-ai ./vendor/bin/phpunit -c phpunit-polylang.xml.dist
       - if: always()
         run: npm run env:stop
 

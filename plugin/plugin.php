@@ -51,7 +51,13 @@ require_once PEDIMENT_AI_PLUGIN_DIR . '/inc/block-styles.php';
 require_once PEDIMENT_AI_PLUGIN_DIR . '/inc/hero-variants.php';
 require_once PEDIMENT_AI_PLUGIN_DIR . '/inc/layout-variations.php';
 require_once PEDIMENT_AI_PLUGIN_DIR . '/inc/nav-active.php';
+require_once PEDIMENT_AI_PLUGIN_DIR . '/inc/nav-language.php';
 require_once PEDIMENT_AI_PLUGIN_DIR . '/inc/mega-menu.php';
+
+// Polylang cannot be told wp_navigation is translatable by clicking anything
+// in its UI (step 4 of the language-provider migration); this filter is the
+// only path, and it is a no-op when Polylang is inactive.
+require_once PEDIMENT_AI_PLUGIN_DIR . '/inc/polylang-compat.php';
 
 // Templates, patterns (incl. the footer pattern), the header-seeding
 // bootstrap, and global CSS/JS enqueues moved from the theme (Task 6 of the
@@ -101,6 +107,9 @@ if ( defined( 'WP_CLI' ) && WP_CLI ) {
 
 	require_once __DIR__ . '/wp-cli/AdoptCommand.php';
 	\WP_CLI::add_command( 'pediment adopt', \Pediment\Cli\AdoptCommand::class );
+
+	require_once __DIR__ . '/wp-cli/LanguagesCommand.php';
+	\WP_CLI::add_command( 'pediment languages', \Pediment\Cli\LanguagesCommand::class );
 }
 
 add_action(

@@ -10,6 +10,7 @@
     "lint:blocks": "node tools/lint-blocks.mjs",
     "lint:colors": "node tools/lint-colors.mjs",
     "lint:icons": "node tools/lint-icons.mjs",
+    "gen:wpml": "node tools/generate-wpml-config.mjs",
     "lint:js": "cd plugin && npm run lint:js",
     "format": "cd plugin && npm run format",
     "test:js": "cd plugin && npm run test:js"

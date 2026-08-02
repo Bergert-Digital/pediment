@@ -20,10 +20,24 @@
 		"secondaryText": { "type": "string", "default": "" },
 		"secondaryUrl": { "type": "string", "default": "" },
 		"eyebrow": { "type": "string", "default": "" },
-		"ticks": { "type": "array", "default": [] },
+		"ticks": {
+			"type": "array",
+			"default": [],
+			"items": { "type": "string" }
+		},
 		"statValue": { "type": "string", "default": "" },
 		"statText": { "type": "string", "default": "" },
-		"metrics": { "type": "array", "default": [] },
+		"metrics": {
+			"type": "array",
+			"default": [],
+			"items": {
+				"type": "object",
+				"properties": {
+					"value": { "type": "string" },
+					"label": { "type": "string" }
+				}
+			}
+		},
 		"mediaId": { "type": "number", "default": 0 }
 	},
 	"example": {

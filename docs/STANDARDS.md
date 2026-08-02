@@ -36,6 +36,12 @@ on every block change, not just new blocks.
   `plugin/tests/phpunit/Seeder/` (see `docs/seeding.md`). `wp pediment seed --dry-run`
   must plan zero writes (`0 to write`) against an unchanged manifest — a dry run that
   wants to write something nobody changed is a regression, not a quirk.
+- **Languages:** a manifest declaring `languages` makes a site multilingual; see
+  [docs/seeding.md#languages](seeding.md#languages) for the manifest shape, the derived
+  slug rule, and `wp pediment languages` / `wp pediment adopt --language`. A
+  Polylang-specific change needs a test in `plugin/tests/polylang/` (its own PHPUnit
+  config, `plugin/phpunit-polylang.xml.dist`), and everything Polylang-specific stays
+  behind the `LanguageProvider` seam (`plugin/src/Language/`).
 - **Playwright:** editor block insertion, front-page render, forms, and AI flows.
   Run: `cd plugin && npm run e2e` (requires `npm run env:start`).
 - A feature or fix is not done until its test passes and the relevant screenshot looks right.

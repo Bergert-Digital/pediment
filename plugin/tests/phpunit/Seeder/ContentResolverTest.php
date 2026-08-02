@@ -2,6 +2,7 @@
 // plugin/tests/phpunit/Seeder/ContentResolverTest.php
 
 use Pediment\Seeder\ContentResolver;
+use Pediment\Seeder\EntrySpec;
 use Pediment\Seeder\Manifest;
 use Pediment\Seeder\ManifestError;
 use Pediment\Seeder\MediaMap;
@@ -78,5 +79,87 @@ class ContentResolverTest extends WP_UnitTestCase {
 		$resolver->resolve( $this->entry( [ 'content' => '<p>no media here</p>' ] ) );
 
 		$this->assertSame( [], $resolver->unresolvedMediaKeys() );
+	}
+
+	public function test_a_language_pattern_is_preferred_when_registered() {
+		register_block_pattern( 'x/about', [ 'title' => 'About', 'content' => '<p>english</p>' ] );
+		register_block_pattern( 'x/about-de', [ 'title' => 'Über uns', 'content' => '<p>deutsch</p>' ] );
+
+		$spec     = new EntrySpec( 'about', 'page', 'About', 'about', null, 'x/about', null, false, false, 0, [] );
+		$resolver = new ContentResolver( new MediaMap( [] ) );
+
+		$this->assertSame( '<p>deutsch</p>', $resolver->resolve( $spec, 'de', 'en' ) );
+		$this->assertSame( '<p>english</p>', $resolver->resolve( $spec, 'en', 'en' ) );
+	}
+
+	public function test_a_missing_language_pattern_falls_back_and_is_recorded() {
+		register_block_pattern( 'x/solo', [ 'title' => 'Solo', 'content' => '<p>english</p>' ] );
+
+		$spec     = new EntrySpec( 'solo', 'page', 'Solo', 'solo', null, 'x/solo', null, false, false, 0, [] );
+		$resolver = new ContentResolver( new MediaMap( [] ) );
+
+		$this->assertSame( '<p>english</p>', $resolver->resolve( $spec, 'de', 'en' ) );
+		$this->assertSame( [ 'solo|de' => 'x/solo-de' ], $resolver->missingPatterns() );
+	}
+
+	public function test_an_unregistered_default_pattern_still_throws() {
+		$spec     = new EntrySpec( 'ghost', 'page', 'Ghost', 'ghost', null, 'x/ghost', null, false, false, 0, [] );
+		$resolver = new ContentResolver( new MediaMap( [] ) );
+
+		$this->expectException( ManifestError::class );
+		$resolver->resolve( $spec, 'en', 'en' );
+	}
+
+	public function test_an_unregistered_default_language_override_still_throws() {
+		register_block_pattern( 'x/about-default-override', [ 'title' => 'About', 'content' => '<p>english</p>' ] );
+
+		// The manifest declares a per-language pattern override for 'en',
+		// which is ALSO the default language, and that override is not
+		// registered. patternFor() checks the override before it checks
+		// default-ness, so this must still be fatal, not a soft fallback.
+		$spec     = new EntrySpec(
+			'about-default-override',
+			'page',
+			'About',
+			'about-default-override',
+			null,
+			'x/about-default-override',
+			null,
+			false,
+			false,
+			0,
+			[],
+			[ 'en' => [ 'pattern' => 'x/about-default-override-missing' ] ]
+		);
+		$resolver = new ContentResolver( new MediaMap( [] ) );
+
+		$this->expectException( ManifestError::class );
+		$resolver->resolve( $spec, 'en', 'en' );
+	}
+
+	public function test_an_unregistered_non_default_override_falls_back_and_is_recorded() {
+		register_block_pattern( 'x/about-non-default-override', [ 'title' => 'About', 'content' => '<p>english</p>' ] );
+
+		$spec     = new EntrySpec(
+			'about-non-default-override',
+			'page',
+			'About',
+			'about-non-default-override',
+			null,
+			'x/about-non-default-override',
+			null,
+			false,
+			false,
+			0,
+			[],
+			[ 'de' => [ 'pattern' => 'x/about-non-default-override-missing' ] ]
+		);
+		$resolver = new ContentResolver( new MediaMap( [] ) );
+
+		$this->assertSame( '<p>english</p>', $resolver->resolve( $spec, 'de', 'en' ) );
+		$this->assertSame(
+			[ 'about-non-default-override|de' => 'x/about-non-default-override-missing' ],
+			$resolver->missingPatterns()
+		);
 	}
 }

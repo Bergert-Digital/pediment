@@ -30,6 +30,20 @@ class LanguageProviderTest extends WP_UnitTestCase {
 		$this->assertSame( $id, $provider->translationOf( $id, '' ) );
 	}
 
+	/**
+	 * Always true, on any post ID, including one that never existed: a
+	 * monolingual site has no language taxonomy to check, so "does this post
+	 * have a language" is vacuously satisfied. This is what keeps Applier's
+	 * untagged-post repair a no-op on every monolingual site — hasLanguage()
+	 * reporting true means setLanguage() is never called for the repair.
+	 */
+	public function test_null_provider_has_language_is_always_true() {
+		$provider = new NullProvider();
+
+		$this->assertTrue( $provider->hasLanguage( 0 ) );
+		$this->assertTrue( $provider->hasLanguage( 12345 ) );
+	}
+
 	public function test_unscoped_query_is_identity_for_the_null_provider() {
 		$args = [ 'post_type' => 'page', 'posts_per_page' => -1 ];
 		$this->assertSame( $args, ( new NullProvider() )->unscopedQuery( $args ) );
@@ -56,5 +70,10 @@ class LanguageProviderTest extends WP_UnitTestCase {
 		LanguageRegistry::reset();
 
 		$this->assertInstanceOf( LanguageProvider::class, LanguageRegistry::provider() );
+	}
+
+	public function test_null_provider_when_polylang_is_absent() {
+		LanguageRegistry::reset();
+		$this->assertInstanceOf( NullProvider::class, LanguageRegistry::provider() );
 	}
 }

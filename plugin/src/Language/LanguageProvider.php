@@ -22,6 +22,19 @@ interface LanguageProvider {
 	/** Assign a language. MUST be called in the same write path as creation. */
 	public function setLanguage( int $postId, string $language ): void;
 
+	/**
+	 * Whether a post already carries a language tag, in any language.
+	 *
+	 * Exists so a caller can repair a post that predates this seeder's
+	 * language-tagging — the migration case: a monolingual site's existing
+	 * page never went through create(), so it has no language term at all —
+	 * without ever re-tagging or moving a post that already has one. That
+	 * "only if untagged" rule is the whole safety property: it is what makes
+	 * it safe to run the repair on every seed, forever, including against a
+	 * post whose language was deliberately changed by an editor.
+	 */
+	public function hasLanguage( int $postId ): bool;
+
 	/** @param array<string,int> $map language code => post ID */
 	public function linkTranslations( array $map ): void;
 
