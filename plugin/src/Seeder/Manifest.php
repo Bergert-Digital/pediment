@@ -27,10 +27,16 @@ final class Manifest {
 	 * Silently ignoring the rest is a bad failure mode at migration scale:
 	 * `page` instead of `pages` seeds nothing and reports nothing.
 	 */
-	private const SECTIONS = [ 'version', 'pages', 'posts', 'entries', 'media', 'navs', 'post_types', 'site' ];
+	private const SECTIONS = [ 'version', 'languages', 'pages', 'posts', 'entries', 'media', 'navs', 'post_types', 'site' ];
 
 	/** Keys an entry may declare. Same reasoning: `front-page` must not be a no-op. */
-	private const ENTRY_KEYS = [ 'title', 'slug', 'parent', 'pattern', 'content', 'post_type', 'front_page', 'posts_page', 'menu_order', 'terms' ];
+	private const ENTRY_KEYS = [ 'title', 'slug', 'parent', 'pattern', 'content', 'post_type', 'front_page', 'posts_page', 'menu_order', 'terms', 'languages' ];
+
+	/** Keys a language may declare. */
+	private const LANGUAGE_KEYS = [ 'name', 'locale', 'flag', 'default' ];
+
+	/** Keys a per-language entry override may declare. */
+	private const TRANSLATION_KEYS = [ 'title', 'slug', 'pattern' ];
 
 	/** @var self|null */
 	private static ?self $cache = null;
@@ -43,6 +49,7 @@ final class Manifest {
 	 * @param array<string,MediaSpec>    $media
 	 * @param array<string,NavSpec>      $navs
 	 * @param array<string,PostTypeSpec> $postTypes
+	 * @param array<string,LanguageSpec> $languages
 	 */
 	private function __construct(
 		private string $path,
@@ -51,7 +58,9 @@ final class Manifest {
 		private array $media,
 		private array $navs,
 		private array $postTypes,
-		private string $siteLogo
+		private string $siteLogo,
+		private array $languages,
+		private string $defaultLanguage
 	) {}
 
 	/**
@@ -119,6 +128,8 @@ final class Manifest {
 			}
 		}
 
+		[ $languages, $defaultLanguage ] = self::parseLanguages( (array) ( $raw['languages'] ?? [] ) );
+
 		$entries = [];
 		foreach ( [ 'pages' => 'page', 'posts' => 'post', 'entries' => '' ] as $section => $defaultType ) {
 			foreach ( (array) ( $raw[ $section ] ?? [] ) as $key => $declared ) {
@@ -126,7 +137,7 @@ final class Manifest {
 				if ( isset( $entries[ $key ] ) ) {
 					throw new ManifestError( "Duplicate seed key '{$key}' (declared more than once across pages/posts/entries)." ); // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- exception message for the operator, not echoed output.
 				}
-				$entries[ $key ] = self::entry( $section, $key, (array) $declared, $defaultType );
+				$entries[ $key ] = self::entry( $section, $key, (array) $declared, $defaultType, array_keys( $languages ) );
 			}
 		}
 
@@ -190,14 +201,93 @@ final class Manifest {
 			throw new ManifestError( "site.logo: '{$siteLogo}' is not a declared media key." ); // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- exception message for the operator, not echoed output.
 		}
 
-		return new self( $path, $baseDir, $entries, $media, $navs, $postTypes, $siteLogo );
+		return new self( $path, $baseDir, $entries, $media, $navs, $postTypes, $siteLogo, $languages, $defaultLanguage );
+	}
+
+	/**
+	 * @param array<string,mixed> $raw
+	 * @return array{0:array<string,LanguageSpec>,1:string}
+	 * @throws ManifestError When the languages fail validation.
+	 */
+	private static function parseLanguages( array $raw ): array {
+		if ( [] === $raw ) {
+			return [ [], '' ];
+		}
+
+		$specs    = [];
+		$defaults = [];
+
+		foreach ( $raw as $slug => $declared ) {
+			$slug     = (string) $slug;
+			$declared = (array) $declared;
+
+			foreach ( array_keys( $declared ) as $key ) {
+				if ( ! in_array( (string) $key, self::LANGUAGE_KEYS, true ) ) {
+					throw new ManifestError( "languages.{$slug}: unknown key '{$key}'. Allowed: " . implode( ', ', self::LANGUAGE_KEYS ) . '.' ); // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- operator-facing message.
+				}
+			}
+
+			// Polylang builds URL prefixes straight from this, and it is also the
+			// suffix a derived per-language slug carries. Anything sanitize_title()
+			// would rewrite produces URLs nobody declared.
+			if ( '' === $slug || sanitize_title( $slug ) !== $slug ) {
+				throw new ManifestError( "languages.{$slug}: '{$slug}' is not a valid language code — use a lowercase slug such as 'en' or 'pt-br'." ); // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- operator-facing message.
+			}
+
+			$locale = (string) ( $declared['locale'] ?? '' );
+			if ( '' === $locale ) {
+				throw new ManifestError( "languages.{$slug}: 'locale' is required (for example 'de_DE')." ); // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- operator-facing message.
+			}
+
+			$isDefault = ! empty( $declared['default'] );
+			if ( $isDefault ) {
+				$defaults[] = $slug;
+			}
+
+			$specs[ $slug ] = new LanguageSpec(
+				$slug,
+				(string) ( $declared['name'] ?? strtoupper( $slug ) ),
+				$locale,
+				(string) ( $declared['flag'] ?? '' ),
+				$isDefault
+			);
+		}
+
+		if ( count( $defaults ) > 1 ) {
+			throw new ManifestError( 'Only one language may be the default; got: ' . implode( ', ', $defaults ) . '.' ); // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- operator-facing message.
+		}
+
+		$default = $defaults[0] ?? (string) array_key_first( $specs );
+
+		// Default first. Everything downstream depends on this order: the
+		// Applier resolves a child's post_parent and the front-page option from
+		// the default language's IDs, and translation groups are keyed off it.
+		$ordered = [ $default => $specs[ $default ] ];
+		foreach ( $specs as $slug => $spec ) {
+			if ( $slug !== $default ) {
+				$ordered[ $slug ] = $spec;
+			}
+		}
+
+		// Re-stamp isDefault so a manifest that declared none still has exactly
+		// one language reporting itself as the default.
+		$ordered[ $default ] = new LanguageSpec(
+			$ordered[ $default ]->slug,
+			$ordered[ $default ]->name,
+			$ordered[ $default ]->locale,
+			$ordered[ $default ]->flag,
+			true
+		);
+
+		return [ $ordered, $default ];
 	}
 
 	/**
 	 * @param array<string,mixed> $declared
+	 * @param string[]            $declaredLanguages
 	 * @throws ManifestError When the entry fails validation.
 	 */
-	private static function entry( string $section, string $key, array $declared, string $defaultType ): EntrySpec {
+	private static function entry( string $section, string $key, array $declared, string $defaultType, array $declaredLanguages = [] ): EntrySpec {
 		foreach ( array_keys( $declared ) as $declaredKey ) {
 			if ( ! in_array( (string) $declaredKey, self::ENTRY_KEYS, true ) ) {
 				throw new ManifestError( "{$section}.{$key}: unknown key '{$declaredKey}'. Allowed: " . implode( ', ', self::ENTRY_KEYS ) . '.' ); // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- exception message for the operator, not echoed output.
@@ -240,6 +330,45 @@ final class Manifest {
 			$terms[ (string) $taxonomy ] = array_values( array_map( 'strval', (array) $slugs ) );
 		}
 
+		$translations = [];
+		foreach ( (array) ( $declared['languages'] ?? [] ) as $language => $override ) {
+			$language = (string) $language;
+			$override = (array) $override;
+
+			if ( ! in_array( $language, $declaredLanguages, true ) ) {
+				throw new ManifestError( "{$section}.{$key}.languages.{$language}: '{$language}' is not a declared site language. Add it to the manifest's `languages` section first." ); // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- exception message for the operator, not echoed output.
+			}
+
+			foreach ( array_keys( $override ) as $overrideKey ) {
+				if ( ! in_array( (string) $overrideKey, self::TRANSLATION_KEYS, true ) ) {
+					throw new ManifestError( "{$section}.{$key}.languages.{$language}: unknown key '{$overrideKey}'. Allowed: " . implode( ', ', self::TRANSLATION_KEYS ) . '.' ); // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- exception message for the operator, not echoed output.
+				}
+			}
+
+			if ( isset( $override['slug'] ) ) {
+				$overrideSlug = (string) $override['slug'];
+				if ( '' === $overrideSlug || sanitize_title( $overrideSlug ) !== $overrideSlug ) {
+					throw new ManifestError( "{$section}.{$key}.languages.{$language}: slug '{$overrideSlug}' is not a valid post slug." ); // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- exception message for the operator, not echoed output.
+				}
+			}
+
+			if ( isset( $override['title'] ) && '' === (string) $override['title'] ) {
+				// titleFor() falls back with `??`, which only catches null — a
+				// stored '' would pass straight through as the post title, the
+				// same silent no-op ENTRY_KEYS/SECTIONS exist to prevent.
+				throw new ManifestError( "{$section}.{$key}.languages.{$language}: 'title' may not be empty — omit the key to inherit the default language's title." ); // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- exception message for the operator, not echoed output.
+			}
+
+			if ( isset( $override['pattern'] ) && $hasContent ) {
+				// This entry has no pattern to translate — patternFor() would
+				// discard the override unconditionally, and the operator would
+				// never learn their translation was thrown away.
+				throw new ManifestError( "{$section}.{$key}.languages.{$language}: 'pattern' cannot be overridden — this entry declares literal 'content', which has no pattern to translate." ); // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- exception message for the operator, not echoed output.
+			}
+
+			$translations[ $language ] = array_intersect_key( $override, array_flip( self::TRANSLATION_KEYS ) );
+		}
+
 		return new EntrySpec(
 			$key,
 			$postType,
@@ -251,7 +380,8 @@ final class Manifest {
 			! empty( $declared['front_page'] ),
 			! empty( $declared['posts_page'] ),
 			(int) ( $declared['menu_order'] ?? 0 ),
-			$terms
+			$terms,
+			$translations
 		);
 	}
 
@@ -325,6 +455,16 @@ final class Manifest {
 
 	public function siteLogo(): string {
 		return $this->siteLogo;
+	}
+
+	/** @return array<string,LanguageSpec> Declared site languages, default first; empty when monolingual. */
+	public function languages(): array {
+		return $this->languages;
+	}
+
+	/** The declared default language code, or '' when the manifest declares none. */
+	public function defaultLanguage(): string {
+		return $this->defaultLanguage;
 	}
 
 	/**

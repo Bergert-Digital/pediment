@@ -15,7 +15,16 @@
 		"required": { "type": "boolean", "default": false },
 		"placeholder": { "type": "string", "default": "" },
 		"helpText": { "type": "string", "default": "" },
-		"options": { "type": "array", "default": [] }
+		"options": {
+			"type": "array",
+			"default": [],
+			"items": {
+				"type": "object",
+				"properties": {
+					"label": { "type": "string" }
+				}
+			}
+		}
 	},
 	"editorScript": "file:./index.js",
 	"editorStyle": "file:./style-index.css",

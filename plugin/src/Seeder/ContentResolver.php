@@ -22,16 +22,37 @@ final class ContentResolver {
 	/** @var array<string,string> Media keys the last resolve() call could not resolve. */
 	private array $unresolved = [];
 
+	/** @var array<string,string> "key|language" => pattern slug that is not registered. */
+	private array $missingPatterns = [];
+
 	public function __construct( private MediaMap $media ) {}
 
 	/**
-	 * @throws ManifestError When the entry declares a pattern that is not registered.
+	 * @param string $language The language being resolved ('' when monolingual).
+	 * @param string $default  The site's default language code.
+	 *
+	 * @throws ManifestError When the entry's DEFAULT-language pattern is not registered.
 	 */
-	public function resolve( EntrySpec $entry ): string {
+	public function resolve( EntrySpec $entry, string $language = '', string $default = '' ): string {
 		$content = $entry->content;
 
 		if ( null === $content ) {
-			$pattern = \WP_Block_Patterns_Registry::get_instance()->get_registered( (string) $entry->pattern );
+			$registry = \WP_Block_Patterns_Registry::get_instance();
+			$wanted   = (string) $entry->patternFor( $language, $default );
+			$pattern  = $registry->get_registered( $wanted );
+
+			// A language with no translated pattern is a normal state on a site
+			// that just added one — it renders the default language's content and
+			// says so, rather than seeding a blank page or blocking the run. Gated
+			// on the LANGUAGE, not on whether $wanted differs from $entry->pattern:
+			// patternFor() checks a per-language override before it checks
+			// default-ness, so a default-language override that is not registered
+			// must still throw below, not soft-fallback into a false negative.
+			if ( ( ! is_array( $pattern ) || ! isset( $pattern['content'] ) ) && $language !== $default ) {
+				$this->missingPatterns[ $entry->key . '|' . $language ] = $wanted;
+				$pattern                                                = $registry->get_registered( (string) $entry->pattern );
+			}
+
 			if ( ! is_array( $pattern ) || ! isset( $pattern['content'] ) ) {
 				throw new ManifestError( "{$entry->key}: pattern '{$entry->pattern}' is not registered. Patterns register on `init`; check the slug and that the file lives in the theme's patterns/ directory." ); // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- exception message for the operator, not echoed output.
 			}
@@ -44,6 +65,34 @@ final class ContentResolver {
 	/** @return string[] */
 	public function unresolvedMediaKeys(): array {
 		return array_values( $this->unresolved );
+	}
+
+	/**
+	 * Clear the accumulated missing-pattern report.
+	 *
+	 * The missingPatterns() report accumulates across every resolve() call
+	 * because DesiredState reports it once for the whole build() — but that means a
+	 * second build() on the SAME DesiredState/ContentResolver pair (not
+	 * reachable from Runner today, which always constructs a fresh
+	 * ContentResolver) would double-report every language whose pattern was
+	 * already missing on the first pass. DesiredState::build() resets
+	 * $missingTitles the same way at the start of every call; this keeps
+	 * ContentResolver consistent with that.
+	 */
+	public function resetMissingPatterns(): void {
+		$this->missingPatterns = [];
+	}
+
+	/**
+	 * Patterns a language wanted but does not have.
+	 *
+	 * Accumulates across resolve() calls (unlike unresolvedMediaKeys(), which is
+	 * per-call) because DesiredState reports these once for the whole build.
+	 *
+	 * @return array<string,string> "key|language" => pattern slug
+	 */
+	public function missingPatterns(): array {
+		return $this->missingPatterns;
 	}
 
 	/**

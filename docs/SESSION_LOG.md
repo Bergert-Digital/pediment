@@ -4,6 +4,86 @@ Rolling log. /dev-cycle keeps only the most recent prior session entry plus the 
 
 ---
 
+## Session 2026-08-01 — LanguageProvider and Polylang, step 4 (Tasks 1–16)
+
+[19:10] ✅ Migration step 4 SHIPPED: a Pediment site becomes multilingual via
+Polylang, entirely behind the `LanguageProvider` seam
+(`plugin/src/Language/LanguageProvider.php`). A manifest's `languages` section
+declares the site's languages (default first, order load-bearing);
+`wp pediment languages` configures Polylang from it before the first seed
+(languages, `default_lang`, `wp_navigation` translatability, media/taxonomy
+translation locked off, language-rooted URLs); `wp pediment seed` hard-errors
+if the manifest and Polylang's own configuration disagree, rather than
+writing content no translation lookup can find. Per-entry `languages`
+overrides (`title`/`slug`/`pattern`) resolve through `EntrySpec::titleFor()` /
+`slugFor()` / `patternFor()`; a non-default language with no declared slug
+derives `<slug>-<lang>` (Polylang does not hook `wp_unique_post_slug`, so all
+languages share one slug namespace). Translation groups are linked once,
+after every language is written, never per language
+(`pll_save_post_translations()` replaces the whole group). Navigation menus
+are seeded per language and the header's ref-less `core/navigation` block is
+bound explicitly to the current language's menu, closing the gap where
+core's own newest-post fallback would otherwise pick whichever menu (in
+whichever language) was created last. `wp pediment adopt <key>
+--language=<code>` exports one language's live markup into
+`patterns/<stem>.<lang>.php`. `tools/generate-wpml-config.mjs` now generates
+`plugin/wpml-config.xml` from every block's `block.json`, checked in CI
+(`--check`), replacing a hand file that had silently drifted (three shipping
+blocks were missing from it entirely).
+[19:10] ✅ Full verification, confirmed directly rather than copied from the
+plan: monolingual PHPUnit **588 tests / 1541 assertions, 1 pre-existing
+skip**; Polylang PHPUnit (`phpunit-polylang.xml.dist`) **50 tests / 85
+assertions**, both re-run clean on this branch. `composer lint`: **0 errors**
+(6 pre-existing warnings, unrelated to this step). `npm run lint:blocks` and
+`npm run lint:colors`: clean. `node tools/generate-wpml-config.mjs --check`:
+up to date. Playwright **53/53** — the count matches a fresh `grep` over
+every `test()` in `plugin/tests/e2e/*.spec.ts`, and the full suite's
+run-twice-from-a-destroyed-environment property (no residue between runs) was
+proven during Task 15's review and re-confirmed here rather than re-run,
+since Task 17 (full verification + gated push) repeats it end to end before
+this branch ships.
+[19:10] 📚 Documented in `docs/seeding.md` (new `## Languages` section: the
+manifest shape, the derived-slug rule and why, the pattern-file convention,
+`wp pediment languages`, the `TRANSLATIONS` notices, `adopt --language`;
+`## Limitations, by design` extended for media/taxonomies, the
+Polylang-only seam, and translation content not being generated), eleven new
+entries in `docs/WORDPRESS_TRAPS.md` (six from the original plan, five more
+found paying for them: Polylang's `post_types` option silently stripping
+`_builtin` types, Polylang's boolean options round-tripping through PHP
+`bool` instead of `0`/`1`, Polylang auto-tagging a translated post type's
+posts on save, `pll_current_language()` firing no filter, and an `enum`
+inside a block attribute's `items.properties` making core drop the whole
+array), plus pointers from `docs/STANDARDS.md`, `plugin/README.md`, and
+`AGENTS.md`, and four new `docs/BACKLOG.md` entries (Medium: a WPML adapter,
+per-language media/taxonomy translation, `wp pediment translate`,
+language-aware `Verifier` post-conditions).
+[19:10] 🔍 Documented, not fixed: a coordinated language removal (dropping a
+language from both the manifest and Polylang's own config in the same run)
+still unlinks that language's translation groups site-wide, for both entries
+and navigation entities — reached by two different routes to the same
+`pll_save_post_translations()`-replaces-the-group mechanism; already in
+`docs/BACKLOG.md`, not repeated here. `tools/generate-wpml-config.mjs`'s
+`NON_PROSE` denylist lives out-of-band in the generator rather than in each
+block's own `block.json`, and its `isReference()` heuristic (`/ids?$/i`)
+matches any string attribute ending in `id`/`ids`, not only a camelCase
+`Id`/`Ids` suffix — both also already in `docs/BACKLOG.md`. `wp pediment seed
+--json` is unreachable: WP-CLI 2.12 rewrites any `--json` assoc-arg to
+`--format=json` before per-command synopsis validation, and `SeedCommand`
+never declares `--format`; predates step 4 (commit e7ea6ce) and was never
+caught because PHPUnit calls `SeedCommand::render()` directly, bypassing
+WP-CLI's own dispatch. A separate task (16b) fixes it before this branch
+ships — deliberately not added to `docs/BACKLOG.md`, since a backlog entry
+for something already scheduled to be fixed on this branch would be stale on
+arrival.
+
+### Planned next
+- Migration step 5: the scaffolder and `/start`.
+
+### Need a decision on
+_(none)_
+
+---
+
 ## Session 2026-07-31 — declarative seeding engine, step 3 (Tasks 1–17)
 
 [23:05] ✅ Migration step 3 SHIPPED: the declarative seeding engine described in

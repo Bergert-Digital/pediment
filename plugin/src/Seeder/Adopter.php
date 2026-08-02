@@ -62,22 +62,27 @@ final class Adopter {
 			return array_merge( $empty, [ 'errors' => [ sprintf( 'Post %d disappeared.', $actual->id ) ] ] );
 		}
 
-		$slugParts = explode( '/', $spec->pattern );
-		$file      = untrailingslashit( $manifest->baseDir() ) . '/patterns/' . end( $slugParts ) . '.php';
-		$media     = ( new MediaSeeder() )->map( $manifest );
-		$markup    = $this->restoreMediaPlaceholders( $manifest, $media, (string) $post->post_content );
-		$contents  = $this->render( $spec, $markup, $file );
+		$default  = $this->lang->defaultLanguage();
+		$pattern  = (string) $spec->patternFor( $language, $default );
+		$stem     = $this->fileStem( $pattern, $language );
+		$suffix   = ( '' === $language || $language === $default ) ? '' : '.' . $language;
+		$file     = untrailingslashit( $manifest->baseDir() ) . '/patterns/' . $stem . $suffix . '.php';
+		$media    = ( new MediaSeeder() )->map( $manifest );
+		$markup   = $this->restoreMediaPlaceholders( $manifest, $media, (string) $post->post_content );
+		$contents = $this->render( $spec, $markup, $file, $spec->titleFor( $language, $default ), $pattern );
 
 		// Adopt takes the body into git, never the title — the manifest is a
 		// hand-edited file and the engine does not rewrite it. Saying so is the
 		// difference between a deliberate divergence and a silent one.
-		$warnings = [];
-		if ( (string) $post->post_title !== $spec->title ) {
+		$declaredTitle = $spec->titleFor( $language, $default );
+		$warnings      = [];
+		if ( (string) $post->post_title !== $declaredTitle ) {
 			$warnings[] = sprintf(
-				'%s: the live title is "%s" but the manifest still declares "%s" — adopt does not write titles back. Update the manifest by hand if git should carry the new name.',
+				'%s (%s): the live title is "%s" but the manifest still declares "%s" — adopt does not write titles back. Update the manifest by hand if git should carry the new name.',
 				$seedKey,
+				'' === $language ? 'default' : $language,
 				(string) $post->post_title,
-				$spec->title
+				$declaredTitle
 			);
 		}
 
@@ -112,28 +117,53 @@ final class Adopter {
 		// apart, and the very next seed rewrites the page adopt just blessed.
 		$resolved = $this->resolveWritten( $file );
 		$header   = get_file_data( $file, [ 'slug' => 'Slug' ] );
-		if ( $header['slug'] !== $spec->pattern ) {
+		if ( $header['slug'] !== $pattern ) {
 			$this->rollback( $file, $backup );
 			return array_merge(
 				$empty,
-				[ 'errors' => [ sprintf( '%s: wrote %s but its Slug header reads "%s", not "%s" — the next seed would not find it, so the write was rolled back.', $seedKey, $file, $header['slug'], (string) $spec->pattern ) ] ]
+				[ 'errors' => [ sprintf( '%s: wrote %s but its Slug header reads "%s", not "%s" — the next seed would not find it, so the write was rolled back.', $seedKey, $file, $header['slug'], $pattern ) ] ]
 			);
 		}
 
 		// The live row is now the source of truth in git too, so it is no longer
 		// "edited" — the next seed will treat it as up to date. The source hash
 		// has to be the shape DesiredState will compute on that next run: the
-		// manifest's title (adopt never writes titles back) crossed with the
-		// pattern output AFTER media placeholders expand. Hashing the raw file
-		// bytes instead leaves every media-bearing page mismatched forever.
+		// language's declared title (adopt never writes titles back) crossed
+		// with the pattern output AFTER media placeholders expand. Hashing the
+		// raw file bytes instead leaves every media-bearing page mismatched
+		// forever; hashing the default-language title instead of the language's
+		// own leaves every non-default adopt mismatched on the very next seed.
 		update_post_meta( $actual->id, Meta::HASH, ContentHash::forPost( $actual->id ) );
 		update_post_meta(
 			$actual->id,
 			Meta::SOURCE,
-			ContentHash::compute( $spec->title, ( new ContentResolver( $media ) )->rewriteMarkup( $resolved ) )
+			ContentHash::compute( $declaredTitle, ( new ContentResolver( $media ) )->rewriteMarkup( $resolved ) )
 		);
 
 		return [ 'path' => $file, 'bytes' => strlen( $contents ), 'written' => true, 'backup' => $backup, 'errors' => [], 'warnings' => $warnings ];
+	}
+
+	/**
+	 * `theme/sample-post-de` -> `sample-post` — the file stem the on-disk
+	 * naming convention uses. Derived from the SAME `$pattern` value that
+	 * becomes the file's `Slug:` header (patternFor()'s resolved value, which
+	 * may be a per-language override, not always `$spec->pattern`) — a stem
+	 * computed from `$spec->pattern` instead would diverge from the header
+	 * whenever a per-language `pattern` override is declared, breaking the
+	 * documented "filename and Slug suffix must agree" convention the next
+	 * seed relies on to find the file again. Mirrors
+	 * DesiredState::fileStem()'s exact stripping rule (strip the known
+	 * `-<language>` suffix, not the last hyphen run, which would eat a real
+	 * multi-word stem like `contact-page`).
+	 */
+	private function fileStem( string $pattern, string $language ): string {
+		$parts  = explode( '/', $pattern );
+		$last   = (string) end( $parts );
+		$suffix = '-' . $language;
+		if ( '' !== $language && str_ends_with( $last, $suffix ) ) {
+			return substr( $last, 0, -strlen( $suffix ) );
+		}
+		return $last;
 	}
 
 	/** The bytes the pattern registry will see, produced the way it produces them. */
@@ -180,7 +210,7 @@ final class Adopter {
 		return $markup;
 	}
 
-	private function render( EntrySpec $spec, string $markup, string $existing = '' ): string {
+	private function render( EntrySpec $spec, string $markup, string $existing = '', string $title = '', string $pattern = '' ): string {
 		// Keep whatever header the file already had — the shipped patterns carry
 		// Description, Keywords, Viewport Width and a phpcs:ignoreFile line that
 		// a regenerated header would silently drop.
@@ -195,8 +225,8 @@ final class Adopter {
 
 		return "<?php\n"
 			. "/**\n"
-			. ' * Title: ' . $spec->title . "\n"
-			. ' * Slug: ' . $spec->pattern . "\n"
+			. ' * Title: ' . ( '' !== $title ? $title : $spec->title ) . "\n"
+			. ' * Slug: ' . ( '' !== $pattern ? $pattern : (string) $spec->pattern ) . "\n"
 			. " * Categories: pediment\n"
 			. " * Inserter: no\n"
 			. " *\n"

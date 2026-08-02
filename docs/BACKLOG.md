@@ -27,6 +27,36 @@ _(none currently known — verify by running a user-journey audit)_
   worth a release note; (b) `--dry-run` prints unresolved-media problems under a
   `VERIFICATION FAILED` heading even though phase 5 never ran — the finding is real and
   pre-write, the heading is not.
+- [ ] **A coordinated language removal silently unlinks that language's translation
+  groups.** Found by review during migration step 4, Task 10, for entries; the same
+  outcome was confirmed for navigation entities during Task 11 review, reached by a
+  different route. Both share the same root mechanism: `pll_save_post_translations()`
+  REPLACES the whole group, so Polylang's own `save_translations()` diffs the new map
+  against the group's *current* membership and deletes anything absent from it — a post
+  whose row never changed can still be unlinked just because it was left out of the map
+  handed to `linkTranslations()` on a run that touched its siblings.
+  - **Entries** (`Applier::apply()`): excludes `ORPHAN` plan items from the ID map it hands
+    to `linkTranslationGroups()`, even when their `postId` is still valid; `DesiredState`
+    crosses every seed key with every configured language, so a single language cannot go
+    missing for one isolated page — but dropping a language from both the manifest and
+    Polylang's own config in the same run passes the Runner's language gate (the two sets
+    still match), and every post in that language becomes `ORPHAN` everywhere at once. Each
+    key's map then omits that language, and the group-replacing write unlinks those posts
+    site-wide — even though the plan reports them as `orphan`, i.e. "left in place."
+  - **Navigation entities** (`NavSeeder::keyed()` / `linkTranslationGroups()`): has no
+    `ORPHAN` concept at all — `keyed()` detects a nav's language by matching it against the
+    *currently configured* language list, so a nav in a just-dropped language matches no
+    candidate and is filed under the empty-language key (`navKey|''`) instead of its real
+    one. `linkTranslationGroups()`'s own `'' === $language` guard (there to skip malformed
+    map keys) then excludes it from the map, and the same still-configured-siblings write
+    unlinks it from its group, exactly as for entries.
+  - A `--dry-run` does not surface either path: it shows the same `orphan` line (entries) or
+    no line at all (navs — a nav that stops matching any configured language is not
+    reported as changing) it always shows, which reads as "nothing happened," not "this post
+    is about to lose its translation-group membership." Fix, if wanted, is either to
+    preserve group membership for no-longer-configured languages, or to report the unlinking
+    as an explicit plan item, for both paths. Narrow and deliberate-removal-only, not a
+    routine-editing risk — not fixed here on purpose.
 - [ ] **Seeding gaps the plan deferred.** A dry run says nothing about front-page, term,
   or site-logo drift (the Applier owns those and they produce no plan items); terms are
   create-only by design, so a manifest-side term change is never applied to an existing
@@ -58,6 +88,76 @@ _(none currently known — verify by running a user-journey audit)_
   Phosphor catalog (virtualized list + search from B's icon-name manifest), wired into
   `pediment/mega-link`'s `icon` attribute and reusable across blocks. Depends on B; until
   then the field is a relocated `TextControl`. Deferred from sub-project A.
+- [ ] **A WPML adapter for the `LanguageProvider` seam.** Migration step 4 built the
+  Polylang implementation only; `LanguageProvider`
+  (`plugin/src/Language/LanguageProvider.php`) is the interface the seeding engine
+  actually depends on, and everything Polylang-specific lives behind it
+  (`PolylangProvider`, `PolylangSetup`, and the two `inc/` files that call `pll_*`
+  directly). A WPML implementation is roughly 150 lines against the same interface —
+  build it when a client site actually needs WPML, not speculatively now.
+- [ ] **Per-language media and taxonomy translation.** Migration step 4 deliberately
+  ships one attachment and one term set per site, locked off in Polylang's own config
+  (`media_support => 0`, `taxonomies => []`, see `docs/seeding.md#languages`). Revisit
+  only if step 6 shows a real client site (Workation is the currently planned one)
+  actually needs per-language images or taxonomies — building it speculatively risks
+  guessing wrong about the shape client themes need.
+- [ ] **`wp pediment translate` — an AI command that writes the missing pattern file a
+  seed notice names.** `wp pediment seed --dry-run`'s `TRANSLATIONS` section already
+  names exactly which `patterns/<slug>.<lang>.php` file is missing and what `Slug:`
+  header it needs (`docs/seeding.md#the-translations-section-of-a-dry-run-plan`); today
+  closing that gap is manual (write the file, or translate in the editor and
+  `wp pediment adopt --language`). A command that drafts the missing file via the
+  existing AI editor plumbing would close the loop end to end.
+- [ ] **Language-aware `Verifier` post-conditions.** The Verifier re-reads the database
+  after every apply and reports what it claims to own that doesn't actually hold (see
+  `docs/seeding.md`'s "Verification problems"), but nothing today checks that a
+  language's root URL actually serves that language's front page — a language root
+  serving the wrong (or the default language's) front page produces no seed-time
+  problem, only an e2e failure once someone happens to check the rendered page.
+- [ ] **`tools/generate-wpml-config.mjs`'s translatability heuristics need a first-party
+  declaration mechanism.** Found by review during migration step 4, Task 14. Two related
+  gaps, both accepted for now because the task's edit scope forbade touching block.json
+  attributes outside adding `items` to arrays: (a) `isReference()`'s `/ids?$/i` matches
+  any string attribute ending in `id`/`ids`, not just a camelCase `Id`/`Ids` suffix —
+  nothing currently triggers this, but a future attribute named e.g. `grid` or `valid`
+  would be silently excluded from translation with no explanation; (b) the `NON_PROSE`
+  denylist of known-non-prose scalar attributes (icon slugs, layout tokens, colors, CSS
+  lengths, reference ids that don't match the `Id`/`Ids` suffix) lives in the generator
+  script itself rather than in each block's own `block.json` — correct under the current
+  constraint, but a future block with a similar non-prose string attribute will be
+  silently marked translatable until someone remembers to update a list in a file block
+  authors have no reason to open. Once the edit-scope constraint is lifted, prefer a
+  first-party declaration in `block.json` itself (e.g. an `x-translatable: false` flag on
+  the attribute) over both the regex heuristic and the out-of-band list.
+
+- [ ] **`Runner::languageMismatch()` sorts language codes with plain `sort()`.**
+  Found by the final review of migration step 4. Byte-order comparison, not
+  locale-aware (`SORT_LOCALE_STRING`/`Collator`) — harmless today because every
+  language slug is lowercase ASCII (`Manifest::parseLanguages()` requires
+  `sanitize_title($slug) === $slug`), but worth a second look if that
+  constraint ever loosens (e.g. a slug containing digits or extra hyphens
+  sorting unintuitively next to a plain two-letter code).
+- [ ] **`wp pediment adopt --language=<code>` does not validate the code
+  against the site's configured languages.** Found by the final review of
+  migration step 4. Today an unrecognised code fails downstream, inside
+  `Adopter::adopt()`, with "No seeded post carries the key" — technically
+  correct but not the clearest message for what is actually a bad `--language`
+  value; validating against `LanguageRegistry::provider()->languages()` before
+  calling `Adopter` would fail faster and say so directly.
+- [ ] **`linkTranslationGroups()` sits on opposite sides of the Kses-suspended
+  region in `Applier` and `NavSeeder`.** Found by the final review of
+  migration step 4. `NavSeeder::apply()` calls it INSIDE the `try` block,
+  before `Kses::restore()` runs in `finally`; `Applier::apply()` calls it
+  AFTER the `finally` block has already restored Kses. `pll_save_post_translations()`
+  can call `wp_insert_term()` with a serialized-array `description`, and term
+  descriptions go through the same `kses_init_filters()`-installed filtering
+  under WP-CLI (no current user) that motivates suspending Kses around
+  `post_content` writes elsewhere in both classes. Not shown to cause an
+  actual corruption in either position by this review — the description is
+  `maybe_serialize()`d PHP, not block-comment markup, so this may be a
+  non-issue — but the two classes disagree on placement for what is
+  documented as "the same rule" in both docblocks, and that alone is worth
+  resolving one way or the other rather than leaving accidental.
 
 ## 🔵 Ideas / later
 

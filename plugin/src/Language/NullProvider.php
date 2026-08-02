@@ -27,6 +27,17 @@ class NullProvider implements LanguageProvider {
 		// No language taxonomy on a monolingual site.
 	}
 
+	/**
+	 * Always true: a monolingual site has nothing to tag, so every post is
+	 * already "as tagged as it will ever be." Reporting false here would make
+	 * Applier's untagged-post repair call setLanguage() every single seed on
+	 * every single site — a no-op in NullProvider, but not the no-op the
+	 * caller should be able to rely on without inspecting the implementation.
+	 */
+	public function hasLanguage( int $postId ): bool {
+		return true;
+	}
+
 	public function linkTranslations( array $map ): void {
 		// Nothing to link.
 	}

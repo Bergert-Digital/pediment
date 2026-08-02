@@ -59,6 +59,21 @@ final class Verifier {
 			if ( (string) get_post_meta( $postId, Meta::KEY, true ) !== $entry->key ) {
 				$problems[] = sprintf( '%s: post %d is missing its seed key.', $mapKey, $postId );
 			}
+			// A post can be untagged, mistagged, or tagged but unlinked from
+			// its group — the exact failure mode that left a pre-existing
+			// page invisible to every translation lookup while the run
+			// reported success (Applier's untagged-post repair exists to
+			// prevent it; this is what would have caught it not doing so).
+			// A no-op on a monolingual site: NullProvider::translationOf()
+			// always returns $postId for language ''.
+			if ( $this->lang->translationOf( $postId, $entry->language ) !== $postId ) {
+				$problems[] = sprintf(
+					'%s: post %d does not carry the language "%s" it was seeded under.',
+					$mapKey,
+					$postId,
+					'' === $entry->language ? '(default)' : $entry->language
+				);
+			}
 
 			$expectedParent = null === $entry->parentKey ? 0 : (int) ( $ids[ $entry->parentKey . '|' . $entry->language ] ?? 0 );
 			if ( null !== $entry->parentKey && 0 === $expectedParent ) {
@@ -118,6 +133,18 @@ final class Verifier {
 				}
 				if ( (string) get_post_meta( $navId, Meta::KEY, true ) !== $key ) {
 					$problems[] = sprintf( 'navs.%s: entity %d is missing its seed key.', $mapKey, $navId );
+				}
+				// Same repair target as the entry loop above, for navigation
+				// entities: a nav that is untagged or unlinked renders the
+				// header wrong, or not at all, in whatever language notices
+				// the gap.
+				if ( $this->lang->translationOf( $navId, $language ) !== $navId ) {
+					$problems[] = sprintf(
+						'navs.%s: entity %d does not carry the language "%s" it was seeded under.',
+						$mapKey,
+						$navId,
+						'' === $language ? '(default)' : $language
+					);
 				}
 				if ( (string) $nav->post_content !== $this->navSeeder->serialize( $spec, $language, $ids ) ) {
 					$problems[] = sprintf( 'navs.%s: stored membership does not match the manifest.', $mapKey );

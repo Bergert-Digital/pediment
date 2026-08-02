@@ -70,6 +70,14 @@ final class Reporter {
 			}
 		}
 
+		if ( [] !== $result->notices ) {
+			$lines[] = '';
+			$lines[] = 'TRANSLATIONS';
+			foreach ( $result->notices as $notice ) {
+				$lines[] = '  - ' . $notice;
+			}
+		}
+
 		$lines[] = '';
 		$lines[] = self::summaryLine( $result ) . ( $result->applied ? '' : ' Nothing was written (--dry-run).' );
 

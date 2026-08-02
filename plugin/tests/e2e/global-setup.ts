@@ -27,6 +27,13 @@ export default async function globalSetup(): Promise< void > {
 
 	wp( `rewrite structure '/%postname%/' --hard` );
 
+	// Languages first, always: content written before the languages exist
+	// carries no language, is invisible to every translation lookup, and has
+	// previously removed a live site's header outright. `wp pediment seed`
+	// refuses to run when the two disagree, so this is also what unblocks it.
+	wp( `plugin activate polylang` );
+	wp( `pediment languages` );
+
 	// Content comes from the fixture theme's seed manifest, applied by the real
 	// engine — the suite exercises `wp pediment seed` on every run.
 	wp( `pediment seed` );

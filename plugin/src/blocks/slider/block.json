@@ -10,7 +10,21 @@
 	"attributes": {
 		"mediaPosition": { "type": "string", "default": "left" },
 		"panelColor": { "type": "string", "default": "#0A1B33" },
-		"slides": { "type": "array", "default": [] }
+		"slides": {
+			"type": "array",
+			"default": [],
+			"items": {
+				"type": "object",
+				"properties": {
+					"altOverride": { "type": "string" },
+					"eyebrow": { "type": "string" },
+					"heading": { "type": "string" },
+					"body": { "type": "string" },
+					"buttonText": { "type": "string" },
+					"buttonUrl": { "type": "string" }
+				}
+			}
+		}
 	},
 	"example": {
 		"attributes": {

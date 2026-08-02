@@ -27,13 +27,20 @@ final class SeedCommand {
 	 * [--dry-run]
 	 * : Print the plan and exit without writing anything.
 	 *
-	 * [--json]
-	 * : Emit the plan as JSON instead of text.
+	 * [--format=<format>]
+	 * : Render the plan as text or JSON.
+	 * ---
+	 * default: text
+	 * options:
+	 *   - text
+	 *   - json
+	 * ---
 	 *
 	 * ## EXAMPLES
 	 *
 	 *     wp pediment seed --dry-run
 	 *     wp pediment seed
+	 *     wp pediment seed --dry-run --format=json
 	 *
 	 * @when after_wp_load
 	 *
@@ -42,7 +49,7 @@ final class SeedCommand {
 	 */
 	public function __invoke( array $args, array $assocArgs ): void {
 		$result = ( new Runner() )->run( [ 'dry_run' => isset( $assocArgs['dry-run'] ) ] );
-		$output = self::render( $result, isset( $assocArgs['json'] ) );
+		$output = self::render( $result, 'json' === ( $assocArgs['format'] ?? 'text' ) );
 
 		// Guarded like DumpSchemaCommand so the rendering is unit-testable
 		// without WP-CLI loaded.
