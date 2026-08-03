@@ -19,24 +19,19 @@ _(none currently known — verify by running a user-journey audit)_
   this monorepo. The old repo still exists and still describes a parent/child world that no longer
   ships. Archive it on GitHub with a README pointing at `docs/client-sites.md`. Needs an explicit
   go-ahead — it is an outward-facing, hard-to-reverse action.
-- [ ] **A `wp_template_part` ordering hazard can silently drop the header on a fresh site.** The
-  plugin seeds the `header` template part on its own activation hook, tagging it with
-  `get_stylesheet()` at that moment. On a fresh `wp-env start`, wp-env auto-activates the plugin
-  from `.wp-env.json` before the client theme is switched away from WordPress's bundled default —
-  so the header gets scoped to the default theme (`twentytwentyfive`, not the client theme) and the
-  front page renders "Template part has been deleted or is unavailable: header" instead of a
-  header. Confirmed reproducible on a plain `npm run env:start`, no manual Docker intervention:
-  the theme-activation step logs "Success: Switched to ... theme" (not "already active") while the
-  plugin-activation step logs "already active" — proving the plugin's hook ran first, against the
-  wrong theme. It does not self-heal: deactivating and reactivating the plugin with the correct
-  theme already active leaves the existing `header` post scoped to the wrong theme, because the
-  seeding logic skips recreating a template part that already exists by slug without checking or
-  repairing its theme scope; only deleting the post and reactivating creates a correctly-scoped
-  one. Found during migration step 5's Task 15 full-verification rehearsal. The fix belongs in the
-  plugin's bootstrap (make the header seeding idempotent against the *currently active* theme,
-  not just against the slug already existing) — migration step 5 deliberately did not touch
-  `plugin/`, so this is unfixed on purpose. `.github/actions/seed-check/action.yml`'s front-page
-  assertion now fails the build on this exact string so it cannot ship silently again.
+- [x] **Header template part scoping was a `WP_Query` singularity bug, not a tagging-order race.**
+  Found during migration step 5's Task 15 full-verification rehearsal; fixed on the same branch in
+  `plugin/inc/bootstrap.php`. The original diagnosis (activation-order tagging skipping recreation
+  of an already-existing part) was refuted: `pediment_bootstrap_header_template_part()`'s lookup
+  used the singular `name` query var, which makes `WP_Query::parse_query()` set `is_singular` —
+  and `WP_Query::get_posts()` only applies `tax_query` when the query is *not* singular. So the
+  theme-scoping check never actually ran the tax query and matched **any** existing "header" part
+  regardless of theme, on every site, not just fresh ones. Switching the lookup to
+  `post_name__in` (which keeps the query non-singular) makes the tax_query apply for real, so each
+  theme gets its own correctly-scoped header part; covered by
+  `BootstrapTest::test_bootstrap_scopes_header_part_to_each_active_theme`.
+  `.github/actions/seed-check/action.yml`'s front-page assertion remains as a standing regression
+  guard, checking for the exact missing-template-part string a recurrence would show.
 
 ## 🟢 Medium
 
@@ -44,13 +39,15 @@ _(none currently known — verify by running a user-journey audit)_
   its version-stamping is unit-tested (`tools/stamp-theme-version.test.mjs`), but no client repo
   has pushed a `v*` tag through it yet. Verify it end to end on the first real client site, and
   treat a failure there as expected rather than surprising.
-- [ ] **`/pediment:port-page` never says how to derive the theme slug.** Step 3 has the agent write
-  a manifest `pattern` value and a pattern file's `Slug:` header, both of which must carry the
-  client theme's slug — but nothing tells it where to get that. Workation's original skill said to
-  derive it from the working directory name; the instruction was dropped in the port and nothing
-  replaced it. Recoverable by reading an existing pattern header or `package.json`'s `name`, but
-  this is the exact step whose failure mode is *silent*: a wrong namespace means the seeder finds
-  no pattern and reports nothing wrong. Found during migration step 5's Task 12 review.
+- [x] **`/pediment:port-page` now says how to derive the theme slug.** Found during migration step
+  5's Task 12 review; fixed in `client-kit/skills/port-page/SKILL.md` Step 3, which now says to
+  derive it from `package.json`'s `name` or an existing `patterns/*.php` file's `Slug:` header.
+  Correction to the original framing: a wrong namespace is not silent for the default language —
+  `ContentResolver::resolve()` (`plugin/src/Seeder/ContentResolver.php:56-57`) throws
+  `ManifestError` when the default-language pattern for a page is not registered, aborting the run
+  loudly. Only a *translation* pattern (a non-default-language pattern that is missing) degrades
+  quietly, falling back to the default language's content. Still worth the line — a wrong
+  namespace is easy to type and easy to miss either way.
 - [ ] **`/pediment:start`'s script path only resolves from a monorepo checkout.** The skill invokes
   `node client-kit/scripts/scaffold.mjs`, which works when run from a clone of this repo — the
   internal path, and the only one step 5 ships. Once the kit is installed as a Claude Code plugin
