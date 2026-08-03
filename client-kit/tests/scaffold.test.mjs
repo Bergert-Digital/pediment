@@ -273,3 +273,27 @@ test('scaffold refuses a bad slug before writing anything', async () => {
   assert.equal(existsSync(target), false);
   await rm(dir, { recursive: true, force: true });
 });
+
+const REAL_TEMPLATE = path.resolve(here, '..', '..', 'client-template');
+
+test('the real client-template scaffolds cleanly and prunes unchosen patterns', async () => {
+  const dir = await temp();
+  const target = path.join(dir, 'acme-roofing');
+  await scaffold(
+    { ...greenfield, pages: greenfield.pages.filter((p) => p.key !== 'services'), nav: ['about', 'contact'] },
+    { target, template: REAL_TEMPLATE, git: false },
+  );
+
+  await assertNoTokens(target);
+  assert.ok(existsSync(path.join(target, 'patterns', 'home.php')));
+  assert.equal(existsSync(path.join(target, 'patterns', 'services.php')), false);
+  assert.ok(existsSync(path.join(target, 'templates', 'index.html')));
+
+  const css = await readFile(path.join(target, 'style.css'), 'utf8');
+  assert.match(css, /Text Domain: acme-roofing/);
+
+  const home = await readFile(path.join(target, 'patterns', 'home.php'), 'utf8');
+  assert.match(home, /Slug: acme-roofing\/home/);
+
+  await rm(dir, { recursive: true, force: true });
+});
