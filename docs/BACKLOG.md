@@ -19,6 +19,24 @@ _(none currently known — verify by running a user-journey audit)_
   this monorepo. The old repo still exists and still describes a parent/child world that no longer
   ships. Archive it on GitHub with a README pointing at `docs/client-sites.md`. Needs an explicit
   go-ahead — it is an outward-facing, hard-to-reverse action.
+- [ ] **A `wp_template_part` ordering hazard can silently drop the header on a fresh site.** The
+  plugin seeds the `header` template part on its own activation hook, tagging it with
+  `get_stylesheet()` at that moment. On a fresh `wp-env start`, wp-env auto-activates the plugin
+  from `.wp-env.json` before the client theme is switched away from WordPress's bundled default —
+  so the header gets scoped to the default theme (`twentytwentyfive`, not the client theme) and the
+  front page renders "Template part has been deleted or is unavailable: header" instead of a
+  header. Confirmed reproducible on a plain `npm run env:start`, no manual Docker intervention:
+  the theme-activation step logs "Success: Switched to ... theme" (not "already active") while the
+  plugin-activation step logs "already active" — proving the plugin's hook ran first, against the
+  wrong theme. It does not self-heal: deactivating and reactivating the plugin with the correct
+  theme already active leaves the existing `header` post scoped to the wrong theme, because the
+  seeding logic skips recreating a template part that already exists by slug without checking or
+  repairing its theme scope; only deleting the post and reactivating creates a correctly-scoped
+  one. Found during migration step 5's Task 15 full-verification rehearsal. The fix belongs in the
+  plugin's bootstrap (make the header seeding idempotent against the *currently active* theme,
+  not just against the slug already existing) — migration step 5 deliberately did not touch
+  `plugin/`, so this is unfixed on purpose. `.github/actions/seed-check/action.yml`'s front-page
+  assertion now fails the build on this exact string so it cannot ship silently again.
 
 ## 🟢 Medium
 
