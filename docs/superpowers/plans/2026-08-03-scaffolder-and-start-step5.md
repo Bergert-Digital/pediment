@@ -18,6 +18,13 @@
 - **Never invent token slugs.** The client palette uses exactly the eleven slugs the plugin's defaults declare (`plugin/tokens/theme.json`): `primary`, `accent`, `accent-hover`, `accent-tint`, `surface`, `surface-elevated`, `surface-sunken`, `foreground`, `foreground-muted`, `border`, `border-strong`.
 - **The manifest format is fixed and strictly validated by the plugin.** Top-level sections are exactly `version`, `languages`, `pages`, `posts`, `entries`, `media`, `navs`, `post_types`, `site`. An unrecognised key is a hard `ManifestError`. See `docs/seeding.md`.
 - **Never write pages with `wp post create`.** The seeder owns identity (`_pediment_seed_key`) and the arbitration hashes.
+- **`3.3.0` in every answers fixture is a placeholder, not a real release.** The latest published
+  release is **v3.0.0**, and it predates the step-3 seeding engine entirely — `wp pediment seed`
+  does not exist in it. Consequences, both load-bearing: every local rehearsal and the CI job must
+  point wp-env at this workspace's own `plugin/` directory, never at a released zip; and
+  `resolveTemplate`'s download path cannot be exercised at all until a release ships
+  `pediment-client-template.zip` (Task 13). `/pediment:start` resolves the real current version at
+  runtime with `gh release list`, so no shipped code hardcodes a version — only the fixtures do.
 - Working directory: `/Users/jonas/conductor/workspaces/pediment/charlottetown`.
 - Every task ends with its own suite green locally: `npm run test:kit` (new), plus `npm run lint:colors` and `npm run lint:blocks` from the root where markup changed.
 
@@ -2359,7 +2366,23 @@ Expected: the plan lists four page creations, the seed applies them, `curl` retu
 cd /tmp/pediment-ci-client && npm run env:stop && cd - && rm -rf /tmp/pediment-ci-client
 ```
 
-Note: locally the scaffolded `.wp-env.json` points at the *released* plugin zip for `answers-ci.json`'s pinned version. If that release does not exist yet, edit the scaffolded `.wp-env.json` to point its plugin entry at the absolute path of this workspace's `plugin/` directory before `env:start` — the same substitution the composite action's `plugin-source` input performs in CI. Record which of the two paths you used in the commit body.
+**Required, not optional:** the scaffolded `.wp-env.json` points at the released plugin zip for
+`answers-ci.json`'s pinned version, and **no released version contains the seeder** — the latest
+release is v3.0.0, which predates step 3. Before `env:start`, edit the scaffolded `.wp-env.json` so
+its plugin entry is the absolute path of this workspace's `plugin/` directory:
+
+```bash
+node -e "
+  const fs = require('node:fs');
+  const p = '/tmp/pediment-ci-client/.wp-env.json';
+  const env = JSON.parse(fs.readFileSync(p, 'utf8'));
+  env.plugins = ['/Users/jonas/conductor/workspaces/pediment/charlottetown/plugin'];
+  fs.writeFileSync(p, JSON.stringify(env, null, 2) + '\n');
+"
+```
+
+This is the same substitution the composite action's `plugin-source` input performs in CI. Without
+it `wp pediment seed` will not exist and the rehearsal fails at the plan step.
 
 - [ ] **Step 5: Commit**
 
