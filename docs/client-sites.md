@@ -45,7 +45,10 @@ question per message. It branches immediately on:
 does and for whom (with tone, in the same message — this is written into `docs/brief.md`, see
 below), languages (defaults to one), a pre-checked sitemap (Home / About / Services / Contact,
 plus optional Blog), an accent colour (the rest of the palette derives from it), and an optional
-logo file path.
+logo file path. The skill states this plainly when it asks: `docs/brief.md` is for you and future
+agents to read; **nothing in the plugin reads it programmatically**. Typing a considered tone
+into that question does not make the AI editor use it — see "What a scaffolded repo contains"
+below.
 
 **Porting an existing site** asks a different five: the source URL, brand (extracted from the
 live site's computed styles and shown for confirmation, not asked for by name), the page list
@@ -76,11 +79,24 @@ It reports the local URL (`http://localhost:8888`) and the wp-admin URL when don
   patterns/*.php          Content, one pattern per page
   seed/manifest.php       Structure: pages, nav, media, languages
   seed/media/             Logo and other seeded media files
-  docs/brief.md           What the business does, for whom, in what tone
+  docs/brief.md           What the business does, for whom, in what tone —
+                          read by humans and agents, read by nothing in the
+                          plugin: it does not feed the AI editor or anything
+                          else programmatically
+  AGENTS.md               The client repo's own hard rules for working here
+                          (never `wp post create`/`update`, `seed:plan` before
+                          `seed`, `adopt -- <key>` to capture editor edits)
+  README.md               Local-dev, day-two, and deploy quickstart — a condensed
+                          version of this whole doc, scoped to this one site
   .wp-env.json
+  .gitignore
   .github/workflows/ci.yml, release.yml   Call this monorepo's reusable workflows
   package.json
 ```
+
+An agent working inside a scaffolded repo should read that repo's own `AGENTS.md` first — this
+doc is the durable explanation of the system as a whole, that file is the day-to-day rulebook for
+the one site it ships in.
 
 What it explicitly does **not** contain: no Composer, no PHPCS, no Playwright, no build step. The
 design system, blocks, templates, and seeding engine all ship inside the Pediment **plugin** —
