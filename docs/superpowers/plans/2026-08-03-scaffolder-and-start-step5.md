@@ -344,6 +344,7 @@ git commit -m "feat(kit): add the client scaffolder's brand colour maths"
 - Consumes: nothing (pure).
 - Produces:
   - `phpString(value: string): string` — a single-quoted PHP literal with `\` and `'` escaped.
+  - `phpComment(value: string): string` — comment-safe text, with `*/` neutralised.
   - `renderManifest(answers: object): string` — the complete PHP source of `seed/manifest.php`.
 
 The answers shape this consumes (the full schema is fixed in Task 3, and `client-kit/tests/fixtures/answers-greenfield.json` is its reference instance):
@@ -510,6 +511,18 @@ export function phpString(value) {
   return "'" + String(value).replace(/\\/g, '\\\\').replace(/'/g, "\\'") + "'";
 }
 
+/**
+ * Neutralise a comment terminator so a value cannot close the docblock it sits in.
+ *
+ * The generated file is require()d by WordPress. A client name containing `*​/`
+ * would otherwise close the header docblock early and turn whatever follows into
+ * live top-level PHP — and `php -l` reports the result as syntactically valid,
+ * so the syntax check does not catch it.
+ */
+export function phpComment(value) {
+  return String(value).replace(/\*\//g, '* /');
+}
+
 /** Default language first — the engine re-orders anyway, and order is load-bearing. */
 function orderedLanguages(languages) {
   const list = [...(languages || [])];
@@ -584,12 +597,12 @@ export function renderManifest(answers) {
   const lines = [
     '<?php',
     '/**',
-    ` * Seed manifest for ${answers.client.name}.`,
+    ` * Seed manifest for ${phpComment(answers.client.name)}.`,
     ' *',
     ' * Structure lives here; content lives in patterns/. Run `npm run seed:plan`',
     ' * to see what a seed would change before running `npm run seed`.',
     ' *',
-    ` * @package ${slug}`,
+    ` * @package ${phpComment(slug)}`,
     ' */',
     '',
     'return array(',
