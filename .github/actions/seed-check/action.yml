@@ -34,7 +34,16 @@ runs:
         node -e "
           const fs = require('node:fs');
           const env = JSON.parse(fs.readFileSync('.wp-env.json', 'utf8'));
-          env.plugins = env.plugins.map((p) => /pediment-plugin\.zip/.test(p) ? process.env.PLUGIN_SOURCE : p);
+          let replaced = 0;
+          env.plugins = env.plugins.map((p) => {
+            if (!/pediment-plugin\.zip/.test(p)) return p;
+            replaced += 1;
+            return process.env.PLUGIN_SOURCE;
+          });
+          if (replaced === 0) {
+            console.error('::error::No .wp-env.json plugin entry matched pediment-plugin.zip, so the local plugin build was never swapped in. This job would have tested the released plugin instead.');
+            process.exit(1);
+          }
           fs.writeFileSync('.wp-env.json', JSON.stringify(env, null, 2) + '\n');
           console.log(JSON.stringify(env.plugins, null, 2));
         "
