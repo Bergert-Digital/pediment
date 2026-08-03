@@ -42,7 +42,15 @@ compares against.
 Add the entry inside the existing `'pages' => array( ... )` block in `seed/manifest.php` — a bare
 top-level key is rejected outright. `Manifest::SECTIONS` only allows `version`, `languages`,
 `pages`, `posts`, `entries`, `media`, `navs`, `post_types`, `site`; an unrecognised top-level key
-throws `ManifestError` and breaks the whole manifest, not just this page:
+throws `ManifestError` and breaks the whole manifest, not just this page.
+
+Both the manifest `pattern` value and the pattern file's `Slug:` header below need `<theme-slug>` —
+derive it from `package.json`'s `name`, or from an existing `patterns/*.php` file's own `Slug:`
+header. Getting it wrong is not always loud: for the default language, `ContentResolver` throws
+`ManifestError` when the pattern it looks up is not registered, so a wrong namespace on this page
+aborts the seed with an error naming the slug it tried. It is only a *translation* pattern (a
+non-default-language `patterns/<key>.<lang>.php`) that degrades quietly — falling back to the
+default language's content with no error at all. Get the namespace right regardless:
 
 ```php
 '<key>' => array( 'title' => '<Title>', 'pattern' => '<theme-slug>/<key>' ),
