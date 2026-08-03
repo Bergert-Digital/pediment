@@ -67,6 +67,14 @@ npm run seed:plan    # shown to you before anything is applied
 npm run seed
 ```
 
+The plugin release named in `plugin.version` must provide `wp pediment seed` — the skill runs
+`npx wp-env run cli wp pediment seed --help` right after `env:start` and stops with a clear message
+if that fails, rather than failing later and less clearly at `seed:plan`. **No published release
+provides it yet**: the latest, v3.0.0, predates the seeding engine built in migration steps 3–5.
+Until a qualifying release ships, scaffold with `--template client-template` from a monorepo
+checkout and point `.wp-env.json` at a local plugin build — `/pediment:start` cannot complete end
+to end against any published release yet.
+
 It reports the local URL (`http://localhost:8888`) and the wp-admin URL when done.
 
 ## What a scaffolded repo contains
