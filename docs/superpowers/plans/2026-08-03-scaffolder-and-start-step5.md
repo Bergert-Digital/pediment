@@ -2041,10 +2041,14 @@ runs:
     - name: Re-seed and assert the plan is now empty of content writes
       shell: bash
       working-directory: ${{ inputs.theme-path }}
+      # Assert on the seeder's own summary line rather than re-deriving its verb
+      # list. Reporter::summaryLine() counts CREATE + UPDATE + RESTORE as writes
+      # (plugin/src/Seeder/Reporter.php); a grep for create|update alone would
+      # silently pass "converged" while a restore was still pending.
       run: |
         set -euo pipefail
         npm run seed:plan | tee /tmp/replan.txt
-        if grep -qiE '^\s*(create|update)\b' /tmp/replan.txt; then
+        if ! grep -qE '(^|[[:space:]])0 to write,' /tmp/replan.txt; then
           echo "::error::A second dry run still wants to write — the seeder is not converging."
           exit 1
         fi
