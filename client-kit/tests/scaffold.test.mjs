@@ -8,6 +8,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
   TOKENS, replaceTokens, validateTarget, validateSlug,
+  validateTargetMatchesSlug, validateFreeText, validatePagesHavePatterns,
   copyTemplate, assertNoTokens, resolveTemplate, scaffold,
 } from '../scripts/scaffold.mjs';
 
@@ -61,6 +62,40 @@ test('validateTarget accepts a missing directory and an empty one', async () => 
   validateTarget(dir);
   validateTarget(path.join(dir, 'does-not-exist-yet'));
   await rm(dir, { recursive: true, force: true });
+});
+
+test('validateTargetMatchesSlug accepts a matching basename and rejects a mismatched one', () => {
+  validateTargetMatchesSlug('/tmp/acme-roofing', 'acme-roofing');
+  validateTargetMatchesSlug('/tmp/acme-roofing/', 'acme-roofing');
+  assert.throws(() => validateTargetMatchesSlug('/tmp/acme', 'acme-roofing'), /does not match client slug/i);
+});
+
+test('validateFreeText accepts plain text and rejects quotes and backslashes', () => {
+  validateFreeText('client.name', 'Acme Roofing');
+  validateFreeText('client.description', null);
+  validateFreeText('client.description', undefined);
+  assert.throws(
+    () => validateFreeText('client.name', 'Acme "Best" Roofing'),
+    (err) => {
+      assert.match(err.message, /client\.name/);
+      assert.match(err.message, /Acme "Best" Roofing/);
+      return true;
+    },
+  );
+  assert.throws(() => validateFreeText('client.description', 'We say \\"yes\\"'), /client\.description/);
+});
+
+test('validatePagesHavePatterns accepts pages with a pattern file and rejects ones without', async () => {
+  validatePagesHavePatterns(MINI, [{ key: 'home' }, { key: 'services' }]);
+  validatePagesHavePatterns(MINI, [{ key: 'home' }, { key: 'blog', postsPage: true }]);
+  assert.throws(
+    () => validatePagesHavePatterns(MINI, [{ key: 'home' }, { key: 'team' }]),
+    (err) => {
+      assert.match(err.message, /team/);
+      assert.match(err.message, /pediment:port-page/);
+      return true;
+    },
+  );
 });
 
 test('copyTemplate writes the tree with tokens replaced', async () => {
@@ -274,6 +309,57 @@ test('scaffold refuses a bad slug before writing anything', async () => {
   await rm(dir, { recursive: true, force: true });
 });
 
+test('scaffold refuses a target whose basename does not match the slug, before writing anything', async () => {
+  const dir = await temp();
+  const target = path.join(dir, 'not-the-slug');
+  await assert.rejects(
+    scaffold(greenfield, { target, template: MINI, git: false }),
+    /does not match client slug/i,
+  );
+  assert.equal(existsSync(target), false);
+  await rm(dir, { recursive: true, force: true });
+});
+
+test('scaffold refuses a client name carrying a quote, before writing anything', async () => {
+  const dir = await temp();
+  const target = path.join(dir, 'acme-roofing');
+  await assert.rejects(
+    scaffold({ ...greenfield, client: { ...greenfield.client, name: 'Acme "Best" Roofing' } },
+      { target, template: MINI, git: false }),
+    /client\.name/,
+  );
+  assert.equal(existsSync(target), false);
+  await rm(dir, { recursive: true, force: true });
+});
+
+test('scaffold refuses a client description carrying a backslash, before writing anything', async () => {
+  const dir = await temp();
+  const target = path.join(dir, 'acme-roofing');
+  await assert.rejects(
+    scaffold({ ...greenfield, client: { ...greenfield.client, description: 'Flat roofs\\repairs' } },
+      { target, template: MINI, git: false }),
+    /client\.description/,
+  );
+  assert.equal(existsSync(target), false);
+  await rm(dir, { recursive: true, force: true });
+});
+
+test('scaffold refuses a page key with no matching pattern file, before writing anything', async () => {
+  const dir = await temp();
+  const target = path.join(dir, 'acme-roofing');
+  await assert.rejects(
+    scaffold({ ...greenfield, pages: [...greenfield.pages, { key: 'team', title: 'Team' }] },
+      { target, template: MINI, git: false }),
+    (err) => {
+      assert.match(err.message, /team/);
+      assert.match(err.message, /pediment:port-page/);
+      return true;
+    },
+  );
+  assert.equal(existsSync(target), false);
+  await rm(dir, { recursive: true, force: true });
+});
+
 const REAL_TEMPLATE = path.resolve(here, '..', '..', 'client-template');
 
 test('the real client-template scaffolds cleanly and prunes unchosen patterns', async () => {
@@ -294,6 +380,45 @@ test('the real client-template scaffolds cleanly and prunes unchosen patterns', 
 
   const home = await readFile(path.join(target, 'patterns', 'home.php'), 'utf8');
   assert.match(home, /Slug: acme-roofing\/home/);
+
+  await rm(dir, { recursive: true, force: true });
+});
+
+test('the real client-template refuses a quote-bearing name and description instead of writing broken JSON', async () => {
+  const dir = await temp();
+  const target = path.join(dir, 'acme-roofing');
+
+  await assert.rejects(
+    scaffold(
+      {
+        ...greenfield,
+        client: { ...greenfield.client, name: 'Acme "Best" Roofing', description: 'We say "yes" to flat roofs.' },
+      },
+      { target, template: REAL_TEMPLATE, git: false },
+    ),
+    /client\.name/,
+  );
+  assert.equal(existsSync(target), false);
+
+  await rm(dir, { recursive: true, force: true });
+});
+
+test('the real client-template refuses a page key it ships no pattern for', async () => {
+  const dir = await temp();
+  const target = path.join(dir, 'acme-roofing');
+
+  await assert.rejects(
+    scaffold(
+      { ...greenfield, pages: [...greenfield.pages, { key: 'team', title: 'Team' }], nav: ['about', 'contact'] },
+      { target, template: REAL_TEMPLATE, git: false },
+    ),
+    (err) => {
+      assert.match(err.message, /team/);
+      assert.match(err.message, /pediment:port-page/);
+      return true;
+    },
+  );
+  assert.equal(existsSync(target), false);
 
   await rm(dir, { recursive: true, force: true });
 });
