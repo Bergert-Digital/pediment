@@ -1,12 +1,14 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { mkdtemp, mkdir, readFile, writeFile, rm } from 'node:fs/promises';
+import { existsSync } from 'node:fs';
+import { execFileSync } from 'node:child_process';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
   TOKENS, replaceTokens, validateTarget, validateSlug,
-  copyTemplate, assertNoTokens, resolveTemplate,
+  copyTemplate, assertNoTokens, resolveTemplate, scaffold,
 } from '../scripts/scaffold.mjs';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
@@ -148,4 +150,126 @@ test('resolveTemplate returns a local directory unchanged', async () => {
 
 test('resolveTemplate refuses a local template path that does not exist', async () => {
   await assert.rejects(resolveTemplate({ template: '/nope/not/here' }), /not a directory/i);
+});
+
+const greenfield = JSON.parse(
+  await readFile(path.join(here, 'fixtures', 'answers-greenfield.json'), 'utf8'),
+);
+const multilingual = JSON.parse(
+  await readFile(path.join(here, 'fixtures', 'answers-multilingual.json'), 'utf8'),
+);
+
+test('scaffold writes theme.json from the brand answers', async () => {
+  const dir = await temp();
+  const target = path.join(dir, 'acme-roofing');
+  await scaffold(greenfield, { target, template: MINI, git: false });
+
+  const theme = JSON.parse(await readFile(path.join(target, 'theme.json'), 'utf8'));
+  assert.equal(theme.version, 2);
+  const accent = theme.settings.color.palette.find((p) => p.slug === 'accent');
+  assert.equal(accent.color, '#b91c1c');
+  assert.equal(theme.settings.typography.fontFamilies[0].slug, 'body');
+
+  await rm(dir, { recursive: true, force: true });
+});
+
+test('scaffold writes a manifest naming every chosen page', async () => {
+  const dir = await temp();
+  const target = path.join(dir, 'acme-roofing');
+  await scaffold(greenfield, { target, template: MINI, git: false });
+
+  const manifest = await readFile(path.join(target, 'seed', 'manifest.php'), 'utf8');
+  for (const key of ['home', 'about', 'services', 'contact']) {
+    assert.match(manifest, new RegExp(`'${key}' => array\\(`));
+  }
+  assert.match(manifest, /'pattern' => 'acme-roofing\/home'/);
+
+  await rm(dir, { recursive: true, force: true });
+});
+
+test('scaffold leaves no surviving template tokens', async () => {
+  const dir = await temp();
+  const target = path.join(dir, 'acme-roofing');
+  await scaffold(greenfield, { target, template: MINI, git: false });
+  await assertNoTokens(target);
+  await rm(dir, { recursive: true, force: true });
+});
+
+test('scaffold pins the plugin release in .wp-env.json and omits Polylang when monolingual', async () => {
+  const dir = await temp();
+  const target = path.join(dir, 'acme-roofing');
+  await scaffold(greenfield, { target, template: MINI, git: false });
+
+  const env = JSON.parse(await readFile(path.join(target, '.wp-env.json'), 'utf8'));
+  assert.equal(env.plugins.length, 1);
+  assert.match(env.plugins[0], /\/v3\.3\.0\/pediment-plugin\.zip$/);
+
+  await rm(dir, { recursive: true, force: true });
+});
+
+test('scaffold adds Polylang to .wp-env.json for a multilingual site', async () => {
+  const dir = await temp();
+  const target = path.join(dir, 'bergwerk-hotel');
+  await scaffold(multilingual, { target, template: MINI, git: false });
+
+  const env = JSON.parse(await readFile(path.join(target, '.wp-env.json'), 'utf8'));
+  assert.equal(env.plugins.length, 2);
+  assert.match(env.plugins[1], /polylang/);
+
+  const manifest = await readFile(path.join(target, 'seed', 'manifest.php'), 'utf8');
+  assert.match(manifest, /'languages' => array\(/);
+
+  await rm(dir, { recursive: true, force: true });
+});
+
+test('scaffold records the template and plugin versions in package.json', async () => {
+  const dir = await temp();
+  const target = path.join(dir, 'acme-roofing');
+  await scaffold(greenfield, { target, template: MINI, git: false });
+
+  const pkg = JSON.parse(await readFile(path.join(target, 'package.json'), 'utf8'));
+  assert.equal(pkg.name, 'acme-roofing');
+  assert.deepEqual(pkg.pediment, { template: '3.3.0', plugin: '3.3.0' });
+
+  await rm(dir, { recursive: true, force: true });
+});
+
+test('scaffold writes docs/brief.md carrying the positioning answers', async () => {
+  const dir = await temp();
+  const target = path.join(dir, 'acme-roofing');
+  await scaffold(greenfield, { target, template: MINI, git: false });
+
+  const brief = await readFile(path.join(target, 'docs', 'brief.md'), 'utf8');
+  assert.match(brief, /Acme Roofing/);
+  assert.match(brief, /Homeowners and small commercial landlords/);
+  assert.match(brief, /Plain, reassuring, no jargon/);
+  assert.match(brief, /nothing reads this file programmatically/i);
+
+  await rm(dir, { recursive: true, force: true });
+});
+
+test('scaffold initialises a git repo with one commit when git is enabled', async () => {
+  const dir = await temp();
+  const target = path.join(dir, 'acme-roofing');
+  await scaffold(greenfield, { target, template: MINI, git: true });
+
+  const log = execFileSync('git', ['-C', target, 'log', '--oneline'], { encoding: 'utf8' });
+  assert.equal(log.trim().split('\n').length, 1);
+  assert.match(log, /Acme Roofing/);
+  const status = execFileSync('git', ['-C', target, 'status', '--porcelain'], { encoding: 'utf8' });
+  assert.equal(status.trim(), '');
+
+  await rm(dir, { recursive: true, force: true });
+});
+
+test('scaffold refuses a bad slug before writing anything', async () => {
+  const dir = await temp();
+  const target = path.join(dir, 'out');
+  await assert.rejects(
+    scaffold({ ...greenfield, client: { ...greenfield.client, slug: 'Acme Roofing' } },
+      { target, template: MINI, git: false }),
+    /slug/i,
+  );
+  assert.equal(existsSync(target), false);
+  await rm(dir, { recursive: true, force: true });
 });
