@@ -91,6 +91,34 @@ test('copyTemplate prunes pattern files for pages that were not chosen', async (
   await rm(dir, { recursive: true, force: true });
 });
 
+test('copyTemplate returns the token-replaced path for a file whose name carries a token', async () => {
+  const dir = await temp();
+  const dest = path.join(dir, 'out');
+  const written = await copyTemplate(MINI, dest, values);
+
+  const replacedRel = path.join('patterns', 'acme-roofing-note.php');
+  assert.ok(written.includes(replacedRel));
+  assert.ok(!written.includes(path.join('patterns', '__PEDIMENT_SLUG__-note.php')));
+
+  const note = await readFile(path.join(dest, replacedRel), 'utf8');
+  assert.match(note, /Slug: acme-roofing\/note/);
+
+  await rm(dir, { recursive: true, force: true });
+});
+
+test('copyTemplate refuses a token value that would write outside destDir', async () => {
+  const dir = await temp();
+  const dest = path.join(dir, 'out');
+  // The token-bearing fixture lives one directory down, at patterns/__PEDIMENT_SLUG__-note.php,
+  // so a single ".." only cancels the "patterns/" segment and lands back inside destDir. A second
+  // ".." is what actually walks out past destDir's own boundary — that is what must be refused.
+  const escaping = { ...values, __PEDIMENT_SLUG__: '../../escape' };
+
+  await assert.rejects(copyTemplate(MINI, dest, escaping), /Refusing to write outside the target directory/);
+
+  await rm(dir, { recursive: true, force: true });
+});
+
 test('assertNoTokens passes on a fully-replaced tree', async () => {
   const dir = await temp();
   const dest = path.join(dir, 'out');

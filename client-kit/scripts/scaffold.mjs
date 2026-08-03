@@ -93,7 +93,14 @@ export async function copyTemplate(srcDir, destDir, values, opts = {}) {
     }
 
     const src = path.join(srcDir, rel);
-    const dest = path.join(destDir, replaceTokens(rel, values));
+    const destRel = replaceTokens(rel, values);
+    const dest = path.join(destDir, destRel);
+
+    const relativeToDestDir = path.relative(destDir, dest);
+    if (relativeToDestDir.startsWith('..') || path.isAbsolute(relativeToDestDir)) {
+      throw new Error(`Refusing to write outside the target directory: ${rel} resolves to ${dest}`);
+    }
+
     await mkdir(path.dirname(dest), { recursive: true });
 
     if (BINARY.test(rel)) {
@@ -101,7 +108,7 @@ export async function copyTemplate(srcDir, destDir, values, opts = {}) {
     } else {
       await writeFile(dest, replaceTokens(await readFile(src, 'utf8'), values));
     }
-    written.push(rel);
+    written.push(destRel);
   }
 
   return written;
