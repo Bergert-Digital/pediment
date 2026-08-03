@@ -2513,6 +2513,7 @@ test('marketplace.json points at this directory and agrees with plugin.json', as
   const manifest = JSON.parse(await readFile(path.join(kit, '.claude-plugin', 'plugin.json'), 'utf8'));
   assert.equal(market.plugins.length, 1);
   assert.equal(market.plugins[0].name, manifest.name);
+  assert.equal(market.plugins[0].description, manifest.description);
   assert.equal(market.plugins[0].version, manifest.version);
   assert.equal(market.plugins[0].source, './');
 });
@@ -2538,10 +2539,21 @@ test('every script a skill references actually exists', async () => {
   const skillsDir = path.join(kit, 'skills');
   for (const name of await readdir(skillsDir)) {
     const body = await readFile(path.join(skillsDir, name, 'SKILL.md'), 'utf8');
-    for (const [, rel] of body.matchAll(/\b(scripts\/[a-z0-9-]+\.mjs)\b/g)) {
-      assert.ok(existsSync(path.join(kit, rel)), `${name}: references missing ${rel}`);
-    }
-    for (const [, rel] of body.matchAll(/\b(shared\/[a-z0-9-]+\.md)\b/g)) {
+
+    // Character classes are deliberately wide. A narrower [a-z0-9-] silently
+    // matches NOTHING for a reference written with a capital, an underscore or
+    // no directory prefix — so a broken reference passes instead of failing.
+    const references = [
+      ...body.matchAll(/\b(scripts\/[A-Za-z0-9._-]+\.mjs)\b/g),
+      ...body.matchAll(/\b(shared\/[A-Za-z0-9._-]+\.md)\b/g),
+    ];
+
+    assert.ok(
+      references.length > 0,
+      `${name}: references no kit file. Either it should, or its references are written in a form this guard cannot see — write them as scripts/<file>.mjs or shared/<file>.md.`,
+    );
+
+    for (const [, rel] of references) {
       assert.ok(existsSync(path.join(kit, rel)), `${name}: references missing ${rel}`);
     }
   }
@@ -2642,7 +2654,7 @@ description: Create a new Pediment client site — scaffold a standalone client 
 
 # Start a Pediment client site
 
-Body written in Task 11.
+Body written in Task 11. This skill drives `scripts/scaffold.mjs`.
 ```
 
 - [ ] **Step 5: Run the tests to verify they pass**
