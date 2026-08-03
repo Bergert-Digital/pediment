@@ -57,3 +57,17 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAG: ${{ inputs.tag }}
         run: gh release upload "$TAG" pediment-plugin.zip --clobber
+
+      - name: Stage and zip the client template
+        run: |
+          set -euo pipefail
+          mkdir -p stage-template
+          rsync -a client-template/ stage-template/client-template/
+          cd stage-template && zip -rq ../pediment-client-template.zip client-template
+          unzip -l ../pediment-client-template.zip | tail -5
+
+      - name: Upload the client template zip
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ inputs.tag }}
+        run: gh release upload "$TAG" pediment-client-template.zip --clobber
