@@ -259,8 +259,8 @@ export async function scaffold(answers, opts) {
   await assertNoTokens(target);
 
   if (git) {
-    const run = (...args) => execFileSync('git', ['-C', target, ...args], { stdio: 'inherit' });
-    execFileSync('git', ['init', '-b', 'main', target], { stdio: 'inherit' });
+    const run = (...args) => execFileSync('git', ['-C', target, ...args], { stdio: 'pipe' });
+    execFileSync('git', ['init', '-b', 'main', target], { stdio: 'pipe' });
     run('add', '-A');
     run('commit', '-m',
       `chore: scaffold ${answers.client.name} from the Pediment client template v${values.__PEDIMENT_TEMPLATE_VERSION__}`);
