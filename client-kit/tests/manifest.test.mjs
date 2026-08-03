@@ -99,3 +99,17 @@ test('renderManifest rejects two front pages', () => {
 test('renderManifest rejects a nav item that is not a declared page', () => {
   assert.throws(() => renderManifest({ ...base, nav: ['nope'] }), /nope/);
 });
+
+test('renderManifest neutralises comment terminators in client.name and slug', () => {
+  const out = renderManifest({
+    ...base,
+    client: { name: 'Acme */ echo 1; /* Roofing', slug: 'acme-roofing' },
+    pages: [{ key: 'home', title: 'Home', frontPage: true }],
+    nav: [],
+  });
+  // The injected `*/` should be escaped to `* /`, preventing early docblock closure
+  assert.match(out, /Acme \* \/ echo 1; \/\* Roofing/);
+  // Verify the manifest still renders correctly after the docblock
+  assert.match(out, /return array\(/);
+  assert.match(out, /'version'\s*=>\s*1,/);
+});

@@ -12,6 +12,11 @@ export function phpString(value) {
   return "'" + String(value).replace(/\\/g, '\\\\').replace(/'/g, "\\'") + "'";
 }
 
+/** Neutralise a comment terminator so a value cannot close the docblock it sits in. */
+export function phpComment(value) {
+  return String(value).replace(/\*\//g, '* /');
+}
+
 /** Default language first — the engine re-orders anyway, and order is load-bearing. */
 function orderedLanguages(languages) {
   const list = [...(languages || [])];
@@ -86,12 +91,12 @@ export function renderManifest(answers) {
   const lines = [
     '<?php',
     '/**',
-    ` * Seed manifest for ${answers.client.name}.`,
+    ` * Seed manifest for ${phpComment(answers.client.name)}.`,
     ' *',
     ' * Structure lives here; content lives in patterns/. Run `npm run seed:plan`',
     ' * to see what a seed would change before running `npm run seed`.',
     ' *',
-    ` * @package ${slug}`,
+    ` * @package ${phpComment(slug)}`,
     ' */',
     '',
     'return array(',
