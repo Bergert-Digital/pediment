@@ -43,7 +43,11 @@ asking. Open with the branching question:
    first border-radius. Show the extracted values and ask only "does this look right?". Do not ask
    the user to name colours they already have.
 3. **Pages.** Fetch `/sitemap.xml` (fall back to `/sitemap_index.xml`, then to the nav links on the
-   homepage). Present the list **pre-checked** and ask which to drop.
+   homepage). Present the list **pre-checked** and ask which to drop. The client template ships
+   pattern files for exactly four keys — `home`, `about`, `services`, `contact` — so only pages
+   using those keys can be seeded on the first run. Tell the user which sitemap pages fall outside
+   that set (e.g. `/team/`, `/pricing/`); do not add them to this answers file. Seed the four first,
+   then add each remaining page afterward with `/pediment:port-page`, one at a time.
 4. **Languages.** Read `<link rel="alternate" hreflang="…">` from the homepage. Present pre-filled
    and ask only for confirmation.
 5. **Client name and repo slug.** Derive the slug from the name (lowercase, hyphens); show both.
@@ -98,12 +102,20 @@ Rules:
   `brand.source` to `"extracted:<url>"`.
 - Page `key`s must be lowercase-hyphenated. A blog index page gets `"postsPage": true` and no
   pattern file.
+- Only `home`, `about`, `services`, `contact` have a pattern file in the client template out of
+  the box. A page with any other key makes `scaffold.mjs` refuse before writing anything — add
+  pages beyond those four with `/pediment:port-page` after the first seed, not by listing them
+  here.
 - `logo` is `null`, or `{ "file": "logo.svg", "sourcePath": "<absolute path to the file>" }`.
   `file` is the name it will have inside `seed/media/`; `sourcePath` is where to copy it from.
-- `plugin.version` / `template.version`: use the latest published release. Resolve it with
+- `plugin.version` / `template.version`: use the latest published release that provides
+  `wp pediment seed` — not simply the latest release. Resolve candidates with
   `gh release list --repo Bergert-Digital/pediment --limit 1`, or ask the user if `gh` is
-  unavailable.
-- Ask the user where the repo should go and confirm the absolute path before writing anything.
+  unavailable. Phase 3 verifies the chosen release actually has the command before seeding and
+  stops with a clear message if it does not, rather than discovering it at `seed:plan`.
+- Ask the user where the repo should go and confirm the absolute path before writing anything —
+  the target directory's **basename must equal `client.slug` exactly**; `scaffold.mjs` refuses
+  otherwise, because wp-env derives the in-container theme directory name from it.
 
 ---
 
@@ -124,6 +136,15 @@ commits the result before anything else runs. Then, in the new directory:
 ```bash
 npm install
 npm run env:start
+npx wp-env run cli wp pediment seed --help
+```
+
+**Stop here if the last command fails.** It means the plugin release named in `answers.json` does
+not provide `wp pediment seed` — it predates the seeding engine. Do not continue to `seed:plan`;
+it fails there too, with a less clear error. Tell the user which plugin version was used and that a
+release providing `wp pediment seed` is required (see `docs/client-sites.md` in the monorepo).
+
+```bash
 npm run languages    # only if the manifest has a `languages` section
 npm run seed:plan
 ```
@@ -167,3 +188,7 @@ Never push without the user saying yes.
   `client-template` from a monorepo checkout).
 - **The seed reports problems** → stop and show them. Never re-run a seed to "try again"; the plan
   is deterministic, so a problem repeats until the manifest or a pattern file changes.
+- **`wp pediment seed --help` fails right after `env:start`** → the plugin release used does not
+  provide the seed command yet — expected against any release before one ships that includes the
+  seeding engine, not an intermittent fault. Do not proceed to `seed:plan`. See
+  `docs/client-sites.md` for the current status of published releases.
