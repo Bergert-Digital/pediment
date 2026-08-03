@@ -35,8 +35,10 @@ export function normalizeHex(input) {
   let s = String(input).trim();
   const rgb = s.match(/rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/i);
   if (rgb) {
-    return '#' + [rgb[1], rgb[2], rgb[3]]
-      .map((n) => Number(n).toString(16).padStart(2, '0')).join('');
+    const channels = [rgb[1], rgb[2], rgb[3]].map(Number);
+    if (!channels.every((n) => n >= 0 && n <= 255)) return null;
+    return '#' + channels
+      .map((n) => n.toString(16).padStart(2, '0')).join('');
   }
   s = s.replace('#', '').toLowerCase();
   if (s.length === 3) s = s.split('').map((c) => c + c).join('');

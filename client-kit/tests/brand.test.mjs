@@ -12,6 +12,13 @@ test('normalizeHex accepts rgb(), short hex, bare hex and rejects junk', () => {
   assert.equal(normalizeHex(null), null);
 });
 
+test('normalizeHex rejects out-of-range rgb() values', () => {
+  assert.equal(normalizeHex('rgb(300, 300, 300)'), null);
+  assert.equal(normalizeHex('rgb(255, 0, 0)'), '#ff0000');
+  assert.equal(normalizeHex('rgb(0, 255, 0)'), '#00ff00');
+  assert.equal(normalizeHex('rgb(0, 0, 255)'), '#0000ff');
+});
+
 test('darken and mix are deterministic and clamped', () => {
   assert.equal(darken('#ffffff', 0.5), '#808080');
   assert.equal(darken('#000000', 0.5), '#000000');
