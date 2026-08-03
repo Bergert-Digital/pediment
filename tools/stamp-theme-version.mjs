@@ -24,19 +24,45 @@ export function stampPackageJson(json, version) {
   return JSON.stringify(parsed, null, 2) + '\n';
 }
 
+export async function stampThemeDir(dir, rawVersion) {
+  const version = rawVersion.replace(/^v/, '');
+
+  // Validate version is semver-shaped before touching any files.
+  const semverRegex = /^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$/;
+  if (!semverRegex.test(version)) {
+    throw new Error(`Invalid version "${rawVersion}". Expected a semver string like "1.2.3" or "v1.2.3"`);
+  }
+
+  const cssPath = path.join(dir, 'style.css');
+  const pkgPath = path.join(dir, 'package.json');
+
+  // Read and validate both files before writing either one.
+  const cssContent = await readFile(cssPath, 'utf8');
+  const pkgContent = await readFile(pkgPath, 'utf8');
+
+  // Compute both outputs (this will throw if validation fails).
+  const newCssContent = stampStyleCss(cssContent, version);
+  const newPkgContent = stampPackageJson(pkgContent, version);
+
+  // Write both files.
+  await writeFile(cssPath, newCssContent);
+  await writeFile(pkgPath, newPkgContent);
+
+  return { cssPath, pkgPath, version };
+}
+
 if (process.argv[1] && process.argv[1].endsWith('stamp-theme-version.mjs')) {
   const [dir, raw] = process.argv.slice(2);
   if (!dir || !raw) {
     console.error('Usage: stamp-theme-version.mjs <themeDir> <version|vX.Y.Z>');
     process.exit(1);
   }
-  const version = raw.replace(/^v/, '');
 
-  const cssPath = path.join(dir, 'style.css');
-  await writeFile(cssPath, stampStyleCss(await readFile(cssPath, 'utf8'), version));
-
-  const pkgPath = path.join(dir, 'package.json');
-  await writeFile(pkgPath, stampPackageJson(await readFile(pkgPath, 'utf8'), version));
-
-  console.log(`Stamped ${version} into ${cssPath} and ${pkgPath}`);
+  try {
+    const { cssPath, pkgPath, version } = await stampThemeDir(dir, raw);
+    console.log(`Stamped ${version} into ${cssPath} and ${pkgPath}`);
+  } catch (err) {
+    console.error(err.message);
+    process.exit(1);
+  }
 }
