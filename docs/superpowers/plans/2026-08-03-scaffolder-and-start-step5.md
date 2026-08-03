@@ -1302,8 +1302,7 @@ function briefMarkdown(answers) {
     `# ${client.name} — brief`,
     '',
     'Written by `/pediment:start`. This is the durable record of what the site is for.',
-    'It is read by humans and by agents working in this repo; **nothing reads this file',
-    'programmatically**, so editing it changes documentation, not behaviour.',
+    'It is read by humans and by agents working in this repo; **nothing reads this file programmatically**, so editing it changes documentation, not behaviour.',
     '',
     '## What they do',
     '',
@@ -1384,8 +1383,11 @@ export async function scaffold(answers, opts) {
   await assertNoTokens(target);
 
   if (git) {
-    const run = (...args) => execFileSync('git', ['-C', target, ...args], { stdio: 'inherit' });
-    execFileSync('git', ['init', '-b', 'main', target], { stdio: 'inherit' });
+    // 'pipe', not 'inherit': git's own chatter must not land in a consumer's
+    // stdout or in test output, and execFileSync captures stderr on the thrown
+    // error rather than scattering it.
+    const run = (...args) => execFileSync('git', ['-C', target, ...args], { stdio: 'pipe' });
+    execFileSync('git', ['init', '-b', 'main', target], { stdio: 'pipe' });
     run('add', '-A');
     run('commit', '-m',
       `chore: scaffold ${answers.client.name} from the Pediment client template v${values.__PEDIMENT_TEMPLATE_VERSION__}`);
