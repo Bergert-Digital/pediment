@@ -62,3 +62,10 @@ theme alongside it.
   wp-env and end-to-end tests.
 
 See [docs/blocks.md](docs/blocks.md) for the block authoring contract.
+
+## Building a client site
+
+Client sites are standalone theme repos scaffolded from `client-template/` via the `client-kit`
+Claude Code plugin's `/pediment:start` skill — see
+[docs/client-sites.md](docs/client-sites.md) for the full workflow, from installing the kit
+through day-two content edits to deploying a theme release.

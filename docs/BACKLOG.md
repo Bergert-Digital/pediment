@@ -15,11 +15,49 @@ _(none currently known — verify by running a user-journey audit)_
 - [ ] **Verify the v3 release pipeline end-to-end.** With user approval, confirm a
   release produces only `pediment-plugin.zip`, installs as `plugins/pediment`,
   and does not publish either legacy asset name.
-- [ ] **Update the client-theme template repo.** Replace its parent-theme
-  inheritance with the standalone Pediment plugin flow (migration steps 3–5).
+- [ ] **Archive `pediment-child-theme`.** Migration step 5 replaced it with `client-template/` in
+  this monorepo. The old repo still exists and still describes a parent/child world that no longer
+  ships. Archive it on GitHub with a README pointing at `docs/client-sites.md`. Needs an explicit
+  go-ahead — it is an outward-facing, hard-to-reverse action.
 
 ## 🟢 Medium
 
+- [ ] **`client-release.yml` has never run.** The reusable client release workflow is written and
+  its version-stamping is unit-tested (`tools/stamp-theme-version.test.mjs`), but no client repo
+  has pushed a `v*` tag through it yet. Verify it end to end on the first real client site, and
+  treat a failure there as expected rather than surprising.
+- [ ] **`/pediment:port-page` never says how to derive the theme slug.** Step 3 has the agent write
+  a manifest `pattern` value and a pattern file's `Slug:` header, both of which must carry the
+  client theme's slug — but nothing tells it where to get that. Workation's original skill said to
+  derive it from the working directory name; the instruction was dropped in the port and nothing
+  replaced it. Recoverable by reading an existing pattern header or `package.json`'s `name`, but
+  this is the exact step whose failure mode is *silent*: a wrong namespace means the seeder finds
+  no pattern and reports nothing wrong. Found during migration step 5's Task 12 review.
+- [ ] **`/pediment:start`'s script path only resolves from a monorepo checkout.** The skill invokes
+  `node client-kit/scripts/scaffold.mjs`, which works when run from a clone of this repo — the
+  internal path, and the only one step 5 ships. Once the kit is installed as a Claude Code plugin
+  (the productisation path decided in the step-5 design), the working directory is the client's
+  parent folder and that relative path resolves to nothing. Claude Code exposes a plugin-root
+  variable for exactly this; confirm its name and availability for skills before relying on it,
+  then make the skill prefer it and fall back to the checkout-relative path. Found during
+  migration step 5's Task 11 and deliberately not guessed at.
+- [ ] **The scaffold CI job asserts convergence, not completeness.** `seed-check` proves the front
+  page renders and that a second dry run reports `0 to write`, but nothing asserts an expected
+  page or nav count — a scaffolder regression that silently emitted three pages instead of four
+  would converge on three and pass. Found during migration step 5's Task 9 review. Cheap fix:
+  assert the plan's create count on the first run against the fixture's declared page count.
+- [ ] **`lint:colors` cannot see `client-template/`.** `tools/lint-colors.mjs` hardcodes its scan
+  root to `plugin/src/blocks/` and only walks `.scss`/`.css`, so no colour literal reaching the
+  client template — or a scaffolded client repo — is ever caught. Confirmed during migration
+  step 5's Task 5 review; the template carries no literals today, so the gap is latent rather
+  than active. Widening the scan root is the obvious fix; decide whether client repos should be
+  linted at all first, since they are the ones that multiply.
+- [ ] **Brand voice is captured but not consumed.** `/pediment:start` writes positioning and tone
+  into `docs/brief.md`; `PromptBuilder` still builds a fully static prompt and reads no options.
+  Deliberate (step-5 design decision 7) — close the loop when the AI side is next worked on, and
+  until then keep the skill honest about it.
+- [ ] **The client theme has no auto-updater.** Step 5 decision 8: `ThemeUpdater`/`UpdateToken` did
+  not come across, so client themes update by admin zip upload. Revisit if step 6 shows it hurts.
 - [ ] **Seeding follow-ups from the step-3 final review.** Neither blocks a merge, both
   were parked deliberately: (a) a site that already carries a trashed nav *and* a
   re-created one under the same seed key now aborts the whole run on duplicate identity
