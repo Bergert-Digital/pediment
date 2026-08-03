@@ -5,4 +5,4 @@ description: Create a new Pediment client site — scaffold a standalone client 
 
 # Start a Pediment client site
 
-Body written in Task 11.
+Body written in Task 11. This skill drives `scripts/scaffold.mjs`.
