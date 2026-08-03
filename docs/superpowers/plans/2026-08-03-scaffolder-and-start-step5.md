@@ -187,8 +187,14 @@ test('themeJsonSettings omits fontFace when there is no downloaded file', () => 
 In the root `package.json`, add to `scripts`:
 
 ```json
-"test:kit": "node --test client-kit/tests/"
+"test:kit": "node --test client-kit/tests/*.test.mjs"
 ```
+
+The unquoted shell glob is deliberate and load-bearing. `node --test <directory>` scans the
+directory on Node 20 but **fails outright on Node 24** with `Cannot find module …/client-kit/tests`
+— verified on both. Leaving the glob unquoted makes the shell expand it to explicit file paths,
+which every Node version accepts. Matching `*.test.mjs` rather than `*.mjs` additionally keeps a
+non-test helper dropped into `tests/` from being loaded as a test file.
 
 Run: `npm run test:kit`
 Expected: FAIL — `Cannot find module '.../client-kit/scripts/brand.mjs'`.
@@ -1425,7 +1431,7 @@ Expected: PASS — the 9 new composition tests, and nothing earlier regressed.
 
 ```bash
 git add client-kit/scripts/scaffold.mjs client-kit/tests/scaffold.test.mjs client-kit/tests/fixtures
-git commit -m "feat(kit): compose theme.json, the manifest and the brief when scaffolding"
+git commit -m "feat(kit): compose the scaffolded theme's generated files"
 ```
 
 ---
@@ -1857,8 +1863,11 @@ test('stampPackageJson rewrites version and preserves everything else', () => {
 In the root `package.json`:
 
 ```json
-"test:kit": "node --test client-kit/tests/ tools/"
+"test:kit": "node --test client-kit/tests/*.test.mjs tools/*.test.mjs"
 ```
+
+Keep the globs unquoted — see Task 1's note: `node --test <directory>` fails on Node 24, and shell
+expansion to explicit file paths is what works on every version.
 
 Run: `npm run test:kit`
 Expected: FAIL — `Cannot find module './stamp-theme-version.mjs'`.
@@ -1921,7 +1930,7 @@ Expected: PASS — the 6 new tests in `tools/`, and nothing earlier regressed.
 
 ```bash
 git add tools/stamp-theme-version.mjs tools/stamp-theme-version.test.mjs package.json
-git commit -m "feat(release): stamp client theme version headers with a tested script"
+git commit -m "feat(release): stamp client theme version headers"
 ```
 
 ---
@@ -2945,7 +2954,7 @@ Expected: PASS — the shared/*.md references resolve.
 
 ```bash
 git add client-kit/skills/port-page/SKILL.md client-kit/shared
-git commit -m "feat(kit): port the page-porting skill onto the seeding engine"
+git commit -m "feat(kit): port page-porting onto the seeding engine"
 ```
 
 ---
@@ -3098,7 +3107,7 @@ directory). Fix the docs where they drift.
 
 ```bash
 git add docs/client-sites.md README.md AGENTS.md docs/BACKLOG.md
-git commit -m "docs: explain how Pediment client sites are made and maintained"
+git commit -m "docs: explain how client sites are made and maintained"
 ```
 
 ---
