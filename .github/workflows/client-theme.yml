@@ -1,0 +1,33 @@
+name: Client theme CI
+
+# Called by every scaffolded Pediment client repo:
+#
+#   jobs:
+#     seed:
+#       uses: Bergert-Digital/pediment/.github/workflows/client-theme.yml@main
+#
+# One copy of these checks lives here so a fix reaches every client site without
+# anyone editing N repos — the copy-paste pattern the dev-flow review diagnosed.
+
+on:
+  workflow_call:
+    inputs:
+      theme-path:
+        description: Path to the client theme directory.
+        required: false
+        type: string
+        default: "."
+
+jobs:
+  seed:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - uses: Bergert-Digital/pediment/.github/actions/seed-check@main
+        with:
+          theme-path: ${{ inputs.theme-path }}
