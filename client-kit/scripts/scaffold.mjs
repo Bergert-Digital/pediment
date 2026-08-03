@@ -17,6 +17,8 @@ import { existsSync, readdirSync, statSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
+import { themeJsonSettings } from './brand.mjs';
+import { renderManifest } from './manifest.mjs';
 
 export const TOKENS = Object.freeze([
   '__PEDIMENT_SLUG__',
@@ -165,4 +167,131 @@ export async function resolveTemplate({ template, version, cacheDir } = {}) {
   execFileSync('unzip', ['-q', zip, '-d', dir], { stdio: 'inherit' });
 
   return path.join(dir, 'client-template');
+}
+
+const POLYLANG = 'https://downloads.wordpress.org/plugin/polylang.3.8.6.zip';
+
+function briefMarkdown(answers) {
+  const { client, brief, brand, languages, pages } = answers;
+  return [
+    `# ${client.name} — brief`,
+    '',
+    'Written by `/pediment:start`. This is the durable record of what the site is for.',
+    'It is read by humans and by agents working in this repo; **nothing reads this file ' +
+      'programmatically**, so editing it changes documentation, not behaviour.',
+    '',
+    '## What they do',
+    '',
+    brief.does,
+    '',
+    '## Who for',
+    '',
+    brief.audience,
+    '',
+    '## Tone',
+    '',
+    brief.tone,
+    '',
+    '## Languages',
+    '',
+    ...languages.map((l) => `- ${l.name} (\`${l.slug}\`, ${l.locale})${l.default ? ' — default' : ''}`),
+    '',
+    '## Pages at launch',
+    '',
+    ...pages.map((p) => `- ${p.title} (\`${p.key}\`)`),
+    '',
+    '## Brand',
+    '',
+    `- Accent: \`${brand.accent}\``,
+    `- Primary: \`${brand.primary || 'Pediment default'}\``,
+    `- Type: ${brand.font && brand.font.family ? brand.font.family : 'Pediment default'}`,
+    `- Source: ${brand.source === 'chosen' ? 'chosen during /start' : brand.source}`,
+    '',
+  ].join('\n');
+}
+
+export async function scaffold(answers, opts) {
+  const { target, template, git = true } = opts;
+
+  validateSlug(answers.client.slug);
+  validateTarget(target);
+
+  const values = {
+    __PEDIMENT_SLUG__: answers.client.slug,
+    __PEDIMENT_NAME__: answers.client.name,
+    __PEDIMENT_DESCRIPTION__: answers.client.description || `${answers.client.name} — built with Pediment.`,
+    __PEDIMENT_PLUGIN_VERSION__: answers.plugin.version,
+    __PEDIMENT_TEMPLATE_VERSION__: (answers.template && answers.template.version) || answers.plugin.version,
+  };
+
+  const srcDir = await resolveTemplate({
+    template,
+    version: answers.template && answers.template.version,
+  });
+
+  const files = await copyTemplate(srcDir, target, values, {
+    keepPages: answers.pages.filter((p) => !p.postsPage).map((p) => p.key),
+  });
+
+  await writeFile(
+    path.join(target, 'theme.json'),
+    JSON.stringify(themeJsonSettings(answers.brand), null, 2) + '\n',
+  );
+
+  await mkdir(path.join(target, 'seed'), { recursive: true });
+  await writeFile(path.join(target, 'seed', 'manifest.php'), renderManifest(answers));
+
+  if (answers.logo && answers.logo.sourcePath) {
+    await mkdir(path.join(target, 'seed', 'media'), { recursive: true });
+    await cp(answers.logo.sourcePath, path.join(target, 'seed', 'media', answers.logo.file));
+  }
+
+  if (answers.languages.length > 1) {
+    const envPath = path.join(target, '.wp-env.json');
+    const env = JSON.parse(await readFile(envPath, 'utf8'));
+    env.plugins = [...env.plugins, POLYLANG];
+    await writeFile(envPath, JSON.stringify(env, null, 2) + '\n');
+  }
+
+  await mkdir(path.join(target, 'docs'), { recursive: true });
+  await writeFile(path.join(target, 'docs', 'brief.md'), briefMarkdown(answers));
+
+  await assertNoTokens(target);
+
+  if (git) {
+    const run = (...args) => execFileSync('git', ['-C', target, ...args], { stdio: 'inherit' });
+    execFileSync('git', ['init', '-b', 'main', target], { stdio: 'inherit' });
+    run('add', '-A');
+    run('commit', '-m',
+      `chore: scaffold ${answers.client.name} from the Pediment client template v${values.__PEDIMENT_TEMPLATE_VERSION__}`);
+  }
+
+  return { target, files };
+}
+
+function parseArgs(argv) {
+  const out = { git: true };
+  for (let i = 0; i < argv.length; i += 1) {
+    const arg = argv[i];
+    if (arg === '--no-git') out.git = false;
+    else if (arg === '--answers') out.answers = argv[++i];
+    else if (arg === '--target') out.target = argv[++i];
+    else if (arg === '--template') out.template = argv[++i];
+    else throw new Error(`Unknown argument: ${arg}`);
+  }
+  if (!out.answers || !out.target) {
+    throw new Error('Usage: scaffold.mjs --answers <file> --target <dir> [--template <dir>] [--no-git]');
+  }
+  return out;
+}
+
+if (process.argv[1] && process.argv[1].endsWith('scaffold.mjs')) {
+  const args = parseArgs(process.argv.slice(2));
+  const answers = JSON.parse(await readFile(args.answers, 'utf8'));
+  const result = await scaffold(answers, {
+    target: path.resolve(args.target),
+    template: args.template,
+    git: args.git,
+  });
+  console.log(`Scaffolded ${answers.client.name} into ${result.target} (${result.files.length} template files).`);
 }

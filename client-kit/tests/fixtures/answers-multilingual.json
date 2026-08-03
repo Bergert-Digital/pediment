@@ -1,0 +1,36 @@
+{
+  "version": 1,
+  "mode": "greenfield",
+  "client": {
+    "name": "Bergwerk Hotel",
+    "slug": "bergwerk-hotel",
+    "description": "A mountain hotel in the Zillertal."
+  },
+  "brief": {
+    "does": "Flat and pitched roof installation, repair and inspection.",
+    "audience": "Homeowners and small commercial landlords within 40 miles of Newcastle.",
+    "tone": "Plain, reassuring, no jargon.",
+    "sourceUrl": null
+  },
+  "brand": {
+    "accent": "#B91C1C",
+    "primary": "#1F2937",
+    "foreground": "#1F2937",
+    "font": { "family": "Inter", "weights": ["400", "700"] },
+    "source": "chosen"
+  },
+  "languages": [
+    { "slug": "de", "name": "Deutsch", "locale": "de_DE", "flag": "de", "default": true },
+    { "slug": "en", "name": "English", "locale": "en_US", "flag": "gb" }
+  ],
+  "pages": [
+    { "key": "home", "title": "Home", "frontPage": true },
+    { "key": "about", "title": "About" },
+    { "key": "services", "title": "Services" },
+    { "key": "contact", "title": "Contact" }
+  ],
+  "nav": ["about", "services", "contact"],
+  "logo": null,
+  "plugin": { "version": "3.3.0" },
+  "template": { "version": "3.3.0" }
+}
