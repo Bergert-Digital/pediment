@@ -1,0 +1,6 @@
+{
+  "name": "__PEDIMENT_SLUG__",
+  "version": "0.1.0",
+  "private": true,
+  "pediment": { "template": "__PEDIMENT_TEMPLATE_VERSION__", "plugin": "__PEDIMENT_PLUGIN_VERSION__" }
+}
