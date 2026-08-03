@@ -1,0 +1,90 @@
+name: Client theme release
+
+# Called by a scaffolded client repo on a pushed v* tag:
+#
+#   jobs:
+#     release:
+#       uses: Bergert-Digital/pediment/.github/workflows/client-release.yml@main
+#       with:
+#         tag: ${{ github.ref_name }}
+
+on:
+  workflow_call:
+    inputs:
+      tag:
+        description: The tag being released (e.g. v1.4.0).
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  zip:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the client theme
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tag }}
+
+      - name: Check out Pediment's tooling
+        uses: actions/checkout@v4
+        with:
+          repository: Bergert-Digital/pediment
+          ref: main
+          path: .pediment-tools
+          sparse-checkout: tools
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Resolve the theme slug from style.css
+        id: slug
+        run: |
+          set -euo pipefail
+          SLUG=$(node -e "
+            const css = require('node:fs').readFileSync('style.css', 'utf8');
+            const m = css.match(/^Text Domain:\s*(.+)$/m);
+            if (!m) { console.error('style.css has no Text Domain header'); process.exit(1); }
+            process.stdout.write(m[1].trim());
+          ")
+          echo "slug=$SLUG" >> "$GITHUB_OUTPUT"
+          echo "Theme slug: $SLUG"
+
+      - name: Stamp the version header
+        run: node .pediment-tools/tools/stamp-theme-version.mjs . "${{ inputs.tag }}"
+
+      - name: Verify the header actually moved
+        run: |
+          set -euo pipefail
+          VERSION="${{ inputs.tag }}"
+          VERSION="${VERSION#v}"
+          grep -q "^Version: ${VERSION}$" style.css
+          echo "style.css Version header is ${VERSION}"
+
+      - name: Stage and zip
+        env:
+          SLUG: ${{ steps.slug.outputs.slug }}
+        run: |
+          set -euo pipefail
+          mkdir -p "stage/${SLUG}"
+          rsync -a \
+            --exclude '.git' \
+            --exclude '.github' \
+            --exclude '.pediment-tools' \
+            --exclude 'node_modules' \
+            --exclude 'stage' \
+            --exclude '.wp-env.json' \
+            --exclude '.wp-env.override.json' \
+            --exclude 'package-lock.json' \
+            ./ "stage/${SLUG}/"
+          cd stage && zip -rq "../${SLUG}.zip" "${SLUG}"
+          unzip -l "../${SLUG}.zip" | tail -5
+
+      - name: Attach the zip to the release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SLUG: ${{ steps.slug.outputs.slug }}
+        run: gh release upload "${{ inputs.tag }}" "${SLUG}.zip" --clobber
