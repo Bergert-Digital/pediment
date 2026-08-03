@@ -3148,6 +3148,11 @@ npm run test:kit
   its version-stamping is unit-tested (`tools/stamp-theme-version.test.mjs`), but no client repo
   has pushed a `v*` tag through it yet. Verify it end to end on the first real client site, and
   treat a failure there as expected rather than surprising.
+- [ ] **The scaffold CI job asserts convergence, not completeness.** `seed-check` proves the front
+  page renders and that a second dry run reports `0 to write`, but nothing asserts an expected
+  page or nav count — a scaffolder regression that silently emitted three pages instead of four
+  would converge on three and pass. Found during migration step 5's Task 9 review. Cheap fix:
+  assert the plan's create count on the first run against the fixture's declared page count.
 - [ ] **`lint:colors` cannot see `client-template/`.** `tools/lint-colors.mjs` hardcodes its scan
   root to `plugin/src/blocks/` and only walks `.scss`/`.css`, so no colour literal reaching the
   client template — or a scaffolded client repo — is ever caught. Confirmed during migration
