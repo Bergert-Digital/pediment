@@ -3292,3 +3292,78 @@ git push -u origin dev-flow-step-5
 ```
 
 Then open the PR only if asked, and watch CI with `/check-ci`.
+
+---
+
+### Task 16: Fix the header template part's theme scoping
+
+**Added after Task 15's verification**, which proved on a plain `npm run env:start` that a freshly
+scaffolded client site boots with a broken header. This task deliberately relaxes the plan's
+"nothing under `plugin/` changes" constraint — with the user's explicit go-ahead — because the
+alternative is shipping a front door whose first impression is a missing header, and a `scaffold`
+CI job that fails by design.
+
+**Files:**
+- Modify: `plugin/inc/bootstrap.php` (`pediment_bootstrap_header_template_part()`)
+- Test: `plugin/tests/phpunit/` — a new or existing case covering theme-scoped header seeding
+
+**Interfaces:**
+- Consumes: nothing new.
+- Produces: no signature change. `pediment_bootstrap_header_template_part()` keeps its name and
+  contract; only its correctness under a mid-request theme change improves.
+
+**The observed failure.** wp-env auto-activates the plugin during `wp-env start`, before the client
+template's `env:start` runs `wp theme activate <slug>`. The bootstrap therefore seeds its header
+part while `twentytwentyfive` is still the active theme, and the part is scoped to that theme's
+`wp_theme` term. On a later request, with the client theme active, the theme-scoped lookup finds
+nothing and inserts a second part — but a `wp_template_part` with `post_name` `header` already
+exists, so the new row does not end up with the literal slug `header`. The client theme's
+`templates/index.html` references `<!-- wp:template-part {"slug":"header"} /-->`, that reference
+resolves to nothing, and the front page renders `Template part has been deleted or is unavailable:
+header` with an HTTP 200.
+
+**Diagnose before fixing.** The exact mechanism by which the second insert loses the `header` slug
+must be established empirically, not assumed. WordPress core scopes template-part slug uniqueness
+per theme (`wp_filter_wp_template_unique_post_slug`), and the plugin sets the `wp_theme` term
+*after* `wp_insert_post` returns — so core cannot see which theme the new part belongs to at the
+moment it decides the slug. Confirm that is what happens before changing anything, and record the
+observed `post_name` in the report.
+
+- [ ] **Step 1: Write the failing test**
+
+Reproduce the real sequence: seed under one theme, switch themes, seed again, and assert the second
+theme has a part whose `post_name` is exactly `header`. Assert on the stored slug — asserting only
+that "a part exists" passes against the broken behaviour and proves nothing.
+
+- [ ] **Step 2: Run it and confirm it fails for the diagnosed reason**
+
+The failure must be the slug, not a missing row. Quote the actual `post_name` in the report.
+
+- [ ] **Step 3: Fix `pediment_bootstrap_header_template_part()`**
+
+Keep the change minimal and keep the function idempotent. The header part must end up with
+`post_name` exactly `header`, scoped to the active theme, without disturbing a part that already
+exists for another theme — a real site may legitimately carry several.
+
+- [ ] **Step 4: Run the full plugin suite**
+
+```bash
+npx wp-env run tests-wordpress --env-cwd=wp-content/plugins/pediment-ai ./vendor/bin/phpunit
+npx wp-env run tests-wordpress --env-cwd=wp-content/plugins/pediment-ai ./vendor/bin/phpunit -c phpunit-polylang.xml.dist
+```
+
+Both suites must stay green — the monorepo's own wp-env masks this bug with an mu-plugin that
+switches theme early, so existing tests exercise the happy path and must not regress.
+
+- [ ] **Step 5: Re-run the clean-slate rehearsal**
+
+Scaffold, boot with a plain `npm run env:start`, and confirm the front page no longer contains
+`Template part has been deleted or is unavailable` and does render the header. This is the
+acceptance test; the PHPUnit case is the regression guard.
+
+- [ ] **Step 6: Commit**
+
+```bash
+git add plugin/inc/bootstrap.php <the test file>
+git commit -m "fix(header): scope the seeded header part to the active theme"
+```
