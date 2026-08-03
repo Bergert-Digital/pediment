@@ -2438,23 +2438,33 @@ Expected: the plan lists four page creations, the seed applies them, `curl` retu
 cd /tmp/pediment-ci-client && npm run env:stop && cd - && rm -rf /tmp/pediment-ci-client
 ```
 
-**Required, not optional:** the scaffolded `.wp-env.json` points at the released plugin zip for
+**Required, not optional.** The scaffolded `.wp-env.json` points at the released plugin zip for
 `answers-ci.json`'s pinned version, and **no released version contains the seeder** — the latest
-release is v3.0.0, which predates step 3. Before `env:start`, edit the scaffolded `.wp-env.json` so
-its plugin entry is the absolute path of this workspace's `plugin/` directory:
+release is v3.0.0, which predates step 3. You must point wp-env at this workspace's own plugin
+instead.
+
+**Stage it into a directory named `pediment` first.** wp-env derives the in-container plugin slug
+from the mounted directory's *basename*, so mounting `…/charlottetown/plugin` installs a plugin
+whose slug is `plugin`, and the template's `env:start` script — which runs
+`wp plugin activate pediment` — fails with "plugin could not be found". Staging is exactly what
+the CI job does; the rehearsal must match it.
 
 ```bash
+STAGE=$(mktemp -d)/pediment
+mkdir -p "$STAGE"
+rsync -a --exclude-from=plugin/.distignore plugin/ "$STAGE/"
 node -e "
   const fs = require('node:fs');
   const p = '/tmp/pediment-ci-client/.wp-env.json';
   const env = JSON.parse(fs.readFileSync(p, 'utf8'));
-  env.plugins = ['/Users/jonas/conductor/workspaces/pediment/charlottetown/plugin'];
+  env.plugins = [process.env.STAGE];
   fs.writeFileSync(p, JSON.stringify(env, null, 2) + '\n');
 "
 ```
 
-This is the same substitution the composite action's `plugin-source` input performs in CI. Without
-it `wp pediment seed` will not exist and the rehearsal fails at the plan step.
+This is the same substitution the composite action's `plugin-source` input performs in CI, and CI
+passes it a `stage-plugin/pediment` path for the same reason. Without it, `wp pediment seed` does
+not exist and the rehearsal fails at the plan step.
 
 - [ ] **Step 5: Commit**
 
@@ -3210,8 +3220,21 @@ Expected: green. These are pure regression gates.
 ```bash
 rm -rf /tmp/final-check
 node client-kit/scripts/scaffold.mjs --answers client-kit/tests/fixtures/answers-ci.json --target /tmp/final-check --template client-template
+STAGE=$(mktemp -d)/pediment
+mkdir -p "$STAGE"
+rsync -a --exclude-from=plugin/.distignore plugin/ "$STAGE/"
+STAGE="$STAGE" node -e "
+  const fs = require('node:fs');
+  const p = '/tmp/final-check/.wp-env.json';
+  const env = JSON.parse(fs.readFileSync(p, 'utf8'));
+  env.plugins = [process.env.STAGE];
+  fs.writeFileSync(p, JSON.stringify(env, null, 2) + '\n');
+"
 cd /tmp/final-check && git log --oneline && npm install && npm run env:start && npm run seed:plan
 ```
+
+The staging directory must be named `pediment`: wp-env derives the plugin slug from the mounted
+directory's basename, and `env:start` runs `wp plugin activate pediment`.
 
 Read the plan. If it lists the four pages and the nav, apply it with `npm run seed`, load
 http://localhost:8888, and confirm the header, the front page and the nav all render. Then
