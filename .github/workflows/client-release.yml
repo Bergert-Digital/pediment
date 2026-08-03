@@ -67,6 +67,15 @@ jobs:
       - name: Stage and zip
         env:
           SLUG: ${{ steps.slug.outputs.slug }}
+        # `seed/` MUST ship — the seeder reads seed/manifest.php and seed/media/
+        # from the active theme at runtime, and the wp-admin Seeding tab is the
+        # only way to re-seed on admin-only hosting.
+        #
+        # `docs/` MUST NOT — docs/brief.md is a per-client business brief, and a
+        # theme directory is web-servable, so shipping it publishes positioning
+        # and audience notes at a predictable URL. `AGENTS.md` and `package.json`
+        # are excluded to match plugin/.distignore, which strips the plugin's
+        # equivalents for the same reason: nothing at runtime reads them.
         run: |
           set -euo pipefail
           mkdir -p "stage/${SLUG}"
@@ -78,7 +87,10 @@ jobs:
             --exclude 'stage' \
             --exclude '.wp-env.json' \
             --exclude '.wp-env.override.json' \
+            --exclude 'package.json' \
             --exclude 'package-lock.json' \
+            --exclude 'docs' \
+            --exclude 'AGENTS.md' \
             ./ "stage/${SLUG}/"
           cd stage && zip -rq "../${SLUG}.zip" "${SLUG}"
           unzip -l "../${SLUG}.zip" | tail -5
