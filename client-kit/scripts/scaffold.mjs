@@ -71,6 +71,48 @@ export function validateTarget(target) {
   }
 }
 
+/**
+ * WordPress derives the in-container theme directory from the mounted path's basename
+ * (client-template/.wp-env.json sets "themes": ["."]), and package.json's env:start script runs
+ * `wp theme activate <slug>`. A target whose basename differs from the slug boots wp-env and then
+ * fails theme activation, after the repo has already been committed.
+ */
+export function validateTargetMatchesSlug(target, slug) {
+  const base = path.basename(target);
+  if (base !== slug) {
+    throw new Error(
+      `Target directory "${base}" does not match client slug "${slug}".\n\n` +
+      '  wp-env derives the theme directory it mounts inside the container from the target\n' +
+      '  directory\'s own basename, and package.json runs `wp theme activate <slug>` against\n' +
+      '  that container — so a mismatched directory name boots wp-env and then fails to\n' +
+      '  activate the theme, after the repo is already committed.\n\n' +
+      `  Name the target directory exactly "${slug}", or change client.slug to match it.`,
+    );
+  }
+}
+
+/**
+ * `client.name` and `client.description` are interpolated as free text into JSON (package.json)
+ * and into block-pattern attribute JSON (patterns/*.php, e.g. the hero's "headline"/"subheadline")
+ * with no escaping. A double quote breaks both: it invalidates package.json outright, and it
+ * makes WordPress's block parser fail to json_decode the attribute blob, silently nulling the
+ * attributes instead of erroring. A backslash does the same. Rejecting is simpler and more honest
+ * than per-context escaping — the questionnaire can just ask again.
+ */
+export function validateFreeText(field, value) {
+  if (value == null) return;
+  if (/["\\]/.test(String(value))) {
+    throw new Error(
+      `${field} "${value}" contains a double quote (") or backslash (\\).\n\n` +
+      '  This value is interpolated verbatim into JSON (package.json) and into block-pattern\n' +
+      "  attribute JSON (patterns/*.php) with no escaping. Either character breaks both: it's\n" +
+      '  invalid JSON in package.json, and it makes WordPress\'s block parser fail to decode the\n' +
+      '  pattern\'s attributes, silently rendering with none of them.\n\n' +
+      '  Remove it and try again.',
+    );
+  }
+}
+
 async function walk(dir, base = dir) {
   const out = [];
   for (const entry of await readdir(dir, { withFileTypes: true })) {
@@ -114,6 +156,31 @@ export async function copyTemplate(srcDir, destDir, values, opts = {}) {
   }
 
   return written;
+}
+
+/**
+ * `renderPages()` in manifest.mjs emits `'pattern' => '<slug>/<key>'` for every non-postsPage
+ * page, and the seeder throws `ManifestError` — aborting the *entire* seed run, including pages
+ * that would have been fine — the first time it looks up a pattern slug that never registered
+ * because the template shipped no `patterns/<key>.php` for it. Catching that here, before any
+ * file is written, turns a clean-looking scaffold that dies on the first seed into an honest
+ * refusal naming exactly which page keys need a pattern file.
+ */
+export function validatePagesHavePatterns(srcDir, pages) {
+  const missing = (pages || [])
+    .filter((page) => !page.postsPage)
+    .filter((page) => !existsSync(path.join(srcDir, 'patterns', `${page.key}.php`)))
+    .map((page) => page.key);
+
+  if (missing.length) {
+    throw new Error(
+      `No patterns/<key>.php in the template for page key(s): ${missing.join(', ')}.\n\n` +
+      '  Every non-blog page needs a matching patterns/<key>.php in the template, or the seeder\n' +
+      '  throws on that page and the whole seed run aborts — including the pages that were fine.\n\n' +
+      '  Add the missing pattern file(s) with `/pediment:port-page` after the first seed, or drop\n' +
+      '  the page from the answers file.',
+    );
+  }
 }
 
 export async function assertNoTokens(destDir) {
@@ -215,6 +282,9 @@ export async function scaffold(answers, opts) {
 
   validateSlug(answers.client.slug);
   validateTarget(target);
+  validateTargetMatchesSlug(target, answers.client.slug);
+  validateFreeText('client.name', answers.client.name);
+  validateFreeText('client.description', answers.client.description);
 
   const values = {
     __PEDIMENT_SLUG__: answers.client.slug,
@@ -228,6 +298,8 @@ export async function scaffold(answers, opts) {
     template,
     version: answers.template && answers.template.version,
   });
+
+  validatePagesHavePatterns(srcDir, answers.pages);
 
   const files = await copyTemplate(srcDir, target, values, {
     keepPages: answers.pages.filter((p) => !p.postsPage).map((p) => p.key),
