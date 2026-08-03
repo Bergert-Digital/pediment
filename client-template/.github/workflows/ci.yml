@@ -1,0 +1,10 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  seed:
+    uses: Bergert-Digital/pediment/.github/workflows/client-theme.yml@main

@@ -1,0 +1,21 @@
+{
+  "name": "__PEDIMENT_SLUG__",
+  "version": "0.1.0",
+  "private": true,
+  "description": "__PEDIMENT_DESCRIPTION__",
+  "pediment": {
+    "template": "__PEDIMENT_TEMPLATE_VERSION__",
+    "plugin": "__PEDIMENT_PLUGIN_VERSION__"
+  },
+  "scripts": {
+    "env:start": "wp-env start && wp-env run cli wp theme activate __PEDIMENT_SLUG__ && wp-env run cli wp plugin activate pediment",
+    "env:stop": "wp-env stop",
+    "languages": "wp-env run cli wp pediment languages",
+    "seed:plan": "wp-env run cli wp pediment seed --dry-run",
+    "seed": "wp-env run cli wp pediment seed",
+    "adopt": "wp-env run cli wp pediment adopt"
+  },
+  "devDependencies": {
+    "@wordpress/env": "^10.0.0"
+  }
+}
