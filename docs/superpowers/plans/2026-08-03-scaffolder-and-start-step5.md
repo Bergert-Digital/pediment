@@ -3167,6 +3167,13 @@ npm run test:kit
   its version-stamping is unit-tested (`tools/stamp-theme-version.test.mjs`), but no client repo
   has pushed a `v*` tag through it yet. Verify it end to end on the first real client site, and
   treat a failure there as expected rather than surprising.
+- [ ] **`/pediment:port-page` never says how to derive the theme slug.** Step 3 has the agent write
+  a manifest `pattern` value and a pattern file's `Slug:` header, both of which must carry the
+  client theme's slug — but nothing tells it where to get that. Workation's original skill said to
+  derive it from the working directory name; the instruction was dropped in the port and nothing
+  replaced it. Recoverable by reading an existing pattern header or `package.json`'s `name`, but
+  this is the exact step whose failure mode is *silent*: a wrong namespace means the seeder finds
+  no pattern and reports nothing wrong. Found during migration step 5's Task 12 review.
 - [ ] **`/pediment:start`'s script path only resolves from a monorepo checkout.** The skill invokes
   `node client-kit/scripts/scaffold.mjs`, which works when run from a clone of this repo — the
   internal path, and the only one step 5 ships. Once the kit is installed as a Claude Code plugin
