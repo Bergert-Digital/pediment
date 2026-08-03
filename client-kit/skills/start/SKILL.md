@@ -110,11 +110,13 @@ Rules:
 ## Phase 3 — scaffold and boot
 
 ```bash
-node client-kit/scripts/scaffold.mjs --answers .context/start/answers.json --target <absolute path>
+node client-kit/scripts/scaffold.mjs --answers .context/start/answers.json --target <absolute path> --template client-template
 ```
 
-(From a monorepo checkout, add `--template client-template` to scaffold from the working tree
-instead of downloading the release asset.)
+Omitting `--template` makes the scaffolder download `pediment-client-template.zip` for the version
+named in the answers file instead. That asset does not exist in any release yet, so until it
+ships, always pass `--template client-template` when running from a monorepo checkout — dropping
+it fails on the very first run.
 
 The scaffolder refuses a target path containing whitespace or a non-empty target directory, and
 commits the result before anything else runs. Then, in the new directory:
@@ -159,7 +161,9 @@ Never push without the user saying yes.
   resume from `npm run env:start`.
 - **Re-running `/start` in a directory that already has `seed/manifest.php`** → do not scaffold
   again. Say what is already there and offer to resume from phase 3's boot step.
-- **The template download fails** (no release yet, offline) → re-run with
-  `--template <path to a client-template checkout>`.
+- **The scaffold command was run without `--template`** → it will fail trying to download
+  `pediment-client-template.zip`. This is expected until a release ships that asset, not an
+  intermittent fault — re-run with `--template <path to a client-template checkout>` (e.g.
+  `client-template` from a monorepo checkout).
 - **The seed reports problems** → stop and show them. Never re-run a seed to "try again"; the plan
   is deterministic, so a problem repeats until the manifest or a pattern file changes.
