@@ -3160,6 +3160,14 @@ npm run test:kit
   its version-stamping is unit-tested (`tools/stamp-theme-version.test.mjs`), but no client repo
   has pushed a `v*` tag through it yet. Verify it end to end on the first real client site, and
   treat a failure there as expected rather than surprising.
+- [ ] **`/pediment:start`'s script path only resolves from a monorepo checkout.** The skill invokes
+  `node client-kit/scripts/scaffold.mjs`, which works when run from a clone of this repo — the
+  internal path, and the only one step 5 ships. Once the kit is installed as a Claude Code plugin
+  (the productisation path decided in the step-5 design), the working directory is the client's
+  parent folder and that relative path resolves to nothing. Claude Code exposes a plugin-root
+  variable for exactly this; confirm its name and availability for skills before relying on it,
+  then make the skill prefer it and fall back to the checkout-relative path. Found during
+  migration step 5's Task 11 and deliberately not guessed at.
 - [ ] **The scaffold CI job asserts convergence, not completeness.** `seed-check` proves the front
   page renders and that a second dry run reports `0 to write`, but nothing asserts an expected
   page or nav count — a scaffolder regression that silently emitted three pages instead of four
