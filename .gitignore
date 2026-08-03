@@ -16,3 +16,6 @@ tests/fixtures/uploads/*
 
 # Brainstorming visual companion
 .superpowers/
+
+# /pediment:start and /pediment:port-page scratch files
+.context/
