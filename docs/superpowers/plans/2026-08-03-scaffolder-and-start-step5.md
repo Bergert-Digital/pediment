@@ -466,6 +466,7 @@ test('renderManifest escapes a title containing an apostrophe', () => {
   const out = renderManifest({
     ...base,
     pages: [{ key: 'home', title: "What's on", frontPage: true }],
+    nav: [],
   });
   assert.match(out, /'What\\'s on'/);
 });
