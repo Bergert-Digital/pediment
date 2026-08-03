@@ -2943,10 +2943,14 @@ compares against.
 
 ## 3. Declare the page
 
-Add the entry to `seed/manifest.php`:
+Add the entry to `seed/manifest.php`, **inside the `'pages'` section**. A bare top-level key is not
+one of the manifest's recognised sections and the whole run aborts with a `ManifestError`:
 
 ```php
-'<key>' => array( 'title' => '<Title>', 'pattern' => '<theme-slug>/<key>' ),
+'pages' => array(
+    // … existing pages …
+    '<key>' => array( 'title' => '<Title>', 'pattern' => '<theme-slug>/<key>' ),
+),
 ```
 
 Create `patterns/<key>.php` with the standard header — the `Slug:` header must be
@@ -3013,7 +3017,8 @@ Commit `seed/manifest.php` and `patterns/<key>.php` together.
 ## Multilingual pages
 
 Port the default language first. For each additional language, translate the page in the editor and
-run `npm run adopt -- <key> -- --language=<code>`, which writes `patterns/<key>.<lang>.php` with the
+run `npm run adopt -- <key> --language=<code>` — one `--`, not two; a second one reaches WP-CLI as a
+positional argument and fatals — which writes `patterns/<key>.<lang>.php` with the
 correct `Slug: <theme-slug>/<key>-<lang>` header. The filename suffix and the header suffix must
 agree, or the translated pattern is reported missing exactly as if the file did not exist.
 ````
