@@ -2792,11 +2792,13 @@ Rules:
 ## Phase 3 — scaffold and boot
 
 ```bash
-node scripts/scaffold.mjs --answers .context/start/answers.json --target <absolute path>
+node client-kit/scripts/scaffold.mjs --answers .context/start/answers.json --target <absolute path> --template client-template
 ```
 
-(From a monorepo checkout, add `--template client-template` to scaffold from the working tree
-instead of downloading the release asset.)
+Omitting `--template` makes the scaffolder download `pediment-client-template.zip` for the version
+named in the answers file. **That asset does not exist in any release yet** (Task 13 adds it), so
+until it ships, always pass `--template` and run from a monorepo checkout — which is also the only
+place `client-kit/scripts/scaffold.mjs` resolves from today.
 
 The scaffolder refuses a target path containing whitespace or a non-empty target directory, and
 commits the result before anything else runs. Then, in the new directory:
