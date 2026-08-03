@@ -32,6 +32,7 @@ jobs:
       - run: npm run lint:colors
       - run: npm run lint:icons
       - run: npm run lint:js
+      - run: npm run test:kit
       - run: node tools/generate-wpml-config.mjs --check
 
   phpunit:
@@ -82,3 +83,51 @@ jobs:
         with:
           name: playwright-report
           path: plugin/playwright-report/
+
+  scaffold:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: plugin/package-lock.json
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.1"
+          tools: composer
+
+      - name: Stage the plugin this PR would ship
+        run: |
+          set -euo pipefail
+          composer install --no-dev --optimize-autoloader --prefer-dist --no-progress -d plugin
+          cd plugin && npm ci && npm run build && cd ..
+          mkdir -p stage-plugin/pediment
+          rsync -a --exclude-from=plugin/.distignore plugin/ stage-plugin/pediment/
+          ls stage-plugin/pediment/plugin.php
+
+      - name: Scaffold a client site from the template
+        run: |
+          set -euo pipefail
+          git config --global user.email "ci@pediment.invalid"
+          git config --global user.name "Pediment CI"
+          node client-kit/scripts/scaffold.mjs \
+            --answers client-kit/tests/fixtures/answers-ci.json \
+            --target "$RUNNER_TEMP/pediment-ci-client" \
+            --template client-template
+
+      - name: Seed it and assert it renders
+        uses: ./.github/actions/seed-check
+        with:
+          theme-path: ${{ runner.temp }}/pediment-ci-client
+          plugin-source: ${{ github.workspace }}/stage-plugin/pediment
+
+      - name: Upload the scaffolded site on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: scaffolded-client
+          path: ${{ runner.temp }}/pediment-ci-client
