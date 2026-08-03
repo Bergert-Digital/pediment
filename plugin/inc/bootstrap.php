@@ -37,13 +37,19 @@ function pediment_bootstrap_header_template_part(): void {
 
 	$existing = get_posts(
 		array(
-			'name'        => 'header',
-			'post_type'   => 'wp_template_part',
-			'post_status' => 'publish',
-			'numberposts' => 1,
-			'fields'      => 'ids',
+			// Deliberately post_name__in, not the singular `name` query var: WP_Query's
+			// single-post "name" lookup drops an unsatisfiable tax_query (e.g. a wp_theme
+			// term that doesn't exist yet, because no part has ever been tagged with it)
+			// from the generated SQL instead of matching zero rows. That made this check
+			// match ANY existing "header" part regardless of theme and skip seeding for
+			// a newly-activated theme. post_name__in does not have that failure mode.
+			'post_name__in' => array( 'header' ),
+			'post_type'     => 'wp_template_part',
+			'post_status'   => 'publish',
+			'numberposts'   => 1,
+			'fields'        => 'ids',
 			// phpcs:ignore WordPress.DB.SlowDBQuery -- seed lookup runs once per activation; tax query acceptable here.
-			'tax_query'   => array(
+			'tax_query'     => array(
 				array(
 					'taxonomy' => 'wp_theme',
 					'field'    => 'name',
