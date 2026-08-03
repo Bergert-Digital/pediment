@@ -3091,6 +3091,12 @@ npm run test:kit
   its version-stamping is unit-tested (`tools/stamp-theme-version.test.mjs`), but no client repo
   has pushed a `v*` tag through it yet. Verify it end to end on the first real client site, and
   treat a failure there as expected rather than surprising.
+- [ ] **`lint:colors` cannot see `client-template/`.** `tools/lint-colors.mjs` hardcodes its scan
+  root to `plugin/src/blocks/` and only walks `.scss`/`.css`, so no colour literal reaching the
+  client template — or a scaffolded client repo — is ever caught. Confirmed during migration
+  step 5's Task 5 review; the template carries no literals today, so the gap is latent rather
+  than active. Widening the scan root is the obvious fix; decide whether client repos should be
+  linted at all first, since they are the ones that multiply.
 - [ ] **Brand voice is captured but not consumed.** `/pediment:start` writes positioning and tone
   into `docs/brief.md`; `PromptBuilder` still builds a fully static prompt and reads no options.
   Deliberate (step-5 design decision 7) — close the loop when the AI side is next worked on, and
