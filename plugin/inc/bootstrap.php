@@ -37,13 +37,20 @@ function pediment_bootstrap_header_template_part(): void {
 
 	$existing = get_posts(
 		array(
-			'name'        => 'header',
-			'post_type'   => 'wp_template_part',
-			'post_status' => 'publish',
-			'numberposts' => 1,
-			'fields'      => 'ids',
+			// Deliberately post_name__in, not the singular `name` query var: `name` makes
+			// the query singular (WP_Query::parse_query() sets is_single), and
+			// WP_Query::get_posts() applies tax_query only when ! $this->is_singular -- so
+			// the theme filter below was silently inert, on every site, not just fresh
+			// ones. That made this check match ANY existing "header" part regardless of
+			// theme and skip seeding for a newly-activated theme. post_name__in keeps the
+			// query non-singular, so the tax_query is actually applied.
+			'post_name__in' => array( 'header' ),
+			'post_type'     => 'wp_template_part',
+			'post_status'   => 'publish',
+			'numberposts'   => 1,
+			'fields'        => 'ids',
 			// phpcs:ignore WordPress.DB.SlowDBQuery -- seed lookup runs once per activation; tax query acceptable here.
-			'tax_query'   => array(
+			'tax_query'     => array(
 				array(
 					'taxonomy' => 'wp_theme',
 					'field'    => 'name',

@@ -13,7 +13,8 @@
     "gen:wpml": "node tools/generate-wpml-config.mjs",
     "lint:js": "cd plugin && npm run lint:js",
     "format": "cd plugin && npm run format",
-    "test:js": "cd plugin && npm run test:js"
+    "test:js": "cd plugin && npm run test:js",
+    "test:kit": "node --test client-kit/tests/*.test.mjs tools/*.test.mjs"
   },
   "devDependencies": {
     "@wordpress/env": "^10.0.0"

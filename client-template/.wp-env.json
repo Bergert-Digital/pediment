@@ -1,0 +1,13 @@
+{
+  "core": "WordPress/WordPress#6.9",
+  "phpVersion": "8.1",
+  "themes": ["."],
+  "plugins": [
+    "https://github.com/Bergert-Digital/pediment/releases/download/v__PEDIMENT_PLUGIN_VERSION__/pediment-plugin.zip"
+  ],
+  "config": {
+    "WP_DEBUG": true,
+    "WP_DEBUG_LOG": true,
+    "SCRIPT_DEBUG": true
+  }
+}

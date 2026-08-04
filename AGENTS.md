@@ -9,6 +9,11 @@ blocks, templates, patterns, tokens, forms, assets, and AI editor experience.
 Client sites pair the plugin with a standalone client theme; the root fixture
 theme exists only for wp-env and integration tests.
 
+The repo also ships `client-template/` (the tokenised client theme template a
+new site is scaffolded from) and `client-kit/` (the Claude Code plugin
+carrying the `/pediment:start` and `/pediment:port-page` skills and the
+scaffolder). See [docs/client-sites.md](docs/client-sites.md).
+
 ## Hard rules
 
 - Prefer WordPress APIs, hooks, filters, and block APIs.
@@ -42,6 +47,7 @@ npm run lint:blocks
 npm run lint:colors
 npx wp-env run tests-wordpress --env-cwd=wp-content/plugins/pediment-ai ./vendor/bin/phpunit
 cd plugin && npm run e2e
+npm run test:kit
 ```
 
 For layout or typography changes, also run `node tools/audit-landing.mjs` and

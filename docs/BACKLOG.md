@@ -15,11 +15,67 @@ _(none currently known — verify by running a user-journey audit)_
 - [ ] **Verify the v3 release pipeline end-to-end.** With user approval, confirm a
   release produces only `pediment-plugin.zip`, installs as `plugins/pediment`,
   and does not publish either legacy asset name.
-- [ ] **Update the client-theme template repo.** Replace its parent-theme
-  inheritance with the standalone Pediment plugin flow (migration steps 3–5).
+- [ ] **Archive `pediment-child-theme`.** Migration step 5 replaced it with `client-template/` in
+  this monorepo. The old repo still exists and still describes a parent/child world that no longer
+  ships. Archive it on GitHub with a README pointing at `docs/client-sites.md`. Needs an explicit
+  go-ahead — it is an outward-facing, hard-to-reverse action.
+- [x] **Header template part scoping was a `WP_Query` singularity bug, not a tagging-order race.**
+  Found during migration step 5's Task 15 full-verification rehearsal; fixed on the same branch in
+  `plugin/inc/bootstrap.php`. The original diagnosis (activation-order tagging skipping recreation
+  of an already-existing part) was refuted: `pediment_bootstrap_header_template_part()`'s lookup
+  used the singular `name` query var, which makes `WP_Query::parse_query()` set `is_singular` —
+  and `WP_Query::get_posts()` only applies `tax_query` when the query is *not* singular. So the
+  theme-scoping check never actually ran the tax query and matched **any** existing "header" part
+  regardless of theme, on every site, not just fresh ones. Switching the lookup to
+  `post_name__in` (which keeps the query non-singular) makes the tax_query apply for real, so each
+  theme gets its own correctly-scoped header part; covered by
+  `BootstrapTest::test_bootstrap_scopes_header_part_to_each_active_theme`.
+  `.github/actions/seed-check/action.yml`'s front-page assertion remains as a standing regression
+  guard, checking for the exact missing-template-part string a recurrence would show.
 
 ## 🟢 Medium
 
+- [ ] **`client-release.yml` has never run.** The reusable client release workflow is written and
+  its version-stamping is unit-tested (`tools/stamp-theme-version.test.mjs`), but no client repo
+  has pushed a `v*` tag through it yet. Verify it end to end on the first real client site, and
+  treat a failure there as expected rather than surprising.
+- [x] **`/pediment:port-page` now says how to derive the theme slug.** Found during migration step
+  5's Task 12 review; fixed in `client-kit/skills/port-page/SKILL.md` Step 3, which now says to
+  derive it from `package.json`'s `name` or an existing `patterns/*.php` file's `Slug:` header.
+  Correction to the original framing: a wrong namespace is not silent for the default language —
+  `ContentResolver::resolve()` (`plugin/src/Seeder/ContentResolver.php:56-57`) throws
+  `ManifestError` when the default-language pattern for a page is not registered, aborting the run
+  loudly. Only a *translation* pattern (a non-default-language pattern that is missing) degrades
+  quietly, falling back to the default language's content. Still worth the line — a wrong
+  namespace is easy to type and easy to miss either way.
+- [x] **Installed kit resources resolve from the skill directory.** Claude Code prepends an
+  absolute base directory to each loaded skill. `/pediment:start` now anchors its manifest,
+  fixture, and scaffolder at that directory; `/pediment:port-page` anchors both shared review
+  prompts there. `CLAUDE_PLUGIN_ROOT` remains intentionally unused because Bash does not receive
+  it. Fixed by the external-distribution work designed on 2026-08-04.
+- [x] **The kit reference guard validates the complete path form.** It rejects checkout-prefixed
+  references even when their `scripts/...` tail exists, verifies every target, and carries the
+  original `client-kit/scripts/scaffold.mjs` form as a regression case.
+- [x] **Shipping `client-kit/tests/` is accepted.** Claude Code's marketplace schema provides no
+  supported file-exclusion field. The files are harmless, and moving them outside the plugin only
+  to reduce install size is not warranted.
+- [ ] **The scaffold CI job asserts convergence, not completeness.** `seed-check` proves the front
+  page renders and that a second dry run reports `0 to write`, but nothing asserts an expected
+  page or nav count — a scaffolder regression that silently emitted three pages instead of four
+  would converge on three and pass. Found during migration step 5's Task 9 review. Cheap fix:
+  assert the plan's create count on the first run against the fixture's declared page count.
+- [ ] **`lint:colors` cannot see `client-template/`.** `tools/lint-colors.mjs` hardcodes its scan
+  root to `plugin/src/blocks/` and only walks `.scss`/`.css`, so no colour literal reaching the
+  client template — or a scaffolded client repo — is ever caught. Confirmed during migration
+  step 5's Task 5 review; the template carries no literals today, so the gap is latent rather
+  than active. Widening the scan root is the obvious fix; decide whether client repos should be
+  linted at all first, since they are the ones that multiply.
+- [ ] **Brand voice is captured but not consumed.** `/pediment:start` writes positioning and tone
+  into `docs/brief.md`; `PromptBuilder` still builds a fully static prompt and reads no options.
+  Deliberate (step-5 design decision 7) — close the loop when the AI side is next worked on, and
+  until then keep the skill honest about it.
+- [ ] **The client theme has no auto-updater.** Step 5 decision 8: `ThemeUpdater`/`UpdateToken` did
+  not come across, so client themes update by admin zip upload. Revisit if step 6 shows it hurts.
 - [ ] **Seeding follow-ups from the step-3 final review.** Neither blocks a merge, both
   were parked deliberately: (a) a site that already carries a trashed nav *and* a
   re-created one under the same seed key now aborts the whole run on duplicate identity
@@ -158,6 +214,17 @@ _(none currently known — verify by running a user-journey audit)_
   non-issue — but the two classes disagree on placement for what is
   documented as "the same rule" in both docblocks, and that alone is worth
   resolving one way or the other rather than leaving accidental.
+- [ ] **No end-to-end CI coverage of the multilingual path.** The `scaffold` job in
+  [.github/workflows/ci.yml](../.github/workflows/ci.yml) runs a single fixture,
+  `answers-ci.json`, whose `languages` array holds one entry — so the
+  `answers.languages.length > 1` branch at `client-kit/scripts/scaffold.mjs:321`,
+  Polylang's activation in the booted site, and translated-page seeding never execute
+  in CI. `scaffold.test.mjs:245` covers the scaffold-side half (Polylang lands in
+  `.wp-env.json`, `'languages' => array(` lands in the manifest), but nothing boots a
+  two-language site and asserts it seeds and renders. Called the largest untested seam
+  left by review. `client-kit/tests/fixtures/answers-multilingual.json` (de + en)
+  already exists, so a second matrix entry over the fixture path — feeding both the
+  scaffold step and the `seed-check` action — is the whole fix.
 
 ## 🔵 Ideas / later
 

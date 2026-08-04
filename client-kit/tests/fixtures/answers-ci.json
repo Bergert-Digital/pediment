@@ -1,0 +1,35 @@
+{
+  "version": 1,
+  "mode": "greenfield",
+  "client": {
+    "name": "Pediment CI Client",
+    "slug": "pediment-ci-client",
+    "description": "Scaffolded in CI to prove the template still seeds."
+  },
+  "brief": {
+    "does": "Nothing — this site exists to prove the scaffolder works.",
+    "audience": "The Pediment CI job.",
+    "tone": "Neutral.",
+    "sourceUrl": null
+  },
+  "brand": {
+    "accent": "#0E7490",
+    "primary": "#0A1B33",
+    "foreground": "#0B1B33",
+    "font": { "family": "Inter", "weights": ["400", "700"] },
+    "source": "chosen"
+  },
+  "languages": [
+    { "slug": "en", "name": "English", "locale": "en_US", "flag": "gb", "default": true }
+  ],
+  "pages": [
+    { "key": "home", "title": "Home", "frontPage": true },
+    { "key": "about", "title": "About" },
+    { "key": "services", "title": "Services" },
+    { "key": "contact", "title": "Contact" }
+  ],
+  "nav": ["about", "services", "contact"],
+  "logo": null,
+  "plugin": { "version": "3.3.0" },
+  "template": { "version": "3.3.0" }
+}

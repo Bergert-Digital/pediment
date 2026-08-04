@@ -1,0 +1,124 @@
+name: Client theme release
+
+# Called by a scaffolded client repo on a pushed v* tag:
+#
+#   jobs:
+#     release:
+#       uses: Bergert-Digital/pediment/.github/workflows/client-release.yml@main
+#       with:
+#         tag: ${{ github.ref_name }}
+
+on:
+  workflow_call:
+    inputs:
+      tag:
+        description: The tag being released (e.g. v1.4.0).
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  zip:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the client theme
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tag }}
+
+      - name: Check out Pediment's tooling
+        uses: actions/checkout@v4
+        with:
+          repository: Bergert-Digital/pediment
+          ref: main
+          path: .pediment-tools
+          sparse-checkout: tools
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Resolve the theme slug from style.css
+        id: slug
+        run: |
+          set -euo pipefail
+          SLUG=$(node -e "
+            const css = require('node:fs').readFileSync('style.css', 'utf8');
+            const m = css.match(/^Text Domain:\s*(.+)$/m);
+            if (!m) { console.error('style.css has no Text Domain header'); process.exit(1); }
+            process.stdout.write(m[1].trim());
+          ")
+          echo "slug=$SLUG" >> "$GITHUB_OUTPUT"
+          echo "Theme slug: $SLUG"
+
+      - name: Stamp the version header
+        env:
+          TAG: ${{ inputs.tag }}
+        run: node .pediment-tools/tools/stamp-theme-version.mjs . "$TAG"
+
+      - name: Verify the header actually moved
+        env:
+          TAG: ${{ inputs.tag }}
+        run: |
+          set -euo pipefail
+          VERSION="${TAG#v}"
+          grep -qxF "Version: ${VERSION}" style.css
+          echo "style.css Version header is ${VERSION}"
+
+      - name: Stage and zip
+        env:
+          SLUG: ${{ steps.slug.outputs.slug }}
+        # `seed/` MUST ship — the seeder reads seed/manifest.php and seed/media/
+        # from the active theme at runtime, and the wp-admin Seeding tab is the
+        # only way to re-seed on admin-only hosting.
+        #
+        # `docs/` MUST NOT — docs/brief.md is a per-client business brief, and a
+        # theme directory is web-servable, so shipping it publishes positioning
+        # and audience notes at a predictable URL. `AGENTS.md` and `package.json`
+        # are excluded to match plugin/.distignore, which strips the plugin's
+        # equivalents for the same reason: nothing at runtime reads them.
+        run: |
+          set -euo pipefail
+          mkdir -p "stage/${SLUG}"
+          rsync -a \
+            --exclude '.git' \
+            --exclude '.github' \
+            --exclude '.pediment-tools' \
+            --exclude 'node_modules' \
+            --exclude 'stage' \
+            --exclude '.wp-env.json' \
+            --exclude '.wp-env.override.json' \
+            --exclude 'package.json' \
+            --exclude 'package-lock.json' \
+            --exclude 'docs' \
+            --exclude 'AGENTS.md' \
+            ./ "stage/${SLUG}/"
+          cd stage && zip -rq "../${SLUG}.zip" "${SLUG}"
+          unzip -l "../${SLUG}.zip" | tail -5
+
+      # `gh release upload` does NOT create a release — it fails with "release not
+      # found". The documented client flow is a bare `git push --tags`, which
+      # creates a tag and nothing else, so the release has to be created here.
+      # The plugin's own pipeline never needed this because release-please
+      # creates the GitHub Release before build-release-zip.yml runs.
+      - name: Ensure the release exists
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ inputs.tag }}
+        run: |
+          set -euo pipefail
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo "Release $TAG already exists."
+          else
+            echo "Creating release $TAG."
+            gh release create "$TAG" --title "$TAG" --generate-notes
+          fi
+
+      - name: Attach the zip to the release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SLUG: ${{ steps.slug.outputs.slug }}
+          TAG: ${{ inputs.tag }}
+        run: gh release upload "$TAG" "${SLUG}.zip" --clobber
