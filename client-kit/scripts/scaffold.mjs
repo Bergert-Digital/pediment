@@ -334,8 +334,23 @@ export async function scaffold(answers, opts) {
     const run = (...args) => execFileSync('git', ['-C', target, ...args], { stdio: 'pipe' });
     execFileSync('git', ['init', '-b', 'main', target], { stdio: 'pipe' });
     run('add', '-A');
-    run('commit', '-m',
-      `chore: scaffold ${answers.client.name} from the Pediment client template v${values.__PEDIMENT_TEMPLATE_VERSION__}`);
+    execFileSync(
+      'git',
+      [
+        '-C', target, 'commit', '-m',
+        `chore: scaffold ${answers.client.name} from the Pediment client template v${values.__PEDIMENT_TEMPLATE_VERSION__}`,
+      ],
+      {
+        stdio: 'pipe',
+        env: {
+          ...process.env,
+          GIT_AUTHOR_NAME: 'Pediment Scaffolder',
+          GIT_AUTHOR_EMAIL: 'scaffold@pediment.invalid',
+          GIT_COMMITTER_NAME: 'Pediment Scaffolder',
+          GIT_COMMITTER_EMAIL: 'scaffold@pediment.invalid',
+        },
+      },
+    );
   }
 
   return { target, files };
