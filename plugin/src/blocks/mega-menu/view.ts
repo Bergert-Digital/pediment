@@ -7,6 +7,13 @@ const timers = new WeakMap< Element, ReturnType< typeof setTimeout > >();
 
 const hoverCapable = () => window.matchMedia( '(hover: hover)' ).matches;
 
+const inResponsiveOverlay = ( ref: Element | null ) =>
+	Boolean(
+		ref?.closest(
+			'.wp-block-navigation__responsive-container.is-menu-open'
+		)
+	);
+
 const closeAllExcept = ( keep: Element | null ) => {
 	document
 		.querySelectorAll< HTMLElement >( '.starter-mega-menu' )
@@ -32,10 +39,12 @@ const { actions } = store( 'pediment/mega-menu', {
 			getContext< Ctx >().isOpen = false;
 		},
 		toggle() {
+			const { ref } = getElement();
 			// Hover devices drive open/close via pointer + focus; the click
 			// is a no-op there to avoid an open()+toggle() double-fire on
-			// hybrid touch/hover devices. Non-hover (touch) uses the click.
-			if ( hoverCapable() ) {
+			// hybrid touch/hover devices. Responsive overlays always use the
+			// accordion click interaction, even when the device can hover.
+			if ( hoverCapable() && ! inResponsiveOverlay( ref ) ) {
 				return;
 			}
 			const ctx = getContext< Ctx >();
@@ -54,25 +63,24 @@ const { actions } = store( 'pediment/mega-menu', {
 				ctx.suppressFocus = false;
 				return;
 			}
+			const { ref } = getElement();
 			// On non-hover (touch) devices the tap also fires click ->
 			// toggle(); let that own open/close so focus+click don't
 			// cancel out. Hover/keyboard devices open on focus here.
-			if ( ! hoverCapable() ) {
+			if ( ! hoverCapable() || inResponsiveOverlay( ref ) ) {
 				return;
 			}
 			actions.open();
 		},
 		onPointerEnter() {
-			if ( hoverCapable() ) {
+			const { ref } = getElement();
+			if ( hoverCapable() && ! inResponsiveOverlay( ref ) ) {
 				actions.open();
 			}
 		},
 		onPointerLeave() {
-			if ( ! hoverCapable() ) {
-				return;
-			}
 			const { ref } = getElement();
-			if ( ! ref ) {
+			if ( ! hoverCapable() || ! ref || inResponsiveOverlay( ref ) ) {
 				return;
 			}
 			const ctx = getContext< Ctx >();

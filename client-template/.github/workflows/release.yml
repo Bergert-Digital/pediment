@@ -1,0 +1,14 @@
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    uses: Bergert-Digital/pediment/.github/workflows/client-release.yml@main
+    with:
+      tag: ${{ github.ref_name }}

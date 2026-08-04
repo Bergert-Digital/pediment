@@ -1,0 +1,14 @@
+{
+  "name": "pediment",
+  "description": "Pediment's client-site toolkit for Claude Code.",
+  "owner": { "name": "Bergert Digital", "email": "jonas@bergert.digital" },
+  "plugins": [
+    {
+      "name": "pediment",
+      "description": "Create and build Pediment WordPress client sites: scaffold a standalone client theme, seed it, and port existing pages into it.",
+      "version": "3.0.0",
+      "source": "./client-kit",
+      "author": { "name": "Bergert Digital", "email": "jonas@bergert.digital" }
+    }
+  ]
+}

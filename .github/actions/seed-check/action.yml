@@ -1,0 +1,115 @@
+name: Seed check
+description: Boot wp-env for a Pediment client theme, seed it, and assert the front page renders.
+
+inputs:
+  theme-path:
+    description: Path to the client theme directory (containing .wp-env.json).
+    required: false
+    default: "."
+  plugin-source:
+    description: >-
+      Optional path to a locally built plugin directory (one whose basename is `pediment`).
+      When set, it replaces the pinned release URL in .wp-env.json so a PR tests its own
+      plugin build. A directory, not a zip — wp-env's local-path support for directories is
+      the well-trodden path, and the monorepo's own .wp-env.json already relies on it.
+    required: false
+    default: ""
+
+runs:
+  using: composite
+  steps:
+    - name: Report the pinned Pediment versions
+      shell: bash
+      working-directory: ${{ inputs.theme-path }}
+      run: |
+        node -e "const p=require('./package.json').pediment||{};console.log('template:',p.template||'unknown','plugin:',p.plugin||'unknown')"
+
+    - name: Point wp-env at the locally built plugin
+      if: inputs.plugin-source != ''
+      shell: bash
+      working-directory: ${{ inputs.theme-path }}
+      env:
+        PLUGIN_SOURCE: ${{ inputs.plugin-source }}
+      run: |
+        node -e "
+          const fs = require('node:fs');
+          const env = JSON.parse(fs.readFileSync('.wp-env.json', 'utf8'));
+          let replaced = 0;
+          env.plugins = env.plugins.map((p) => {
+            if (!/pediment-plugin\.zip/.test(p)) return p;
+            replaced += 1;
+            return process.env.PLUGIN_SOURCE;
+          });
+          if (replaced === 0) {
+            console.error('::error::No .wp-env.json plugin entry matched pediment-plugin.zip, so the local plugin build was never swapped in. This job would have tested the released plugin instead.');
+            process.exit(1);
+          }
+          fs.writeFileSync('.wp-env.json', JSON.stringify(env, null, 2) + '\n');
+          console.log(JSON.stringify(env.plugins, null, 2));
+        "
+
+    - name: Install and boot
+      shell: bash
+      working-directory: ${{ inputs.theme-path }}
+      run: |
+        npm install
+        npm run env:start
+
+    - name: Configure languages
+      shell: bash
+      working-directory: ${{ inputs.theme-path }}
+      run: |
+        if grep -q "'languages'" seed/manifest.php; then
+          npm run languages
+        else
+          echo "Monolingual manifest — skipping wp pediment languages."
+        fi
+
+    - name: Show the seed plan
+      shell: bash
+      working-directory: ${{ inputs.theme-path }}
+      run: npm run seed:plan
+
+    - name: Seed
+      shell: bash
+      working-directory: ${{ inputs.theme-path }}
+      run: npm run seed
+
+    - name: Assert the front page renders
+      shell: bash
+      working-directory: ${{ inputs.theme-path }}
+      run: |
+        set -euo pipefail
+        status=$(curl -s -o /tmp/front.html -w '%{http_code}' http://localhost:8888/)
+        echo "HTTP $status"
+        test "$status" = "200"
+        grep -q "<body" /tmp/front.html
+        if grep -qi "There has been a critical error" /tmp/front.html; then
+          echo "::error::The front page rendered a WordPress critical error."
+          exit 1
+        fi
+        if grep -qi "Template part has been deleted or is unavailable" /tmp/front.html; then
+          echo "::error::The front page rendered with a missing template part — the header did not resolve."
+          exit 1
+        fi
+
+    - name: Re-seed and assert the plan is now empty of content writes
+      shell: bash
+      working-directory: ${{ inputs.theme-path }}
+      # Assert on the seeder's own summary line rather than re-deriving its verb
+      # list. Reporter::summaryLine() counts CREATE + UPDATE + RESTORE as writes
+      # (plugin/src/Seeder/Reporter.php); a grep for create|update alone would
+      # silently pass "converged" while a restore was still pending.
+      run: |
+        set -euo pipefail
+        npm run seed:plan | tee /tmp/replan.txt
+        if ! grep -qE '(^|[[:space:]])0 to write,' /tmp/replan.txt; then
+          echo "::error::A second dry run still wants to write — the seeder is not converging."
+          exit 1
+        fi
+
+    - name: Stop wp-env
+      if: always()
+      shell: bash
+      working-directory: ${{ inputs.theme-path }}
+      run: npm run env:stop
