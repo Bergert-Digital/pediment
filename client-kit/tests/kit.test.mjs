@@ -125,3 +125,16 @@ test('start pins both release inputs to the installed kit version', async () => 
   assert.ok(command, 'start must show the installed scaffolder command');
   assert.doesNotMatch(command[0], /--template/);
 });
+
+test('external docs use the public marketplace and explicit plugin name', async () => {
+  const docs = [
+    await readFile(path.join(kit, 'README.md'), 'utf8'),
+    await readFile(path.join(repo, 'docs', 'client-sites.md'), 'utf8'),
+  ];
+
+  for (const body of docs) {
+    assert.match(body, /\/plugin marketplace add Bergert-Digital\/pediment/);
+    assert.match(body, /\/plugin install pediment@pediment/);
+    assert.doesNotMatch(body, /\/plugin marketplace add \.\/client-kit/);
+  }
+});
