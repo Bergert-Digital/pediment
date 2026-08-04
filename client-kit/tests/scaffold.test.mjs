@@ -304,16 +304,36 @@ test('scaffold writes docs/brief.md carrying the positioning answers', async () 
   await rm(dir, { recursive: true, force: true });
 });
 
-test('scaffold initialises a git repo with one commit when git is enabled', async () => {
+test('scaffold initialises a git repo without a configured identity', async () => {
   const dir = await temp();
   const target = path.join(dir, 'acme-roofing');
-  await scaffold(greenfield, { target, template: MINI, git: true });
+  const identityKeys = [
+    'GIT_AUTHOR_NAME',
+    'GIT_AUTHOR_EMAIL',
+    'GIT_COMMITTER_NAME',
+    'GIT_COMMITTER_EMAIL',
+  ];
+  const previousIdentity = Object.fromEntries(
+    identityKeys.map((key) => [key, process.env[key]]),
+  );
+
+  try {
+    for (const key of identityKeys) process.env[key] = '';
+    await scaffold(greenfield, { target, template: MINI, git: true });
+  } finally {
+    for (const key of identityKeys) {
+      if (previousIdentity[key] === undefined) delete process.env[key];
+      else process.env[key] = previousIdentity[key];
+    }
+  }
 
   const log = execFileSync('git', ['-C', target, 'log', '--oneline'], { encoding: 'utf8' });
   assert.equal(log.trim().split('\n').length, 1);
   assert.match(log, /Acme Roofing/);
   const status = execFileSync('git', ['-C', target, 'status', '--porcelain'], { encoding: 'utf8' });
   assert.equal(status.trim(), '');
+  const localConfig = execFileSync('git', ['-C', target, 'config', '--local', '--list'], { encoding: 'utf8' });
+  assert.doesNotMatch(localConfig, /^user\.(?:name|email)=/m);
 
   await rm(dir, { recursive: true, force: true });
 });
