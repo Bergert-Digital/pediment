@@ -1,12 +1,23 @@
 ---
 name: start
 description: Create a new Pediment client site — scaffold a standalone client theme repo, brand it, seed it, and report the local URL. Use when starting a new client project, whether porting an existing site or starting fresh.
+allowed-tools: Bash(node ${CLAUDE_SKILL_DIR}/../../scripts/scaffold.mjs:*)
 ---
 
 # Start a Pediment client site
 
 Take a client from nothing to a seeded, rendering local site in one session. You ask only what
 cannot be derived; a deterministic scaffolder does everything that must be identical every time.
+
+Claude Code prepends `Base directory for this skill: <absolute path>` when this skill loads. Call
+that absolute directory `<skill-dir>` for this run. Resolve every bundled file from it:
+
+- kit manifest: `<skill-dir>/../../.claude-plugin/plugin.json`
+- reference answers: `<skill-dir>/../../tests/fixtures/answers-greenfield.json`
+- scaffolder: `<skill-dir>/../../scripts/scaffold.mjs`
+
+Never resolve those paths from the client repo's working directory, and do not expect
+`CLAUDE_PLUGIN_ROOT` to exist in a Bash tool call.
 
 All per-run scratch files go under `.context/start/` (gitignored) in the directory you are
 standing in.
@@ -68,7 +79,7 @@ asking. Open with the branching question:
 ## Phase 2 — write the answers file
 
 Write `.context/start/answers.json`. This exact shape is what `scaffold.mjs` consumes;
-`client-kit/tests/fixtures/answers-greenfield.json` is the reference instance.
+`<skill-dir>/../../tests/fixtures/answers-greenfield.json` is the reference instance.
 
 ```json
 {
@@ -122,7 +133,7 @@ Rules:
 ## Phase 3 — scaffold and boot
 
 ```bash
-node client-kit/scripts/scaffold.mjs --answers .context/start/answers.json --target <absolute path> --template client-template
+node "<skill-dir>/../../scripts/scaffold.mjs" --answers .context/start/answers.json --target <absolute path> --template client-template
 ```
 
 Omitting `--template` makes the scaffolder download `pediment-client-template.zip` for the version

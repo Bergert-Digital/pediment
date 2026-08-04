@@ -52,20 +52,50 @@ test('every skill has YAML frontmatter with a name and description', async () =>
   }
 });
 
-test('every script a skill references actually exists', async () => {
+const KIT_RESOURCE = /([^\s`"'()]*)((?:scripts\/[A-Za-z0-9._-]+\.mjs)|(?:shared\/[A-Za-z0-9._-]+\.md)|(?:tests\/fixtures\/[A-Za-z0-9._-]+\.json))/g;
+
+function assertSafeKitReferences(body, skillName) {
+  const references = [...body.matchAll(KIT_RESOURCE)];
+  assert.ok(references.length > 0, `${skillName}: references no bundled kit resource`);
+
+  for (const [, prefix, rel] of references) {
+    assert.ok(
+      prefix.endsWith('../../'),
+      `${skillName}: ${prefix}${rel} must resolve from the injected skill directory with ../../`,
+    );
+    assert.ok(existsSync(path.join(kit, rel)), `${skillName}: references missing ${rel}`);
+  }
+}
+
+test('resource guard rejects checkout-relative prefixes and missing files', () => {
+  assert.throws(
+    () => assertSafeKitReferences('node client-kit/scripts/scaffold.mjs', 'bad-prefix'),
+    /must resolve from the injected skill directory/,
+  );
+  assert.throws(
+    () => assertSafeKitReferences('read <skill-dir>/../../shared/missing.md', 'missing'),
+    /references missing shared\/missing\.md/,
+  );
+  assert.doesNotThrow(() => assertSafeKitReferences(
+    'node <skill-dir>/../../scripts/scaffold.mjs',
+    'anchored',
+  ));
+});
+
+test('start pre-authorizes its installed scaffolder command', async () => {
+  const body = await readFile(path.join(kit, 'skills', 'start', 'SKILL.md'), 'utf8');
+  const front = body.match(/^---\n([\s\S]*?)\n---\n/);
+  assert.ok(front, 'start must have frontmatter');
+  assert.match(
+    front[1],
+    /^allowed-tools: Bash\(node \$\{CLAUDE_SKILL_DIR\}\/\.\.\/\.\.\/scripts\/scaffold\.mjs:\*\)$/m,
+  );
+});
+
+test('every bundled skill reference is installed-path safe and exists', async () => {
   const skillsDir = path.join(kit, 'skills');
   for (const name of await readdir(skillsDir)) {
     const body = await readFile(path.join(skillsDir, name, 'SKILL.md'), 'utf8');
-    const references = [
-      ...body.matchAll(/\b(scripts\/[A-Za-z0-9._-]+\.mjs)\b/g),
-      ...body.matchAll(/\b(shared\/[A-Za-z0-9._-]+\.md)\b/g),
-    ];
-    assert.ok(
-      references.length > 0,
-      `${name}: references no kit file. Either it should, or its references are written in a form this guard cannot see — write them as scripts/<file>.mjs or shared/<file>.md.`,
-    );
-    for (const [, rel] of references) {
-      assert.ok(existsSync(path.join(kit, rel)), `${name}: references missing ${rel}`);
-    }
+    assertSafeKitReferences(body, name);
   }
 });

@@ -8,6 +8,12 @@ description: Rebuild one existing page as native Pediment blocks in a scaffolded
 Rebuild ONE existing public page as native Pediment blocks, iterate under an independent visual
 fidelity critic, then commit the result to git as a pattern file.
 
+Claude Code prepends `Base directory for this skill: <absolute path>` when this skill loads. Call
+that directory `<skill-dir>` and resolve the bundled review instructions as
+`<skill-dir>/../../shared/fidelity-critic-prompt.md` and
+`<skill-dir>/../../shared/visual-qa.md`. Never resolve them from the client theme's working
+directory.
+
 **Argument:** the source page URL. Derive `<key>` from its path (`/about-us/` → `about-us`;
 homepage → `home`).
 
@@ -94,11 +100,11 @@ sizes or spacing — the brand is in `theme.json` and hardcoding defeats it.
 ## 5. Iterate under the critic
 
 Screenshot the rebuilt page at the same two widths. Dispatch an independent critic with
-`shared/fidelity-critic-prompt.md`, giving it the source and rebuilt screenshots. Fix what it
+`<skill-dir>/../../shared/fidelity-critic-prompt.md`, giving it the source and rebuilt screenshots. Fix what it
 names, re-seed, re-screenshot, re-run. Stop when it reports no material differences, or after
 four rounds — then report honestly what still differs and why.
 
-Run the checks in `shared/visual-qa.md` before declaring the page done.
+Run the checks in `<skill-dir>/../../shared/visual-qa.md` before declaring the page done.
 
 ---
 
