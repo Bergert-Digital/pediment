@@ -52,9 +52,9 @@ test('every skill has YAML frontmatter with a name and description', async () =>
   }
 });
 
-const KIT_RESOURCE = /([^\s`"'()]*)((?:scripts\/[A-Za-z0-9._-]+\.mjs)|(?:shared\/[A-Za-z0-9._-]+\.md)|(?:tests\/fixtures\/[A-Za-z0-9._-]+\.json))/g;
+const KIT_RESOURCE = /([^\s`"'()]*)((?:\.claude-plugin\/plugin\.json)|(?:scripts\/[A-Za-z0-9._-]+\.mjs)|(?:shared\/[A-Za-z0-9._-]+\.md)|(?:tests\/fixtures\/[A-Za-z0-9._-]+\.json))/g;
 
-function assertSafeKitReferences(body, skillName) {
+function assertSafeKitReferences(body, skillName, kitRoot = kit) {
   const references = [...body.matchAll(KIT_RESOURCE)];
   assert.ok(references.length > 0, `${skillName}: references no bundled kit resource`);
 
@@ -63,7 +63,7 @@ function assertSafeKitReferences(body, skillName) {
       prefix.endsWith('../../'),
       `${skillName}: ${prefix}${rel} must resolve from the injected skill directory with ../../`,
     );
-    assert.ok(existsSync(path.join(kit, rel)), `${skillName}: references missing ${rel}`);
+    assert.ok(existsSync(path.join(kitRoot, rel)), `${skillName}: references missing ${rel}`);
   }
 }
 
@@ -80,6 +80,35 @@ test('resource guard rejects checkout-relative prefixes and missing files', () =
     'node <skill-dir>/../../scripts/scaffold.mjs',
     'anchored',
   ));
+});
+
+test('resource guard rejects checkout-relative plugin manifest prefix', () => {
+  assert.throws(
+    () => assertSafeKitReferences(
+      'read client-kit/.claude-plugin/plugin.json',
+      'bad-manifest-prefix',
+    ),
+    /must resolve from the injected skill directory/,
+  );
+});
+
+test('resource guard accepts installed plugin manifest prefix', () => {
+  assert.doesNotThrow(() => assertSafeKitReferences(
+    'read <skill-dir>/../../.claude-plugin/plugin.json',
+    'safe-manifest-prefix',
+  ));
+});
+
+test('resource guard rejects missing installed plugin manifest target', () => {
+  const missingKit = path.join(kit, 'tests', 'fixtures', 'missing-kit');
+  assert.throws(
+    () => assertSafeKitReferences(
+      'read <skill-dir>/../../.claude-plugin/plugin.json',
+      'missing-manifest-target',
+      missingKit,
+    ),
+    /references missing \.claude-plugin\/plugin\.json/,
+  );
 });
 
 test('start pre-authorizes its installed scaffolder command', async () => {
