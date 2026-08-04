@@ -1,33 +1,30 @@
 # Building and maintaining a client site
 
-A client site is a standalone WordPress theme repo that pairs with the Pediment plugin. This
-is the reference for making one, working in it day to day, and shipping updates to it — read it
-before your first client, or when working as an agent inside a client repo.
+A client site is a standalone WordPress theme repo that pairs with the Pediment WordPress plugin.
+Pediment also ships a Claude Code developer kit that creates and maintains those theme repos. The
+two plugins have different runtimes: WordPress installs `pediment-plugin.zip`; developers install
+`client-kit/` once in Claude Code.
 
 ## The three units
 
-- **`client-kit/`** — a Claude Code plugin. It carries the `/pediment:start` and
-  `/pediment:port-page` skills and one deterministic scaffolder
-  (`client-kit/scripts/scaffold.mjs`). This is what a client developer installs.
-- **`pediment-client-template.zip`** — a release asset: the client theme template, with its
-  `__PEDIMENT_*__` tokens still literal. The scaffolder downloads and rewrites it. **This asset
-  does not exist in any release yet** — see "Scaffolding without Claude Code" below for the
-  workaround.
-- **This monorepo** — owns the plugin, the client theme template's source
-  (`client-template/`), the reusable CI/release workflows client repos call
-  (`.github/workflows/client-theme.yml`, `.github/workflows/client-release.yml`), and this doc.
+- **The Pediment WordPress plugin** — the product. It supplies blocks, templates, tokens, forms,
+  seeding, and AI features to WordPress and ships as `pediment-plugin.zip`.
+- **The Pediment client kit** — the Claude Code tooling under `client-kit/`. It carries
+  `/pediment:start`, `/pediment:port-page`, and `scripts/scaffold.mjs`. It is installed globally in
+  Claude Code and is never copied into a client theme.
+- **`pediment-client-template.zip`** — the tokenised standalone theme template. The scaffolder
+  downloads the release asset and rewrites it into a client-owned repo.
 
-**A client developer never clones this repo.** They install the `client-kit` plugin, and the
-template arrives as a release asset. The monorepo is only for people working on Pediment itself,
-or — until the release asset ships — for running the scaffolder from a local checkout (below).
+This monorepo owns all three sources and the reusable client CI/release workflows. An external
+client developer never clones it.
 
 ## Making a site
 
-Install the kit once, from a local checkout of this repo:
+Install the developer kit once in Claude Code:
 
-```
-/plugin marketplace add ./client-kit
-/plugin install pediment
+```text
+/plugin marketplace add Bergert-Digital/pediment
+/plugin install pediment@pediment
 ```
 
 Then, in the empty directory (or its parent) where the new site should live:
@@ -55,25 +52,24 @@ live site's computed styles and shown for confirmation, not asked for by name), 
 (from `/sitemap.xml`, pre-checked), languages (from `hreflang` tags, pre-filled), and the client
 name and repo slug.
 
-Either way, the skill writes what it learned to `.context/start/answers.json` (gitignored scratch
-space), then scaffolds, boots wp-env, and seeds:
+Either way, the skill writes `.context/start/answers.json`, reads version `V` from its installed
+`.claude-plugin/plugin.json`, and uses `V` for both `plugin.version` and `template.version`. It then
+runs the bundled scaffolder from the absolute injected skill directory:
 
 ```bash
-node client-kit/scripts/scaffold.mjs --answers .context/start/answers.json --target <path> --template client-template
+node "<skill-dir>/../../scripts/scaffold.mjs" --answers .context/start/answers.json --target <path>
 npm install
 npm run env:start
+npx wp-env run cli wp pediment seed --help
 npm run languages    # only if the manifest has a languages section
 npm run seed:plan    # shown to you before anything is applied
 npm run seed
 ```
 
-The plugin release named in `plugin.version` must provide `wp pediment seed` — the skill runs
-`npx wp-env run cli wp pediment seed --help` right after `env:start` and stops with a clear message
-if that fails, rather than failing later and less clearly at `seed:plan`. **No published release
-provides it yet**: the latest, v3.0.0, predates the seeding engine built in migration steps 3–5.
-Until a qualifying release ships, scaffold with `--template client-template` from a monorepo
-checkout and point `.wp-env.json` at a local plugin build — `/pediment:start` cannot complete end
-to end against any published release yet.
+The scaffolder downloads `pediment-client-template.zip` from release `vV`; the generated
+`.wp-env.json` downloads `pediment-plugin.zip` from that same release. The v3.0.0 release predates
+the seeding engine and template asset, so it cannot complete this flow. The first later release
+containing this distribution work is the minimum supported external version.
 
 It reports the local URL (`http://localhost:8888`) and the wp-admin URL when done.
 
@@ -168,11 +164,12 @@ through wp-admin, a new theme release only reaches production when someone uploa
 hand. This is a deliberate step-5 decision, not an oversight — revisit only if it turns out to
 hurt in practice.
 
-## Scaffolding without Claude Code
+## Maintainer-only local scaffolding
 
-`scaffold.mjs` is a pure function of one answers file — the skill only owns the parts that need
-judgment. Its CLI takes exactly four flags: `--answers <file>`, `--target <dir>`,
-`--template <dir>` (optional), and `--no-git` (optional, skips the initial commit):
+This section is for Pediment maintainers working from a monorepo checkout. External developers use
+`/pediment:start`; they do not need this override. `scaffold.mjs` remains a pure function of one
+answers file, and maintainers can pass `--template client-template` to test an unreleased local
+template without depending on a release asset.
 
 ```bash
 node client-kit/scripts/scaffold.mjs \
@@ -183,12 +180,6 @@ node client-kit/scripts/scaffold.mjs \
 
 `client-kit/tests/fixtures/answers-greenfield.json` is the reference answers file — copy its
 shape by hand if you're not going through `/pediment:start`.
-
-`--template client-template` is currently **required** when running from a monorepo checkout.
-Omitting it makes the scaffolder try to download `pediment-client-template.zip` for the version
-named in the answers file from a GitHub release — that asset doesn't exist in any release yet, so
-omitting `--template` fails on the very first run. Once a release ships it, `--template` becomes
-optional and the scaffolder will download and unzip it into a temp directory automatically.
 
 The scaffolder refuses a target path that contains whitespace (WordPress derives the theme
 stylesheet identifier from the directory name, and the Site Editor's template-part edit URLs

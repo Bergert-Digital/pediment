@@ -48,31 +48,17 @@ _(none currently known — verify by running a user-journey audit)_
   loudly. Only a *translation* pattern (a non-default-language pattern that is missing) degrades
   quietly, falling back to the default language's content. Still worth the line — a wrong
   namespace is easy to type and easy to miss either way.
-- [ ] **The kit's skills carry checkout-relative paths that an installed plugin cannot resolve.**
-  `/pediment:start` invokes `node client-kit/scripts/scaffold.mjs` and passes
-  `--template client-template`; it also cites `client-kit/tests/fixtures/answers-greenfield.json`
-  as the reference answers shape. `/pediment:port-page` points at `shared/fidelity-critic-prompt.md`
-  and `shared/visual-qa.md`. All of these resolve only from a clone of this repo. Installed, the
-  plugin lives at `~/.claude/plugins/cache/pediment/pediment/<version>/` and the working directory
-  is the client's folder, so every one of them resolves to nothing — and `client-template` is not
-  even inside the kit, so it cannot ship with the plugin at all. The plugin-root variable is named
-  `CLAUDE_PLUGIN_ROOT`, but it is **not exported into the Bash tool's environment** (verified with
-  a plugin loaded), so a skill body cannot just interpolate it into a command line; it is a
-  hooks/MCP-config facility. Decide the resolution mechanism before rewriting the skills — having
-  the skill resolve its own install path, or publishing the scaffolder as an npx-able package, are
-  both live options. Found during migration step 5's Task 11; paths and variable availability
-  confirmed by a live `/plugin marketplace add` on 2026-08-04.
-- [ ] **`kit.test.mjs`'s reference guard cannot see a path prefix.** The
-  "every script a skill references actually exists" test matches
-  `/\b(scripts\/[A-Za-z0-9._-]+\.mjs)\b/` and resolves the hit against the kit root, so
-  `client-kit/scripts/scaffold.mjs` in a skill body matches on its `scripts/…` tail and passes —
-  the guard confirms the file exists in the repo while the reference as written is unusable once
-  installed. Anchor the match so a prefixed path fails, or assert the reference form directly.
-  Found alongside the path item above.
-- [ ] **The kit ships its own test suite to every client.** `tests/` (suites plus the
-  `mini-template` fixture, 15 files) is copied verbatim into the installed plugin, since the
-  marketplace entry's `source` is `./` and nothing excludes it. Harmless but untidy; worth an
-  exclude once the packaging story is settled.
+- [x] **Installed kit resources resolve from the skill directory.** Claude Code prepends an
+  absolute base directory to each loaded skill. `/pediment:start` now anchors its manifest,
+  fixture, and scaffolder at that directory; `/pediment:port-page` anchors both shared review
+  prompts there. `CLAUDE_PLUGIN_ROOT` remains intentionally unused because Bash does not receive
+  it. Fixed by the external-distribution work designed on 2026-08-04.
+- [x] **The kit reference guard validates the complete path form.** It rejects checkout-prefixed
+  references even when their `scripts/...` tail exists, verifies every target, and carries the
+  original `client-kit/scripts/scaffold.mjs` form as a regression case.
+- [x] **Shipping `client-kit/tests/` is accepted.** Claude Code's marketplace schema provides no
+  supported file-exclusion field. The files are harmless, and moving them outside the plugin only
+  to reduce install size is not warranted.
 - [ ] **The scaffold CI job asserts convergence, not completeness.** `seed-check` proves the front
   page renders and that a second dry run reports `0 to write`, but nothing asserts an expected
   page or nav count — a scaffolder regression that silently emitted three pages instead of four
