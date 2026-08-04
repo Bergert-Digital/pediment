@@ -1,7 +1,7 @@
 {
   "name": "pediment",
   "description": "Create and build Pediment WordPress client sites: scaffold a standalone client theme, seed it, and port existing pages into it.",
-  "version": "0.1.0",
+  "version": "3.0.0",
   "author": { "name": "Bergert Digital", "email": "jonas@bergert.digital" },
   "homepage": "https://github.com/Bergert-Digital/pediment",
   "repository": "https://github.com/Bergert-Digital/pediment",
