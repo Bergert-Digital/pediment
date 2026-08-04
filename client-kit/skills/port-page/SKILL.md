@@ -99,10 +99,13 @@ sizes or spacing — the brand is in `theme.json` and hardcoding defeats it.
 
 ## 5. Iterate under the critic
 
-Screenshot the rebuilt page at the same two widths. Dispatch an independent critic with
-`<skill-dir>/../../shared/fidelity-critic-prompt.md`, giving it the source and rebuilt screenshots. Fix what it
-names, re-seed, re-screenshot, re-run. Stop when it reports no material differences, or after
-four rounds — then report honestly what still differs and why.
+Screenshot the rebuilt page at the same two widths. Read
+`<skill-dir>/../../shared/fidelity-critic-prompt.md`. Before dispatch, replace its
+`{{RUBRIC_PATH}}` placeholder with the resolved absolute path of
+`<skill-dir>/../../shared/visual-qa.md`, fill the remaining placeholders, and send the resulting
+prompt verbatim to an independent critic with the source and rebuilt screenshots. Fix what it
+names, re-seed, re-screenshot, re-run. Stop when it reports no material differences, or after four
+rounds — then report honestly what still differs and why.
 
 Run the checks in `<skill-dir>/../../shared/visual-qa.md` before declaring the page done.
 
