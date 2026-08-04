@@ -37,6 +37,11 @@ git --version >/dev/null 2>&1 && echo "git: ok" || echo "git: MISSING"
 Node must be 20 or newer. `gh` is NOT checked here — it is only needed if the user opts into
 creating a GitHub remote at the very end.
 
+Read `<skill-dir>/../../.claude-plugin/plugin.json` and keep its `version` field as `V` for this
+run. Stop with "The installed Pediment client kit has no valid semantic version" if the file is
+missing, invalid JSON, or `version` does not match `^\d+\.\d+\.\d+$`. Do not query GitHub for a
+different version and do not ask the user to choose one.
+
 ---
 
 ## Phase 1 — the questionnaire
@@ -102,8 +107,8 @@ Write `.context/start/answers.json`. This exact shape is what `scaffold.mjs` con
   ],
   "nav": ["about", "contact"],
   "logo": null,
-  "plugin": { "version": "3.3.0" },
-  "template": { "version": "3.3.0" }
+  "plugin": { "version": "<V from the installed kit manifest>" },
+  "template": { "version": "<V from the installed kit manifest>" }
 }
 ```
 
@@ -119,11 +124,9 @@ Rules:
   here.
 - `logo` is `null`, or `{ "file": "logo.svg", "sourcePath": "<absolute path to the file>" }`.
   `file` is the name it will have inside `seed/media/`; `sourcePath` is where to copy it from.
-- `plugin.version` / `template.version`: use the latest published release that provides
-  `wp pediment seed` — not simply the latest release. Resolve candidates with
-  `gh release list --repo Bergert-Digital/pediment --limit 1`, or ask the user if `gh` is
-  unavailable. Phase 3 verifies the chosen release actually has the command before seeding and
-  stops with a clear message if it does not, rather than discovering it at `seed:plan`.
+- `plugin.version` / `template.version`: Set both `plugin.version` and `template.version` to `V`,
+  the exact version read from the installed kit manifest in Phase 0. They identify one monorepo
+  release and must never diverge.
 - Ask the user where the repo should go and confirm the absolute path before writing anything —
   the target directory's **basename must equal `client.slug` exactly**; `scaffold.mjs` refuses
   otherwise, because wp-env derives the in-container theme directory name from it.
@@ -133,13 +136,13 @@ Rules:
 ## Phase 3 — scaffold and boot
 
 ```bash
-node "<skill-dir>/../../scripts/scaffold.mjs" --answers .context/start/answers.json --target <absolute path> --template client-template
+node "<skill-dir>/../../scripts/scaffold.mjs" --answers .context/start/answers.json --target <absolute path>
 ```
 
-Omitting `--template` makes the scaffolder download `pediment-client-template.zip` for the version
-named in the answers file instead. That asset does not exist in any release yet, so until it
-ships, always pass `--template client-template` when running from a monorepo checkout — dropping
-it fails on the very first run.
+Do not pass `--template` in the installed flow. The scaffolder downloads
+`pediment-client-template.zip` from release `vV`; the generated `.wp-env.json` pins
+`pediment-plugin.zip` from the same release. `--template <dir>` remains a maintainer-only manual
+override when testing an unreleased local template checkout.
 
 The scaffolder refuses a target path containing whitespace or a non-empty target directory, and
 commits the result before anything else runs. Then, in the new directory:
@@ -193,10 +196,10 @@ Never push without the user saying yes.
   resume from `npm run env:start`.
 - **Re-running `/start` in a directory that already has `seed/manifest.php`** → do not scaffold
   again. Say what is already there and offer to resume from phase 3's boot step.
-- **The scaffold command was run without `--template`** → it will fail trying to download
-  `pediment-client-template.zip`. This is expected until a release ships that asset, not an
-  intermittent fault — re-run with `--template <path to a client-template checkout>` (e.g.
-  `client-template` from a monorepo checkout).
+- **The template download fails** → report the exact release URL and HTTP status from the
+  scaffolder. The installed kit, template, and WordPress plugin are one release unit; do not fall
+  forward to `main` or another tag. A Pediment maintainer may retry with `--template <local dir>`
+  while developing an unreleased version, but that is not an external-developer recovery path.
 - **The seed reports problems** → stop and show them. Never re-run a seed to "try again"; the plan
   is deterministic, so a problem repeats until the manifest or a pattern file changes.
 - **`wp pediment seed --help` fails right after `env:start`** → the plugin release used does not
