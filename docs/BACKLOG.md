@@ -211,6 +211,17 @@ _(none currently known — verify by running a user-journey audit)_
   non-issue — but the two classes disagree on placement for what is
   documented as "the same rule" in both docblocks, and that alone is worth
   resolving one way or the other rather than leaving accidental.
+- [ ] **No end-to-end CI coverage of the multilingual path.** The `scaffold` job in
+  [.github/workflows/ci.yml](../.github/workflows/ci.yml) runs a single fixture,
+  `answers-ci.json`, whose `languages` array holds one entry — so the
+  `answers.languages.length > 1` branch at `client-kit/scripts/scaffold.mjs:321`,
+  Polylang's activation in the booted site, and translated-page seeding never execute
+  in CI. `scaffold.test.mjs:245` covers the scaffold-side half (Polylang lands in
+  `.wp-env.json`, `'languages' => array(` lands in the manifest), but nothing boots a
+  two-language site and asserts it seeds and renders. Called the largest untested seam
+  left by review. `client-kit/tests/fixtures/answers-multilingual.json` (de + en)
+  already exists, so a second matrix entry over the fixture path — feeding both the
+  scaffold step and the `seed-check` action — is the whole fix.
 
 ## 🔵 Ideas / later
 
