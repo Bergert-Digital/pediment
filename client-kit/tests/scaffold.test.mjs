@@ -187,6 +187,27 @@ test('resolveTemplate refuses a local template path that does not exist', async 
   await assert.rejects(resolveTemplate({ template: '/nope/not/here' }), /not a directory/i);
 });
 
+test('resolveTemplate reports the exact missing release asset and local override', async () => {
+  const dir = await temp();
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async () => new Response('', { status: 404 });
+
+  try {
+    await assert.rejects(resolveTemplate({ version: '9.9.9', cacheDir: dir }), (error) => {
+      assert.match(
+        error.message,
+        /releases\/download\/v9\.9\.9\/pediment-client-template\.zip/,
+      );
+      assert.match(error.message, /HTTP 404/);
+      assert.match(error.message, /--template <dir>/);
+      return true;
+    });
+  } finally {
+    globalThis.fetch = originalFetch;
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
 const greenfield = JSON.parse(
   await readFile(path.join(here, 'fixtures', 'answers-greenfield.json'), 'utf8'),
 );

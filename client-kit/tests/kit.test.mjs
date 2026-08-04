@@ -114,3 +114,14 @@ test('shared critic dispatch is installed-path safe after rubric substitution', 
   }
   assert.ok(existsSync(rubricPath), 'critic rubric does not exist');
 });
+
+test('start pins both release inputs to the installed kit version', async () => {
+  const body = await readFile(path.join(kit, 'skills', 'start', 'SKILL.md'), 'utf8');
+  assert.match(body, /<skill-dir>\/\.\.\/\.\.\/\.claude-plugin\/plugin\.json/);
+  assert.match(body, /Set both `plugin\.version` and `template\.version` to `V`/);
+  assert.doesNotMatch(body, /gh release list/);
+
+  const command = body.match(/node "<skill-dir>\/\.\.\/\.\.\/scripts\/scaffold\.mjs"[^\n]*/);
+  assert.ok(command, 'start must show the installed scaffolder command');
+  assert.doesNotMatch(command[0], /--template/);
+});
