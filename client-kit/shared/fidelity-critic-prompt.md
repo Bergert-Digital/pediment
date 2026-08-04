@@ -25,7 +25,7 @@ what the builder intended or whether a section is expected to pass.
 - **Ordered section list:**
 {{SECTION_LIST}}
   (one entry per line: `<label>: <brief description>`, in top-to-bottom order)
-- **Rubric:** `shared/visual-qa.md`
+- **Rubric:** `{{RUBRIC_PATH}}`
   Read this file now before proceeding. It defines every scoring category and the pass bar.
 
 ## What you must do
@@ -38,7 +38,7 @@ what the builder intended or whether a section is expected to pass.
    b. Screenshot the full rendered section.
    c. Navigate to (or open a second tab for) the source URL. Scroll to the matching
       source section. Wait out any entrance animations. Screenshot the full source section.
-   d. Compare the two screenshots against every rubric category in `visual-qa.md`.
+   d. Compare the two screenshots against every rubric category in `{{RUBRIC_PATH}}`.
       Score each category 1–5. A score of 4 or 5 means the rendered section faithfully
       reproduces the source for that category. A score of 3 or below is a failure.
    e. Determine whether the section passes: every category ≥ 4 AND zero high-severity
@@ -91,6 +91,8 @@ Your verdict is final.
 
 ## Caller notes (not sent to the critic)
 
+- Substitute `{{RUBRIC_PATH}}` with the rubric's resolved absolute path supplied by the calling
+  skill.
 - Substitute `{{BUILT_PAGE_URL}}` and `{{SOURCE_URL}}` with the actual URLs.
 - Format `{{SECTION_LIST}}` as plain indented lines, e.g.:
   ```

@@ -99,3 +99,18 @@ test('every bundled skill reference is installed-path safe and exists', async ()
     assertSafeKitReferences(body, name);
   }
 });
+
+test('shared critic dispatch is installed-path safe after rubric substitution', async () => {
+  const prompt = await readFile(path.join(kit, 'shared', 'fidelity-critic-prompt.md'), 'utf8');
+  const rubricPath = path.join(kit, 'shared', 'visual-qa.md');
+  assert.ok(prompt.includes('{{RUBRIC_PATH}}'), 'critic prompt has no rubric path placeholder');
+
+  const dispatched = prompt.replaceAll('{{RUBRIC_PATH}}', rubricPath);
+  const rubricMentions = [...dispatched.matchAll(/([^\s`"'()]*)visual-qa\.md/g)]
+    .map(([, prefix]) => `${prefix}visual-qa.md`);
+  assert.ok(rubricMentions.length > 0, 'dispatched critic prompt has no rubric reference');
+  for (const reference of rubricMentions) {
+    assert.equal(reference, rubricPath, `critic rubric reference is not absolute: ${reference}`);
+  }
+  assert.ok(existsSync(rubricPath), 'critic rubric does not exist');
+});
