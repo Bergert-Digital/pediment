@@ -48,14 +48,31 @@ _(none currently known — verify by running a user-journey audit)_
   loudly. Only a *translation* pattern (a non-default-language pattern that is missing) degrades
   quietly, falling back to the default language's content. Still worth the line — a wrong
   namespace is easy to type and easy to miss either way.
-- [ ] **`/pediment:start`'s script path only resolves from a monorepo checkout.** The skill invokes
-  `node client-kit/scripts/scaffold.mjs`, which works when run from a clone of this repo — the
-  internal path, and the only one step 5 ships. Once the kit is installed as a Claude Code plugin
-  (the productisation path decided in the step-5 design), the working directory is the client's
-  parent folder and that relative path resolves to nothing. Claude Code exposes a plugin-root
-  variable for exactly this; confirm its name and availability for skills before relying on it,
-  then make the skill prefer it and fall back to the checkout-relative path. Found during
-  migration step 5's Task 11 and deliberately not guessed at.
+- [ ] **The kit's skills carry checkout-relative paths that an installed plugin cannot resolve.**
+  `/pediment:start` invokes `node client-kit/scripts/scaffold.mjs` and passes
+  `--template client-template`; it also cites `client-kit/tests/fixtures/answers-greenfield.json`
+  as the reference answers shape. `/pediment:port-page` points at `shared/fidelity-critic-prompt.md`
+  and `shared/visual-qa.md`. All of these resolve only from a clone of this repo. Installed, the
+  plugin lives at `~/.claude/plugins/cache/pediment/pediment/<version>/` and the working directory
+  is the client's folder, so every one of them resolves to nothing — and `client-template` is not
+  even inside the kit, so it cannot ship with the plugin at all. The plugin-root variable is named
+  `CLAUDE_PLUGIN_ROOT`, but it is **not exported into the Bash tool's environment** (verified with
+  a plugin loaded), so a skill body cannot just interpolate it into a command line; it is a
+  hooks/MCP-config facility. Decide the resolution mechanism before rewriting the skills — having
+  the skill resolve its own install path, or publishing the scaffolder as an npx-able package, are
+  both live options. Found during migration step 5's Task 11; paths and variable availability
+  confirmed by a live `/plugin marketplace add` on 2026-08-04.
+- [ ] **`kit.test.mjs`'s reference guard cannot see a path prefix.** The
+  "every script a skill references actually exists" test matches
+  `/\b(scripts\/[A-Za-z0-9._-]+\.mjs)\b/` and resolves the hit against the kit root, so
+  `client-kit/scripts/scaffold.mjs` in a skill body matches on its `scripts/…` tail and passes —
+  the guard confirms the file exists in the repo while the reference as written is unusable once
+  installed. Anchor the match so a prefixed path fails, or assert the reference form directly.
+  Found alongside the path item above.
+- [ ] **The kit ships its own test suite to every client.** `tests/` (suites plus the
+  `mini-template` fixture, 15 files) is copied verbatim into the installed plugin, since the
+  marketplace entry's `source` is `./` and nothing excludes it. Harmless but untidy; worth an
+  exclude once the packaging story is settled.
 - [ ] **The scaffold CI job asserts convergence, not completeness.** `seed-check` proves the front
   page renders and that a second dry run reports `0 to write`, but nothing asserts an expected
   page or nav count — a scaffolder regression that silently emitted three pages instead of four
