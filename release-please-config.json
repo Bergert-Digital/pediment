@@ -8,7 +8,19 @@
       "include-component-in-tag": false,
       "draft": false,
       "prerelease": false,
-      "extra-files": ["plugin/plugin.php"],
+      "extra-files": [
+        "plugin/plugin.php",
+        {
+          "type": "json",
+          "path": "client-kit/.claude-plugin/plugin.json",
+          "jsonpath": "$.version"
+        },
+        {
+          "type": "json",
+          "path": ".claude-plugin/marketplace.json",
+          "jsonpath": "$.plugins[0].version"
+        }
+      ],
       "changelog-sections": [
         { "type": "feat", "section": "Features" },
         { "type": "fix", "section": "Bug Fixes" },

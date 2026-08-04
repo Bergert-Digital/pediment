@@ -6,6 +6,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const kit = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+const repo = path.resolve(kit, '..');
 
 test('plugin.json declares a name, description and version', async () => {
   const manifest = JSON.parse(await readFile(path.join(kit, '.claude-plugin', 'plugin.json'), 'utf8'));
@@ -14,14 +15,24 @@ test('plugin.json declares a name, description and version', async () => {
   assert.match(manifest.version, /^\d+\.\d+\.\d+$/);
 });
 
-test('marketplace.json points at this directory and agrees with plugin.json', async () => {
-  const market = JSON.parse(await readFile(path.join(kit, '.claude-plugin', 'marketplace.json'), 'utf8'));
-  const manifest = JSON.parse(await readFile(path.join(kit, '.claude-plugin', 'plugin.json'), 'utf8'));
+test('root marketplace points at the client kit and versions stay in lockstep', async () => {
+  const market = JSON.parse(
+    await readFile(path.join(repo, '.claude-plugin', 'marketplace.json'), 'utf8'),
+  );
+  const manifest = JSON.parse(
+    await readFile(path.join(kit, '.claude-plugin', 'plugin.json'), 'utf8'),
+  );
+  const releases = JSON.parse(
+    await readFile(path.join(repo, '.release-please-manifest.json'), 'utf8'),
+  );
+
   assert.equal(market.plugins.length, 1);
   assert.equal(market.plugins[0].name, manifest.name);
-  assert.equal(market.plugins[0].version, manifest.version);
   assert.equal(market.plugins[0].description, manifest.description);
-  assert.equal(market.plugins[0].source, './');
+  assert.equal(market.plugins[0].source, './client-kit');
+  assert.equal(manifest.version, releases['.']);
+  assert.equal(market.plugins[0].version, releases['.']);
+  assert.equal(existsSync(path.join(kit, '.claude-plugin', 'marketplace.json')), false);
 });
 
 test('every skill has YAML frontmatter with a name and description', async () => {
