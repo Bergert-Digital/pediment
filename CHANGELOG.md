@@ -1,5 +1,80 @@
 # Changelog
 
+## [3.1.0](https://github.com/Bergert-Digital/pediment/compare/v3.0.0...v3.1.0) (2026-08-04)
+
+
+### Features
+
+* **i18n:** generate wpml-config.xml from block.json ([f00311d](https://github.com/Bergert-Digital/pediment/commit/f00311da809386b5b1950e3259bb2954f5bc374c))
+* **language:** add LanguageProvider seam with a null implementation ([f665c5c](https://github.com/Bergert-Digital/pediment/commit/f665c5c9dbd00011fc88015e0e72405f6bb4004b))
+* **language:** add the Polylang adapter and per-language seeding (migration step 4) ([#69](https://github.com/Bergert-Digital/pediment/issues/69)) ([16b9cdb](https://github.com/Bergert-Digital/pediment/commit/16b9cdb299385c0be8e5579318b8c51e1d26fb09))
+* **language:** add the Polylang provider ([4592d49](https://github.com/Bergert-Digital/pediment/commit/4592d49f50752850307588da8dc8460cce034c32))
+* **language:** configure Polylang from the manifest ([1418556](https://github.com/Bergert-Digital/pediment/commit/1418556aefc7a689c6e91f953b6e468dfd338e10))
+* **language:** detect Polylang in the registry ([f0202d6](https://github.com/Bergert-Digital/pediment/commit/f0202d676c8366f9dd67dd680292b7679643a78c))
+* **language:** give every language its own navigation menu ([0569ccf](https://github.com/Bergert-Digital/pediment/commit/0569ccf850cd82e327073336890cbaf7109d77f9))
+* **seeder:** add seed meta keys and versioned content hash ([a9515dc](https://github.com/Bergert-Digital/pediment/commit/a9515dc9dff3d9ba99741f1910b23cdb9264a34b))
+* **seeder:** add the declarative seeding engine (migration step 3) ([#67](https://github.com/Bergert-Digital/pediment/issues/67)) ([2d2a2f0](https://github.com/Bergert-Digital/pediment/commit/2d2a2f0db5e6be11378c1a44b72ce60217301062))
+* **seeder:** add the wp-admin seeding tab with lifted PHP limits ([31c1d8e](https://github.com/Bergert-Digital/pediment/commit/31c1d8e2cc2572c7f4b583234c4a74936f8268d3))
+* **seeder:** add wp pediment adopt to export live pages ([406970e](https://github.com/Bergert-Digital/pediment/commit/406970eb3a809f1af9db12231a00e540df3bd79f))
+* **seeder:** add wp pediment seed with a readable dry-run plan ([e7ea6ce](https://github.com/Bergert-Digital/pediment/commit/e7ea6cec56f1ec2cecb219b59e16eb65b799a20a))
+* **seeder:** apply plan with slash-safe writes, hashing ([7d4f188](https://github.com/Bergert-Digital/pediment/commit/7d4f18854c4628ab45b5da97d8d96a193fe33a88))
+* **seeder:** declare per-language titles, slugs and patterns ([6062c93](https://github.com/Bergert-Digital/pediment/commit/6062c93bb2f59712c9879846b1cc00f9a9a2e7a9))
+* **seeder:** declare site languages in the manifest ([4c42634](https://github.com/Bergert-Digital/pediment/commit/4c42634909f62f18732e56457a35231261bfae4b))
+* **seeder:** diff desired against actual state into a plan ([14e8393](https://github.com/Bergert-Digital/pediment/commit/14e8393127659c71d8038af97a3794be829e8d92))
+* **seeder:** link entry translation groups after the write loop ([9f05409](https://github.com/Bergert-Digital/pediment/commit/9f05409d4cb38be6c023f99371d94275f5b27b30))
+* **seeder:** load and validate the declarative seed manifest ([b36cac9](https://github.com/Bergert-Digital/pediment/commit/b36cac9906b591ad1ee316c63cba6e07338c6dad))
+* **seeder:** refuse to seed into a mismatched language set ([af8e017](https://github.com/Bergert-Digital/pediment/commit/af8e017bac67eb9d509f9490942f43165ec30643))
+* **seeder:** register manifest post types on init ([7f28c58](https://github.com/Bergert-Digital/pediment/commit/7f28c58508b25bea9e3c2761e656ae271d96d970))
+* **seeder:** resolve content, titles and slugs per language ([0821a25](https://github.com/Bergert-Digital/pediment/commit/0821a257cc2f43f909794cfbd1eccc2387edad2c))
+* **seeder:** resolve desired and actual state by seed key ([810b89e](https://github.com/Bergert-Digital/pediment/commit/810b89e7947f0ebf72691b3d42ba5b3d0e4bad24))
+* **seeder:** resolve entry content and media keys ([a70e0d0](https://github.com/Bergert-Digital/pediment/commit/a70e0d0a39642051288f4f7be0cb73a3e4e88a8c))
+* **seeder:** resolve navigation entities by seed key ([bbe8131](https://github.com/Bergert-Digital/pediment/commit/bbe8131e74fcd246e8aa88ea0b2f85da566332b4))
+* **seeder:** run the five seeding phases with post-condition checks ([d733a2c](https://github.com/Bergert-Digital/pediment/commit/d733a2c8a5d7155f24b49395518ae57a4e6a7707))
+* **seeder:** seed media attachments and site logo ([329c606](https://github.com/Bergert-Digital/pediment/commit/329c6062845df6f21ae72da9734d282b661c4ee2))
+
+
+### Bug Fixes
+
+* **docs:** correct drifted back-references in the languages docs ([3541d7d](https://github.com/Bergert-Digital/pediment/commit/3541d7d34c9a7ac6735f302c37be22c9afd98784))
+* **e2e:** add the decoy-nav test that actually catches a deleted binding ([7c061d7](https://github.com/Bergert-Digital/pediment/commit/7c061d706c412d25b97d58dcac4b3e26e0f44db1))
+* **e2e:** make multilingual.spec.ts self-discriminating and precise ([207f2c7](https://github.com/Bergert-Digital/pediment/commit/207f2c784c9587f8ad65ab35e9b9f6a7c7966cfe))
+* **language-tests:** share the language-reseed fix across the whole Polylang suite ([c2b823e](https://github.com/Bergert-Digital/pediment/commit/c2b823e9030a65ae598bc032592aa2d1ab6323c4))
+* **nav:** actually untag the legacy-nav fixture in the unscoped-fallback test ([6bc8cdd](https://github.com/Bergert-Digital/pediment/commit/6bc8cdd3e01c8587d4bf20f33aecf80acc6a02dc))
+* **nav:** bind the header's navigation to the current language ([2898291](https://github.com/Bergert-Digital/pediment/commit/289829123ede83beabfb50c27fe2dd3e3d63b4a8))
+* **nav:** don't override inner blocks, gate the default language, make primary filterable ([fc2bec5](https://github.com/Bergert-Digital/pediment/commit/fc2bec5c13083cbee7a7e886b6001f7af8febadb))
+* **nav:** set lang explicitly for the unscoped candidate; clean up added language in tests ([7bd866c](https://github.com/Bergert-Digital/pediment/commit/7bd866c3f2a2b67c65d53db95bd12930ca5dfa72))
+* **polylang:** drop unsupported active_plugins rationale from bootstrap ([26a0d87](https://github.com/Bergert-Digital/pediment/commit/26a0d87dd68115baac0e992ee817fd1426dd6307))
+* **seeder:** adopt into the language's own pattern file ([3d93746](https://github.com/Bergert-Digital/pediment/commit/3d937460adfcad7e87723ea8a79a912700ebc102))
+* **seeder:** anchor media id rewrites and roll back ([0832693](https://github.com/Bergert-Digital/pediment/commit/08326937954a28c5eb09355d76938d3358a2fe1e))
+* **seeder:** gate writes on a clean plan, verify navs ([9cc7fe1](https://github.com/Bergert-Digital/pediment/commit/9cc7fe1a3a8fd356eb6b87c93b1b4e2857327b05))
+* **seeder:** hash adopt's source the way the seeder will ([42ceae2](https://github.com/Bergert-Digital/pediment/commit/42ceae28233ae58ad68cca6025e40f884980171b))
+* **seeder:** keep Adopter's filename in sync with its Slug header ([5882d45](https://github.com/Bergert-Digital/pediment/commit/5882d45366df6ccfc002c0b445d11d4aaffc05bb))
+* **seeder:** let phase 2 see non-public post types ([5f095b4](https://github.com/Bergert-Digital/pediment/commit/5f095b4d455c5275dabd5e1a14a78f5a907af843))
+* **seeder:** make `wp pediment seed --json` reachable ([b8b1a8a](https://github.com/Bergert-Digital/pediment/commit/b8b1a8a6ee6d528418bd6a5eb480ba66b1f3434b))
+* **seeder:** make adopt round-trip and keep placeholders ([7509fc7](https://github.com/Bergert-Digital/pediment/commit/7509fc710e7c3c3b81fa5890f2a90ff711f3b8d8))
+* **seeder:** make the verifier's parent check able to fail ([8e6d6d0](https://github.com/Bergert-Digital/pediment/commit/8e6d6d04dd967bec70eb8c7d7c57678cfac1e712))
+* **seeder:** name the create parent change parent_key ([5b9dc42](https://github.com/Bergert-Digital/pediment/commit/5b9dc427d27af10e3bb34fb76075d52579c50edd))
+* **seeder:** name the language in nav verification problems ([8b0b30d](https://github.com/Bergert-Digital/pediment/commit/8b0b30d9ca479cf95f400cb3024ed53718e8f3f1))
+* **seeder:** never write a nav with an unresolved link ([936d0e4](https://github.com/Bergert-Digital/pediment/commit/936d0e4cd92dd5dd2fad462813235fdc1f36fc95))
+* **seeder:** reject silent no-ops in per-language entry overrides ([737074a](https://github.com/Bergert-Digital/pediment/commit/737074a4f39ef26e8ccfc9b44d5a6a2e6a73d5ee))
+* **seeder:** reject unknown manifest keys and empty slugs ([08bf9a7](https://github.com/Bergert-Digital/pediment/commit/08bf9a7e4232d50439bcb16997db0e1991dcc303))
+* **seeder:** report media failures and restore trashed ([7ad6fb5](https://github.com/Bergert-Digital/pediment/commit/7ad6fb59ab873a65d2a85027d14047f1d208d56f))
+* **seeder:** report media keys the manifest never declares ([e12b7eb](https://github.com/Bergert-Digital/pediment/commit/e12b7eb5d72943f5bb4fff099d434e1181529fc6))
+* **seeder:** report missing nav links on every run ([88aa9f0](https://github.com/Bergert-Digital/pediment/commit/88aa9f00d93b9c48e81261e69fd6734acc8a5a71))
+* **seeder:** report partial applies and protected items ([cd055f0](https://github.com/Bergert-Digital/pediment/commit/cd055f02a84413b6e1e7a77c1d7e96ef948c4364))
+* **seeder:** report slug collisions, protect client terms ([f6a2a31](https://github.com/Bergert-Digital/pediment/commit/f6a2a31eb3686f77466d01b2ff08da9d68222c12))
+* **seeder:** report unresolved media ids, not just urls ([a6aa5db](https://github.com/Bergert-Digital/pediment/commit/a6aa5db5f5fa9210a72f615cfd24e8b90920e880))
+* **seeder:** restore a trashed nav instead of re-creating it ([e183002](https://github.com/Bergert-Digital/pediment/commit/e18300292c571cfab4d5c893cd6b8d9fdc9aad0a))
+* **seeder:** sharpen plan records and restore semantics ([4e01096](https://github.com/Bergert-Digital/pediment/commit/4e01096a15a62bf2afdc59b230655a8c8926eee5))
+* **seeder:** stop the translation notice mis-firing on real slugs and defaults ([24c522f](https://github.com/Bergert-Digital/pediment/commit/24c522f98d8519fd24fa23c7cd7eea4e2c20626c))
+* **seeder:** tag untagged posts on re-seed, verify language, guard partial groups ([c8fd84f](https://github.com/Bergert-Digital/pediment/commit/c8fd84f66126540e969eaf735502d10217fd8acf))
+* **seeder:** tell the operator when a seed is rejected ([fd775dd](https://github.com/Bergert-Digital/pediment/commit/fd775dd1b85fe998d130f910da02427399c2b0f5))
+
+
+### Performance
+
+* **seeder:** cache the manifest per request ([1c80f8e](https://github.com/Bergert-Digital/pediment/commit/1c80f8e06c608a752afa427b82a787874e15a38e))
+
 ## [3.0.0](https://github.com/Bergert-Digital/pediment/compare/v2.4.1...v3.0.0) (2026-07-30)
 
 
