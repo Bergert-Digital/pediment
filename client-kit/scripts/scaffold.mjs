@@ -183,15 +183,24 @@ export function validatePagesHavePatterns(srcDir, pages) {
   }
 }
 
+/**
+ * The only dunder-wrapped identifiers that legitimately survive scaffolding unreplaced — anything
+ * else matching /__[A-Z0-9_]+__/g is either a known __PEDIMENT_*__ token that TOKENS forgot, or a
+ * new token family someone invented and forgot to wire up. Narrowing the scan to __PEDIMENT_*__
+ * would silence that second case forever, so this stays an explicit, closed exclusion list instead.
+ */
+const PHP_MAGIC_CONSTANTS = new Set([
+  '__DIR__', '__FILE__', '__LINE__', '__CLASS__',
+  '__FUNCTION__', '__METHOD__', '__NAMESPACE__', '__TRAIT__',
+]);
+
 export async function assertNoTokens(destDir) {
   const offenders = [];
   for (const rel of await walk(destDir)) {
     if (BINARY.test(rel)) continue;
-    // Scoped to the __PEDIMENT_*__ namespace, not every dunder-wrapped identifier: the client
-    // blocks layer's functions.php legitimately contains PHP magic constants (__DIR__) that would
-    // otherwise false-positive as an unreplaced token.
-    const found = (await readFile(path.join(destDir, rel), 'utf8')).match(/__PEDIMENT_[A-Z0-9_]+__/g);
-    if (found) offenders.push(`${rel}: ${[...new Set(found)].join(', ')}`);
+    const matches = (await readFile(path.join(destDir, rel), 'utf8')).match(/__[A-Z0-9_]+__/g) || [];
+    const found = matches.filter((token) => !PHP_MAGIC_CONSTANTS.has(token));
+    if (found.length) offenders.push(`${rel}: ${[...new Set(found)].join(', ')}`);
   }
   if (offenders.length) {
     throw new Error(
