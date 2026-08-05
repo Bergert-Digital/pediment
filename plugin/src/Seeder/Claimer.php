@@ -59,6 +59,12 @@ final class Claimer {
 			}
 		}
 
+		foreach ( $this->lang->languages() as $language ) {
+			foreach ( $manifest->navs() as $spec ) {
+				$items[] = $this->planNav( $spec, $language, count( $manifest->navs() ) );
+			}
+		}
+
 		return new Plan( $items );
 	}
 
@@ -186,6 +192,106 @@ final class Claimer {
 			return $language === $default;
 		}
 		return $this->lang->translationOf( $postId, $language ) === $postId;
+	}
+
+	/**
+	 * A legacy navigation entity's slug is whatever the previous seeder gave
+	 * it, so slug matching alone is unreliable. When the manifest declares one
+	 * nav and the language holds exactly one unclaimed navigation entity, that
+	 * is unambiguous and is claimed. Otherwise fall back to the derived slug,
+	 * and report rather than guess.
+	 */
+	private function planNav( NavSpec $spec, string $language, int $declaredNavs ): PlanItem {
+		$candidates = $this->navCandidates( $language );
+
+		if ( 1 === $declaredNavs && 1 === count( $candidates ) ) {
+			return $this->navItem( PlanItem::CLAIM, $spec, $language, (int) $candidates[0] );
+		}
+
+		$slug   = ( new NavSeeder( $this->lang ) )->slugFor( $spec, $language );
+		$bySlug = array_values(
+			array_filter(
+				$candidates,
+				static function ( int $id ) use ( $slug ): bool {
+					$post = get_post( $id );
+					return $post instanceof \WP_Post && $post->post_name === $slug;
+				}
+			)
+		);
+
+		if ( 1 === count( $bySlug ) ) {
+			return $this->navItem( PlanItem::CLAIM, $spec, $language, (int) $bySlug[0] );
+		}
+
+		if ( [] === $candidates ) {
+			return new PlanItem(
+				PlanItem::NO_MATCH,
+				PlanItem::KIND_NAV,
+				$spec->key,
+				$language,
+				0,
+				[],
+				[],
+				'no unclaimed navigation entity — the next seed will create it.'
+			);
+		}
+
+		return new PlanItem(
+			PlanItem::AMBIGUOUS,
+			PlanItem::KIND_NAV,
+			$spec->key,
+			$language,
+			0,
+			[],
+			[],
+			sprintf(
+				'%d unclaimed navigation entities (IDs %s) and none whose slug is "%s" — re-slug the right one, or claim it by hand.',
+				count( $candidates ),
+				implode( ', ', $candidates ),
+				$slug
+			)
+		);
+	}
+
+	private function navItem( string $action, NavSpec $spec, string $language, int $postId ): PlanItem {
+		return new PlanItem(
+			$action,
+			PlanItem::KIND_NAV,
+			$spec->key,
+			$language,
+			$postId,
+			[ 'seed_key' => [ 'from' => null, 'to' => $spec->key ] ],
+			[],
+			sprintf( 'navigation "%s" (ID %d)', (string) get_the_title( $postId ), $postId )
+		);
+	}
+
+	/** @return int[] Unclaimed wp_navigation posts in this language. */
+	private function navCandidates( string $language ): array {
+		$args = $this->lang->unscopedQuery(
+			[
+				'post_type'      => 'wp_navigation',
+				'post_status'    => self::STATUSES,
+				'posts_per_page' => -1,
+				'orderby'        => 'ID',
+				'order'          => 'ASC',
+				'no_found_rows'  => true,
+			]
+		);
+
+		$out = [];
+		foreach ( get_posts( $args ) as $post ) {
+			$id = (int) $post->ID;
+			if ( '' !== (string) get_post_meta( $id, Meta::KEY, true ) ) {
+				continue;
+			}
+			if ( ! $this->languageMatches( $id, $language, $this->lang->defaultLanguage() ) ) {
+				continue;
+			}
+			$out[] = $id;
+		}
+
+		return $out;
 	}
 
 	/** @return array{claimed:int,errors:string[]} */
