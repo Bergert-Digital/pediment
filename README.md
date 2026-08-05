@@ -46,10 +46,11 @@ shared assets are supplied by the plugin.
 
 ## Releases
 
-Main-only development uses release-please. A release creates exactly one asset:
-`pediment-plugin.zip`, which installs as `wp-content/plugins/pediment/`. It
-does not include a client theme; install or keep a site-specific standalone
-theme alongside it.
+Main-only development uses release-please. A release publishes two assets:
+`pediment-plugin.zip`, which installs as `wp-content/plugins/pediment/`, and
+`pediment-client-template.zip`, which the client kit's scaffolder downloads to
+create a new client theme. The plugin zip contains no client theme; every site
+pairs it with a standalone theme of its own.
 
 ## Architecture
 
@@ -69,3 +70,9 @@ Client sites are standalone theme repos scaffolded from `client-template/` via t
 Claude Code plugin's `/pediment:start` skill — see
 [docs/client-sites.md](docs/client-sites.md) for the full workflow, from installing the kit
 through day-two content edits to deploying a theme release.
+
+## Licensing
+
+Three components, three licences: `plugin/` and `client-template/` are GPL-2.0-or-later,
+`client-kit/` is PolyForm Shield 1.0.0. See [LICENSING.md](LICENSING.md) for what each
+covers and why they differ.
