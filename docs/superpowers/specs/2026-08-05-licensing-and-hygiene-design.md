@@ -174,7 +174,14 @@ record; **the plan should not schedule this work again.**
 Both verified by reading state back with `gh api` rather than trusting the command's exit status.
 The backlog item at `docs/BACKLOG.md:18` is closed.
 
-### 3.4 Client names in documentation
+### 3.4 Client names in documentation — **RESOLVED 2026-08-05**
+
+**No action needed.** The user is Workation's founder and has confirmed the mentions are fine.
+The analysis below is kept because the same question will recur for the next client site named in
+a plan, and the answer will not always be this easy.
+
+---
+
 
 "Workation" appears 18 times across `docs/BACKLOG.md` and the step-3, step-4 and step-5 plans,
 always as the planned migration target for step 6. No credentials, contract terms or commercial

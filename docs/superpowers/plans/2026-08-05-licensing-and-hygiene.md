@@ -574,5 +574,5 @@ Expected: every echo fires, `pass 78`, and a clean working tree.
 
 - The repository-privacy migration. Rejected in the spec's §1.
 - The licence server and hosted AI service. Backlogged; its own spec.
-- Asking Workation for consent to be named in public docs. A human task, deliberately not filed as a backlog item.
+- Client names in docs. Resolved 2026-08-05: the user founded Workation and confirmed the 18 mentions are fine. No scrub, no backlog item.
 - Legal review of the GPL/PolyForm boundary and the Pediment trademark.
