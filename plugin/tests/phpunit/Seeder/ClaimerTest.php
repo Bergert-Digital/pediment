@@ -78,4 +78,75 @@ class ClaimerTest extends WP_UnitTestCase {
 		$this->assertStringContainsString( (string) $first, $item->note );
 		$this->assertStringContainsString( (string) $second, $item->note );
 	}
+
+	public function test_a_child_is_matched_under_its_claimed_parent() {
+		$parent = $this->page( 'guide' );
+		$right  = $this->page( 'faq', [ 'post_parent' => $parent ] );
+		$wrong  = $this->page( 'faq' ); // Same slug, top level.
+
+		$manifest = $this->manifest(
+			[
+				'guide'     => [ 'title' => 'Guide', 'content' => '<p>g</p>' ],
+				'guide/faq' => [ 'title' => 'FAQ', 'slug' => 'faq', 'parent' => 'guide', 'content' => '<p>f</p>' ],
+			]
+		);
+
+		$items = $this->byMapKey( ( new Claimer( new NullProvider() ) )->plan( $manifest, [] ) );
+
+		$this->assertSame( $parent, $items['guide|']->postId );
+		$this->assertSame( PlanItem::CLAIM, $items['guide/faq|']->action );
+		$this->assertSame( $right, $items['guide/faq|']->postId );
+		$this->assertNotSame( $wrong, $items['guide/faq|']->postId );
+	}
+
+	public function test_a_top_level_entry_does_not_match_a_nested_page() {
+		$parent = $this->page( 'guide' );
+		$this->page( 'about', [ 'post_parent' => $parent ] );
+
+		$manifest = $this->manifest( [ 'about' => [ 'title' => 'About', 'content' => '<p>a</p>' ] ] );
+
+		$this->assertSame(
+			PlanItem::NO_MATCH,
+			$this->byMapKey( ( new Claimer( new NullProvider() ) )->plan( $manifest, [] ) )['about|']->action
+		);
+	}
+
+	public function test_apply_writes_only_the_key_and_is_idempotent() {
+		$id       = $this->page( 'about', [ 'post_content' => 'live copy', 'post_title' => 'Live title' ] );
+		$manifest = $this->manifest( [ 'about' => [ 'title' => 'About', 'content' => '<p>a</p>' ] ] );
+		$claimer  = new Claimer( new NullProvider() );
+
+		$first = $claimer->apply( $claimer->plan( $manifest, [] ) );
+
+		$this->assertSame( 1, $first['claimed'] );
+		$this->assertSame( [], $first['errors'] );
+		$this->assertSame( 'about', get_post_meta( $id, Meta::KEY, true ) );
+		$this->assertSame( '', get_post_meta( $id, Meta::HASH, true ) );
+		$this->assertSame( '', get_post_meta( $id, Meta::SOURCE, true ) );
+		$this->assertSame( 'live copy', get_post( $id )->post_content );
+		$this->assertSame( 'Live title', get_post( $id )->post_title );
+
+		// A second run sees the row in actual state and plans nothing.
+		$actual  = ( new \Pediment\Seeder\StateReader( new NullProvider() ) )->read();
+		$replan  = $claimer->plan( $manifest, $actual );
+		$this->assertSame( [], $replan->byAction( PlanItem::CLAIM ) );
+	}
+
+	public function test_a_claimed_page_is_protected_by_the_next_seed() {
+		$id       = $this->page( 'about', [ 'post_content' => 'live copy' ] );
+		$manifest = $this->manifest( [ 'about' => [ 'title' => 'About', 'content' => '<p>a</p>' ] ] );
+		$claimer  = new Claimer( new NullProvider() );
+		$claimer->apply( $claimer->plan( $manifest, [] ) );
+
+		$desired = ( new \Pediment\Seeder\DesiredState(
+			new NullProvider(),
+			new \Pediment\Seeder\ContentResolver( new \Pediment\Seeder\MediaMap( [] ) )
+		) )->build( $manifest );
+		$reader  = new \Pediment\Seeder\StateReader( new NullProvider() );
+		$plan    = ( new \Pediment\Seeder\Differ() )->diff( $desired, $reader->read(), $reader->duplicates() );
+
+		$item = $plan->items()[0];
+		$this->assertSame( PlanItem::PROTECTED, $item->action );
+		$this->assertSame( 'live copy', get_post( $id )->post_content );
+	}
 }
