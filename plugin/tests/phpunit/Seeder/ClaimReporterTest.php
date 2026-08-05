@@ -20,11 +20,28 @@ class ClaimReporterTest extends WP_UnitTestCase {
 
 		$this->assertStringContainsString( 'Pediment claim — dry run', $text );
 		$this->assertStringContainsString( 'manifest: /srv/theme/seed/manifest.php', $text );
-		$this->assertStringContainsString( 'claim', $text );
+		// Both per-kind headings actually rendered, not just implied by the summary line.
+		$this->assertStringContainsString( 'PAGES & POSTS', $text );
+		$this->assertStringContainsString( 'NAV', $text );
+		// The entry item's own line — key and note, not just its action word.
+		$this->assertStringContainsString( 'page "home" (ID 12)', $text );
 		$this->assertStringContainsString( 'no-match', $text );
-		$this->assertStringContainsString( 'ambiguous', $text );
+		// The nav item's note, distinguishing its line from a garbled or dropped one.
+		$this->assertStringContainsString( 'IDs 7, 9', $text );
 		$this->assertStringContainsString( '1 to claim, 1 without a match, 1 ambiguous.', $text );
 		$this->assertStringContainsString( 'Nothing was written (--dry-run).', $text );
+	}
+
+	public function test_a_language_specific_item_shows_its_language_code_after_the_key() {
+		$plan = new Plan(
+			[
+				new PlanItem( PlanItem::CLAIM, PlanItem::KIND_ENTRY, 'home', 'fr', 14, [ 'seed_key' => [ 'from' => null, 'to' => 'home' ] ], [], 'page "home" (ID 14)' ),
+			]
+		);
+
+		$text = Reporter::claimText( $plan, true, '' );
+
+		$this->assertStringContainsString( 'home (fr)', $text );
 	}
 
 	public function test_an_applied_run_does_not_claim_to_be_a_dry_run() {
