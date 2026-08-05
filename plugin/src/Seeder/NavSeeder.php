@@ -358,8 +358,14 @@ final class NavSeeder {
 		return array_filter( $this->keyed(), static fn( array $postIds ): bool => count( $postIds ) > 1 );
 	}
 
-	/** @return array<string,int[]> navKey|language => every post ID carrying that identity. */
-	private function keyed(): array {
+	/**
+	 * Public because Claimer needs the same already-claimed lookup to skip a
+	 * nav that already carries its key when planning claims; the query must
+	 * not exist twice.
+	 *
+	 * @return array<string,int[]> navKey|language => every post ID carrying that identity.
+	 */
+	public function keyed(): array {
 		$ids = [];
 		foreach (
 			get_posts(

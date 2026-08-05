@@ -4,6 +4,7 @@
 use Pediment\Language\PolylangProvider;
 use Pediment\Seeder\Claimer;
 use Pediment\Seeder\Manifest;
+use Pediment\Seeder\Meta;
 use Pediment\Seeder\PlanItem;
 
 class ClaimerLanguageTest extends PolylangTestCase {
@@ -106,5 +107,44 @@ class ClaimerLanguageTest extends PolylangTestCase {
 		$this->assertSame( PlanItem::CLAIM, $items['about|en']->action );
 		$this->assertSame( $untagged, $items['about|en']->postId );
 		$this->assertSame( PlanItem::NO_MATCH, $items['about|de']->action );
+	}
+
+	private function navManifest(): Manifest {
+		return Manifest::fromArray(
+			[
+				'languages' => [ 'en' => [ 'name' => 'English', 'locale' => 'en_US', 'default' => true ], 'de' => [ 'name' => 'Deutsch', 'locale' => 'de_DE' ] ],
+				'pages'     => [ 'home' => [ 'title' => 'Home', 'content' => '<p>h</p>', 'front_page' => true ] ],
+				'navs'      => [ 'primary' => [ 'title' => 'Primary', 'items' => [ [ 'entry' => 'home' ] ] ] ],
+			],
+			'/tmp/theme'
+		);
+	}
+
+	private function nav( string $slug, string $language ): int {
+		$id = self::factory()->post->create(
+			[ 'post_type' => 'wp_navigation', 'post_title' => 'Primary', 'post_name' => $slug, 'post_status' => 'publish' ]
+		);
+		pll_set_post_language( $id, $language );
+		return $id;
+	}
+
+	/**
+	 * NavSeeder::keyed() buckets a claimed nav under "<key>|<language>", not
+	 * just "<key>": a `de` nav already carrying the `primary` seed key must
+	 * make Claimer skip only `primary|de`, never `primary|en`. If keyed()
+	 * mis-attributed language, or Claimer::plan() keyed its skip check on
+	 * the nav key alone, the `en` nav below would go unclaimed too.
+	 */
+	public function test_a_nav_claimed_in_one_language_does_not_block_claiming_the_other() {
+		$de = $this->nav( 'primary-de', 'de' );
+		update_post_meta( $de, Meta::KEY, 'primary' );
+		$en = $this->nav( 'primary', 'en' );
+
+		$navs = ( new Claimer( new PolylangProvider() ) )->plan( $this->navManifest(), [] )->byKind( PlanItem::KIND_NAV );
+
+		$this->assertCount( 1, $navs );
+		$this->assertSame( PlanItem::CLAIM, $navs[0]->action );
+		$this->assertSame( 'en', $navs[0]->language );
+		$this->assertSame( $en, $navs[0]->postId );
 	}
 }

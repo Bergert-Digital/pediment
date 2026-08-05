@@ -59,9 +59,18 @@ final class Claimer {
 			}
 		}
 
+		// StateReader::EXCLUDED_TYPES excludes wp_navigation, so $resolved
+		// above has no opinion on navs: this is nav claiming's own source of
+		// truth for "already carries the key," the same role $actual plays
+		// for entries.
+		$claimedNavs  = ( new NavSeeder( $this->lang ) )->keyed();
 		$declaredNavs = count( $manifest->navs() );
 		foreach ( $this->lang->languages() as $language ) {
 			foreach ( $manifest->navs() as $spec ) {
+				$mapKey = $spec->key . '|' . $language;
+				if ( isset( $claimedNavs[ $mapKey ] ) ) {
+					continue; // Already carries the key: nothing to claim.
+				}
 				$items[] = $this->planNav( $spec, $language, $declaredNavs, $default );
 			}
 		}
