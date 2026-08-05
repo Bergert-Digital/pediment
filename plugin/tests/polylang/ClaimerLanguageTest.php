@@ -24,12 +24,43 @@ class ClaimerLanguageTest extends PolylangTestCase {
 		);
 	}
 
+	/**
+	 * No `de` override, so `EntrySpec::slugFor( 'de', 'en' )` derives its own
+	 * `<slug>-<lang>` suffix (docs/seeding.md, "The derived slug rule, and
+	 * why") instead of reusing `ueber-uns`. That lets a test hand the
+	 * untagged-post candidate query a slug that clears the `de` pass's slug
+	 * filter, so only `Claimer::languageMatches()` can still reject it.
+	 */
+	private function manifestWithDerivedDeSlug(): Manifest {
+		return Manifest::fromArray(
+			[
+				'languages' => [ 'en' => [ 'name' => 'English', 'locale' => 'en_US', 'default' => true ], 'de' => [ 'name' => 'Deutsch', 'locale' => 'de_DE' ] ],
+				'pages'     => [
+					'about' => [
+						'title'   => 'About',
+						'content' => '<p>a</p>',
+					],
+				],
+			],
+			'/tmp/theme'
+		);
+	}
+
 	private function page( string $slug, ?string $language = null ): int {
 		$id = self::factory()->post->create(
 			[ 'post_type' => 'page', 'post_name' => $slug, 'post_title' => 'Legacy', 'post_status' => 'publish' ]
 		);
 		if ( null !== $language ) {
 			pll_set_post_language( $id, $language );
+		} else {
+			// Polylang auto-tags every saved post on `save_post` (see
+			// ApplierTranslationTest::test_a_re_seed_repairs_a_post_whose_language_term_was_stripped),
+			// so a factory-created post is never actually untagged — confirmed
+			// here with pll_get_post_language() returning 'en' after a plain
+			// create() — until its language term relationship is explicitly
+			// removed. That removal, not simply omitting pll_set_post_language(),
+			// is what produces the untagged candidate this suite needs.
+			wp_delete_object_term_relationships( $id, 'language' );
 		}
 		return $id;
 	}
@@ -63,8 +94,14 @@ class ClaimerLanguageTest extends PolylangTestCase {
 
 	public function test_an_untagged_page_is_claimed_for_the_default_language_only() {
 		$untagged = $this->page( 'about' );
+		// Untagged, and slugged exactly like the derived `de` candidate query
+		// expects — so it clears that query's slug filter and reaches
+		// languageMatches(), which must still refuse it. Without this second
+		// post, "about|de" is NO_MATCH purely because no candidate's slug is
+		// "about-de" at all, and the language rule is never consulted.
+		$this->page( 'about-de' );
 
-		$items = $this->byMapKey( ( new Claimer( new PolylangProvider() ) )->plan( $this->manifest(), [] ) );
+		$items = $this->byMapKey( ( new Claimer( new PolylangProvider() ) )->plan( $this->manifestWithDerivedDeSlug(), [] ) );
 
 		$this->assertSame( PlanItem::CLAIM, $items['about|en']->action );
 		$this->assertSame( $untagged, $items['about|en']->postId );
