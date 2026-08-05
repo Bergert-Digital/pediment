@@ -209,4 +209,47 @@ class ClaimerTest extends WP_UnitTestCase {
 		$this->assertSame( PlanItem::CLAIM, $navs[0]->action );
 		$this->assertSame( $primary, $navs[0]->postId );
 	}
+
+	public function test_a_nav_already_carrying_its_seed_key_produces_no_plan_item() {
+		$id = $this->nav( 'Primary', 'primary' );
+		update_post_meta( $id, Meta::KEY, 'primary' );
+		$manifest = Manifest::fromArray(
+			[
+				'pages' => [ 'home' => [ 'title' => 'Home', 'content' => '<p>h</p>', 'front_page' => true ] ],
+				'navs'  => [ 'primary' => [ 'title' => 'Primary', 'items' => [ [ 'entry' => 'home' ] ] ] ],
+			],
+			'/tmp/theme'
+		);
+
+		$navs = ( new Claimer( new NullProvider() ) )->plan( $manifest, [] )->byKind( PlanItem::KIND_NAV );
+
+		$this->assertSame( [], $navs );
+	}
+
+	/**
+	 * The dangerous case: a stray, unrelated wp_navigation post must never be
+	 * claimed under a key another post already carries. Before the fix, an
+	 * already-claimed nav is invisible to the claim-candidate query, so the
+	 * stray becomes the single unclaimed candidate and the 1-declared/1-
+	 * candidate rule (Claimer.php) claims it — two posts then share one
+	 * _pediment_seed_key, which the engine treats as fatal.
+	 */
+	public function test_a_claimed_nav_does_not_let_a_stray_be_claimed_under_its_key() {
+		$claimed = $this->nav( 'Primary', 'primary' );
+		update_post_meta( $claimed, Meta::KEY, 'primary' );
+		$stray = $this->nav( 'Stray', 'stray-menu' );
+
+		$manifest = Manifest::fromArray(
+			[
+				'pages' => [ 'home' => [ 'title' => 'Home', 'content' => '<p>h</p>', 'front_page' => true ] ],
+				'navs'  => [ 'primary' => [ 'title' => 'Primary', 'items' => [ [ 'entry' => 'home' ] ] ] ],
+			],
+			'/tmp/theme'
+		);
+
+		$navs = ( new Claimer( new NullProvider() ) )->plan( $manifest, [] )->byKind( PlanItem::KIND_NAV );
+
+		$this->assertSame( [], $navs );
+		$this->assertSame( '', (string) get_post_meta( $stray, Meta::KEY, true ) );
+	}
 }
