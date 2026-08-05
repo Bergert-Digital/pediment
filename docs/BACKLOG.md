@@ -32,6 +32,20 @@ _(none currently known — verify by running a user-journey audit)_
   `BootstrapTest::test_bootstrap_scopes_header_part_to_each_active_theme`.
   `.github/actions/seed-check/action.yml`'s front-page assertion remains as a standing regression
   guard, checking for the exact missing-template-part string a recurrence would show.
+- [ ] **Commercial protection — licence keys gate updates, a server gates capability.** Needs its
+  own spec; the design rationale is in
+  [2026-08-05-licensing-and-hygiene-design.md](superpowers/specs/2026-08-05-licensing-and-hygiene-design.md#35-backlog-entry-for-commercial-protection).
+  A licence check inside shipped PHP is a speed bump — it gates updates and support (which is what
+  drives renewals) and cannot gate execution, which is how every premium WordPress plugin works. The
+  part that is actually defensible is moving `plugin/src/Chat/PromptBuilder.php`,
+  `plugin/src/Chat/TurnRunner.php` and `plugin/src/Anthropic/SchemaBuilder.php` behind an API so
+  they stop shipping: today `plugin/src/Anthropic/Client.php:30` calls `api.anthropic.com` directly
+  from the customer's server, so 100% of the prompt tuning lands on their disk. Protection is
+  proportional to the work the server does — a proxy that forwards prompts the plugin already
+  contains protects nothing. Weigh two costs: the token bill moves to Bergert Digital unless
+  bring-your-own-key is kept with only the prompts gated, and the endpoint becomes an availability
+  dependency for client sites. Platform decision unmade — Freemius, EDD + Software Licensing,
+  SureCart, or a merchant of record such as Paddle, the last of which absorbs EU VAT filing.
 
 ## 🟢 Medium
 
