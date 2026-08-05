@@ -164,6 +164,34 @@ through wp-admin, a new theme release only reaches production when someone uploa
 hand. This is a deliberate step-5 decision, not an oversight — revisit only if it turns out to
 hurt in practice.
 
+## Moving an existing site onto Pediment
+
+A site that already exists — built on the parent theme, a page builder, or
+anything else — carries no `_pediment_seed_key` on any of its content, and
+`StateReader` resolves actual state purely from that key (see
+[docs/seeding.md](seeding.md)). Running `wp pediment seed` against such a
+site with no prior step sees no existing rows at all and plans a `CREATE`
+for every manifest entry — duplicating the whole site rather than adopting
+it. The order (`docs/superpowers/specs/2026-08-05-migration-step6-design.md`
+§3.3):
+
+1. Install `pediment-plugin.zip` and activate it (wp-admin).
+2. Upload and activate the standalone client theme (wp-admin).
+3. Settings → Pediment Theme → Seeding → **Preview claim** — read the plan.
+4. **Claim content** — identity only; see
+   [`wp pediment claim`](seeding.md#wp-pediment-claim) for what it matches
+   and what it refuses to.
+5. **Preview plan** (seed) — expect `0 to write`, N `protected`.
+6. **Apply plan** (seed) — structure only.
+
+**Step 5 is a gate, not a formality.** A preview that reports anything other
+than protected pages and the structural changes you actually expect means
+the claim was incomplete — some row didn't match, or matched the wrong one —
+and the fix is to go back and correct the manifest or the claim, never to
+apply the plan anyway. Applying over an incomplete claim risks creating
+duplicate content for whatever didn't get identity in step 4, which is
+exactly the failure claiming exists to prevent.
+
 ## Maintainer-only local scaffolding
 
 This section is for Pediment maintainers working from a monorepo checkout. External developers use
