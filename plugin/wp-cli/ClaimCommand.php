@@ -9,12 +9,10 @@ declare(strict_types=1);
 
 namespace Pediment\Cli;
 
-use Pediment\Language\LanguageRegistry;
-use Pediment\Seeder\Claimer;
-use Pediment\Seeder\Manifest;
+use Pediment\Seeder\ClaimResult;
+use Pediment\Seeder\ClaimRunner;
 use Pediment\Seeder\Plan;
 use Pediment\Seeder\Reporter;
-use Pediment\Seeder\StateReader;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -47,37 +45,27 @@ final class ClaimCommand {
 	public function __invoke( array $args, array $assocArgs ): void {
 		$dryRun = isset( $assocArgs['dry-run'] );
 
-		Manifest::resetCache();
-		$manifest = Manifest::load();
+		$result = ( new ClaimRunner() )->run( [ 'dry_run' => $dryRun ] );
+		$output = self::render( $result->plan, $result->applied, $result->manifestPath, $result->errors );
 
-		if ( null === $manifest ) {
-			$output = self::render( new Plan(), false, '', [ sprintf( 'No seed manifest found. Create %s/%s in the active theme.', get_stylesheet(), Manifest::RELATIVE_PATH ) ] );
-			if ( class_exists( '\WP_CLI' ) ) {
-				\WP_CLI::line( $output );
-				\WP_CLI::error( 'Nothing was claimed.' );
-			}
+		if ( ! class_exists( '\WP_CLI' ) ) {
 			return;
 		}
 
-		$provider = LanguageRegistry::provider();
-		$claimer  = new Claimer( $provider );
-		$plan     = $claimer->plan( $manifest, ( new StateReader( $provider ) )->read() );
-		$errors   = [];
+		\WP_CLI::line( $output );
 
-		if ( ! $dryRun ) {
-			$result = $claimer->apply( $plan );
-			$errors = $result['errors'];
+		// An empty manifest path means ClaimRunner found no manifest at all —
+		// the only case where nothing was even planned, as opposed to a plan
+		// that ran but reported errors.
+		if ( '' === $result->manifestPath ) {
+			\WP_CLI::error( 'Nothing was claimed.' );
+			return;
 		}
 
-		$output = self::render( $plan, ! $dryRun, $manifest->path(), $errors );
-
-		if ( class_exists( '\WP_CLI' ) ) {
-			\WP_CLI::line( $output );
-			if ( [] !== $errors ) {
-				\WP_CLI::error( 'Claiming did not complete cleanly. See the report above.' );
-			}
-			\WP_CLI::success( $dryRun ? 'Dry run complete — nothing was written.' : 'Claim applied.' );
+		if ( [] !== $result->errors ) {
+			\WP_CLI::error( 'Claiming did not complete cleanly. See the report above.' );
 		}
+		\WP_CLI::success( $dryRun ? 'Dry run complete — nothing was written.' : 'Claim applied.' );
 	}
 
 	/**
@@ -86,6 +74,6 @@ final class ClaimCommand {
 	 * @param string[] $errors
 	 */
 	public static function render( Plan $plan, bool $applied, string $manifestPath, array $errors ): string {
-		return Reporter::claimText( $plan, $applied, $manifestPath, $errors );
+		return Reporter::claimText( new ClaimResult( $plan, $applied, $manifestPath, $errors ) );
 	}
 }

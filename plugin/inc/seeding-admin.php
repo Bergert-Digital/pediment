@@ -83,41 +83,16 @@ function pediment_seed_admin_handle_post(): ?string {
  *
  * Admin-only hosting has no WP-CLI, so this is the only path a live site can
  * take to give its existing content seed identity before the first seed.
+ * The same ClaimRunner the CLI uses (see the file docblock above for why
+ * that matters).
  *
  * @param bool $apply Whether to write, as opposed to previewing.
  * @return string Rendered report.
  */
 function pediment_seed_admin_run_claim( bool $apply ): string {
-	\Pediment\Seeder\Manifest::resetCache();
-	$manifest = \Pediment\Seeder\Manifest::load();
+	$result = ( new \Pediment\Seeder\ClaimRunner() )->run( array( 'dry_run' => ! $apply ) );
 
-	if ( null === $manifest ) {
-		return \Pediment\Seeder\Reporter::claimText(
-			new \Pediment\Seeder\Plan(),
-			false,
-			'',
-			array(
-				sprintf(
-					/* translators: 1: theme slug, 2: relative manifest path. */
-					__( 'No seed manifest found. Create %1$s/%2$s in the active theme.', 'pediment' ),
-					get_stylesheet(),
-					\Pediment\Seeder\Manifest::RELATIVE_PATH
-				),
-			)
-		);
-	}
-
-	$provider = \Pediment\Language\LanguageRegistry::provider();
-	$claimer  = new \Pediment\Seeder\Claimer( $provider );
-	$plan     = $claimer->plan( $manifest, ( new \Pediment\Seeder\StateReader( $provider ) )->read() );
-	$errors   = array();
-
-	if ( $apply ) {
-		$result = $claimer->apply( $plan );
-		$errors = $result['errors'];
-	}
-
-	return \Pediment\Seeder\Reporter::claimText( $plan, $apply, $manifest->path(), $errors );
+	return \Pediment\Seeder\Reporter::claimText( $result );
 }
 
 /**

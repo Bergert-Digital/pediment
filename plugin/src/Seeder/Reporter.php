@@ -90,10 +90,13 @@ final class Reporter {
 	 * Claiming writes no content, so summaryLine()'s "N to write" would read 0
 	 * over a run that just gave 95 rows their identity — the exact shape of
 	 * misreport this reporting exists to prevent.
-	 *
-	 * @param string[] $errors
 	 */
-	public static function claimText( Plan $plan, bool $applied, string $manifestPath, array $errors = [] ): string {
+	public static function claimText( ClaimResult $result ): string {
+		$plan         = $result->plan;
+		$applied      = $result->applied;
+		$manifestPath = $result->manifestPath;
+		$errors       = $result->errors;
+
 		$lines   = [];
 		$lines[] = $applied ? 'Pediment claim' : 'Pediment claim — dry run';
 		if ( '' !== $manifestPath ) {

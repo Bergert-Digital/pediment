@@ -1,6 +1,7 @@
 <?php
 // plugin/tests/phpunit/Seeder/ClaimReporterTest.php
 
+use Pediment\Seeder\ClaimResult;
 use Pediment\Seeder\Plan;
 use Pediment\Seeder\PlanItem;
 use Pediment\Seeder\Reporter;
@@ -16,7 +17,7 @@ class ClaimReporterTest extends WP_UnitTestCase {
 			]
 		);
 
-		$text = Reporter::claimText( $plan, false, '/srv/theme/seed/manifest.php' );
+		$text = Reporter::claimText( new ClaimResult( $plan, false, '/srv/theme/seed/manifest.php' ) );
 
 		$this->assertStringContainsString( 'Pediment claim — dry run', $text );
 		$this->assertStringContainsString( 'manifest: /srv/theme/seed/manifest.php', $text );
@@ -39,13 +40,13 @@ class ClaimReporterTest extends WP_UnitTestCase {
 			]
 		);
 
-		$text = Reporter::claimText( $plan, true, '' );
+		$text = Reporter::claimText( new ClaimResult( $plan, true, '' ) );
 
 		$this->assertStringContainsString( 'home (fr)', $text );
 	}
 
 	public function test_an_applied_run_does_not_claim_to_be_a_dry_run() {
-		$text = Reporter::claimText( new Plan( [] ), true, '/srv/theme/seed/manifest.php' );
+		$text = Reporter::claimText( new ClaimResult( new Plan( [] ), true, '/srv/theme/seed/manifest.php' ) );
 
 		$this->assertStringContainsString( 'Pediment claim', $text );
 		$this->assertStringNotContainsString( 'dry run', $text );
@@ -54,7 +55,7 @@ class ClaimReporterTest extends WP_UnitTestCase {
 	}
 
 	public function test_errors_are_printed_under_their_own_heading() {
-		$text = Reporter::claimText( new Plan( [] ), true, '', [ 'about|: post 12 already carries a seed key' ] );
+		$text = Reporter::claimText( new ClaimResult( new Plan( [] ), true, '', [ 'about|: post 12 already carries a seed key' ] ) );
 
 		$this->assertStringContainsString( 'ERRORS', $text );
 		$this->assertStringContainsString( 'post 12 already carries a seed key', $text );
