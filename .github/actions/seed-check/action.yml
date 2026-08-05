@@ -52,7 +52,14 @@ runs:
       shell: bash
       working-directory: ${{ inputs.theme-path }}
       run: |
+        set -euo pipefail
         npm install
+        if [ -d src/blocks ]; then
+          echo "Client blocks present — building before boot."
+          npm run build
+        else
+          echo "No client blocks — nothing to build."
+        fi
         npm run env:start
 
     - name: Configure languages
