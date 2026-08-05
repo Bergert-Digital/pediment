@@ -67,6 +67,10 @@ asking. Open with the branching question:
 4. **Languages.** Read `<link rel="alternate" hreflang="…">` from the homepage. Present pre-filled
    and ask only for confirmation.
 5. **Client name and repo slug.** Derive the slug from the name (lowercase, hyphens); show both.
+6. **Bespoke blocks.** Ask last, before scaffolding: *"Does this site need any bespoke blocks —
+   sections that Pediment's own blocks cannot express? (Most sites do not. You can add them later
+   with `--with-blocks` on a fresh scaffold, or by hand.)"* Answering yes adds an `npm run build`
+   step the client repo must run before every release.
 
 ### If starting fresh
 
@@ -78,6 +82,10 @@ asking. Open with the branching question:
 4. **Sitemap.** Offer Home / About / Services / Contact pre-checked, plus an optional Blog.
 5. **Accent colour.** A single hex. Everything else in the palette derives from it.
 6. **Logo** — a file path, optional.
+7. **Bespoke blocks.** Ask last, before scaffolding: *"Does this site need any bespoke blocks —
+   sections that Pediment's own blocks cannot express? (Most sites do not. You can add them later
+   with `--with-blocks` on a fresh scaffold, or by hand.)"* Answering yes adds an `npm run build`
+   step the client repo must run before every release.
 
 ---
 
@@ -138,6 +146,10 @@ Rules:
 ```bash
 node "<skill-dir>/../../scripts/scaffold.mjs" --answers .context/start/answers.json --target <absolute path>
 ```
+
+Add `--with-blocks` to that command only if the answer to the bespoke-blocks question in Phase 1
+was yes. It keeps `functions.php` and `src/blocks/` in the scaffolded repo and wires
+`npm run build` / `npm run start` into its `package.json`; the default omits both.
 
 Do not pass `--template` in the installed flow. The scaffolder downloads
 `pediment-client-template.zip` from release `vV`; the generated `.wp-env.json` pins
