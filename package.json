@@ -18,5 +18,6 @@
   },
   "devDependencies": {
     "@wordpress/env": "^10.0.0"
-  }
+  },
+  "license": "GPL-2.0-or-later"
 }
