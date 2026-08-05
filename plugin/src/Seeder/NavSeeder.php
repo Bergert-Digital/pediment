@@ -251,7 +251,11 @@ final class NavSeeder {
 		return implode( "\n", $links );
 	}
 
-	private function slugFor( NavSpec $spec, string $language ): string {
+	/**
+	 * Public because Claimer derives the same slug when matching a legacy
+	 * navigation entity; the derivation must not exist twice.
+	 */
+	public function slugFor( NavSpec $spec, string $language ): string {
 		return sanitize_title( $spec->key . ( '' !== $language ? '-' . $language : '' ) );
 	}
 
