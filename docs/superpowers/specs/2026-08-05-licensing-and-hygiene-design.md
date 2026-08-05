@@ -157,19 +157,22 @@ Delete the file. A grep pass found **no inbound references from the root tree** 
 are `plugin/docs/SESSION_LOG.md:28` and `plugin/docs/BACKLOG.md:17`, both inside the stale duplicate
 tree that §3.6 removes. Re-run the grep after both deletions to confirm nothing dangles.
 
-### 3.3 Close the two dormant public repositories
+### 3.3 Close the two dormant public repositories — **DONE 2026-08-05**
 
-Both are outward-facing and hard to reverse. Per this repository's remote-action convention, each
-step shows its exact command and stops for explicit approval before running.
+Executed with explicit user go-ahead, ahead of the implementation plan. Recorded here for the
+record; **the plan should not schedule this work again.**
 
-- **`Bergert-Digital/pediment-ai`** — public, archived, 0 forks. Contains the plugin's pre-merge
-  history. Make it private. Archived repositories must be unarchived to change visibility, so the
-  sequence is unarchive → set private → re-archive.
-- **`Bergert-Digital/Pediment-Child-Theme`** — public, active, still documents the retired
-  parent/child model. Replace its README with a short pointer to `docs/client-sites.md` in this
-  repository, then archive it. This closes the existing backlog item at `docs/BACKLOG.md:18`.
+- **`Bergert-Digital/pediment-ai`** — was public, archived, 0 forks, carrying the plugin's pre-merge
+  history. Archived repositories are read-only including their settings, so the sequence was
+  unarchive → set private → re-archive. Now `{"visibility":"private","archived":true}`.
+- **`Bergert-Digital/Pediment-Child-Theme`** — was public and active, still documenting the retired
+  parent/child model. Its README was replaced with a deprecation notice pointing at
+  `docs/client-sites.md` and the `/pediment:start` flow (commit `c6e198b` on that repo), then the
+  repository was archived. It stays **public** so existing inbound links keep resolving; the code is
+  GPL and has 0 forks, so there is nothing to gain by hiding it.
 
-Verification is by reading state back with `gh api`, not by assuming the command succeeded.
+Both verified by reading state back with `gh api` rather than trusting the command's exit status.
+The backlog item at `docs/BACKLOG.md:18` is closed.
 
 ### 3.4 Client names in documentation
 
@@ -248,8 +251,8 @@ current-or-delete judgement during implementation.
 | Licence files | `npm run test:kit` passes 78/78 from the repository root (confirmed green on the pre-change tree, so any failure is attributable), and `lint:blocks`, `lint:colors`, `lint:icons` pass. `client-kit/.claude-plugin/plugin.json` and `package.json` both still parse as valid JSON. |
 | `PRODUCT_SENSE.md` removal | `grep -rIn "PRODUCT_SENSE" . --exclude-dir=node_modules` returns no hits outside this spec and `docs/SESSION_LOG.md` history entries. |
 | `plugin/docs/` removal | The directory is gone; `plugin/docs/privacy.md`'s replacement exists at `docs/privacy.md` with the Brand Settings reference removed. PHPUnit still passes, confirming no PHP file loaded anything from the tree. |
-| `pediment-ai` | `gh api repos/Bergert-Digital/pediment-ai --jq '{visibility, archived}'` reports `private` and `archived: true`. |
-| `Pediment-Child-Theme` | `gh api repos/Bergert-Digital/Pediment-Child-Theme --jq '{archived}'` reports `archived: true`, and its README renders the pointer. |
+| `pediment-ai` | **Done.** `gh api repos/Bergert-Digital/pediment-ai --jq '{visibility, archived}'` returned `{"visibility":"private","archived":true}`. |
+| `Pediment-Child-Theme` | **Done.** `gh api repos/Bergert-Digital/Pediment-Child-Theme --jq '{archived}'` returned `true`, and the served README renders the deprecation notice. |
 | Backlog entries | Present in `docs/BACKLOG.md` under the stated priority groups. |
 
 No WordPress runtime behaviour changes, so PHPUnit and Playwright are unaffected but should still
