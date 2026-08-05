@@ -420,10 +420,18 @@ On every entry, the Differ applies one rule, in order:
 3. Otherwise → content is up for grabs: write it if `_pediment_seed_source`
    shows the manifest/pattern changed, leave it alone if not.
 
-Because rule 2 also fires for a row the engine has simply never touched yet
-(no `_pediment_seed_hash` at all), running `wp pediment seed` for the first
-time against an already-live site is safe — every existing page is treated as
-"edited" and only gets structure applied, never a silent content overwrite.
+Because rule 2 also fires for a row the engine has simply never written a
+hash to yet, a *claimed* row's very first `wp pediment seed` is safe — it is
+treated as edited and only gets structure applied, never a silent content
+overwrite. That safety net only covers rows the engine can see in the first
+place: `StateReader::read()` only reads posts that already carry
+`_pediment_seed_key` at all (`meta_key => Meta::KEY, meta_compare =>
+'EXISTS'`), so an *unclaimed* legacy row has no `$actual` entry whatsoever.
+For that row `Differ::diff()` never reaches rule 2 — `$have` is `null`, rule
+1 fires, and `wp pediment seed` plans a **create**, duplicating the row
+instead of protecting it. Rule 2's protection is conditional on the row
+already carrying a key; `wp pediment claim` (below) is what gives an existing
+site's content that key in the first place, before its first seed.
 
 ## Reading a plan (`wp pediment seed --dry-run`)
 
@@ -602,30 +610,39 @@ that is `wp pediment adopt <key>`, the same command that adopts any other row.
 for anything a claim does. Beyond that, `Claimer::planOne()` walks each
 unresolved `(key, language)` pair in `Manifest::entriesInDependencyOrder()`
 (a parent is claimed before the children whose match depends on it) and
-applies these checks, in order:
+applies these checks in the order the code applies them — a precondition
+first, then the candidate filters:
 
-1. **Type and slug.** `Claimer::candidates()` queries for the entry's
-   `post_type` and the language-specific slug `EntrySpec::slugFor()` computes
-   — the derived `<slug>-<lang>` suffix on a non-default language, same rule
-   seeding itself uses (see "The derived slug rule" above).
-2. **Never trash.** Baked into the same query via `post_status` — publish,
-   draft, pending, private, future only.
+**Precondition — parent.** If the spec declares a `parent`, that parent's
+key must already be resolved *in this language* before anything else runs.
+An unresolved parent is an immediate `no-match` — `Claimer::candidates()` is
+never even called for this pair — because a nested match can't be verified
+against a parent with no live post yet.
+
+Once that precondition passes (or there is no parent to check), `candidates()`
+runs one query and then filters its results, in order:
+
+1. **Type and slug.** The query asks for the entry's `post_type` and the
+   language-specific slug `EntrySpec::slugFor()` computes — the derived
+   `<slug>-<lang>` suffix on a non-default language, same rule seeding itself
+   uses (see "The derived slug rule" above).
+2. **Never trash.** The same query's `post_status` list — publish, draft,
+   pending, private, future only.
 3. **Never already keyed.** A row carrying any `_pediment_seed_key` is
-   filtered out before anything else runs — a claim never steals a row that
-   belongs to another key.
-4. **Parent.** If the spec declares a `parent`, that parent's key must
-   already be resolved *in this language* — an unresolved parent is an
-   immediate `no-match` before any candidate query even runs, not "zero
-   candidates," because a nested match can't be verified against a parent
-   with no live post yet. Once the parent is resolved, a candidate's
-   `post_parent` must equal that parent's post ID: a same-slug page nested
-   somewhere else is a different page.
-5. **Language.** `Claimer::languageMatches()`: a candidate's language must
-   equal the language being claimed for, except that a post carrying no
-   language at all (`LanguageProvider::hasLanguage()` false) is a candidate
-   for the *default* language only. That's the monolingual-site-adopting-
-   Polylang case; claiming an untagged post into a non-default language would
-   silently move it between languages.
+   filtered out next — a claim never steals a row that belongs to another
+   key.
+4. **Parent.** A candidate's `post_parent` must equal the already-resolved
+   parent's post ID (`0` when the spec declares none) — a same-slug page
+   nested somewhere else is a different page.
+5. **Language.** `Claimer::languageMatches()` has three branches: on a
+   monolingual site (`$language === ''`) every candidate matches, since
+   there is only one language to compare against. On a multilingual site, a
+   candidate's own language must equal the language being claimed for
+   (`translationOf($postId, $language) === $postId`), except that a post
+   carrying no language at all (`LanguageProvider::hasLanguage()` false) is a
+   candidate for the *default* language only. That's the
+   monolingual-site-adopting-Polylang case; claiming an untagged post into a
+   non-default language would silently move it between languages.
 
 Exactly one surviving candidate is claimed. Zero is reported `no-match` — the
 next `wp pediment seed` will create the page, which is the correct outcome
