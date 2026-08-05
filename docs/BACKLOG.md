@@ -15,10 +15,11 @@ _(none currently known — verify by running a user-journey audit)_
 - [ ] **Verify the v3 release pipeline end-to-end.** With user approval, confirm a
   release produces only `pediment-plugin.zip`, installs as `plugins/pediment`,
   and does not publish either legacy asset name.
-- [ ] **Archive `pediment-child-theme`.** Migration step 5 replaced it with `client-template/` in
-  this monorepo. The old repo still exists and still describes a parent/child world that no longer
-  ships. Archive it on GitHub with a README pointing at `docs/client-sites.md`. Needs an explicit
-  go-ahead — it is an outward-facing, hard-to-reverse action.
+- [x] **Archive `pediment-child-theme`.** Done 2026-08-05 with explicit go-ahead. `Bergert-Digital/Pediment-Child-Theme`
+  now serves a deprecation README pointing at `docs/client-sites.md` (commit `c6e198b`) and is
+  archived; it stays public so existing links keep resolving. `Bergert-Digital/pediment-ai` was
+  closed in the same pass — unarchived, set private, re-archived — since it carried the plugin's
+  pre-merge history with no consumers.
 - [x] **Header template part scoping was a `WP_Query` singularity bug, not a tagging-order race.**
   Found during migration step 5's Task 15 full-verification rehearsal; fixed on the same branch in
   `plugin/inc/bootstrap.php`. The original diagnosis (activation-order tagging skipping recreation
@@ -32,6 +33,20 @@ _(none currently known — verify by running a user-journey audit)_
   `BootstrapTest::test_bootstrap_scopes_header_part_to_each_active_theme`.
   `.github/actions/seed-check/action.yml`'s front-page assertion remains as a standing regression
   guard, checking for the exact missing-template-part string a recurrence would show.
+- [ ] **Commercial protection — licence keys gate updates, a server gates capability.** Needs its
+  own spec; the design rationale is in
+  [2026-08-05-licensing-and-hygiene-design.md](superpowers/specs/2026-08-05-licensing-and-hygiene-design.md#35-backlog-entry-for-commercial-protection).
+  A licence check inside shipped PHP is a speed bump — it gates updates and support (which is what
+  drives renewals) and cannot gate execution, which is how every premium WordPress plugin works. The
+  part that is actually defensible is moving `plugin/src/Chat/PromptBuilder.php`,
+  `plugin/src/Chat/TurnRunner.php` and `plugin/src/Anthropic/SchemaBuilder.php` behind an API so
+  they stop shipping: today `plugin/src/Anthropic/Client.php:30` calls `api.anthropic.com` directly
+  from the customer's server, so 100% of the prompt tuning lands on their disk. Protection is
+  proportional to the work the server does — a proxy that forwards prompts the plugin already
+  contains protects nothing. Weigh two costs: the token bill moves to Bergert Digital unless
+  bring-your-own-key is kept with only the prompts gated, and the endpoint becomes an availability
+  dependency for client sites. Platform decision unmade — Freemius, EDD + Software Licensing,
+  SureCart, or a merchant of record such as Paddle, the last of which absorbs EU VAT filing.
 
 ## 🟢 Medium
 
