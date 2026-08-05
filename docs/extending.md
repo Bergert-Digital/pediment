@@ -1,6 +1,6 @@
-# Extending pediment-ai from a child theme
+# Extending Pediment from a client theme
 
-The plugin exposes filters so a child theme can register blocks under its own namespace and customise the system prompt without forking the plugin.
+The plugin exposes filters so a client theme can register blocks under its own namespace and customise the system prompt without forking the plugin.
 
 ## Block discovery namespaces
 
@@ -13,11 +13,11 @@ add_filter( 'pediment_ai_block_namespaces', function ( $namespaces ) {
 } );
 ```
 
-Blocks under `acme/*` registered with a non-empty `description` will appear in the AI's block schema. The schema is cached in a transient, so if you add the filter after the plugin has already built the schema, call `\PedimentAi\Anthropic\SchemaBuilder::invalidate()` (e.g. in a one-shot WP-CLI command or in test setup) to force re-discovery.
+Blocks under `acme/*` registered with a non-empty `description` will appear in the AI's block schema. The schema is cached in a transient, so if you add the filter after the plugin has already built the schema, call `\Pediment\Anthropic\SchemaBuilder::invalidate()` (e.g. in a one-shot WP-CLI command or in test setup) to force re-discovery.
 
 ## System prompt
 
-Wrap the prompt to inject brand voice, domain examples, or extra constraints. The filter runs on every chat turn — there is no caching to invalidate.
+Wrap the prompt to inject domain examples or extra constraints. The filter runs on every chat turn — there is no caching to invalidate.
 
 ```php
 add_filter( 'pediment_ai_system_prompt', function ( $prompt, $schema ) {
@@ -37,7 +37,7 @@ add_filter( 'pediment_ai_provider', function ( $provider ) {
 } );
 ```
 
-The default provider is `\PedimentAi\Anthropic\Client`. The built-in `PEDIMENT_AI_MOCK=true` constant (or the mock-mode admin setting) already hooks this filter to swap in `\PedimentAi\Mock\MockProvider`; don't add your own hook while that's active.
+The default provider is `\Pediment\Anthropic\Client`. The built-in `PEDIMENT_AI_MOCK=true` constant (or the mock-mode admin setting) already hooks this filter to swap in `\Pediment\Mock\MockProvider`; don't add your own hook while that's active.
 
 ## Model selection
 
