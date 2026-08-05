@@ -86,6 +86,16 @@ jobs:
 
   scaffold:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - answers: client-kit/tests/fixtures/answers-ci.json
+            slug: pediment-ci-client
+            flags: ""
+          - answers: client-kit/tests/fixtures/answers-blocks.json
+            slug: ci-blocks
+            flags: "--with-blocks"
     steps:
       - uses: actions/checkout@v4
 
@@ -115,19 +125,32 @@ jobs:
           git config --global user.email "ci@pediment.invalid"
           git config --global user.name "Pediment CI"
           node client-kit/scripts/scaffold.mjs \
-            --answers client-kit/tests/fixtures/answers-ci.json \
-            --target "$RUNNER_TEMP/pediment-ci-client" \
-            --template client-template
+            --answers ${{ matrix.answers }} \
+            --target "$RUNNER_TEMP/${{ matrix.slug }}" \
+            --template client-template \
+            ${{ matrix.flags }}
 
       - name: Seed it and assert it renders
         uses: ./.github/actions/seed-check
         with:
-          theme-path: ${{ runner.temp }}/pediment-ci-client
+          theme-path: ${{ runner.temp }}/${{ matrix.slug }}
           plugin-source: ${{ github.workspace }}/stage-plugin/pediment
+
+      - name: Assert the client block registered
+        if: matrix.flags == '--with-blocks'
+        working-directory: ${{ runner.temp }}/${{ matrix.slug }}
+        run: |
+          set -euo pipefail
+          result="$(npx wp-env run cli wp eval 'echo WP_Block_Type_Registry::get_instance()->is_registered("${{ matrix.slug }}/example-notice") ? "yes" : "no";')"
+          echo "Block registration check: ${result}"
+          if [ "${result}" != "yes" ]; then
+            echo "::error::Block ${{ matrix.slug }}/example-notice is not registered in WordPress — the with-blocks scaffold did not build or register it."
+            exit 1
+          fi
 
       - name: Upload the scaffolded site on failure
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: scaffolded-client
-          path: ${{ runner.temp }}/pediment-ci-client
+          name: scaffolded-client-${{ matrix.slug }}
+          path: ${{ runner.temp }}/${{ matrix.slug }}
