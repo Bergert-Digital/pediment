@@ -1,0 +1,15 @@
+{
+  "$schema": "https://schemas.wp.org/trunk/block.json",
+  "apiVersion": 3,
+  "name": "__PEDIMENT_SLUG__/example-notice",
+  "title": "Example notice",
+  "category": "design",
+  "icon": "info",
+  "description": "A worked example of a client-specific block. Rename it or delete it.",
+  "textdomain": "__PEDIMENT_SLUG__",
+  "attributes": {
+    "message": { "type": "string", "default": "" }
+  },
+  "render": "file:./render.php",
+  "editorScript": "file:./index.js"
+}
