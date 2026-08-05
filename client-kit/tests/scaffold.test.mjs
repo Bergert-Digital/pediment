@@ -444,6 +444,51 @@ test('the real client-template refuses a quote-bearing name and description inst
   await rm(dir, { recursive: true, force: true });
 });
 
+async function scaffoldFixture({ withBlocks } = {}) {
+  const dir = await temp();
+  const target = path.join(dir, 'acme-roofing');
+  await scaffold(greenfield, { target, template: REAL_TEMPLATE, git: true, withBlocks });
+  return target;
+}
+
+test('a scaffold without blocks prunes the blocks layer', async () => {
+  const target = await scaffoldFixture({ withBlocks: false });
+
+  assert.equal(existsSync(path.join(target, 'functions.php')), false);
+  assert.equal(existsSync(path.join(target, 'src')), false);
+
+  const pkg = JSON.parse(await readFile(path.join(target, 'package.json'), 'utf8'));
+  assert.equal(pkg.scripts.build, undefined);
+  assert.equal((pkg.devDependencies || {})['@wordpress/scripts'], undefined);
+
+  await rm(path.dirname(target), { recursive: true, force: true });
+});
+
+test('a scaffold with blocks keeps it and wires the build', async () => {
+  const target = await scaffoldFixture({ withBlocks: true });
+
+  const functions = await readFile(path.join(target, 'functions.php'), 'utf8');
+  assert.match(functions, /build\/blocks/);
+  assert.equal(functions.includes('__PEDIMENT_'), false);
+
+  const blockJson = JSON.parse(
+    await readFile(path.join(target, 'src/blocks/example-notice/block.json'), 'utf8'),
+  );
+  assert.equal(blockJson.name, 'acme-roofing/example-notice');
+
+  const pkg = JSON.parse(await readFile(path.join(target, 'package.json'), 'utf8'));
+  assert.equal(pkg.scripts.build, 'wp-scripts build --webpack-src-dir=src/blocks --output-path=build/blocks');
+  assert.equal(pkg.devDependencies['@wordpress/scripts'], '^34.0.0');
+
+  // Not stated by the brief: the git repo the scaffolder commits must actually carry the
+  // blocks layer, not just leave it on disk uncommitted.
+  const tracked = execFileSync('git', ['-C', target, 'ls-files'], { encoding: 'utf8' });
+  assert.match(tracked, /functions\.php/);
+  assert.match(tracked, /src\/blocks\/example-notice\/block\.json/);
+
+  await rm(path.dirname(target), { recursive: true, force: true });
+});
+
 test('the real client-template refuses a page key it ships no pattern for', async () => {
   const dir = await temp();
   const target = path.join(dir, 'acme-roofing');

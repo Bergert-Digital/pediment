@@ -187,7 +187,10 @@ export async function assertNoTokens(destDir) {
   const offenders = [];
   for (const rel of await walk(destDir)) {
     if (BINARY.test(rel)) continue;
-    const found = (await readFile(path.join(destDir, rel), 'utf8')).match(/__[A-Z0-9_]+__/g);
+    // Scoped to the __PEDIMENT_*__ namespace, not every dunder-wrapped identifier: the client
+    // blocks layer's functions.php legitimately contains PHP magic constants (__DIR__) that would
+    // otherwise false-positive as an unreplaced token.
+    const found = (await readFile(path.join(destDir, rel), 'utf8')).match(/__PEDIMENT_[A-Z0-9_]+__/g);
     if (found) offenders.push(`${rel}: ${[...new Set(found)].join(', ')}`);
   }
   if (offenders.length) {
@@ -278,7 +281,7 @@ function briefMarkdown(answers) {
 }
 
 export async function scaffold(answers, opts) {
-  const { target, template, git = true } = opts;
+  const { target, template, git = true, withBlocks = false } = opts;
 
   validateSlug(answers.client.slug);
   validateTarget(target);
@@ -325,6 +328,24 @@ export async function scaffold(answers, opts) {
     await writeFile(envPath, JSON.stringify(env, null, 2) + '\n');
   }
 
+  if (withBlocks) {
+    const pkgPath = path.join(target, 'package.json');
+    const pkg = JSON.parse(await readFile(pkgPath, 'utf8'));
+    pkg.scripts = {
+      ...pkg.scripts,
+      build: 'wp-scripts build --webpack-src-dir=src/blocks --output-path=build/blocks',
+      start: 'wp-scripts start --webpack-src-dir=src/blocks --output-path=build/blocks',
+    };
+    pkg.devDependencies = { ...pkg.devDependencies, '@wordpress/scripts': '^34.0.0' };
+    await writeFile(pkgPath, JSON.stringify(pkg, null, 2) + '\n');
+  } else {
+    // The template always carries the blocks layer so it is built and tested in
+    // one place; a repo that did not ask for bespoke blocks should not inherit a
+    // build step it never runs.
+    await rm(path.join(target, 'functions.php'), { force: true });
+    await rm(path.join(target, 'src'), { recursive: true, force: true });
+  }
+
   await mkdir(path.join(target, 'docs'), { recursive: true });
   await writeFile(path.join(target, 'docs', 'brief.md'), briefMarkdown(answers));
 
@@ -361,13 +382,16 @@ function parseArgs(argv) {
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i];
     if (arg === '--no-git') out.git = false;
+    else if (arg === '--with-blocks') out.withBlocks = true;
     else if (arg === '--answers') out.answers = argv[++i];
     else if (arg === '--target') out.target = argv[++i];
     else if (arg === '--template') out.template = argv[++i];
     else throw new Error(`Unknown argument: ${arg}`);
   }
   if (!out.answers || !out.target) {
-    throw new Error('Usage: scaffold.mjs --answers <file> --target <dir> [--template <dir>] [--no-git]');
+    throw new Error(
+      'Usage: scaffold.mjs --answers <file> --target <dir> [--template <dir>] [--no-git] [--with-blocks]',
+    );
   }
   return out;
 }
@@ -379,6 +403,7 @@ if (process.argv[1] && process.argv[1].endsWith('scaffold.mjs')) {
     target: path.resolve(args.target),
     template: args.template,
     git: args.git,
+    withBlocks: args.withBlocks,
   });
   console.log(`Scaffolded ${answers.client.name} into ${result.target} (${result.files.length} template files).`);
 }
