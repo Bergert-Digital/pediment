@@ -68,10 +68,17 @@ jobs:
           echo "style.css Version header is ${VERSION}"
 
       - name: Build client blocks
+        # `npm install`, not `npm ci`: the scaffolder deliberately commits no
+        # lockfile (client-kit/scripts/scaffold.mjs writes package.json and
+        # commits, but never installs), so a scaffolded repo's first release
+        # has no package-lock.json for `npm ci` to require. seed-check already
+        # uses `npm install` for the same repos; a theme's dependency surface
+        # is two @wordpress/* devDependencies, so lockfile-exact
+        # reproducibility isn't what's at stake here.
         run: |
           set -euo pipefail
           if [ -d src/blocks ]; then
-            npm ci
+            npm install
             npm run build
           else
             echo "No client blocks — nothing to build."
