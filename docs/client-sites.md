@@ -107,6 +107,17 @@ design system, blocks, templates, and seeding engine all ship inside the Pedimen
 this repo holds only what's specific to the client. There is also **no theme auto-updater**; see
 "Deploying," below.
 
+### The header
+
+The plugin seeds a database-backed `header` template part the first time a theme activates
+(`pediment_bootstrap_header_template_part()`), because template parts cannot ship from a plugin
+and the client template ships no `parts/`. A theme owns the *initial* markup by registering a
+block pattern named `<theme-slug>/header`; the bootstrap reads it once, at creation, and uses it
+to seed the part. If no such pattern is registered, a generic fallback header is used instead.
+From then on the header is edited in the Site Editor and lives in the database — the pattern is
+never consulted again, so a later change to the pattern (or a missing one) has no effect on a site
+that already has its header part.
+
 ## The `pediment` block in `package.json`
 
 ```json

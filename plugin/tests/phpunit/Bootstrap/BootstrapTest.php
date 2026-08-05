@@ -90,4 +90,64 @@ class BootstrapTest extends WP_UnitTestCase {
 			switch_theme( $original_theme );
 		}
 	}
+
+	private function headerPart(): WP_Post {
+		$parts = get_posts(
+			array(
+				'post_type'   => 'wp_template_part',
+				'post_name__in' => array( 'header' ),
+				'post_status' => 'publish',
+				'numberposts' => -1,
+			)
+		);
+		$this->assertCount( 1, $parts, 'exactly one header part should exist' );
+		return $parts[0];
+	}
+
+	public function test_a_theme_registered_header_pattern_supplies_the_initial_markup(): void {
+		register_block_pattern(
+			get_stylesheet() . '/header',
+			array(
+				'title'    => 'Header',
+				'content'  => '<!-- wp:paragraph --><p>Branded header</p><!-- /wp:paragraph -->',
+				'inserter' => false,
+			)
+		);
+
+		pediment_bootstrap_header_template_part();
+
+		$this->assertStringContainsString( 'Branded header', $this->headerPart()->post_content );
+
+		unregister_block_pattern( get_stylesheet() . '/header' );
+	}
+
+	public function test_the_generic_header_is_used_when_no_pattern_is_registered(): void {
+		pediment_bootstrap_header_template_part();
+
+		$this->assertStringContainsString( 'site-header', $this->headerPart()->post_content );
+	}
+
+	public function test_an_existing_header_part_is_never_overwritten_by_the_pattern(): void {
+		pediment_bootstrap_header_template_part();
+		wp_update_post(
+			array(
+				'ID'           => $this->headerPart()->ID,
+				'post_content' => '<!-- wp:paragraph --><p>Edited</p><!-- /wp:paragraph -->',
+			)
+		);
+
+		register_block_pattern(
+			get_stylesheet() . '/header',
+			array(
+				'title'    => 'Header',
+				'content'  => '<!-- wp:paragraph --><p>Branded header</p><!-- /wp:paragraph -->',
+				'inserter' => false,
+			)
+		);
+		pediment_bootstrap_header_template_part();
+
+		$this->assertStringContainsString( 'Edited', $this->headerPart()->post_content );
+
+		unregister_block_pattern( get_stylesheet() . '/header' );
+	}
 }
