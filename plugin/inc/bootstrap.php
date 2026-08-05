@@ -11,6 +11,53 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+/**
+ * The generic markup a freshly created `header` part starts life with when no
+ * theme has registered a `<stylesheet>/header` pattern. Kept byte-identical to
+ * what this project has always shipped.
+ */
+const PEDIMENT_DEFAULT_HEADER_MARKUP = '<!-- wp:group {"tagName":"header","className":"site-header","style":{"spacing":{"padding":{"top":"var:preset|spacing|20","bottom":"var:preset|spacing|20"},"blockGap":"0"},"border":{"bottom":{"color":"var:preset|color|border","width":"1px"}}},"backgroundColor":"surface","layout":{"type":"constrained"}} -->'
+	. '<header class="wp-block-group site-header has-border-color has-surface-background-color has-background" style="border-bottom-color:var(--wp--preset--color--border);border-bottom-width:1px;padding-top:var(--wp--preset--spacing--20);padding-bottom:var(--wp--preset--spacing--20)">'
+	. '<!-- wp:group {"align":"wide","layout":{"type":"flex","justifyContent":"space-between","flexWrap":"nowrap"},"style":{"spacing":{"blockGap":"0"}}} -->'
+	. '<div class="wp-block-group alignwide">'
+	. '<!-- wp:group {"className":"brand","layout":{"type":"flex","flexWrap":"nowrap"}} -->'
+	. '<div class="wp-block-group brand">'
+	. '<!-- wp:site-logo {"width":150} /-->'
+	. '</div>'
+	. '<!-- /wp:group -->'
+	. '<!-- wp:navigation {"overlayMenu":"mobile","layout":{"type":"flex","orientation":"horizontal","flexWrap":"nowrap"},"style":{"spacing":{"blockGap":"var:preset|spacing|30"},"typography":{"fontWeight":"600"}}} /-->'
+	. '<!-- wp:buttons -->'
+	. '<div class="wp-block-buttons">'
+	. '<!-- wp:button {"backgroundColor":"accent","textColor":"surface","style":{"border":{"radius":"999px"}}} -->'
+	. '<div class="wp-block-button"><a class="wp-block-button__link has-surface-color has-accent-background-color has-text-color has-background wp-element-button" href="/contact" style="border-radius:999px">Contact</a></div>'
+	. '<!-- /wp:button -->'
+	. '</div>'
+	. '<!-- /wp:buttons -->'
+	. '</div>'
+	. '<!-- /wp:group -->'
+	. '</header>'
+	. '<!-- /wp:group -->';
+
+/**
+ * The markup a freshly created `header` part starts life with.
+ *
+ * A client theme owns its header by registering a pattern named
+ * `<stylesheet>/header`. That keeps the branded markup in git — template parts
+ * cannot ship from a plugin, and a theme-file part would not be editable in
+ * the Site Editor, which is the property this project chose deliberately.
+ * The pattern is read once, at creation; later edits belong to the database.
+ */
+function pediment_bootstrap_header_markup(): string {
+	$registry = \WP_Block_Patterns_Registry::get_instance();
+	$pattern  = $registry->get_registered( get_stylesheet() . '/header' );
+
+	if ( is_array( $pattern ) && ! empty( $pattern['content'] ) ) {
+		return (string) $pattern['content'];
+	}
+
+	return PEDIMENT_DEFAULT_HEADER_MARKUP;
+}
+
 function pediment_bootstrap(): void {
 	pediment_bootstrap_header_template_part();
 
@@ -63,27 +110,7 @@ function pediment_bootstrap_header_template_part(): void {
 		return;
 	}
 
-	$markup = '<!-- wp:group {"tagName":"header","className":"site-header","style":{"spacing":{"padding":{"top":"var:preset|spacing|20","bottom":"var:preset|spacing|20"},"blockGap":"0"},"border":{"bottom":{"color":"var:preset|color|border","width":"1px"}}},"backgroundColor":"surface","layout":{"type":"constrained"}} -->'
-		. '<header class="wp-block-group site-header has-border-color has-surface-background-color has-background" style="border-bottom-color:var(--wp--preset--color--border);border-bottom-width:1px;padding-top:var(--wp--preset--spacing--20);padding-bottom:var(--wp--preset--spacing--20)">'
-		. '<!-- wp:group {"align":"wide","layout":{"type":"flex","justifyContent":"space-between","flexWrap":"nowrap"},"style":{"spacing":{"blockGap":"0"}}} -->'
-		. '<div class="wp-block-group alignwide">'
-		. '<!-- wp:group {"className":"brand","layout":{"type":"flex","flexWrap":"nowrap"}} -->'
-		. '<div class="wp-block-group brand">'
-		. '<!-- wp:site-logo {"width":150} /-->'
-		. '</div>'
-		. '<!-- /wp:group -->'
-		. '<!-- wp:navigation {"overlayMenu":"mobile","layout":{"type":"flex","orientation":"horizontal","flexWrap":"nowrap"},"style":{"spacing":{"blockGap":"var:preset|spacing|30"},"typography":{"fontWeight":"600"}}} /-->'
-		. '<!-- wp:buttons -->'
-		. '<div class="wp-block-buttons">'
-		. '<!-- wp:button {"backgroundColor":"accent","textColor":"surface","style":{"border":{"radius":"999px"}}} -->'
-		. '<div class="wp-block-button"><a class="wp-block-button__link has-surface-color has-accent-background-color has-text-color has-background wp-element-button" href="/contact" style="border-radius:999px">Contact</a></div>'
-		. '<!-- /wp:button -->'
-		. '</div>'
-		. '<!-- /wp:buttons -->'
-		. '</div>'
-		. '<!-- /wp:group -->'
-		. '</header>'
-		. '<!-- /wp:group -->';
+	$markup = pediment_bootstrap_header_markup();
 
 	$id = wp_insert_post(
 		array(
