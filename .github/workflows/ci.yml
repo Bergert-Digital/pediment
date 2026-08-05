@@ -93,9 +93,11 @@ jobs:
           - answers: client-kit/tests/fixtures/answers-ci.json
             slug: pediment-ci-client
             flags: ""
+            assert-block: ""
           - answers: client-kit/tests/fixtures/answers-blocks.json
             slug: ci-blocks
             flags: "--with-blocks"
+            assert-block: "ci-blocks/example-notice"
     steps:
       - uses: actions/checkout@v4
 
@@ -135,18 +137,7 @@ jobs:
         with:
           theme-path: ${{ runner.temp }}/${{ matrix.slug }}
           plugin-source: ${{ github.workspace }}/stage-plugin/pediment
-
-      - name: Assert the client block registered
-        if: matrix.flags == '--with-blocks'
-        working-directory: ${{ runner.temp }}/${{ matrix.slug }}
-        run: |
-          set -euo pipefail
-          result="$(npx wp-env run cli wp eval 'echo WP_Block_Type_Registry::get_instance()->is_registered("${{ matrix.slug }}/example-notice") ? "yes" : "no";')"
-          echo "Block registration check: ${result}"
-          if [ "${result}" != "yes" ]; then
-            echo "::error::Block ${{ matrix.slug }}/example-notice is not registered in WordPress — the with-blocks scaffold did not build or register it."
-            exit 1
-          fi
+          assert-block: ${{ matrix.assert-block }}
 
       - name: Upload the scaffolded site on failure
         if: failure()
