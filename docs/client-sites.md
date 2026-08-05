@@ -109,14 +109,28 @@ this repo holds only what's specific to the client. There is also **no theme aut
 
 ### The header
 
-The plugin seeds a database-backed `header` template part the first time a theme activates
+The plugin seeds a database-backed `header` template part when a theme activates
 (`pediment_bootstrap_header_template_part()`), because template parts cannot ship from a plugin
 and the client template ships no `parts/`. A theme owns the *initial* markup by registering a
-block pattern named `<theme-slug>/header`; the bootstrap reads it once, at creation, and uses it
-to seed the part. If no such pattern is registered, a generic fallback header is used instead.
-From then on the header is edited in the Site Editor and lives in the database — the pattern is
-never consulted again, so a later change to the pattern (or a missing one) has no effect on a site
-that already has its header part.
+block pattern named `<theme-slug>/header`; the bootstrap reads it and uses it to seed the part. If
+no such pattern is registered, a generic fallback header is used instead. From then on the header
+is edited in the Site Editor and lives in the database — the pattern is never consulted again, so
+a later change to the pattern (or a missing one) has no effect on a site that already has its
+header part.
+
+**Seeding is not synchronous with activation.** WordPress does not guarantee that a theme's own
+`patterns/*.php` have been scanned into the pattern registry by the moment `after_switch_theme`
+fires — that scan is a separate mechanism, tied to `init`, with no ordering guarantee relative to
+the switch itself. Reading the registry at `after_switch_theme` time risks silently seeding the
+generic fallback regardless of what the theme ships. So activating a theme only marks seeding as
+pending; the actual seed happens on a later `init` pass (in practice, whichever request follows —
+usually the very next page load after activation, since WordPress itself defers firing
+`after_switch_theme` to that same following request). Until that pass completes, no `header` part
+exists yet for the newly active theme, and any page rendered in that narrow window shows core's
+"Template part has been deleted or is unavailable" message rather than a broken header with the
+wrong content. In the ordinary wp-admin activation flow this window closes before a real visitor
+could hit it — activating a theme redirects to another admin page, and that redirect's own `init`
+is what completes the seed, before anyone loads the front end.
 
 ## The `pediment` block in `package.json`
 

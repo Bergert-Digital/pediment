@@ -150,4 +150,60 @@ class BootstrapTest extends WP_UnitTestCase {
 
 		unregister_block_pattern( get_stylesheet() . '/header' );
 	}
+
+	/**
+	 * A direct call to pediment_bootstrap_header_template_part() cannot see this
+	 * bug: it always reads whatever happens to already be sitting in the
+	 * pattern registry at the moment it's called. The real production trigger
+	 * is the `after_switch_theme` hook itself. Core provides no guarantee that
+	 * this fires only after the newly active theme's own `patterns/*.php` have
+	 * been scanned: that scan is a *separate* mechanism
+	 * (`_register_theme_block_patterns()`, `wp-includes/block-patterns.php`,
+	 * hooked on `init`) with no ordering tie to `after_switch_theme` beyond
+	 * incidental hook-priority numbers that this plugin has no control over.
+	 *
+	 * This test fires the real hooks -- `switch_theme()` then the
+	 * `after_switch_theme` action -- in the order that exposes the gap: the
+	 * theme becomes active and `after_switch_theme` runs *before* its own
+	 * `<stylesheet>/header` pattern is registered, exactly as a fresh
+	 * activation can produce. Only a later `init` (standing in for the next
+	 * request's real pattern scan) is where the pattern becomes available.
+	 */
+	public function test_a_real_theme_switch_seeds_the_header_only_once_its_pattern_is_registered(): void {
+		$theme = get_stylesheet();
+
+		try {
+			switch_theme( $theme );
+			// The real trigger, fired directly rather than relying on core's
+			// own (and, as documented above, unguaranteed) timing to get here.
+			// At this exact instant the theme's own pattern has not been
+			// registered yet -- exactly like a real deployment.
+			do_action( 'after_switch_theme', $theme );
+
+			// Stand-in for the *next* real request's `init`: core's
+			// _register_theme_block_patterns() would scan the now-active
+			// theme's patterns/*.php and register them here.
+			register_block_pattern(
+				$theme . '/header',
+				array(
+					'title'    => 'Header',
+					'content'  => '<!-- wp:paragraph --><p>Branded via init</p><!-- /wp:paragraph -->',
+					'inserter' => false,
+				)
+			);
+			do_action( 'init' );
+
+			$this->assertStringContainsString(
+				'Branded via init',
+				$this->headerPart()->post_content,
+				'the header must be seeded from the pattern once it is actually registered, not from whatever the registry held at the instant after_switch_theme fired'
+			);
+		} finally {
+			unregister_block_pattern( $theme . '/header' );
+			// Literal option name (rather than the bootstrap.php constant): this
+			// test must also compile and run against the pre-fix code, which
+			// does not define it.
+			delete_option( 'pediment_header_seed_pending' );
+		}
+	}
 }
