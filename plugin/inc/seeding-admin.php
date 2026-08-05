@@ -49,7 +49,7 @@ function pediment_seed_admin_handle_post(): ?string {
 	pediment_seed_admin_notice( '' );
 
 	$action = isset( $_POST['pediment_seed_action'] ) ? sanitize_key( wp_unslash( $_POST['pediment_seed_action'] ) ) : '';
-	if ( ! in_array( $action, array( 'preview', 'apply' ), true ) ) {
+	if ( ! in_array( $action, array( 'preview', 'apply', 'claim-preview', 'claim-apply' ), true ) ) {
 		return null;
 	}
 	if ( ! current_user_can( 'manage_options' ) ) {
@@ -69,9 +69,55 @@ function pediment_seed_admin_handle_post(): ?string {
 	}
 	wp_raise_memory_limit( 'admin' );
 
+	if ( 'claim-preview' === $action || 'claim-apply' === $action ) {
+		return pediment_seed_admin_run_claim( 'claim-apply' === $action );
+	}
+
 	$result = ( new \Pediment\Seeder\Runner() )->run( array( 'dry_run' => 'preview' === $action ) );
 
 	return \Pediment\Seeder\Reporter::text( $result );
+}
+
+/**
+ * Run a claim from wp-admin.
+ *
+ * Admin-only hosting has no WP-CLI, so this is the only path a live site can
+ * take to give its existing content seed identity before the first seed.
+ *
+ * @param bool $apply Whether to write, as opposed to previewing.
+ * @return string Rendered report.
+ */
+function pediment_seed_admin_run_claim( bool $apply ): string {
+	\Pediment\Seeder\Manifest::resetCache();
+	$manifest = \Pediment\Seeder\Manifest::load();
+
+	if ( null === $manifest ) {
+		return \Pediment\Seeder\Reporter::claimText(
+			new \Pediment\Seeder\Plan(),
+			false,
+			'',
+			array(
+				sprintf(
+					/* translators: 1: theme slug, 2: relative manifest path. */
+					__( 'No seed manifest found. Create %1$s/%2$s in the active theme.', 'pediment' ),
+					get_stylesheet(),
+					\Pediment\Seeder\Manifest::RELATIVE_PATH
+				),
+			)
+		);
+	}
+
+	$provider = \Pediment\Language\LanguageRegistry::provider();
+	$claimer  = new \Pediment\Seeder\Claimer( $provider );
+	$plan     = $claimer->plan( $manifest, ( new \Pediment\Seeder\StateReader( $provider ) )->read() );
+	$errors   = array();
+
+	if ( $apply ) {
+		$result = $claimer->apply( $plan );
+		$errors = $result['errors'];
+	}
+
+	return \Pediment\Seeder\Reporter::claimText( $plan, $apply, $manifest->path(), $errors );
 }
 
 /**
@@ -99,6 +145,26 @@ function pediment_seed_admin_render_tab(): void {
 	foreach ( array(
 		'preview' => array( __( 'Preview plan', 'pediment' ), 'secondary' ),
 		'apply'   => array( __( 'Apply plan', 'pediment' ), 'primary' ),
+	) as $value => $button ) {
+		echo '<form method="post" style="margin:0;">';
+		wp_nonce_field( 'pediment_seed' );
+		echo '<input type="hidden" name="pediment_seed_action" value="' . esc_attr( $value ) . '" />';
+		submit_button( $button[0], $button[1], 'submit', false );
+		echo '</form>';
+	}
+	echo '</div>';
+
+	echo '<hr />';
+	echo '<h3>' . esc_html__( 'Claim existing content', 'pediment' ) . '</h3>';
+	echo '<p>' . esc_html__(
+		'For a site whose pages were built before Pediment. Matches existing pages, posts and menus to the manifest by slug and language and gives them the identity the seeder resolves by. It writes nothing but that identity — titles, content and menus are untouched — and claimed pages stay protected from content updates until you adopt them. Run this once, and preview first.',
+		'pediment'
+	) . '</p>';
+
+	echo '<div style="display:flex;gap:8px;align-items:center;">';
+	foreach ( array(
+		'claim-preview' => array( __( 'Preview claim', 'pediment' ), 'secondary' ),
+		'claim-apply'   => array( __( 'Claim content', 'pediment' ), 'secondary' ),
 	) as $value => $button ) {
 		echo '<form method="post" style="margin:0;">';
 		wp_nonce_field( 'pediment_seed' );
