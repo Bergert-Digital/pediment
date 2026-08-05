@@ -15,10 +15,11 @@ _(none currently known — verify by running a user-journey audit)_
 - [ ] **Verify the v3 release pipeline end-to-end.** With user approval, confirm a
   release produces only `pediment-plugin.zip`, installs as `plugins/pediment`,
   and does not publish either legacy asset name.
-- [ ] **Archive `pediment-child-theme`.** Migration step 5 replaced it with `client-template/` in
-  this monorepo. The old repo still exists and still describes a parent/child world that no longer
-  ships. Archive it on GitHub with a README pointing at `docs/client-sites.md`. Needs an explicit
-  go-ahead — it is an outward-facing, hard-to-reverse action.
+- [x] **Archive `pediment-child-theme`.** Done 2026-08-05 with explicit go-ahead. `Bergert-Digital/Pediment-Child-Theme`
+  now serves a deprecation README pointing at `docs/client-sites.md` (commit `c6e198b`) and is
+  archived; it stays public so existing links keep resolving. `Bergert-Digital/pediment-ai` was
+  closed in the same pass — unarchived, set private, re-archived — since it carried the plugin's
+  pre-merge history with no consumers.
 - [x] **Header template part scoping was a `WP_Query` singularity bug, not a tagging-order race.**
   Found during migration step 5's Task 15 full-verification rehearsal; fixed on the same branch in
   `plugin/inc/bootstrap.php`. The original diagnosis (activation-order tagging skipping recreation
