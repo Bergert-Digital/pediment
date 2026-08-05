@@ -174,6 +174,25 @@ class ClaimerTest extends WP_UnitTestCase {
 		$this->assertSame( $id, $navs[0]->postId );
 	}
 
+	public function test_the_only_unclaimed_navigation_is_claimed_even_when_its_slug_does_not_match() {
+		// 'primary-2' is what a previous seeder run left behind, not the slug
+		// NavSeeder::slugFor() would derive today ('primary'). The single
+		// unclaimed candidate rule must claim it anyway.
+		$id       = $this->nav( 'Primary', 'primary-2' );
+		$manifest = Manifest::fromArray(
+			[
+				'pages' => [ 'home' => [ 'title' => 'Home', 'content' => '<p>h</p>', 'front_page' => true ] ],
+				'navs'  => [ 'primary' => [ 'title' => 'Primary', 'items' => [ [ 'entry' => 'home' ] ] ] ],
+			],
+			'/tmp/theme'
+		);
+
+		$navs = ( new Claimer( new NullProvider() ) )->plan( $manifest, [] )->byKind( PlanItem::KIND_NAV );
+
+		$this->assertSame( PlanItem::CLAIM, $navs[0]->action );
+		$this->assertSame( $id, $navs[0]->postId );
+	}
+
 	public function test_two_unclaimed_navigations_fall_back_to_slug_matching() {
 		$this->nav( 'Footer', 'footer-menu' );
 		$primary  = $this->nav( 'Primary', 'primary' );

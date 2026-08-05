@@ -59,9 +59,10 @@ final class Claimer {
 			}
 		}
 
+		$declaredNavs = count( $manifest->navs() );
 		foreach ( $this->lang->languages() as $language ) {
 			foreach ( $manifest->navs() as $spec ) {
-				$items[] = $this->planNav( $spec, $language, count( $manifest->navs() ) );
+				$items[] = $this->planNav( $spec, $language, $declaredNavs, $default );
 			}
 		}
 
@@ -201,8 +202,8 @@ final class Claimer {
 	 * is unambiguous and is claimed. Otherwise fall back to the derived slug,
 	 * and report rather than guess.
 	 */
-	private function planNav( NavSpec $spec, string $language, int $declaredNavs ): PlanItem {
-		$candidates = $this->navCandidates( $language );
+	private function planNav( NavSpec $spec, string $language, int $declaredNavs, string $default ): PlanItem {
+		$candidates = $this->navCandidates( $language, $default );
 
 		if ( 1 === $declaredNavs && 1 === count( $candidates ) ) {
 			return $this->navItem( PlanItem::CLAIM, $spec, $language, (int) $candidates[0] );
@@ -267,7 +268,7 @@ final class Claimer {
 	}
 
 	/** @return int[] Unclaimed wp_navigation posts in this language. */
-	private function navCandidates( string $language ): array {
+	private function navCandidates( string $language, string $default ): array {
 		$args = $this->lang->unscopedQuery(
 			[
 				'post_type'      => 'wp_navigation',
@@ -285,7 +286,7 @@ final class Claimer {
 			if ( '' !== (string) get_post_meta( $id, Meta::KEY, true ) ) {
 				continue;
 			}
-			if ( ! $this->languageMatches( $id, $language, $this->lang->defaultLanguage() ) ) {
+			if ( ! $this->languageMatches( $id, $language, $default ) ) {
 				continue;
 			}
 			$out[] = $id;
