@@ -15,6 +15,10 @@ final class PlanItem {
 	public const UNCHANGED = 'unchanged';
 	public const ORPHAN    = 'orphan'; // Carries a seed key the manifest dropped.
 
+	public const CLAIM     = 'claim'; // An unkeyed row will receive this seed key.
+	public const NO_MATCH  = 'no-match'; // Nothing to claim; the next seed creates it.
+	public const AMBIGUOUS = 'ambiguous'; // More than one candidate; nothing is written.
+
 	public const KIND_ENTRY = 'entry';
 	public const KIND_MEDIA = 'media';
 	public const KIND_NAV   = 'nav';
