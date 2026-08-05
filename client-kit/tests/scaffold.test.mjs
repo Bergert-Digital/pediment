@@ -179,6 +179,42 @@ test('assertNoTokens names the file when a token survives', async () => {
   await rm(dir, { recursive: true, force: true });
 });
 
+// Pins the breadth of the guard: it must catch ANY dunder-wrapped placeholder that survived
+// replacement, not just the known __PEDIMENT_*__ family — including a token nobody has invented
+// yet and forgot to add to TOKENS. Narrowing the scan to __PEDIMENT_*__ only would silence this
+// case forever.
+test('assertNoTokens catches a dunder token outside the __PEDIMENT_*__ family', async () => {
+  const dir = await temp();
+  const dest = path.join(dir, 'out');
+  await mkdir(dest, { recursive: true });
+  await writeFile(path.join(dest, 'leftover.txt'), 'hello __CLIENT_FOO__ world');
+
+  await assert.rejects(assertNoTokens(dest), (err) => {
+    assert.match(err.message, /leftover\.txt/);
+    assert.match(err.message, /__CLIENT_FOO__/);
+    return true;
+  });
+
+  await rm(dir, { recursive: true, force: true });
+});
+
+// The client blocks layer's functions.php legitimately contains PHP magic constants such as
+// __DIR__. They are dunder-wrapped and uppercase, exactly like a survived token, but they are not
+// one, and the guard must not flag them.
+test('assertNoTokens does not flag PHP magic constants as surviving tokens', async () => {
+  const dir = await temp();
+  const dest = path.join(dir, 'out');
+  await mkdir(dest, { recursive: true });
+  await writeFile(
+    path.join(dest, 'functions.php'),
+    '<?php\necho __DIR__ . __FILE__ . __LINE__ . __CLASS__ . __FUNCTION__ . __METHOD__ . __NAMESPACE__ . __TRAIT__;\n',
+  );
+
+  await assertNoTokens(dest);
+
+  await rm(dir, { recursive: true, force: true });
+});
+
 test('resolveTemplate returns a local directory unchanged', async () => {
   assert.equal(await resolveTemplate({ template: MINI }), MINI);
 });
