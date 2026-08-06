@@ -36,10 +36,16 @@ final class ClaimRunner {
 		// manifest expects this run to see the file as it is now.
 		Manifest::resetCache();
 
-		// Unlike Runner, a thrown ManifestError is not caught here — that
-		// matches this path's behaviour before the two front doors were
-		// unified, and nothing in this refactor's brief asks for it to change.
-		$manifest = Manifest::load();
+		// Mirrors Runner::run(). On admin-only hosting the Seeding tab's claim
+		// buttons are the only door there is, and a hand-edited manifest is
+		// exactly what a migration produces — an uncaught ManifestError there
+		// is "There has been a critical error on this website" instead of a
+		// report naming the line that is wrong.
+		try {
+			$manifest = Manifest::load();
+		} catch ( ManifestError $e ) {
+			return new ClaimResult( new Plan(), false, '', [ $e->getMessage() ] );
+		}
 
 		if ( null === $manifest ) {
 			return new ClaimResult(
@@ -48,6 +54,19 @@ final class ClaimRunner {
 				'',
 				[ sprintf( 'No seed manifest found. Create %s/%s in the active theme.', get_stylesheet(), Manifest::RELATIVE_PATH ) ]
 			);
+		}
+
+		// The same gate Runner::run() applies, and for a sharper reason than
+		// seeding's. A claim run before `wp pediment languages` has configured
+		// the manifest's languages sees NullProvider — one empty language — so
+		// it keys only the default-slug rows and reports every other row as
+		// no-match. The operator then configures languages and seeds, and each
+		// unclaimed live page trips Differ rule 1 and is duplicated. Claiming
+		// is a one-shot migration step, so getting it wrong is not something a
+		// re-run repairs.
+		$mismatch = LanguageGate::mismatch( $manifest, $this->lang );
+		if ( null !== $mismatch ) {
+			return new ClaimResult( new Plan(), false, $manifest->path(), [ $mismatch ] );
 		}
 
 		$claimer = new Claimer( $this->lang );
