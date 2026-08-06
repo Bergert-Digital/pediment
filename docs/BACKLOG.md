@@ -277,6 +277,66 @@ _(none currently known — verify by running a user-journey audit)_
   left by review. `client-kit/tests/fixtures/answers-multilingual.json` (de + en)
   already exists, so a second matrix entry over the fixture path — feeding both the
   scaffold step and the `seed-check` action — is the whole fix.
+- [ ] **`npx wp-env start` cannot boot a freshly destroyed environment on macOS.** Not caused
+  by any branch; nobody had recorded it, and it has cost multiple people an hour each. The first
+  start after `wp-env destroy` fails with an OCI runtime error mounting
+  `plugin/tests/fixtures/mu-activate-theme.php` to `wp-content/mu-plugins/activate-pediment.php`:
+  Docker Desktop's virtiofs cannot see the mountpoint file wp-env itself just created on the
+  host. The failed start leaves MariaDB half-initialized, so every retry then fails with "Error
+  establishing a database connection" and retrying never clears it. **The working recovery,
+  verified:** `npx wp-env stop`, then
+  `docker volume rm a3dc8692d63bbaed34b7c5faf40dce3f_mysql a3dc8692d63bbaed34b7c5faf40dce3f_mysql-test`,
+  then `npx wp-env start` — by then the mountpoint files exist, the mount succeeds and MariaDB
+  initializes cleanly. macOS Docker Desktop only; CI runs on Linux runners and is unaffected.
+- [ ] **A nav orphaned by a dropped Polylang language now collides with the default language
+  instead of being ignored.** Consequence of the untagged-nav fix in
+  `NavSeeder::languageOf()` (migration step 6a final review, item 1), recorded because it is a
+  design question rather than a settled answer. `NavSeeder`'s own docblock assumed a nav in a
+  dropped language keeps its Polylang language term and so stays in the `key|''` bucket. That
+  assumption is wrong: `Languages::delete()` → `TranslatableObject::delete_language()` calls
+  `wp_delete_object_term_relationships()`, so the nav is left genuinely **untagged** and
+  `pll_get_post_language()` returns `false` (verified against Polylang 3.8.6 in this repo's test
+  environment). Nothing in the database then distinguishes it from the legacy untagged nav the
+  fix exists for, so it lands in the default-language bucket, and `duplicates()` reports a fatal
+  "carried by 2 navigation entities" that blocks the seed until the operator deletes or re-keys
+  the orphan. That is louder and safer than the previous silent unlinking, and it matches how
+  entries have always behaved (`StateReader::languageOf()`, `Applier::repairLanguage()`) — but it
+  is a behaviour change nobody chose deliberately. Pinned by
+  `NavLanguageTest::test_a_nav_orphaned_by_a_dropped_language_is_reported_not_ignored`. Decide
+  whether the duplicate error is the wanted outcome, or whether dropping a language should offer
+  to clean up the navs it orphans.
+- [ ] **Race window in the deferred header seed.** `pediment_bootstrap_maybe_seed_header()`
+  (`plugin/inc/bootstrap.php`) does `get_option()` then `delete_option()` non-atomically, so two
+  concurrent requests arriving right after a theme switch could both pass the flag check and both
+  create a `header` template part. Real, but narrow and self-limiting: the window is one theme
+  switch wide, and `pediment_bootstrap_header_template_part()` is itself idempotent per theme on
+  every subsequent request. Ruled out of scope by the migration step 6a final review; fix with an
+  atomic claim (e.g. `add_option()` as the lock) if it ever actually bites.
+- [ ] **Two CLAIM plan items can target the same post ID and the preview does not say so.**
+  `Claimer::plan()` (`plugin/src/Seeder/Claimer.php`) can emit two `claim` lines pointing at one
+  post — the entry pass and the nav pass do not cross-check, and neither do two entries whose
+  candidate queries converge. No data is harmed: `Claimer::apply()`'s already-carries-a-key guard
+  catches the second write and returns it as an error, so exactly one key lands. Only the preview
+  is less honest than it could be, showing two claims where one will happen. Ruled out of scope
+  by the migration step 6a final review. The fix is a dedupe pass over `$plan` that reports the
+  collision as `ambiguous` before the operator runs the real thing.
+- [ ] **Decision 8's producer side has no example: `client-template/patterns/` ships no
+  `header.php`.** The plugin reads a `<stylesheet>/header` block pattern to supply the initial
+  markup for the seeded header template part (step 6a decision 8), but no scaffolded client theme
+  actually provides one. So the consumer branch is exercised only by an inline
+  `register_block_pattern()` in `BootstrapTest`, and CI proves the generic-fallback branch and
+  nothing else — every real scaffolded theme takes the fallback. A genuine gap, but new feature
+  work rather than a fix, so ruled out of scope by the migration step 6a final review. Shipping a
+  `client-template/patterns/header.php` would close it and give the scaffolder a brandable header
+  out of the box.
+- [ ] **Client-blocks template nits, all ruled out of scope by the migration step 6a final
+  review.** (a) `client-template/src/blocks/example-notice/render.php` wraps
+  `get_block_wrapper_attributes()` in `wp_kses_data()`, which is the wrong escaper for an
+  already-escaped attribute string and could mangle it. (b) `client-template/functions.php` calls
+  `esc_html__()` with no `load_theme_textdomain()`, so the strings are never actually
+  translatable. (c) `client-release.yml`'s `--exclude 'src'` matches a directory named `src` at
+  any depth, not just the theme root, so a legitimately shipped nested `src/` would be dropped
+  from the zip. None of the three affects a shipping client site today.
 
 ## 🔵 Ideas / later
 
