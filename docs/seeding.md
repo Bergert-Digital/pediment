@@ -705,6 +705,85 @@ Success: Dry run complete — nothing was written.
 and stops there — `no-match` and `ambiguous` lines are report-only either
 way.
 
+### Worked example: claim through to protected
+
+The example above stops at the claim's own report. This one continues one
+step further, onto the *next* `wp pediment seed`, to show the payoff the
+claim exists for: a claimed row reads back as `protected`, not `unchanged`,
+because `Claimer::apply()` never wrote a hash. Captured from a rehearsal
+against three pages (`about` ID 46, `contact` ID 8, `blog` ID 9) with every
+seed meta key — `_pediment_seed_key`, `_pediment_seed_hash`,
+`_pediment_seed_source` — stripped, so the setup actually models a page that
+predates the seeding engine (see the note below for why that distinction
+matters):
+
+```
+Pediment claim — dry run
+manifest: /var/www/html/wp-content/themes/pediment-fixture/seed/manifest.php
+
+PAGES & POSTS
+  claim      about (en)       page "about" (ID 46)
+  claim      contact (en)     page "contact" (ID 8)
+  claim      blog (en)        page "blog" (ID 9)
+
+3 to claim, 0 without a match, 0 ambiguous. Nothing was written (--dry-run).
+Success: Dry run complete — nothing was written.
+```
+
+```
+Pediment claim
+manifest: /var/www/html/wp-content/themes/pediment-fixture/seed/manifest.php
+
+PAGES & POSTS
+  claim      about (en)       page "about" (ID 46)
+  claim      contact (en)     page "contact" (ID 8)
+  claim      blog (en)        page "blog" (ID 9)
+
+3 to claim, 0 without a match, 0 ambiguous.
+Success: Claim applied.
+```
+
+Nothing so far has touched content — both runs above only name and then
+write a `_pediment_seed_key`. The next seed's dry run is where the claim's
+promise shows up:
+
+```
+Pediment seed — dry run
+manifest: /var/www/html/wp-content/themes/pediment-fixture/seed/manifest.php
+
+MEDIA
+  unchanged   logo
+
+PAGES & POSTS
+  unchanged   home
+  protected   about            never seeded by this engine — content left alone; run `wp pediment adopt` to take it into git
+  protected   contact          never seeded by this engine — content left alone; run `wp pediment adopt` to take it into git
+  protected   blog             never seeded by this engine — content left alone; run `wp pediment adopt` to take it into git
+  unchanged   mega-demo
+  ... (remaining unchanged rows and the TRANSLATIONS block elided — same shape as the "Reading a plan" example above)
+
+0 to write, 3 protected, 0 orphan, 22 unchanged. Nothing was written (--dry-run).
+Success: Dry run complete — nothing was written.
+```
+
+`--dry-run` again, so this still wrote nothing — it only reports what a real
+`wp pediment seed` would do. Three claimed rows, three `protected` lines, the
+summary's `protected` count matching, and the note text is exactly rule 2's
+`'' === $have->storedHash` branch (see "The two hashes" above): the row was
+never seeded by this engine, so title and content are left alone.
+
+**Building a rehearsal or test fixture for this sequence, deleting only
+`_pediment_seed_key` from a page that has already been through a real seed
+is not enough** — the stored hash and source hash survive untouched, still
+match the untouched content, and the claim only restores the identity key,
+so the next seed's Differ reaches rule 3 (in sync) before it ever gets to
+rule 2, and reports `unchanged` instead of `protected`. Both outcomes are
+safe and neither writes content; the weaker setup just can't demonstrate the
+protection property, because the surviving hash makes the row look
+already-in-sync rather than never-seeded. A faithful rehearsal of a legacy
+page has to delete `_pediment_seed_hash` and `_pediment_seed_source` too, not
+just the identity key.
+
 ### The wp-admin path
 
 Admin-only hosting has no WP-CLI, so Settings → Pediment Theme → Seeding
