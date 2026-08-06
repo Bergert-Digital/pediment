@@ -260,4 +260,63 @@ class NavSeederTest extends WP_UnitTestCase {
 		$this->assertStringNotContainsString( '"id":13', $markup, 'a child without its parent is not promoted to top level' );
 		$this->assertSame( 1, substr_count( $markup, 'wp:navigation-link' ) );
 	}
+
+	public function test_an_unresolved_child_leaves_the_whole_menu_alone() {
+		$seeder = new NavSeeder( new NullProvider() );
+		$guide  = self::factory()->post->create( [ 'post_type' => 'page' ] );
+		$faq    = self::factory()->post->create( [ 'post_type' => 'page' ] );
+
+		$full   = $this->submenuManifest( [ [ 'entry' => 'guide', 'children' => [ [ 'entry' => 'faq' ] ] ] ] );
+		$ids    = [ 'guide|' => $guide, 'faq|' => $faq ];
+		$navIds = $seeder->apply( $seeder->plan( $full, $ids ), $full, $ids );
+		$before = get_post( $navIds['primary|'] )->post_content;
+
+		// The child's page disappears — its ID no longer resolves.
+		$short = [ 'guide|' => $guide ];
+		$seeder->apply( $seeder->plan( $full, $short ), $full, $short );
+
+		$this->assertSame( $before, get_post( $navIds['primary|'] )->post_content, 'never write a shortened menu' );
+		$this->assertContains(
+			'navs.primary: "faq" has no seeded post yet — the link is missing from the menu.',
+			$seeder->errors()
+		);
+	}
+
+	public function test_the_planned_item_count_includes_children() {
+		$seeder = new NavSeeder( new NullProvider() );
+		$m      = $this->submenuManifest(
+			[
+				[ 'entry' => 'home' ],
+				[ 'entry' => 'guide', 'children' => [ [ 'entry' => 'faq' ] ] ],
+			]
+		);
+
+		$plan = $seeder->plan( $m, [] );
+
+		$this->assertSame( PlanItem::CREATE, $plan->items()[0]->action );
+		$this->assertSame( 3, $plan->items()[0]->changes['items']['to'], 'home + guide + faq' );
+	}
+
+	public function test_an_existing_submenu_is_counted_when_it_changes() {
+		$seeder = new NavSeeder( new NullProvider() );
+		$ids    = [
+			'home|'  => self::factory()->post->create( [ 'post_type' => 'page' ] ),
+			'guide|' => self::factory()->post->create( [ 'post_type' => 'page' ] ),
+			'faq|'   => self::factory()->post->create( [ 'post_type' => 'page' ] ),
+		];
+		$first  = $this->submenuManifest( [ [ 'entry' => 'guide', 'children' => [ [ 'entry' => 'faq' ] ] ] ] );
+		$seeder->apply( $seeder->plan( $first, $ids ), $first, $ids );
+
+		$second = $this->submenuManifest(
+			[
+				[ 'entry' => 'home' ],
+				[ 'entry' => 'guide', 'children' => [ [ 'entry' => 'faq' ] ] ],
+			]
+		);
+		$plan   = $seeder->plan( $second, $ids );
+
+		$this->assertSame( PlanItem::UPDATE, $plan->items()[0]->action );
+		$this->assertSame( 2, $plan->items()[0]->changes['items']['from'], 'the stored submenu and its one child' );
+		$this->assertSame( 3, $plan->items()[0]->changes['items']['to'] );
+	}
 }
