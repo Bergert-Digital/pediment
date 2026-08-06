@@ -2,12 +2,26 @@
 // plugin/tests/polylang/ClaimerLanguageTest.php
 
 use Pediment\Language\PolylangProvider;
+use Pediment\Seeder\ClaimRunner;
 use Pediment\Seeder\Claimer;
 use Pediment\Seeder\Manifest;
 use Pediment\Seeder\Meta;
 use Pediment\Seeder\PlanItem;
+use Pediment\Seeder\Runner;
 
 class ClaimerLanguageTest extends PolylangTestCase {
+
+	public function tear_down(): void {
+		remove_all_filters( 'pediment_seed_manifest' );
+		Manifest::resetCache();
+		parent::tear_down();
+	}
+
+	/** @param array<string,mixed> $manifest */
+	private function withManifest( array $manifest ): void {
+		add_filter( 'pediment_seed_manifest', static fn() => $manifest );
+		Manifest::resetCache();
+	}
 
 	private function manifest(): Manifest {
 		return Manifest::fromArray(
@@ -146,5 +160,84 @@ class ClaimerLanguageTest extends PolylangTestCase {
 		$this->assertSame( PlanItem::CLAIM, $navs[0]->action );
 		$this->assertSame( 'en', $navs[0]->language );
 		$this->assertSame( $en, $navs[0]->postId );
+	}
+
+	/** @return int[] IDs of every navigation entity carrying the `primary` seed key, in any language. */
+	private function navsCarryingPrimary(): array {
+		return array_map(
+			'intval',
+			get_posts(
+				[
+					'post_type'      => 'wp_navigation',
+					'post_status'    => [ 'publish', 'draft', 'trash' ],
+					'posts_per_page' => -1,
+					'no_found_rows'  => true,
+					'fields'         => 'ids',
+					'orderby'        => 'ID',
+					'order'          => 'ASC',
+					'meta_key'       => Meta::KEY,
+					'meta_value'     => 'primary',
+					'lang'           => '',
+				]
+			)
+		);
+	}
+
+	/**
+	 * The production shape on admin-only hosting: `wp_navigation` is made
+	 * translatable only by `wp pediment languages`, so every legacy menu on a
+	 * site that never ran it is untagged. `Claimer::languageMatches()` makes an
+	 * untagged nav a candidate for the DEFAULT language and `apply()` writes
+	 * only the seed key — no language term. If `NavSeeder::keyed()` then files
+	 * that claimed nav under `primary|''` instead of `primary|en`, the very next
+	 * seed sees no `primary|en`, CREATEs a second entity beside it, and the
+	 * duplicate guard never fires because the two land in different buckets.
+	 * The front end (`pediment_seeded_nav_id()`, oldest-ID-wins) keeps rendering
+	 * the abandoned original while the seeder manages the new one.
+	 *
+	 * Language stripping is the same trick `page()` above uses: Polylang
+	 * auto-tags on `save_post`, so a factory-created post is never untagged
+	 * until its term relationship is explicitly removed.
+	 */
+	public function test_a_claimed_untagged_nav_is_not_duplicated_by_the_next_seed() {
+		$this->withManifest(
+			[
+				'languages' => [
+					'en' => [ 'name' => 'English', 'locale' => 'en_US', 'default' => true ],
+					'de' => [ 'name' => 'Deutsch', 'locale' => 'de_DE' ],
+				],
+				'pages'     => [ 'home' => [ 'title' => 'Home', 'content' => '<p>h</p>', 'front_page' => true ] ],
+				'navs'      => [ 'primary' => [ 'title' => 'Primary', 'items' => [ [ 'entry' => 'home' ] ] ] ],
+			]
+		);
+
+		$legacy = self::factory()->post->create(
+			[ 'post_type' => 'wp_navigation', 'post_title' => 'Primary', 'post_name' => 'primary', 'post_status' => 'publish' ]
+		);
+		wp_delete_object_term_relationships( $legacy, 'language' );
+		$this->assertFalse(
+			pll_get_post_language( $legacy ),
+			'Precondition: the legacy nav must actually be untagged.'
+		);
+
+		( new ClaimRunner() )->run();
+		$this->assertSame(
+			'primary',
+			(string) get_post_meta( $legacy, Meta::KEY, true ),
+			'Precondition: the untagged nav must actually have been claimed.'
+		);
+
+		( new Runner() )->run();
+
+		$this->assertSame(
+			[ $legacy ],
+			array_values( array_filter( $this->navsCarryingPrimary(), static fn( int $id ): bool => 'en' === pll_get_post_language( $id ) ) ),
+			'the claimed nav must be the one and only English `primary` after the seed'
+		);
+		$this->assertCount(
+			2,
+			$this->navsCarryingPrimary(),
+			'one navigation entity per configured language — a third means the seed duplicated the claimed one'
+		);
 	}
 }
