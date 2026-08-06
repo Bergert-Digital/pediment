@@ -67,6 +67,23 @@ jobs:
           grep -qxF "Version: ${VERSION}" style.css
           echo "style.css Version header is ${VERSION}"
 
+      - name: Build client blocks
+        # `npm install`, not `npm ci`: the scaffolder deliberately commits no
+        # lockfile (client-kit/scripts/scaffold.mjs writes package.json and
+        # commits, but never installs), so a scaffolded repo's first release
+        # has no package-lock.json for `npm ci` to require. seed-check already
+        # uses `npm install` for the same repos; a theme's dependency surface
+        # is two @wordpress/* devDependencies, so lockfile-exact
+        # reproducibility isn't what's at stake here.
+        run: |
+          set -euo pipefail
+          if [ -d src/blocks ]; then
+            npm install
+            npm run build
+          else
+            echo "No client blocks — nothing to build."
+          fi
+
       - name: Stage and zip
         env:
           SLUG: ${{ steps.slug.outputs.slug }}
@@ -79,6 +96,11 @@ jobs:
         # and audience notes at a predictable URL. `AGENTS.md` and `package.json`
         # are excluded to match plugin/.distignore, which strips the plugin's
         # equivalents for the same reason: nothing at runtime reads them.
+        #
+        # `build/` MUST ship and `src/` MUST NOT: WordPress loads built blocks
+        # from build/blocks, and the sources are dead weight in a theme
+        # directory that is web-servable. `build/` is gitignored, which is why
+        # the build step above runs before this one.
         run: |
           set -euo pipefail
           mkdir -p "stage/${SLUG}"
@@ -94,6 +116,7 @@ jobs:
             --exclude 'package-lock.json' \
             --exclude 'docs' \
             --exclude 'AGENTS.md' \
+            --exclude 'src' \
             ./ "stage/${SLUG}/"
           cd stage && zip -rq "../${SLUG}.zip" "${SLUG}"
           unzip -l "../${SLUG}.zip" | tail -5

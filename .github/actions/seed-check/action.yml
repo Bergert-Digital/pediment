@@ -14,6 +14,15 @@ inputs:
       the well-trodden path, and the monorepo's own .wp-env.json already relies on it.
     required: false
     default: ""
+  assert-block:
+    description: >-
+      Optional block name (e.g. "ci-blocks/example-notice") to assert is registered with
+      WP_Block_Type_Registry. Checked after the convergence re-seed and before the
+      environment is torn down — this action owns the environment's lifecycle, so the
+      check has to run inside it or it queries a container that no longer exists. Empty
+      (the default) skips the check entirely.
+    required: false
+    default: ""
 
 runs:
   using: composite
@@ -52,7 +61,14 @@ runs:
       shell: bash
       working-directory: ${{ inputs.theme-path }}
       run: |
+        set -euo pipefail
         npm install
+        if [ -d src/blocks ]; then
+          echo "Client blocks present — building before boot."
+          npm run build
+        else
+          echo "No client blocks — nothing to build."
+        fi
         npm run env:start
 
     - name: Configure languages
@@ -105,6 +121,34 @@ runs:
         npm run seed:plan | tee /tmp/replan.txt
         if ! grep -qE '(^|[[:space:]])0 to write,' /tmp/replan.txt; then
           echo "::error::A second dry run still wants to write — the seeder is not converging."
+          exit 1
+        fi
+
+    - name: Assert the client block registered
+      if: inputs.assert-block != ''
+      shell: bash
+      working-directory: ${{ inputs.theme-path }}
+      env:
+        ASSERT_BLOCK: ${{ inputs.assert-block }}
+      # Runs before "Stop wp-env" deliberately: that step tears the container down
+      # (docker compose down, not a pause), so a check placed after it would be
+      # asserting against an environment that no longer exists and would fail on
+      # every run regardless of whether the block registered.
+      #
+      # WP_DEBUG/WP_DEBUG_LOG/SCRIPT_DEBUG are all on in the client template's
+      # .wp-env.json, so a PHP notice reaching stdout during `wp eval` could land
+      # ahead of our own output. A sentinel-prefixed token, extracted with grep -o,
+      # survives that noise; a bare string-equality on the whole captured stdout
+      # would not.
+      run: |
+        set -euo pipefail
+        raw="$(npx wp-env run cli wp eval "echo 'BLOCK_CHECK:' . (WP_Block_Type_Registry::get_instance()->is_registered('${ASSERT_BLOCK}') ? 'yes' : 'no');")"
+        echo "wp eval raw output:"
+        echo "${raw}"
+        result="$(printf '%s\n' "${raw}" | grep -o 'BLOCK_CHECK:[a-z]*' | tail -n1 | cut -d: -f2)"
+        echo "Block registration check: ${result}"
+        if [ "${result}" != "yes" ]; then
+          echo "::error::Block ${ASSERT_BLOCK} is not registered in WordPress — the with-blocks scaffold did not build or register it."
           exit 1
         fi
 

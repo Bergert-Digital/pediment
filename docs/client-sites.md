@@ -107,6 +107,31 @@ design system, blocks, templates, and seeding engine all ship inside the Pedimen
 this repo holds only what's specific to the client. There is also **no theme auto-updater**; see
 "Deploying," below.
 
+### The header
+
+The plugin seeds a database-backed `header` template part when a theme activates
+(`pediment_bootstrap_header_template_part()`), because template parts cannot ship from a plugin
+and the client template ships no `parts/`. A theme owns the *initial* markup by registering a
+block pattern named `<theme-slug>/header`; the bootstrap reads it and uses it to seed the part. If
+no such pattern is registered, a generic fallback header is used instead. From then on the header
+is edited in the Site Editor and lives in the database — the pattern is never consulted again, so
+a later change to the pattern (or a missing one) has no effect on a site that already has its
+header part.
+
+**Seeding is not synchronous with activation.** WordPress does not guarantee that a theme's own
+`patterns/*.php` have been scanned into the pattern registry by the moment `after_switch_theme`
+fires — that scan is a separate mechanism, tied to `init`, with no ordering guarantee relative to
+the switch itself. Reading the registry at `after_switch_theme` time risks silently seeding the
+generic fallback regardless of what the theme ships. So activating a theme only marks seeding as
+pending; the actual seed happens on a later `init` pass (in practice, whichever request follows —
+usually the very next page load after activation, since WordPress itself defers firing
+`after_switch_theme` to that same following request). Until that pass completes, no `header` part
+exists yet for the newly active theme, and any page rendered in that narrow window shows core's
+"Template part has been deleted or is unavailable" message rather than a broken header with the
+wrong content. In the ordinary wp-admin activation flow this window closes before a real visitor
+could hit it — activating a theme redirects to another admin page, and that redirect's own `init`
+is what completes the seed, before anyone loads the front end.
+
 ## The `pediment` block in `package.json`
 
 ```json
@@ -163,6 +188,34 @@ attaches `<slug>.zip` to the GitHub release. From there:
 through wp-admin, a new theme release only reaches production when someone uploads the zip by
 hand. This is a deliberate step-5 decision, not an oversight — revisit only if it turns out to
 hurt in practice.
+
+## Moving an existing site onto Pediment
+
+A site that already exists — built on the parent theme, a page builder, or
+anything else — carries no `_pediment_seed_key` on any of its content, and
+`StateReader` resolves actual state purely from that key (see
+[docs/seeding.md](seeding.md)). Running `wp pediment seed` against such a
+site with no prior step sees no existing rows at all and plans a `CREATE`
+for every manifest entry — duplicating the whole site rather than adopting
+it. The order (`docs/superpowers/specs/2026-08-05-migration-step6-design.md`
+§3.3):
+
+1. Install `pediment-plugin.zip` and activate it (wp-admin).
+2. Upload and activate the standalone client theme (wp-admin).
+3. Settings → Pediment Theme → Seeding → **Preview claim** — read the plan.
+4. **Claim content** — identity only; see
+   [`wp pediment claim`](seeding.md#wp-pediment-claim) for what it matches
+   and what it refuses to.
+5. **Preview plan** (seed) — expect `0 to write`, N `protected`.
+6. **Apply plan** (seed) — structure only.
+
+**Step 5 is a gate, not a formality.** A preview that reports anything other
+than protected pages and the structural changes you actually expect means
+the claim was incomplete — some row didn't match, or matched the wrong one —
+and the fix is to go back and correct the manifest or the claim, never to
+apply the plan anyway. Applying over an incomplete claim risks creating
+duplicate content for whatever didn't get identity in step 4, which is
+exactly the failure claiming exists to prevent.
 
 ## Maintainer-only local scaffolding
 

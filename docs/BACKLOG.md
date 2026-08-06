@@ -33,6 +33,28 @@ _(none currently known — verify by running a user-journey audit)_
   `BootstrapTest::test_bootstrap_scopes_header_part_to_each_active_theme`.
   `.github/actions/seed-check/action.yml`'s front-page assertion remains as a standing regression
   guard, checking for the exact missing-template-part string a recurrence would show.
+- [x] **The `--with-blocks` flag step 5 deferred is built, closing the "client theme has no
+  bespoke-block tooling" gap.** Step 5 decision 5 (`2026-08-03-scaffolder-and-start-step5-design.md`)
+  punted client-block tooling until a client needed one; migration step 6a's design
+  (`2026-08-05-migration-step6-design.md` decision 2) built it. `client-template/` gains an
+  optional `functions.php`, `src/blocks/example-notice/` and a `@wordpress/scripts` build;
+  `client-kit`'s scaffolder emits them behind `--with-blocks` and prunes them when not requested;
+  `seed-check` builds client blocks when `src/blocks/` exists and asserts one registers before
+  wp-env teardown, the `scaffold` CI matrix gained a second leg that scaffolds, builds, boots and
+  seeds a real with-blocks client theme, and `client-release.yml` builds blocks while keeping
+  `src/` out of the zip. Done 2026-08-06.
+- [ ] **The cutover plan is not written.** Migration step 6a built the capability — claim, header
+  ownership, client blocks — but the Workation production migration itself is a separate plan by
+  design (spec decision 4, `2026-08-05-migration-step6-design.md`). Workation still runs the
+  retired parent/child theme stack, and the claim path (`Pediment\Seeder\Claimer`) has only ever
+  run against fixtures and CI, never a real legacy database. Write the cutover plan, and rehearse
+  claim against a copy of Workation's actual content, before touching production.
+- [ ] **A multilingual claim is impossible on admin-only hosting without one-off CLI access.**
+  The claim path's language gate (`docs/seeding.md#precondition-configure-languages-before-you-claim`)
+  refuses to plan anything while the manifest's declared languages and Polylang's configured set
+  diverge, and `wp pediment languages` — the only way to configure them — is WP-CLI only with no
+  wp-admin equivalent. The cutover plan (entry above) must budget for arranging one-off CLI access
+  before a multilingual claim; it cannot be run entirely through wp-admin.
 - [ ] **Commercial protection — licence keys gate updates, a server gates capability.** Needs its
   own spec; the design rationale is in
   [2026-08-05-licensing-and-hygiene-design.md](superpowers/specs/2026-08-05-licensing-and-hygiene-design.md#35-backlog-entry-for-commercial-protection).
@@ -135,6 +157,27 @@ _(none currently known — verify by running a user-journey audit)_
   image variants or `srcset` entries back to `{{media_*}}` placeholders. All are
   documented in [docs/seeding.md](seeding.md) — revisit when migration step 6 shows which
   actually hurt.
+- [ ] **Media and terms are never claimed** (migration step 6a design decision 6).
+  `Pediment\Seeder\Claimer` backfills `_pediment_seed_key` onto pre-existing entries and
+  navs, but attachments and terms have no equivalent — `MediaSeeder::keyed()` resolves
+  existing attachments only by `_pediment_seed_key`, so a manifest declaring media that
+  already exists on the site as unkeyed attachments (a pre-existing logo or hero image,
+  say) will upload a duplicate rather than adopt the original. Deliberate for Workation's
+  74 client-owned photos, which the manifest never declares; the same gap applies to any
+  media a manifest does declare on a site being claimed.
+- [ ] **A real, non-dry-run `wp pediment claim` against a site with no manifest still prints
+  "Pediment claim — dry run" and "Nothing was written (--dry-run)".** `Reporter::claimText()`'s
+  wording comes from `ClaimResult->applied`, and `ClaimRunner::run()` returns `applied: false`
+  whenever no manifest is found, regardless of whether `--dry-run` was passed. The branch that
+  hardcodes `applied: false` is in `plugin/src/Seeder/ClaimRunner.php`, not in
+  `plugin/wp-cli/ClaimCommand.php` — the command only renders what the runner already decided.
+  The same is now true of the malformed-manifest and language-mismatch branches beside it.
+  Accurate in effect — nothing was applied because there was nothing to apply — but misleading
+  in wording for an operator who ran the command for real.
+- [ ] **The wp-admin missing-manifest message is untranslated.** `ClaimRunner::run()`'s "No seed
+  manifest found. Create …" string (`plugin/src/Seeder/ClaimRunner.php`) has no `__()` wrapper,
+  following `Runner::run()`'s existing precedent for the identical message, so it renders in
+  English on a non-English admin install. Deliberate and narrow, not worth fixing on its own.
 - [ ] **History purge of the removed `docs/images/*.jpg`.** The 11 tracked Unsplash JPEGs
   (~46 MB) were `git rm`'d going forward (monorepo step 1, Task 7) but still bloat every
   clone via history. A full purge (`git filter-repo` or similar) would force-push and
@@ -240,6 +283,85 @@ _(none currently known — verify by running a user-journey audit)_
   left by review. `client-kit/tests/fixtures/answers-multilingual.json` (de + en)
   already exists, so a second matrix entry over the fixture path — feeding both the
   scaffold step and the `seed-check` action — is the whole fix.
+- [ ] **`npx wp-env start` cannot boot a freshly destroyed environment on macOS.** Not caused
+  by any branch; nobody had recorded it, and it has cost multiple people an hour each. The first
+  start after `wp-env destroy` fails with an OCI runtime error mounting
+  `plugin/tests/fixtures/mu-activate-theme.php` to `wp-content/mu-plugins/activate-pediment.php`:
+  Docker Desktop's virtiofs cannot see the mountpoint file wp-env itself just created on the
+  host. The failed start leaves MariaDB half-initialized, so every retry then fails with "Error
+  establishing a database connection" and retrying never clears it. **The working recovery,
+  verified:** `npx wp-env stop`, then
+  `docker volume rm a3dc8692d63bbaed34b7c5faf40dce3f_mysql a3dc8692d63bbaed34b7c5faf40dce3f_mysql-test`,
+  then `npx wp-env start` — by then the mountpoint files exist, the mount succeeds and MariaDB
+  initializes cleanly. macOS Docker Desktop only; CI runs on Linux runners and is unaffected.
+- [ ] **Decided: a nav orphaned by a dropped Polylang language collides with the default
+  language and hard-blocks the seed, rather than being silently ignored.** Was recorded as an
+  open design question by the untagged-nav fix in `NavSeeder::languageOf()` (migration step 6a
+  final review, item 1). The human partner has since ruled: take the block, it is the wanted
+  behaviour. `Languages::delete()` → `TranslatableObject::delete_language()` calls
+  `wp_delete_object_term_relationships()`, so a nav orphaned by removing a language is left
+  genuinely **untagged** — byte-identical in the database to a legacy nav that was never
+  language-tagged — and no rule reading only the language taxonomy can tell the two apart.
+  Reasoning: an errored plan writes nothing for the whole seed, not just navs (`Runner::run()`
+  returns on `Plan::hasErrors()` before `MediaSeeder::apply()`, `Applier::apply()`, and
+  `NavSeeder::apply()` all run), so the failure is loud and lossless — and the alternative already
+  exists as a known, silently-lossy parked defect (the entry above, "A coordinated language
+  removal silently unlinks that language's translation groups"); blocking here stops the nav half
+  of that from staying silent instead of growing a second quiet-data-loss path alongside it. Cost,
+  stated plainly: a site that has dropped a language has **every subsequent seed hard-blocked** —
+  not just its nav phase — until an operator deletes or re-keys the orphaned navigation post
+  (`NavSeeder::duplicates()`'s "carried by 2 navigation entities" error; see docs/seeding.md's
+  "Duplicate seed key" failure mode). Pinned by
+  `NavLanguageTest::test_a_nav_orphaned_by_a_dropped_language_is_reported_not_ignored`. The
+  seeder-marker alternative that would separate the two cases cleanly is recorded next, and
+  remains genuinely open.
+- [ ] **Open: a seeder-written `_pediment_seed_lang` marker would separate a legacy untagged
+  nav from a language-orphaned one — for navs created after the marker exists.** Identified by a
+  later review of the decision above; not decided against, just not built. Stamping a
+  `_pediment_seed_lang` meta key in `NavSeeder::apply()`'s CREATE branch, alongside `Meta::KEY`
+  and `setLanguage()`, would let `languageOf()` tell the two untagged cases apart: no marker at
+  all means legacy (default-language bucket, as today); a marker naming a language no longer in
+  `$this->lang->languages()` means orphan. It does not violate this branch's core property that a
+  claim writes exactly one meta key — the marker would be written only on CREATE, never by
+  `Claimer`. Its limit: it cannot retro-classify navs created before the marker existed, so it
+  fixes the future, not the rows already on a site being migrated. **Do not substitute a slug
+  heuristic for it:** a seeder-created nav's slug is `slugFor()`'s derived form (`primary-fr`), so
+  "untagged and slug matches `<key>-<unconfigured language>`" looks like a cheap stand-in — but
+  the production migration target's legacy menus are literally named `primary-2`, which parses
+  identically to `primary-<language "2">`. Adopting that heuristic would misclassify the exact
+  legacy-nav case the slug-blind claim rule exists to handle.
+- [ ] **Race window in the deferred header seed.** `pediment_bootstrap_maybe_seed_header()`
+  (`plugin/inc/bootstrap.php`) does `get_option()` then `delete_option()` non-atomically, so two
+  concurrent requests arriving right after a theme switch could both pass the flag check and both
+  create a `header` template part. Real, but narrow and self-limiting: the window is one theme
+  switch wide, and `pediment_bootstrap_header_template_part()` is itself idempotent per theme on
+  every subsequent request. Ruled out of scope by the migration step 6a final review; fix with an
+  atomic claim (e.g. `add_option()` as the lock) if it ever actually bites.
+- [ ] **Two CLAIM plan items can target the same post ID and the preview does not say so.**
+  `Claimer::plan()` (`plugin/src/Seeder/Claimer.php`) can emit two `claim` lines pointing at one
+  post — the entry pass and the nav pass do not cross-check, and neither do two entries whose
+  candidate queries converge. No data is harmed: `Claimer::apply()`'s already-carries-a-key guard
+  catches the second write and returns it as an error, so exactly one key lands. Only the preview
+  is less honest than it could be, showing two claims where one will happen. Ruled out of scope
+  by the migration step 6a final review. The fix is a dedupe pass over `$plan` that reports the
+  collision as `ambiguous` before the operator runs the real thing.
+- [ ] **Decision 8's producer side has no example: `client-template/patterns/` ships no
+  `header.php`.** The plugin reads a `<stylesheet>/header` block pattern to supply the initial
+  markup for the seeded header template part (step 6a decision 8), but no scaffolded client theme
+  actually provides one. So the consumer branch is exercised only by an inline
+  `register_block_pattern()` in `BootstrapTest`, and CI proves the generic-fallback branch and
+  nothing else — every real scaffolded theme takes the fallback. A genuine gap, but new feature
+  work rather than a fix, so ruled out of scope by the migration step 6a final review. Shipping a
+  `client-template/patterns/header.php` would close it and give the scaffolder a brandable header
+  out of the box.
+- [ ] **Client-blocks template nits, all ruled out of scope by the migration step 6a final
+  review.** (a) `client-template/src/blocks/example-notice/render.php` wraps
+  `get_block_wrapper_attributes()` in `wp_kses_data()`, which is the wrong escaper for an
+  already-escaped attribute string and could mangle it. (b) `client-template/functions.php` calls
+  `esc_html__()` with no `load_theme_textdomain()`, so the strings are never actually
+  translatable. (c) `client-release.yml`'s `--exclude 'src'` matches a directory named `src` at
+  any depth, not just the theme root, so a legitimately shipped nested `src/` would be dropped
+  from the zip. None of the three affects a shipping client site today.
 
 ## 🔵 Ideas / later
 
