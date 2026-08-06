@@ -51,7 +51,7 @@ final class Runner {
 			);
 		}
 
-		$mismatch = $this->languageMismatch( $manifest );
+		$mismatch = LanguageGate::mismatch( $manifest, $this->lang );
 		if ( null !== $mismatch ) {
 			return new RunResult( new Plan(), false, $manifest->path(), [ $mismatch ] );
 		}
@@ -144,70 +144,6 @@ final class Runner {
 			}
 		}
 		return $problems;
-	}
-
-	/**
-	 * Whether the configured languages disagree with the manifest's.
-	 *
-	 * Seeding into a language set the site does not actually have is the
-	 * failure this returns instead of: content written with no language, which
-	 * is invisible to every translation lookup and has previously removed a
-	 * live site's navigation outright. The manifest is the declaration; the
-	 * plugin's configuration must already match it (spec §4.3).
-	 *
-	 * @return string|null The operator-facing message, or null when they agree.
-	 */
-	private function languageMismatch( Manifest $manifest ): ?string {
-		$declared = array_keys( $manifest->languages() );
-
-		// A monolingual manifest imposes nothing: a site may run Polylang for
-		// reasons of its own and still seed a single-language theme.
-		if ( [] === $declared ) {
-			return null;
-		}
-
-		$configured = $this->lang->languages();
-
-		$declaredSorted = $declared;
-		sort( $declaredSorted );
-
-		$configuredSorted = $configured;
-		sort( $configuredSorted );
-
-		// Sorting erases order, so the set comparison above says nothing
-		// about WHICH language is default — and everything downstream
-		// (slug derivation, the front-page write, the adopt suffix) reads
-		// $this->lang->defaultLanguage(), never the manifest's. A manifest
-		// declaring `de` as default against a site configured with `en`
-		// default must fail here, or Manifest::defaultLanguage() is silently
-		// inert until someone happens to re-run `wp pediment languages`.
-		$setsMatch     = $declaredSorted === $configuredSorted;
-		$defaultsMatch = $manifest->defaultLanguage() === $this->lang->defaultLanguage();
-
-		if ( $setsMatch && $defaultsMatch ) {
-			return null;
-		}
-
-		$problems = [];
-		if ( ! $setsMatch ) {
-			$problems[] = sprintf(
-				'declares [%s] but this site has [%s] configured',
-				implode( ', ', $declared ),
-				'' === implode( '', $configured ) ? 'none' : implode( ', ', $configured )
-			);
-		}
-		if ( ! $defaultsMatch ) {
-			$problems[] = sprintf(
-				'declares "%s" as the default language but this site\'s default is "%s"',
-				$manifest->defaultLanguage(),
-				$this->lang->defaultLanguage()
-			);
-		}
-
-		return sprintf(
-			'Language mismatch: the manifest %s. Run `wp pediment languages` first — seeding into the wrong language set writes content no translation lookup can find.',
-			implode( ', and it also ', $problems )
-		);
 	}
 
 	/** @return array<string,int> mapKey => post ID for entries that already exist */

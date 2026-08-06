@@ -84,6 +84,68 @@ final class Reporter {
 		return implode( "\n", $lines );
 	}
 
+	/**
+	 * A claim report is its own renderer, not a seed report.
+	 *
+	 * Claiming writes no content, so summaryLine()'s "N to write" would read 0
+	 * over a run that just gave 95 rows their identity — the exact shape of
+	 * misreport this reporting exists to prevent.
+	 */
+	public static function claimText( ClaimResult $result ): string {
+		$plan         = $result->plan;
+		$applied      = $result->applied;
+		$manifestPath = $result->manifestPath;
+		$errors       = $result->errors;
+
+		$lines   = [];
+		$lines[] = $applied ? 'Pediment claim' : 'Pediment claim — dry run';
+		if ( '' !== $manifestPath ) {
+			$lines[] = 'manifest: ' . $manifestPath;
+		}
+
+		foreach (
+			[
+				PlanItem::KIND_ENTRY => 'PAGES & POSTS',
+				PlanItem::KIND_NAV   => 'NAV',
+			] as $kind => $heading
+		) {
+			$items = $plan->byKind( $kind );
+			if ( [] === $items ) {
+				continue;
+			}
+			$lines[] = '';
+			$lines[] = $heading;
+			foreach ( $items as $item ) {
+				$language = '' === $item->language ? '' : ' (' . $item->language . ')';
+				$lines[]  = sprintf( '  %-10s %-16s %s', $item->action, $item->key . $language, $item->note );
+			}
+		}
+
+		if ( [] !== $errors ) {
+			$lines[] = '';
+			$lines[] = 'ERRORS';
+			foreach ( $errors as $error ) {
+				$lines[] = '  - ' . $error;
+			}
+		}
+
+		$counts  = [
+			PlanItem::CLAIM     => count( $plan->byAction( PlanItem::CLAIM ) ),
+			PlanItem::NO_MATCH  => count( $plan->byAction( PlanItem::NO_MATCH ) ),
+			PlanItem::AMBIGUOUS => count( $plan->byAction( PlanItem::AMBIGUOUS ) ),
+		];
+		$lines[] = '';
+		$lines[] = sprintf(
+			'%d to claim, %d without a match, %d ambiguous.%s',
+			$counts[ PlanItem::CLAIM ],
+			$counts[ PlanItem::NO_MATCH ],
+			$counts[ PlanItem::AMBIGUOUS ],
+			$applied ? '' : ' Nothing was written (--dry-run).'
+		);
+
+		return implode( "\n", $lines );
+	}
+
 	public static function summaryLine( RunResult $result ): string {
 		$counts    = $result->plan->counts();
 		$writes    = ( $counts[ PlanItem::CREATE ] ?? 0 ) + ( $counts[ PlanItem::UPDATE ] ?? 0 ) + ( $counts[ PlanItem::RESTORE ] ?? 0 );

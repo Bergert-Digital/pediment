@@ -121,6 +121,71 @@ class NavLanguageTest extends PolylangTestCase {
 		);
 	}
 
+	/**
+	 * Pins the forced consequence of the untagged-nav fix in
+	 * `NavSeeder::languageOf()`.
+	 *
+	 * Polylang's own delete path removes the language TERM
+	 * (`Languages::delete()` -> `TranslatableObject::delete_language()` ->
+	 * `wp_delete_object_term_relationships()`), so a nav in a dropped language
+	 * is left genuinely untagged — indistinguishable in the database from the
+	 * legacy nav the fix exists for. It therefore lands in the default-language
+	 * bucket, collides with the real default-language nav, and `duplicates()`
+	 * reports it. That is the safe outcome: an errored plan writes nothing
+	 * (`NavSeeder::apply()`'s first guard), so the operator is told to delete or
+	 * re-key the orphan instead of the seed silently unlinking it. Recorded in
+	 * docs/BACKLOG.md as a design question, because the previous behaviour was a
+	 * silent `key|''` bucket.
+	 */
+	public function test_a_nav_orphaned_by_a_dropped_language_is_reported_not_ignored() {
+		$fr                    = PLL()->model->add_language( [ 'slug' => 'fr', 'name' => 'Français', 'locale' => 'fr_FR', 'flag' => 'fr', 'rtl' => 0, 'term_group' => 2 ] );
+		$this->addedLanguageId = $fr instanceof WP_Error ? null : (int) $fr->term_id;
+		PLL()->model->clean_languages_cache();
+
+		$threeLanguages = Manifest::fromArray(
+			[
+				'languages' => [
+					'en' => [ 'name' => 'English', 'locale' => 'en_US', 'default' => true ],
+					'de' => [ 'name' => 'Deutsch', 'locale' => 'de_DE' ],
+					'fr' => [ 'name' => 'Français', 'locale' => 'fr_FR' ],
+				],
+				'pages'     => [ 'about' => [ 'title' => 'About', 'content' => '' ] ],
+				'navs'      => [ 'primary' => [ 'title' => 'Primary', 'items' => [ [ 'entry' => 'about' ] ] ] ],
+			],
+			get_stylesheet_directory()
+		);
+
+		$lang     = new PolylangProvider();
+		$seeder   = new NavSeeder( $lang );
+		$entryIds = [
+			'about|en' => $this->page( 'en' ),
+			'about|de' => $this->page( 'de' ),
+			'about|fr' => $this->page( 'fr' ),
+		];
+		$ids      = $seeder->apply( $seeder->plan( $threeLanguages, $entryIds ), $threeLanguages, $entryIds );
+		$this->assertArrayHasKey( 'primary|fr', $ids, 'Precondition: a French nav must exist before the language is dropped.' );
+
+		PLL()->model->delete_language( (int) $this->addedLanguageId );
+		$this->addedLanguageId = null;
+		PLL()->model->clean_languages_cache();
+		clean_post_cache( $ids['primary|fr'] );
+		wp_cache_flush();
+
+		$this->assertFalse(
+			pll_get_post_language( $ids['primary|fr'] ),
+			'Precondition: dropping the language must leave the nav untagged, not tagged with an unconfigured language.'
+		);
+
+		$plan = ( new NavSeeder( new PolylangProvider() ) )->plan(
+			$this->manifest(),
+			[ 'about|en' => $entryIds['about|en'], 'about|de' => $entryIds['about|de'] ]
+		);
+
+		$this->assertTrue( $plan->hasErrors() );
+		$this->assertStringContainsString( (string) $ids['primary|en'], $plan->errors()[0] );
+		$this->assertStringContainsString( (string) $ids['primary|fr'], $plan->errors()[0] );
+	}
+
 	private function page( string $language ): int {
 		$id = self::factory()->post->create( [ 'post_type' => 'page', 'post_title' => 'About ' . $language ] );
 		pll_set_post_language( $id, $language );

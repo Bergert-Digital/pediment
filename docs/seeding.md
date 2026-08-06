@@ -420,10 +420,18 @@ On every entry, the Differ applies one rule, in order:
 3. Otherwise → content is up for grabs: write it if `_pediment_seed_source`
    shows the manifest/pattern changed, leave it alone if not.
 
-Because rule 2 also fires for a row the engine has simply never touched yet
-(no `_pediment_seed_hash` at all), running `wp pediment seed` for the first
-time against an already-live site is safe — every existing page is treated as
-"edited" and only gets structure applied, never a silent content overwrite.
+Because rule 2 also fires for a row the engine has simply never written a
+hash to yet, a *claimed* row's very first `wp pediment seed` is safe — it is
+treated as edited and only gets structure applied, never a silent content
+overwrite. That safety net only covers rows the engine can see in the first
+place: `StateReader::read()` only reads posts that already carry
+`_pediment_seed_key` at all (`meta_key => Meta::KEY, meta_compare =>
+'EXISTS'`), so an *unclaimed* legacy row has no `$actual` entry whatsoever.
+For that row `Differ::diff()` never reaches rule 2 — `$have` is `null`, rule
+1 fires, and `wp pediment seed` plans a **create**, duplicating the row
+instead of protecting it. Rule 2's protection is conditional on the row
+already carrying a key; `wp pediment claim` (below) is what gives an existing
+site's content that key in the first place, before its first seed.
 
 ## Reading a plan (`wp pediment seed --dry-run`)
 
@@ -574,6 +582,258 @@ and bare `"id":<n>` occurrences are. Adopting a page with responsive images
 will commit environment-specific srcset URLs; review the diff before
 committing.
 
+## wp pediment claim
+
+```
+wp pediment claim [--dry-run]
+```
+
+`StateReader` resolves actual state purely from `_pediment_seed_key` —
+nothing else — so a first `wp pediment seed` against a site whose content
+predates the seeding engine sees no existing rows at all and plans a
+`CREATE` for every manifest entry, duplicating the whole site instead of
+adopting it. A claim is the one-time bridge: it matches existing rows to
+manifest entries by the things a legacy row and a manifest entry can still
+agree on, and writes exactly one meta key, `_pediment_seed_key`
+(`Pediment\Seeder\Claimer`, `plugin/src/Seeder/Claimer.php`).
+
+That's the only thing it writes. It never writes `_pediment_seed_hash` — and
+the omission is the point, not an oversight: the Differ's rule 2 above ("The
+two hashes") treats a missing hash exactly like an edited row, so a claimed
+row comes out of the very next seed *protected* — structure is enforced,
+title and content are left alone. Bringing a page under git's control after
+that is `wp pediment adopt <key>`, the same command that adopts any other row.
+
+### Precondition: configure languages before you claim
+
+On a multilingual site, run [`wp pediment languages`](#wp-pediment-languages)
+**before** the first claim, not after. `ClaimRunner::run()` refuses to plan
+anything while the manifest's declared languages and the site's configured
+ones disagree — the same `LanguageGate::mismatch()` check `wp pediment seed`
+applies, with the same message — because claiming with the languages
+unconfigured is a mistake a re-run cannot repair. With Polylang inactive or
+unconfigured, `LanguageRegistry` hands back `NullProvider`, whose language
+list is a single empty string: the claim would key only the default-slug rows
+and report every other language's live page as `no-match`. Configure the
+languages afterwards, seed, and each of those unclaimed pages trips the
+Differ's rule 1 and is created again alongside the live one — the exact
+duplication a claim exists to prevent.
+
+`wp pediment languages` is WP-CLI only; it has **no wp-admin equivalent**.
+The option that makes `wp_navigation` translatable, in particular, can never
+be ticked by hand (`PolylangSetup::configure()`). So on admin-only hosting a
+multilingual claim is not self-service: arrange CLI access for that one
+command first.
+
+### What can be claimed
+
+`Claimer::STATUSES` never includes `trash`; a trashed post is not a candidate
+for anything a claim does. Beyond that, `Claimer::planOne()` walks each
+unresolved `(key, language)` pair in `Manifest::entriesInDependencyOrder()`
+(a parent is claimed before the children whose match depends on it) and
+applies these checks in the order the code applies them — a precondition
+first, then the candidate filters:
+
+**Precondition — parent.** If the spec declares a `parent`, that parent's
+key must already be resolved *in this language* before anything else runs.
+An unresolved parent is an immediate `no-match` — `Claimer::candidates()` is
+never even called for this pair — because a nested match can't be verified
+against a parent with no live post yet.
+
+Once that precondition passes (or there is no parent to check), `candidates()`
+runs one query and then filters its results, in order:
+
+1. **Type and slug.** The query asks for the entry's `post_type` and the
+   language-specific slug `EntrySpec::slugFor()` computes — the derived
+   `<slug>-<lang>` suffix on a non-default language, same rule seeding itself
+   uses (see "The derived slug rule" above).
+2. **Never trash.** The same query's `post_status` list — publish, draft,
+   pending, private, future only.
+3. **Never already keyed.** A row carrying any `_pediment_seed_key` is
+   filtered out next — a claim never steals a row that belongs to another
+   key.
+4. **Parent.** A candidate's `post_parent` must equal the already-resolved
+   parent's post ID (`0` when the spec declares none) — a same-slug page
+   nested somewhere else is a different page.
+5. **Language.** `Claimer::languageMatches()` has three branches: on a
+   monolingual site (`$language === ''`) every candidate matches, since
+   there is only one language to compare against. On a multilingual site, a
+   candidate's own language must equal the language being claimed for
+   (`translationOf($postId, $language) === $postId`), except that a post
+   carrying no language at all (`LanguageProvider::hasLanguage()` false) is a
+   candidate for the *default* language only. That's the
+   monolingual-site-adopting-Polylang case; claiming an untagged post into a
+   non-default language would silently move it between languages.
+
+Exactly one surviving candidate is claimed. Zero is reported `no-match` — the
+next `wp pediment seed` will create the page, which is the correct outcome
+for something that genuinely doesn't exist yet. Two or more is reported
+`ambiguous`, and **nothing is written** for that entry: the claim can't tell
+which row is the real one, and guessing wrong would permanently key the
+wrong post as that entry's identity while the page you actually meant sits
+unclaimed and orphaned.
+
+Navs are matched differently, because a legacy navigation entity's slug is
+whatever the site's previous seeder happened to give it — slug alone is not
+reliable evidence there (`Claimer::planNav()`). When the manifest declares
+exactly one nav and the language holds exactly one unclaimed `wp_navigation`
+entity, that pairing is unambiguous and is claimed without even checking the
+slug. Otherwise the fallback is the derived slug `NavSeeder`'s own
+`slugFor()` computes, and a nav is claimed only if exactly one unclaimed
+entity's slug matches it. The reporting split is *not* the same as entries':
+`no-match` is reported only when there are **zero** unclaimed navigation
+entities in that language at all. A single unclaimed nav whose slug does not
+match the derived one is reported `ambiguous`, not `no-match` — the claim can
+see a menu there and will not guess.
+
+> **Check every nav line in a claim preview by hand.** Navs are the one place
+> where the claim's "writes nothing but the identity" promise does not carry
+> through to the seed that follows. There is no hash arbitration for navs at
+> all: menu membership is git-owned, so `NavSeeder::plan()` compares the
+> serialized item list and emits an `update` whose note reads *"membership is
+> git-owned; editor changes to this menu are reverted."* A claimed nav's links
+> are therefore **rewritten by the very next seed** — unlike a claimed page,
+> which comes out `protected`.
+>
+> That matters because of the slug-blind rule above. On a live site whose only
+> Site-Editor menu is, say, a footer menu, one declared nav plus one unclaimed
+> `wp_navigation` is enough: the claim keys that footer menu as `primary`
+> without comparing slug or title, and the next seed replaces its links with
+> the manifest's. The rule is deliberate — legacy menus carry slugs like
+> `primary-2` that cannot slug-match, which is the case it was built for — so
+> the safeguard is you, reading the `navigation "<title>" (ID <n>)` note in
+> `wp pediment claim --dry-run` and confirming it names the menu you meant.
+
+### Re-running claim
+
+Claiming is idempotent and safe to re-run. A row that already carries a key
+is excluded from `Claimer::candidates()` on the next run, and for entries
+`Claimer::plan()` never even calls `planOne()` for a `(key, language)` pair
+`StateReader::read()` already resolves — it's simply absent from the plan.
+
+Navs need their own bookkeeping for the same guarantee, because
+`StateReader::EXCLUDED_TYPES` excludes `wp_navigation` — the `$resolved` map
+that protects entries has no opinion on navs at all. `Claimer::plan()` builds
+a second lookup for exactly this, `NavSeeder::keyed()`, and skips any nav key
+it already reports before calling `planNav()`. Without that skip, a re-run
+over a site with one already-claimed nav and one stray, unrelated
+`wp_navigation` post would find the stray as the *only* unclaimed candidate
+and claim it under the key the first nav already carries — two posts sharing
+one `_pediment_seed_key`, the one state the engine treats as fatal
+everywhere else. `9cfc10f` closed exactly this gap; if you're working from an
+older checkout, update first.
+
+### Worked example
+
+Copied from an actual run against a fixture site where `about` had lost its
+seed key, `contact`'s underlying page had been renamed out from under its
+slug, and two unclaimed pages both carried the slug `mega-demo`:
+
+```
+Pediment claim — dry run
+manifest: /var/www/html/wp-content/themes/pediment-fixture/seed/manifest.php
+
+PAGES & POSTS
+  claim      about (en)       page "about" (ID 7)
+  no-match   contact (en)     no unclaimed page with slug "contact" — the next seed will create it.
+  ambiguous  mega-demo (en)   2 unclaimed page posts share the slug "mega-demo" (IDs 10, 32) — claim nothing until one is deleted or re-slugged.
+
+1 to claim, 1 without a match, 1 ambiguous. Nothing was written (--dry-run).
+Success: Dry run complete — nothing was written.
+```
+
+`--dry-run` prints this and writes nothing. The same command without it calls
+`Claimer::apply()`, which writes `_pediment_seed_key` for every `claim` line
+and stops there — `no-match` and `ambiguous` lines are report-only either
+way.
+
+### Worked example: claim through to protected
+
+The example above stops at the claim's own report. This one continues one
+step further, onto the *next* `wp pediment seed`, to show the payoff the
+claim exists for: a claimed row reads back as `protected`, not `unchanged`,
+because `Claimer::apply()` never wrote a hash. Captured from a rehearsal
+against three pages (`about` ID 46, `contact` ID 8, `blog` ID 9) with every
+seed meta key — `_pediment_seed_key`, `_pediment_seed_hash`,
+`_pediment_seed_source` — stripped, so the setup actually models a page that
+predates the seeding engine (see the note below for why that distinction
+matters):
+
+```
+Pediment claim — dry run
+manifest: /var/www/html/wp-content/themes/pediment-fixture/seed/manifest.php
+
+PAGES & POSTS
+  claim      about (en)       page "about" (ID 46)
+  claim      contact (en)     page "contact" (ID 8)
+  claim      blog (en)        page "blog" (ID 9)
+
+3 to claim, 0 without a match, 0 ambiguous. Nothing was written (--dry-run).
+Success: Dry run complete — nothing was written.
+```
+
+```
+Pediment claim
+manifest: /var/www/html/wp-content/themes/pediment-fixture/seed/manifest.php
+
+PAGES & POSTS
+  claim      about (en)       page "about" (ID 46)
+  claim      contact (en)     page "contact" (ID 8)
+  claim      blog (en)        page "blog" (ID 9)
+
+3 to claim, 0 without a match, 0 ambiguous.
+Success: Claim applied.
+```
+
+Nothing so far has touched content — both runs above only name and then
+write a `_pediment_seed_key`. The next seed's dry run is where the claim's
+promise shows up:
+
+```
+Pediment seed — dry run
+manifest: /var/www/html/wp-content/themes/pediment-fixture/seed/manifest.php
+
+MEDIA
+  unchanged   logo
+
+PAGES & POSTS
+  unchanged   home
+  protected   about            never seeded by this engine — content left alone; run `wp pediment adopt` to take it into git
+  protected   contact          never seeded by this engine — content left alone; run `wp pediment adopt` to take it into git
+  protected   blog             never seeded by this engine — content left alone; run `wp pediment adopt` to take it into git
+  unchanged   mega-demo
+  ... (remaining unchanged rows and the TRANSLATIONS block elided — same shape as the "Reading a plan" example above)
+
+0 to write, 3 protected, 0 orphan, 22 unchanged. Nothing was written (--dry-run).
+Success: Dry run complete — nothing was written.
+```
+
+`--dry-run` again, so this still wrote nothing — it only reports what a real
+`wp pediment seed` would do. Three claimed rows, three `protected` lines, the
+summary's `protected` count matching, and the note text is exactly rule 2's
+`'' === $have->storedHash` branch (see "The two hashes" above): the row was
+never seeded by this engine, so title and content are left alone.
+
+**Building a rehearsal or test fixture for this sequence, deleting only
+`_pediment_seed_key` from a page that has already been through a real seed
+is not enough** — the stored hash and source hash survive untouched, still
+match the untouched content, and the claim only restores the identity key,
+so the next seed's Differ reaches rule 3 (in sync) before it ever gets to
+rule 2, and reports `unchanged` instead of `protected`. Both outcomes are
+safe and neither writes content; the weaker setup just can't demonstrate the
+protection property, because the surviving hash makes the row look
+already-in-sync rather than never-seeded. A faithful rehearsal of a legacy
+page has to delete `_pediment_seed_hash` and `_pediment_seed_source` too, not
+just the identity key.
+
+### The wp-admin path
+
+Admin-only hosting has no WP-CLI, so Settings → Pediment Theme → Seeding
+carries the identical claim under two buttons beneath "Claim existing
+content": **Preview claim** and **Claim content**
+(`plugin/inc/seeding-admin.php`). Preview first, the same way "Apply plan"
+below has no confirmation step — **Claim content** runs on click.
+
 ## The wp-admin tab
 
 Settings → Pediment Theme → Seeding runs the identical `Runner` WP-CLI does —
@@ -608,6 +868,31 @@ Two shapes:
   Media and navs report the identical shape for their own kinds
   (`media.<key> is carried by N attachments…`, `navs.<key> is carried by N
   navigation entities…`).
+
+  A specific route into the nav case: removing a configured language in
+  Polylang deletes that language's term relationship outright
+  (`Languages::delete()`), so a nav that was seeded in the removed language
+  becomes byte-identical, database-wise, to a legacy nav that was never
+  language-tagged — both resolve to the default-language bucket
+  (`NavSeeder::languageOf()`). The next seed then collides the orphan with
+  the real default-language nav and reports, verbatim
+  (`NavSeeder::duplicates()`):
+
+  `navs.primary is carried by 2 navigation entities (IDs 5, 12). Identity
+  must be unique — delete or re-key the extras.`
+
+  This is deliberate, not a regression (see docs/BACKLOG.md): a plan with
+  any error writes nothing at all — media, entries, and navs alike
+  (`Runner::run()` returns before any of the three `apply()` calls run) — so
+  the failure is loud rather than a silent loss of the menu's translation
+  link. Fix: delete or re-key the orphaned navigation entity, then re-run.
+  Telling the two apart is easy at this point even though no automated rule
+  can: the orphan is the one with **no language assigned** — the drop
+  deleted its term — while the nav the seeder still manages carries the
+  default language. Its slug is also the giveaway, still derived from the
+  language you removed (`primary-fr`). Until you resolve it, every
+  subsequent `wp pediment seed` on that site is blocked outright, not just
+  its nav phase.
 
 A related, always-fatal case: a manifest entry's `post_type` doesn't match
 what's already in the database under that key (`post_type` is never rewritten)
@@ -653,6 +938,28 @@ in that case even though it may have applied a valid partial write. Reading
 the full report matters: "the run continued" and "nothing was applied" are
 distinguished in the ERRORS heading, but a `VERIFICATION FAILED` section can
 appear on top of either.
+
+### Ambiguous claim
+
+`wp pediment claim` reports `ambiguous`, and writes nothing for that key,
+when more than one unclaimed row survives every matching rule in "What can be
+claimed" above. For an entry:
+
+`2 unclaimed page posts share the slug "mega-demo" (IDs 10, 32) — claim
+nothing until one is deleted or re-slugged.`
+
+A nav reports the same shape for a different reason — the fallback slug match
+found more than one unclaimed navigation entity and none of them carries the
+derived slug:
+
+`2 unclaimed navigation entities (IDs 4, 9) and none whose slug is "primary"
+— re-slug the right one, or claim it by hand.`
+
+Fix: delete or re-slug the extra row — for a nav, re-slug (or re-title, so
+the derived slug lands correctly) the one you don't want matched — so exactly
+one candidate remains, then re-run `wp pediment claim`. An ambiguous line
+never wrote anything, so re-running after the fix is exactly as safe as any
+other claim re-run (see "Re-running claim" above).
 
 ## Limitations, by design
 

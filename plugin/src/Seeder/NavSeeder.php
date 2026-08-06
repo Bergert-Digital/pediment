@@ -194,6 +194,7 @@ final class NavSeeder {
 				$ids[ $item->mapKey() ] = $postId;
 			}
 
+			$this->repairLanguage( $plan, $ids );
 			$this->linkTranslationGroups( $ids );
 
 			return $ids;
@@ -251,7 +252,11 @@ final class NavSeeder {
 		return implode( "\n", $links );
 	}
 
-	private function slugFor( NavSpec $spec, string $language ): string {
+	/**
+	 * Public because Claimer derives the same slug when matching a legacy
+	 * navigation entity; the derivation must not exist twice.
+	 */
+	public function slugFor( NavSpec $spec, string $language ): string {
 		return sanitize_title( $spec->key . ( '' !== $language ? '-' . $language : '' ) );
 	}
 
@@ -267,10 +272,13 @@ final class NavSeeder {
 	 * identity model exists to prevent.
 	 *
 	 * Known consequence, not a bug fixed here: keyed() detects a nav's language
-	 * by matching it against $this->lang->languages() — the currently
-	 * configured set — so a nav whose own Polylang language term names a
-	 * language no longer configured matches no candidate and is filed under
-	 * the empty-language key (`key|''`). The guard just above
+	 * through languageOf(), which matches it against $this->lang->languages() —
+	 * the currently configured set — so a nav that still carries a language
+	 * term naming a language no longer configured matches no candidate and is
+	 * filed under the empty-language key (`key|''`). (A language dropped
+	 * through Polylang's own delete path does NOT reach this state; it leaves
+	 * the nav untagged, which languageOf() resolves to the default language.
+	 * See languageOf()'s docblock.) The guard just above
 	 * (`'' === $language`) then excludes it from every map handed to
 	 * linkTranslations(). Its row is untouched, still carrying the dropped
 	 * language in Polylang's own post-language term, but the still-configured
@@ -354,8 +362,14 @@ final class NavSeeder {
 		return array_filter( $this->keyed(), static fn( array $postIds ): bool => count( $postIds ) > 1 );
 	}
 
-	/** @return array<string,int[]> navKey|language => every post ID carrying that identity. */
-	private function keyed(): array {
+	/**
+	 * Public because Claimer needs the same already-claimed lookup to skip a
+	 * nav that already carries its key when planning claims; the query must
+	 * not exist twice.
+	 *
+	 * @return array<string,int[]> navKey|language => every post ID carrying that identity.
+	 */
+	public function keyed(): array {
 		$ids = [];
 		foreach (
 			get_posts(
@@ -380,15 +394,91 @@ final class NavSeeder {
 			if ( '' === $key ) {
 				continue;
 			}
-			$language = '';
-			foreach ( $this->lang->languages() as $candidate ) {
-				if ( $this->lang->translationOf( (int) $nav->ID, $candidate ) === (int) $nav->ID ) {
-					$language = $candidate;
-					break;
-				}
-			}
-			$ids[ $key . '|' . $language ][] = (int) $nav->ID;
+			$ids[ $key . '|' . $this->languageOf( (int) $nav->ID ) ][] = (int) $nav->ID;
 		}
 		return $ids;
+	}
+
+	/**
+	 * Which language bucket a keyed navigation entity belongs in.
+	 *
+	 * Two distinct states used to collapse into the same empty-language bucket,
+	 * and only one of them belongs there:
+	 *
+	 * - **Untagged.** A nav that carries no Polylang language term at all. On
+	 *   admin-only hosting that is the DEFAULT state, not a corner case:
+	 *   `wp_navigation` is made translatable only by `PolylangSetup::configure()`
+	 *   via `wp pediment languages`, which has no wp-admin front door, so every
+	 *   legacy menu on such a site is untagged. `Claimer` deliberately claims an
+	 *   untagged nav for the default language (`Claimer::languageMatches()`) and
+	 *   writes only the seed key. Filing it under `key|''` meant the next seed
+	 *   found no `key|<default>`, emitted CREATE, and wrote a SECOND entity
+	 *   carrying the same key — invisible to `duplicates()`, which bucketed the
+	 *   two apart. `StateReader::languageOf()` already resolves an untagged page
+	 *   to the default language; this is the same rule for navs.
+	 * - **Tagged with a language that is no longer configured.** Still `''`. This
+	 *   is the case `linkTranslationGroups()`'s docblock discusses, and it is
+	 *   left exactly as it was — a nav that really does carry a language term
+	 *   outside the configured set is not the default language, and calling it
+	 *   one would hand the default language's seed a foreign-language row to
+	 *   overwrite.
+	 *
+	 * Note that DROPPING a language in Polylang does not produce the second
+	 * state: `Languages::delete()` deletes the language term itself, and
+	 * `TranslatableObject::delete_language()` calls
+	 * `wp_delete_object_term_relationships()`, so the nav is left genuinely
+	 * untagged and `pll_get_post_language()` returns `false` (verified against
+	 * Polylang in this repo's test environment). Such a nav therefore lands in
+	 * the default-language bucket from here on. That is forced, not chosen:
+	 * once Polylang has deleted the term there is nothing left in the database
+	 * that distinguishes it from a legacy nav that was never tagged, and the
+	 * legacy nav is the case that must work. It matches how entries have always
+	 * behaved — `StateReader::languageOf()` resolves an untagged post to the
+	 * default language and `Applier::repairLanguage()` tags it — so navs stop
+	 * being the outlier. See docs/BACKLOG.md.
+	 */
+	private function languageOf( int $postId ): string {
+		foreach ( $this->lang->languages() as $candidate ) {
+			if ( $this->lang->translationOf( $postId, $candidate ) === $postId ) {
+				return $candidate;
+			}
+		}
+
+		return $this->lang->hasLanguage( $postId ) ? '' : $this->lang->defaultLanguage();
+	}
+
+	/**
+	 * Tag a pre-existing navigation entity that has no language at all.
+	 *
+	 * The nav-side mirror of `Applier::repairLanguage()`, needed for the same
+	 * migration case and reached the same way: a claimed legacy nav carries the
+	 * seed key and no language term, so without this it would stay untagged
+	 * forever — invisible to `pll_get_post()`, and to the per-language header
+	 * lookup in `inc/nav-language.php`. A CREATE is skipped because
+	 * `apply()` already tagged it in the same write. `hasLanguage()` is the only
+	 * check: a nav that already carries a (possibly different) language is left
+	 * exactly as it is, because re-tagging it is an editorial decision.
+	 *
+	 * Runs before `linkTranslationGroups()`: `pll_save_post_translations()` can
+	 * only put a post in a group once that post has a language.
+	 *
+	 * A no-op on a monolingual site — `NullProvider::hasLanguage()` is always
+	 * true.
+	 *
+	 * @param array<string,int> $ids navKey|language => post ID
+	 */
+	private function repairLanguage( Plan $plan, array $ids ): void {
+		foreach ( $plan->byKind( PlanItem::KIND_NAV ) as $item ) {
+			if ( PlanItem::CREATE === $item->action || '' === $item->language ) {
+				continue;
+			}
+			$postId = (int) ( $ids[ $item->mapKey() ] ?? 0 );
+			if ( $postId <= 0 ) {
+				continue;
+			}
+			if ( ! $this->lang->hasLanguage( $postId ) ) {
+				$this->lang->setLanguage( $postId, $item->language );
+			}
+		}
 	}
 }

@@ -97,7 +97,54 @@ class SeedingAdminTest extends WP_UnitTestCase {
 
 		$this->assertStringContainsString( 'name="pediment_seed_action" value="preview"', $html );
 		$this->assertStringContainsString( 'name="pediment_seed_action" value="apply"', $html );
-		$this->assertSame( 2, substr_count( $html, 'name="_wpnonce"' ), 'each form carries its own nonce' );
-		$this->assertSame( 2, substr_count( $html, '<form' ), 'two forms, one per action' );
+		$this->assertStringContainsString( 'name="pediment_seed_action" value="claim-preview"', $html );
+		$this->assertStringContainsString( 'name="pediment_seed_action" value="claim-apply"', $html );
+		$this->assertSame( 4, substr_count( $html, 'name="_wpnonce"' ), 'each form carries its own nonce' );
+		$this->assertSame( 4, substr_count( $html, '<form' ), 'four forms, one per action' );
+	}
+
+	private function legacyHome(): int {
+		return self::factory()->post->create(
+			[ 'post_type' => 'page', 'post_name' => 'home', 'post_title' => 'Legacy home', 'post_status' => 'publish' ]
+		);
+	}
+
+	public function test_a_claim_preview_reports_without_writing() {
+		wp_set_current_user( self::factory()->user->create( [ 'role' => 'administrator' ] ) );
+		$id                            = $this->legacyHome();
+		$_POST['pediment_seed_action'] = 'claim-preview';
+		$_POST['_wpnonce']             = wp_create_nonce( 'pediment_seed' );
+
+		$report = pediment_seed_admin_handle_post();
+
+		$this->assertNotNull( $report );
+		$this->assertStringContainsString( 'Pediment claim — dry run', $report );
+		$this->assertSame( '', get_post_meta( $id, \Pediment\Seeder\Meta::KEY, true ) );
+	}
+
+	public function test_a_claim_apply_writes_the_key_and_nothing_else() {
+		wp_set_current_user( self::factory()->user->create( [ 'role' => 'administrator' ] ) );
+		$id                            = $this->legacyHome();
+		$_POST['pediment_seed_action'] = 'claim-apply';
+		$_POST['_wpnonce']             = wp_create_nonce( 'pediment_seed' );
+
+		$report = pediment_seed_admin_handle_post();
+
+		$this->assertStringContainsString( 'Pediment claim', $report );
+		$this->assertSame( 'home', get_post_meta( $id, \Pediment\Seeder\Meta::KEY, true ) );
+		$this->assertSame( '', get_post_meta( $id, \Pediment\Seeder\Meta::HASH, true ) );
+		$this->assertSame( 'Legacy home', get_post( $id )->post_title );
+	}
+
+	public function test_a_subscriber_cannot_claim() {
+		wp_set_current_user( self::factory()->user->create( [ 'role' => 'subscriber' ] ) );
+		$id                            = $this->legacyHome();
+		$_POST['pediment_seed_action'] = 'claim-apply';
+		$_POST['_wpnonce']             = wp_create_nonce( 'pediment_seed' );
+
+		$report = pediment_seed_admin_handle_post();
+
+		$this->assertNull( $report );
+		$this->assertSame( '', get_post_meta( $id, \Pediment\Seeder\Meta::KEY, true ) );
 	}
 }

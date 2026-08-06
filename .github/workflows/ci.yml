@@ -86,6 +86,18 @@ jobs:
 
   scaffold:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - answers: client-kit/tests/fixtures/answers-ci.json
+            slug: pediment-ci-client
+            flags: ""
+            assert-block: ""
+          - answers: client-kit/tests/fixtures/answers-blocks.json
+            slug: ci-blocks
+            flags: "--with-blocks"
+            assert-block: "ci-blocks/example-notice"
     steps:
       - uses: actions/checkout@v4
 
@@ -115,19 +127,21 @@ jobs:
           git config --global user.email "ci@pediment.invalid"
           git config --global user.name "Pediment CI"
           node client-kit/scripts/scaffold.mjs \
-            --answers client-kit/tests/fixtures/answers-ci.json \
-            --target "$RUNNER_TEMP/pediment-ci-client" \
-            --template client-template
+            --answers ${{ matrix.answers }} \
+            --target "$RUNNER_TEMP/${{ matrix.slug }}" \
+            --template client-template \
+            ${{ matrix.flags }}
 
       - name: Seed it and assert it renders
         uses: ./.github/actions/seed-check
         with:
-          theme-path: ${{ runner.temp }}/pediment-ci-client
+          theme-path: ${{ runner.temp }}/${{ matrix.slug }}
           plugin-source: ${{ github.workspace }}/stage-plugin/pediment
+          assert-block: ${{ matrix.assert-block }}
 
       - name: Upload the scaffolded site on failure
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: scaffolded-client
-          path: ${{ runner.temp }}/pediment-ci-client
+          name: scaffolded-client-${{ matrix.slug }}
+          path: ${{ runner.temp }}/${{ matrix.slug }}
