@@ -11,7 +11,6 @@ namespace Pediment\Cli;
 
 use Pediment\Seeder\ClaimResult;
 use Pediment\Seeder\ClaimRunner;
-use Pediment\Seeder\Plan;
 use Pediment\Seeder\Reporter;
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -46,7 +45,7 @@ final class ClaimCommand {
 		$dryRun = isset( $assocArgs['dry-run'] );
 
 		$result = ( new ClaimRunner() )->run( [ 'dry_run' => $dryRun ] );
-		$output = self::render( $result->plan, $result->applied, $result->manifestPath, $result->errors );
+		$output = self::render( $result );
 
 		if ( ! class_exists( '\WP_CLI' ) ) {
 			return;
@@ -71,9 +70,11 @@ final class ClaimCommand {
 	/**
 	 * The exact bytes the command prints, so the shape can be tested.
 	 *
-	 * @param string[] $errors
+	 * Takes the ClaimResult whole. Destructuring it into four arguments here
+	 * only to rebuild an identical one on the next line contradicted the
+	 * single-claim-path extraction this seam was created by (Task 7b).
 	 */
-	public static function render( Plan $plan, bool $applied, string $manifestPath, array $errors ): string {
-		return Reporter::claimText( new ClaimResult( $plan, $applied, $manifestPath, $errors ) );
+	public static function render( ClaimResult $result ): string {
+		return Reporter::claimText( $result );
 	}
 }
