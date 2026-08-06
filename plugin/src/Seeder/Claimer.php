@@ -59,19 +59,27 @@ final class Claimer {
 			}
 		}
 
-		// StateReader::EXCLUDED_TYPES excludes wp_navigation, so $resolved
-		// above has no opinion on navs: this is nav claiming's own source of
-		// truth for "already carries the key," the same role $actual plays
-		// for entries.
-		$claimedNavs  = ( new NavSeeder( $this->lang ) )->keyed();
+		// One instance for the whole nav pass, and no query at all when the
+		// manifest declares no navs: keyed() runs a get_posts() whose result
+		// the loop below would never look at.
 		$declaredNavs = count( $manifest->navs() );
-		foreach ( $this->lang->languages() as $language ) {
-			foreach ( $manifest->navs() as $spec ) {
-				$mapKey = $spec->key . '|' . $language;
-				if ( isset( $claimedNavs[ $mapKey ] ) ) {
-					continue; // Already carries the key: nothing to claim.
+		if ( $declaredNavs > 0 ) {
+			$navSeeder = new NavSeeder( $this->lang );
+
+			// StateReader::EXCLUDED_TYPES excludes wp_navigation, so $resolved
+			// above has no opinion on navs: this is nav claiming's own source of
+			// truth for "already carries the key," the same role $actual plays
+			// for entries.
+			$claimedNavs = $navSeeder->keyed();
+
+			foreach ( $this->lang->languages() as $language ) {
+				foreach ( $manifest->navs() as $spec ) {
+					$mapKey = $spec->key . '|' . $language;
+					if ( isset( $claimedNavs[ $mapKey ] ) ) {
+						continue; // Already carries the key: nothing to claim.
+					}
+					$items[] = $this->planNav( $navSeeder, $spec, $language, $declaredNavs, $default );
 				}
-				$items[] = $this->planNav( $spec, $language, $declaredNavs, $default );
 			}
 		}
 
@@ -211,14 +219,14 @@ final class Claimer {
 	 * is unambiguous and is claimed. Otherwise fall back to the derived slug,
 	 * and report rather than guess.
 	 */
-	private function planNav( NavSpec $spec, string $language, int $declaredNavs, string $default ): PlanItem {
+	private function planNav( NavSeeder $navSeeder, NavSpec $spec, string $language, int $declaredNavs, string $default ): PlanItem {
 		$candidates = $this->navCandidates( $language, $default );
 
 		if ( 1 === $declaredNavs && 1 === count( $candidates ) ) {
 			return $this->navItem( PlanItem::CLAIM, $spec, $language, (int) $candidates[0] );
 		}
 
-		$slug   = ( new NavSeeder( $this->lang ) )->slugFor( $spec, $language );
+		$slug   = $navSeeder->slugFor( $spec, $language );
 		$bySlug = array_values(
 			array_filter(
 				$candidates,
