@@ -210,46 +210,81 @@ final class NavSeeder {
 
 	/** @param array<string,int> $entryIds */
 	public function serialize( NavSpec $spec, string $language, array $entryIds ): string {
-		$links = [];
+		$blocks = [];
 
 		foreach ( $spec->items as $item ) {
-			if ( isset( $item['entry'] ) ) {
-				$postId = (int) ( $entryIds[ $item['entry'] . '|' . $language ] ?? 0 );
-				if ( 0 === $postId ) {
-					// Reported by apply() via unresolvedEntries(), not from here:
-					// serialize() must stay pure, and an unresolved link has to be
-					// reported on EVERY run, not only the one that rewrites the nav.
-					continue;
-				}
-				$post    = get_post( $postId );
-				$links[] = '<!-- wp:navigation-link ' . wp_json_encode(
-					[
-						'label' => (string) ( $item['label'] ?? ( $post ? $post->post_title : '' ) ),
-						'type'  => $post ? $post->post_type : 'page',
-						'id'    => $postId,
-						'kind'  => 'post-type',
-						'url'   => (string) get_permalink( $postId ),
-					],
-					// JSON_UNESCAPED_SLASHES matches what the block editor writes, and
-					// keeps the markup stable under KSES, which strips `\/` on save.
-					JSON_UNESCAPED_SLASHES
-				) . ' /-->';
+			$item  = (array) $item;
+			$attrs = $this->linkAttrs( $item, $language, $entryIds );
+
+			// Reported by apply() via unresolvedEntries(), not from here:
+			// serialize() must stay pure, and an unresolved link has to be
+			// reported on EVERY run, not only the one that rewrites the nav.
+			// A submenu parent takes its children with it — a submenu whose own
+			// link is missing is not a menu anyone meant, and promoting the
+			// children to the top level would silently restructure the header.
+			if ( [] === $attrs ) {
 				continue;
 			}
 
-			$links[] = '<!-- wp:navigation-link ' . wp_json_encode(
-				[
-					'label' => (string) $item['label'],
-					'url'   => (string) $item['url'],
-					'kind'  => 'custom',
-				],
-				// JSON_UNESCAPED_SLASHES matches what the block editor writes, and
-				// keeps the markup stable under KSES, which strips `\/` on save.
-				JSON_UNESCAPED_SLASHES
-			) . ' /-->';
+			if ( ! isset( $item['children'] ) ) {
+				$blocks[] = '<!-- wp:navigation-link ' . wp_json_encode( $attrs, JSON_UNESCAPED_SLASHES ) . ' /-->';
+				continue;
+			}
+
+			$children = [];
+			foreach ( (array) $item['children'] as $child ) {
+				$childAttrs = $this->linkAttrs( (array) $child, $language, $entryIds );
+				if ( [] === $childAttrs ) {
+					continue;
+				}
+				$children[] = '<!-- wp:navigation-link ' . wp_json_encode( $childAttrs, JSON_UNESCAPED_SLASHES ) . ' /-->';
+			}
+
+			$blocks[] = '<!-- wp:navigation-submenu ' . wp_json_encode( $attrs, JSON_UNESCAPED_SLASHES ) . ' -->'
+				. ( [] === $children ? "\n" : "\n" . implode( "\n", $children ) . "\n" )
+				. '<!-- /wp:navigation-submenu -->';
 		}
 
-		return implode( "\n", $links );
+		return implode( "\n", $blocks );
+	}
+
+	/**
+	 * The block attributes one navigation item resolves to.
+	 *
+	 * Key order is load-bearing, not cosmetic: plan() decides UPDATE by
+	 * comparing stored post_content against a fresh serialize(), so reordering
+	 * these would make every nav on every site rewrite itself once.
+	 *
+	 * JSON_UNESCAPED_SLASHES matches what the block editor writes, and keeps
+	 * the markup stable under KSES, which strips `\/` on save.
+	 *
+	 * @param array<string,mixed> $item
+	 * @param array<string,int>   $entryIds
+	 * @return array<string,mixed> Empty when an entry item has no resolved post.
+	 */
+	private function linkAttrs( array $item, string $language, array $entryIds ): array {
+		if ( ! isset( $item['entry'] ) ) {
+			return [
+				'label' => (string) $item['label'],
+				'url'   => (string) $item['url'],
+				'kind'  => 'custom',
+			];
+		}
+
+		$postId = (int) ( $entryIds[ $item['entry'] . '|' . $language ] ?? 0 );
+		if ( 0 === $postId ) {
+			return [];
+		}
+
+		$post = get_post( $postId );
+
+		return [
+			'label' => (string) ( $item['label'] ?? ( $post ? $post->post_title : '' ) ),
+			'type'  => $post ? $post->post_type : 'page',
+			'id'    => $postId,
+			'kind'  => 'post-type',
+			'url'   => (string) get_permalink( $postId ),
+		];
 	}
 
 	/**
