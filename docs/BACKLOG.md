@@ -362,6 +362,25 @@ _(none currently known — verify by running a user-journey audit)_
   translatable. (c) `client-release.yml`'s `--exclude 'src'` matches a directory named `src` at
   any depth, not just the theme root, so a legitimately shipped nested `src/` would be dropped
   from the zip. None of the three affects a shipping client site today.
+- [ ] **Nav submenus are one level deep, and nav labels are not translatable.** Both are
+  deliberate (migration step 6b design decisions 3 and 4,
+  [2026-08-06-workation-client-theme-step6b-design.md](superpowers/specs/2026-08-06-workation-client-theme-step6b-design.md)).
+  A `children` key inside `children` is rejected by `Manifest::navItem()` rather than flattened,
+  because an unbounded tree needs recursion guards on a serializer that runs on every seed. A
+  declared `label` is still written verbatim into every language, so a multilingual menu must omit
+  `label` and let each entry's per-language title carry it — a site that genuinely needs a menu
+  label differing from its page title in more than one language has no way to express it, which is
+  what Workation's retired `NavTranslations.php` did with a 489-line map. Revisit only if a client
+  actually needs it.
+- [ ] **The derived-slug rule's stated reason does not hold universally.**
+  [docs/seeding.md](seeding.md)'s "The derived slug rule, and why" asserts that Polylang does not
+  hook `wp_unique_post_slug`, and derives the `<slug>-<lang>` default from that. Workation's
+  staging site has four pages all carrying `post_name = home`, one per language, so on that
+  configuration Polylang does uniquify per language. The rule itself stays correct as a default — a
+  per-language slug that collides really does produce the permanent `Verifier` mismatch described
+  there — but the explanation should say Polylang *may not* hook it rather than that it does not,
+  and note that an explicit per-language `slug` override is how a site that does allow shared slugs
+  declares them. Found while writing the migration step 6b design.
 
 ## 🔵 Ideas / later
 
