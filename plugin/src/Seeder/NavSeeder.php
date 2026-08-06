@@ -51,7 +51,7 @@ final class NavSeeder {
 						$key,
 						$language,
 						0,
-						[ 'items' => [ 'from' => 0, 'to' => count( $spec->items ) ] ]
+						[ 'items' => [ 'from' => 0, 'to' => self::countLinks( $spec->items ) ] ]
 					);
 					continue;
 				}
@@ -81,7 +81,16 @@ final class NavSeeder {
 						$key,
 						$language,
 						$postId,
-						[ 'items' => [ 'from' => substr_count( $current, 'wp:navigation-link' ), 'to' => count( $spec->items ) ] ],
+						[
+							'items' => [
+								// The `<!-- ` prefix on the submenu needle is deliberate: the
+								// closing delimiter is `<!-- /wp:navigation-submenu -->`, and a
+								// bare needle would match it too and double every submenu.
+								'from' => substr_count( $current, 'wp:navigation-link' )
+									+ substr_count( $current, '<!-- wp:navigation-submenu' ),
+								'to'   => self::countLinks( $spec->items ),
+							],
+						],
 						[],
 						'membership is git-owned; editor changes to this menu are reverted'
 					);
@@ -376,11 +385,46 @@ final class NavSeeder {
 	private function unresolvedEntries( NavSpec $spec, string $language, array $entryIds ): array {
 		$missing = [];
 		foreach ( $spec->items as $item ) {
-			if ( isset( $item['entry'] ) && 0 === (int) ( $entryIds[ $item['entry'] . '|' . $language ] ?? 0 ) ) {
-				$missing[] = (string) $item['entry'];
-			}
+			$missing = array_merge( $missing, $this->unresolvedItem( (array) $item, $language, $entryIds ) );
 		}
 		return $missing;
+	}
+
+	/**
+	 * @param array<string,mixed> $item
+	 * @param array<string,int>   $entryIds
+	 * @return string[]
+	 */
+	private function unresolvedItem( array $item, string $language, array $entryIds ): array {
+		$missing = [];
+
+		if ( isset( $item['entry'] ) && 0 === (int) ( $entryIds[ $item['entry'] . '|' . $language ] ?? 0 ) ) {
+			$missing[] = (string) $item['entry'];
+		}
+
+		foreach ( (array) ( $item['children'] ?? [] ) as $child ) {
+			$missing = array_merge( $missing, $this->unresolvedItem( (array) $child, $language, $entryIds ) );
+		}
+
+		return $missing;
+	}
+
+	/**
+	 * Total links a nav spec describes, counting submenu parents and children.
+	 *
+	 * The plan's `items` change is operator-facing arithmetic, so it has to
+	 * count the same things on both sides: `count( $spec->items )` would report
+	 * a two-level menu as its top-level width and read as a shrink.
+	 *
+	 * @param array<int,array<string,mixed>> $items
+	 */
+	private static function countLinks( array $items ): int {
+		$count = 0;
+		foreach ( $items as $item ) {
+			++$count;
+			$count += self::countLinks( (array) ( ( (array) $item )['children'] ?? [] ) );
+		}
+		return $count;
 	}
 
 	/** @return array<string,int> navKey|language => post ID */
