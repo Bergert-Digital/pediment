@@ -604,6 +604,27 @@ row comes out of the very next seed *protected* — structure is enforced,
 title and content are left alone. Bringing a page under git's control after
 that is `wp pediment adopt <key>`, the same command that adopts any other row.
 
+### Precondition: configure languages before you claim
+
+On a multilingual site, run [`wp pediment languages`](#wp-pediment-languages)
+**before** the first claim, not after. `ClaimRunner::run()` refuses to plan
+anything while the manifest's declared languages and the site's configured
+ones disagree — the same `LanguageGate::mismatch()` check `wp pediment seed`
+applies, with the same message — because claiming with the languages
+unconfigured is a mistake a re-run cannot repair. With Polylang inactive or
+unconfigured, `LanguageRegistry` hands back `NullProvider`, whose language
+list is a single empty string: the claim would key only the default-slug rows
+and report every other language's live page as `no-match`. Configure the
+languages afterwards, seed, and each of those unclaimed pages trips the
+Differ's rule 1 and is created again alongside the live one — the exact
+duplication a claim exists to prevent.
+
+`wp pediment languages` is WP-CLI only; it has **no wp-admin equivalent**.
+The option that makes `wp_navigation` translatable, in particular, can never
+be ticked by hand (`PolylangSetup::configure()`). So on admin-only hosting a
+multilingual claim is not self-service: arrange CLI access for that one
+command first.
+
 ### What can be claimed
 
 `Claimer::STATUSES` never includes `trash`; a trashed post is not a candidate
@@ -659,8 +680,29 @@ exactly one nav and the language holds exactly one unclaimed `wp_navigation`
 entity, that pairing is unambiguous and is claimed without even checking the
 slug. Otherwise the fallback is the derived slug `NavSeeder`'s own
 `slugFor()` computes, and a nav is claimed only if exactly one unclaimed
-entity's slug matches it — the same zero-is-no-match,
-two-or-more-is-ambiguous split as entries.
+entity's slug matches it. The reporting split is *not* the same as entries':
+`no-match` is reported only when there are **zero** unclaimed navigation
+entities in that language at all. A single unclaimed nav whose slug does not
+match the derived one is reported `ambiguous`, not `no-match` — the claim can
+see a menu there and will not guess.
+
+> **Check every nav line in a claim preview by hand.** Navs are the one place
+> where the claim's "writes nothing but the identity" promise does not carry
+> through to the seed that follows. There is no hash arbitration for navs at
+> all: menu membership is git-owned, so `NavSeeder::plan()` compares the
+> serialized item list and emits an `update` whose note reads *"membership is
+> git-owned; editor changes to this menu are reverted."* A claimed nav's links
+> are therefore **rewritten by the very next seed** — unlike a claimed page,
+> which comes out `protected`.
+>
+> That matters because of the slug-blind rule above. On a live site whose only
+> Site-Editor menu is, say, a footer menu, one declared nav plus one unclaimed
+> `wp_navigation` is enough: the claim keys that footer menu as `primary`
+> without comparing slug or title, and the next seed replaces its links with
+> the manifest's. The rule is deliberate — legacy menus carry slugs like
+> `primary-2` that cannot slug-match, which is the case it was built for — so
+> the safeguard is you, reading the `navigation "<title>" (ID <n>)` note in
+> `wp pediment claim --dry-run` and confirming it names the menu you meant.
 
 ### Re-running claim
 

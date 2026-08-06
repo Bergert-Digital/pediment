@@ -132,14 +132,27 @@ function pediment_seed_admin_render_tab(): void {
 	echo '<hr />';
 	echo '<h3>' . esc_html__( 'Claim existing content', 'pediment' ) . '</h3>';
 	echo '<p>' . esc_html__(
-		'For a site whose pages were built before Pediment. Matches existing pages, posts and menus to the manifest by slug and language and gives them the identity the seeder resolves by. It writes nothing but that identity — titles, content and menus are untouched — and claimed pages stay protected from content updates until you adopt them. Run this once, and preview first.',
+		'For a site whose pages were built before Pediment. Matches existing pages, posts and menus to the manifest by slug and language and gives them the identity the seeder resolves by. The claim itself writes nothing but that identity, and a claimed page then stays protected from content updates until you adopt it. Run this once, and preview first.',
+		'pediment'
+	) . '</p>';
+
+	// The claim promise holds for pages, not for menus, and the panel used to
+	// imply otherwise — it told the operator to run claim and then Apply plan,
+	// while promising menus were untouched. There is no hash arbitration for
+	// navs: menu membership is git-owned, so the next Apply plan rewrites a
+	// claimed menu's links. Say so where the buttons are, not only in the docs.
+	echo '<p><strong>' . esc_html__(
+		'Menus are the exception.',
+		'pediment'
+	) . '</strong> ' . esc_html__(
+		'Menu membership is owned by the theme, so the next "Apply plan" rewrites a claimed menu\'s links — a claimed menu is not protected the way a claimed page is. And when the manifest declares one menu and this site has exactly one unclaimed menu, that menu is claimed without any slug or title check. Read every navigation line in the preview and confirm it names the menu you meant.',
 		'pediment'
 	) . '</p>';
 
 	echo '<div style="display:flex;gap:8px;align-items:center;">';
 	foreach ( array(
 		'claim-preview' => array( __( 'Preview claim', 'pediment' ), 'secondary' ),
-		'claim-apply'   => array( __( 'Claim content', 'pediment' ), 'secondary' ),
+		'claim-apply'   => array( __( 'Claim content', 'pediment' ), 'primary' ),
 	) as $value => $button ) {
 		echo '<form method="post" style="margin:0;">';
 		wp_nonce_field( 'pediment_seed' );
