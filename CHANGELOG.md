@@ -1,5 +1,20 @@
 # Changelog
 
+## [3.2.0](https://github.com/Bergert-Digital/pediment/compare/v3.1.0...v3.2.0) (2026-08-06)
+
+
+### Features
+
+* **seeder:** accept one level of nav children ([6593724](https://github.com/Bergert-Digital/pediment/commit/6593724f9f0d8bced787b531ebd8918e9c7b66f8))
+* **seeder:** claim existing content, own the header, ship client blocks ([#78](https://github.com/Bergert-Digital/pediment/issues/78)) ([5b8d360](https://github.com/Bergert-Digital/pediment/commit/5b8d3607fe189e71017a6f126dc3638d2a3f5f59))
+* **seeder:** nav submenus, plus the step 6b migration design and plans ([#80](https://github.com/Bergert-Digital/pediment/issues/80)) ([5ea26f2](https://github.com/Bergert-Digital/pediment/commit/5ea26f200436fd60817e3e6e5fc5849ffe80d9bb))
+* **seeder:** serialize nav children as submenus ([51d2966](https://github.com/Bergert-Digital/pediment/commit/51d296639a69df82037ebd4d82e2f5661f9bd2ca))
+
+
+### Bug Fixes
+
+* **seeder:** block writes on unresolved nav children ([ddb9bb3](https://github.com/Bergert-Digital/pediment/commit/ddb9bb38752807e0def56b87eda41f3b22e06e53))
+
 ## [3.1.0](https://github.com/Bergert-Digital/pediment/compare/v3.0.0...v3.1.0) (2026-08-04)
 
 
