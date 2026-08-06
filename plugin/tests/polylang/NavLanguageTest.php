@@ -186,6 +186,61 @@ class NavLanguageTest extends PolylangTestCase {
 		$this->assertStringContainsString( (string) $ids['primary|fr'], $plan->errors()[0] );
 	}
 
+	public function test_a_submenu_is_written_per_language_with_translated_child_titles() {
+		$manifest = Manifest::fromArray(
+			[
+				'languages' => [
+					'en' => [ 'name' => 'English', 'locale' => 'en_US', 'default' => true ],
+					'de' => [ 'name' => 'Deutsch', 'locale' => 'de_DE' ],
+				],
+				'pages'     => [
+					'guide' => [ 'title' => 'Guide', 'content' => '' ],
+					'faq'   => [ 'title' => 'FAQ', 'content' => '', 'languages' => [ 'de' => [ 'title' => 'Häufige Fragen' ] ] ],
+				],
+				'navs'      => [
+					'primary' => [
+						'title' => 'Primary',
+						'items' => [ [ 'entry' => 'guide', 'children' => [ [ 'entry' => 'faq' ] ] ] ],
+					],
+				],
+			],
+			get_stylesheet_directory()
+		);
+
+		$ids = [
+			'guide|en' => $this->titledPage( 'Guide', 'en' ),
+			'faq|en'   => $this->titledPage( 'FAQ', 'en' ),
+			'guide|de' => $this->titledPage( 'Guide', 'de' ),
+			'faq|de'   => $this->titledPage( 'Häufige Fragen', 'de' ),
+		];
+
+		$seeder = new NavSeeder( new PolylangProvider() );
+		$navIds = $seeder->apply( $seeder->plan( $manifest, $ids ), $manifest, $ids );
+
+		$this->assertSame( [], $seeder->errors() );
+
+		$en = get_post( $navIds['primary|en'] )->post_content;
+		$de = get_post( $navIds['primary|de'] )->post_content;
+
+		$this->assertSame( 1, substr_count( $en, '<!-- wp:navigation-submenu ' ) );
+		$this->assertSame( 1, substr_count( $de, '<!-- wp:navigation-submenu ' ) );
+		$this->assertStringContainsString( '"label":"FAQ"', $en );
+
+		// Stored escaped: wp_json_encode() is called without JSON_UNESCAPED_UNICODE,
+		// so a non-ASCII label lands in post_content as its \uXXXX form. Asserting
+		// on the escaped bytes is asserting on what a re-serialization must match.
+		$this->assertStringContainsString( '"label":"H\\u00e4ufige Fragen"', $de, 'the child label comes from the German title, not the English one' );
+		$this->assertStringNotContainsString( '"label":"FAQ"', $de );
+		$this->assertStringContainsString( '"id":' . $ids['faq|de'], $de );
+	}
+
+	/** A page with a chosen title, tagged into one language and carrying no seed key. */
+	private function titledPage( string $title, string $language ): int {
+		$id = self::factory()->post->create( [ 'post_type' => 'page', 'post_title' => $title ] );
+		pll_set_post_language( $id, $language );
+		return $id;
+	}
+
 	private function page( string $language ): int {
 		$id = self::factory()->post->create( [ 'post_type' => 'page', 'post_title' => 'About ' . $language ] );
 		pll_set_post_language( $id, $language );
