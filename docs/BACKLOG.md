@@ -33,6 +33,30 @@ _(none currently known — verify by running a user-journey audit)_
   `BootstrapTest::test_bootstrap_scopes_header_part_to_each_active_theme`.
   `.github/actions/seed-check/action.yml`'s front-page assertion remains as a standing regression
   guard, checking for the exact missing-template-part string a recurrence would show.
+- [x] **The `--with-blocks` flag step 5 deferred is built, closing the "client theme has no
+  bespoke-block tooling" gap.** Step 5 decision 5 (`2026-08-03-scaffolder-and-start-step5-design.md`)
+  punted client-block tooling until a client needed one; migration step 6a's design
+  (`2026-08-05-migration-step6-design.md` decision 2) built it. `client-template/` gains an
+  optional `functions.php`, `src/blocks/example-notice/` and a `@wordpress/scripts` build;
+  `client-kit`'s scaffolder emits them behind `--with-blocks` and prunes them when not requested;
+  `seed-check` builds client blocks when `src/blocks/` exists and asserts one registers before
+  wp-env teardown, the `scaffold` CI matrix gained a second leg that scaffolds, builds, boots and
+  seeds a real with-blocks client theme, and `client-release.yml` builds blocks while keeping
+  `src/` out of the zip. Done 2026-08-06.
+- [ ] **The cutover plan is not written.** Migration step 6a built the capability — claim, header
+  ownership, client blocks — but the Workation production migration itself is a separate plan by
+  design (spec decision 4, `2026-08-05-migration-step6-design.md`). Workation still runs the
+  retired parent/child theme stack, and the claim path (`Pediment\Seeder\Claimer`) has only ever
+  run against fixtures and CI, never a real legacy database. Write the cutover plan, and rehearse
+  claim against a copy of Workation's actual content, before touching production.
+- [ ] **A malformed manifest throws an uncaught `ManifestError` on both claim front doors.**
+  `Runner::run()` catches it around `Manifest::load()` and turns it into a plan error;
+  `ClaimRunner::run()` (`plugin/src/Seeder/ClaimRunner.php`) never did — its own docblock notes
+  the gap deliberately rather than closing it, since nothing in the refactor that unified the two
+  front doors asked for the behavior to change. On Pediment's admin-only hosting, a bad manifest
+  hit through `wp pediment claim` or the wp-admin Seeding tab's claim buttons is a WordPress
+  critical-error screen instead of a report — the one door that exists on that hosting. Worth
+  fixing to match `Runner`'s behavior.
 - [ ] **Commercial protection — licence keys gate updates, a server gates capability.** Needs its
   own spec; the design rationale is in
   [2026-08-05-licensing-and-hygiene-design.md](superpowers/specs/2026-08-05-licensing-and-hygiene-design.md#35-backlog-entry-for-commercial-protection).
@@ -135,6 +159,25 @@ _(none currently known — verify by running a user-journey audit)_
   image variants or `srcset` entries back to `{{media_*}}` placeholders. All are
   documented in [docs/seeding.md](seeding.md) — revisit when migration step 6 shows which
   actually hurt.
+- [ ] **Media and terms are never claimed** (migration step 6a design decision 6).
+  `Pediment\Seeder\Claimer` backfills `_pediment_seed_key` onto pre-existing entries and
+  navs, but attachments and terms have no equivalent — `MediaSeeder::keyed()` resolves
+  existing attachments only by `_pediment_seed_key`, so a manifest declaring media that
+  already exists on the site as unkeyed attachments (a pre-existing logo or hero image,
+  say) will upload a duplicate rather than adopt the original. Deliberate for Workation's
+  74 client-owned photos, which the manifest never declares; the same gap applies to any
+  media a manifest does declare on a site being claimed.
+- [ ] **A real, non-dry-run `wp pediment claim` against a site with no manifest still prints
+  "Pediment claim — dry run" and "Nothing was written (--dry-run)".** `Reporter::claimText()`'s
+  wording comes from `ClaimResult->applied`, and `ClaimRunner::run()` returns `applied: false`
+  whenever no manifest is found, regardless of whether `--dry-run` was passed
+  (`plugin/wp-cli/ClaimCommand.php` around the manifest-missing branch). Accurate in effect —
+  nothing was applied because there was nothing to apply — but misleading in wording for an
+  operator who ran the command for real.
+- [ ] **The wp-admin missing-manifest message is untranslated.** `ClaimRunner::run()`'s "No seed
+  manifest found. Create …" string (`plugin/src/Seeder/ClaimRunner.php`) has no `__()` wrapper,
+  following `Runner::run()`'s existing precedent for the identical message, so it renders in
+  English on a non-English admin install. Deliberate and narrow, not worth fixing on its own.
 - [ ] **History purge of the removed `docs/images/*.jpg`.** The 11 tracked Unsplash JPEGs
   (~46 MB) were `git rm`'d going forward (monorepo step 1, Task 7) but still bloat every
   clone via history. A full purge (`git filter-repo` or similar) would force-push and

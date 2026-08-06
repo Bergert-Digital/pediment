@@ -4,6 +4,71 @@ Rolling log. /dev-cycle keeps only the most recent prior session entry plus the 
 
 ---
 
+## Session 2026-08-06 — claim path, header ownership, client blocks, step 6a (Tasks 1–14)
+
+[09:54] ✅ The claim path: `Pediment\Seeder\Claimer` (`plugin/src/Seeder/Claimer.php`)
+backfills `_pediment_seed_key` onto a legacy site's pre-existing, unkeyed rows by
+matching the manifest's declared identity — post type, slug, parent, language —
+against unclaimed candidates, one new `PlanItem` action per outcome (`claim`,
+`no-match`, `ambiguous`). It writes exactly one meta key and never a hash, so a
+claimed row stays protected under the Differ's existing rule 2 (missing hash =
+treat as edited) until an explicit `wp pediment adopt`. Navs are claimed too,
+language-aware, using their own already-carries-the-key source of truth, since
+`StateReader::EXCLUDED_TYPES` excludes `wp_navigation` from the map entries use.
+Both front doors share one orchestration path, `ClaimRunner`/`ClaimResult`
+(`plugin/src/Seeder/`), mirroring `Runner`/`RunResult`: `wp pediment claim
+[--dry-run]` (`plugin/wp-cli/ClaimCommand.php`) and two buttons — preview,
+apply — on Settings → Pediment Theme → Seeding (`plugin/inc/seeding-admin.php`),
+the latter being the only path that exists on Pediment's admin-only Hetzner
+hosting.
+[09:54] ✅ The header bootstrap now seeds a fresh `header` template part from a
+theme-registered `<stylesheet>/header` block pattern when one exists, falling
+back to the old generic markup otherwise (`plugin/inc/bootstrap.php`). The
+lookup runs on a flagged `init` pass at priority 100, after core's own
+`_register_theme_block_patterns()`, so a client theme's own patterns are
+already registered when it reads. Still create-only — an existing part is
+never touched.
+[09:54] ✅ `client-template/` gained an optional client-blocks layer —
+`functions.php`, `src/blocks/example-notice/`, a `@wordpress/scripts` build —
+scaffolded behind `client-kit`'s new `--with-blocks` flag and pruned from the
+scaffold when not requested. CI: `seed-check` builds client blocks when
+`src/blocks/` exists and can assert a block registered before wp-env teardown;
+the `scaffold` matrix gained a second leg that scaffolds, builds, boots and
+seeds a real with-blocks client theme; `client-release.yml` builds blocks and
+keeps `src/` out of the release zip.
+[09:54] 📚 `docs/seeding.md` documents the claim path end to end — what gets
+matched and in what order, `Claimer::apply()`'s idempotency, the gap in its
+own nav protection (an already-claimed nav plus one stray unrelated
+`wp_navigation` post can be claimed under the wrong key), a worked dry-run
+example — and corrects a pre-existing false claim that a first seed against an
+already-live site was safe on its own: that safety only covers rows the engine
+can already see by `_pediment_seed_key`, which an unclaimed legacy row never
+carries; `wp pediment claim` is what gives it one.
+[09:54] 🔍 Three follow-ups from this branch's review loop went to
+`docs/BACKLOG.md` rather than being fixed here: `ClaimRunner::run()` does not
+catch `ManifestError` the way `Runner::run()` does, so a malformed manifest is
+an uncaught critical error on both claim front doors rather than a report —
+worse on admin-only hosting, where wp-admin is the only door; a real
+(non-dry-run) `wp pediment claim` against a site with no manifest still prints
+"Pediment claim — dry run" / "Nothing was written (--dry-run)", accurate in
+effect (nothing to apply) but misleading in wording; and, lowest severity, the
+wp-admin missing-manifest message is untranslated, matching `Runner`'s
+existing precedent for the identical string.
+[09:54] 🔍 This log jumps from 2026-08-01 (step 4) straight to today: step 5
+(the scaffolder and `/start`), the client-kit external-distribution pass, and
+the licensing pass all shipped in between with no session-log entry for any
+of them. Not reconstructed here — the gap is being flagged, not silently
+backfilled.
+
+### Planned next
+- Task 15 of this plan: full verification (PHPUnit, phpcs, lint, Playwright)
+  and the gated push — not yet run.
+
+### Need a decision on
+_(none)_
+
+---
+
 ## Session 2026-08-01 — LanguageProvider and Polylang, step 4 (Tasks 1–16)
 
 [19:10] ✅ Migration step 4 SHIPPED: a Pediment site becomes multilingual via
