@@ -157,6 +157,46 @@ so a theme is free to key its other menus however it likes, but the menu it
 wants bound to the header's ref-less block must be called `primary`, or must
 opt out via the `pediment_primary_nav_key` filter.
 
+#### Submenus
+
+An item may declare `children`, which serializes it as a
+`wp:navigation-submenu` wrapping their `wp:navigation-link` blocks:
+
+```php
+'navs' => array(
+	'primary' => array(
+		'title' => 'Primary',
+		'items' => array(
+			array( 'entry' => 'activities' ),
+			array(
+				'entry'    => 'guide',
+				'children' => array(
+					array( 'entry' => 'arrival' ),
+					array( 'entry' => 'faq' ),
+				),
+			),
+		),
+	),
+),
+```
+
+Children take the same shape as top-level items — `{ entry, label }` or
+`{ url, label }`, with `label` optional on an `entry` item and falling back to
+that entry's own per-language title — and the same validation. **Nesting stops
+there:** `children` inside `children` is a `ManifestError`, not a silently
+flattened menu.
+
+Two consequences worth knowing before you declare one:
+
+- **The nav tree is not the page tree.** A submenu child needs no `parent` in
+  the `pages` section, and a page with a `parent` need not appear under it in a
+  menu. They are independent.
+- **A submenu parent takes its children with it.** If the parent's entry has no
+  live post in a language, the whole submenu is omitted from that language's
+  serialized menu rather than its children being promoted to the top level —
+  and, as with any unresolved link, `unresolvedEntries()` reports it and the
+  navigation is left exactly as it is rather than written short.
+
 ### `post_types`
 
 Not exercised by the fixture manifest above — client themes that need a custom
