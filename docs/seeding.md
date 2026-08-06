@@ -869,6 +869,28 @@ Two shapes:
   (`media.<key> is carried by N attachments…`, `navs.<key> is carried by N
   navigation entities…`).
 
+  A specific route into the nav case: removing a configured language in
+  Polylang deletes that language's term relationship outright
+  (`Languages::delete()`), so a nav that was seeded in the removed language
+  becomes byte-identical, database-wise, to a legacy nav that was never
+  language-tagged — both resolve to the default-language bucket
+  (`NavSeeder::languageOf()`). The next seed then collides the orphan with
+  the real default-language nav and reports, verbatim
+  (`NavSeeder::duplicates()`):
+
+  `navs.primary is carried by 2 navigation entities (IDs 5, 12). Identity
+  must be unique — delete or re-key the extras.`
+
+  This is deliberate, not a regression (see docs/BACKLOG.md): a plan with
+  any error writes nothing at all — media, entries, and navs alike
+  (`Runner::run()` returns before any of the three `apply()` calls run) — so
+  the failure is loud rather than a silent loss of the menu's translation
+  link. Fix: delete or re-key the orphaned navigation entity (whichever of
+  the two you don't want — check which one still carries the dropped
+  language's term in Polylang's own data), then re-run. Until then, every
+  subsequent `wp pediment seed` on that site is blocked outright, not just
+  its nav phase.
+
 A related, always-fatal case: a manifest entry's `post_type` doesn't match
 what's already in the database under that key (`post_type` is never rewritten)
 — `Seed key "about" is a post in the database but a page in the manifest
