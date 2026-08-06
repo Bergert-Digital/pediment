@@ -49,6 +49,12 @@ _(none currently known — verify by running a user-journey audit)_
   retired parent/child theme stack, and the claim path (`Pediment\Seeder\Claimer`) has only ever
   run against fixtures and CI, never a real legacy database. Write the cutover plan, and rehearse
   claim against a copy of Workation's actual content, before touching production.
+- [ ] **A multilingual claim is impossible on admin-only hosting without one-off CLI access.**
+  The claim path's language gate (`docs/seeding.md#precondition-configure-languages-before-you-claim`)
+  refuses to plan anything while the manifest's declared languages and Polylang's configured set
+  diverge, and `wp pediment languages` — the only way to configure them — is WP-CLI only with no
+  wp-admin equivalent. The cutover plan (entry above) must budget for arranging one-off CLI access
+  before a multilingual claim; it cannot be run entirely through wp-admin.
 - [ ] **Commercial protection — licence keys gate updates, a server gates capability.** Needs its
   own spec; the design rationale is in
   [2026-08-05-licensing-and-hygiene-design.md](superpowers/specs/2026-08-05-licensing-and-hygiene-design.md#35-backlog-entry-for-commercial-protection).
@@ -288,23 +294,42 @@ _(none currently known — verify by running a user-journey audit)_
   `docker volume rm a3dc8692d63bbaed34b7c5faf40dce3f_mysql a3dc8692d63bbaed34b7c5faf40dce3f_mysql-test`,
   then `npx wp-env start` — by then the mountpoint files exist, the mount succeeds and MariaDB
   initializes cleanly. macOS Docker Desktop only; CI runs on Linux runners and is unaffected.
-- [ ] **A nav orphaned by a dropped Polylang language now collides with the default language
-  instead of being ignored.** Consequence of the untagged-nav fix in
-  `NavSeeder::languageOf()` (migration step 6a final review, item 1), recorded because it is a
-  design question rather than a settled answer. `NavSeeder`'s own docblock assumed a nav in a
-  dropped language keeps its Polylang language term and so stays in the `key|''` bucket. That
-  assumption is wrong: `Languages::delete()` → `TranslatableObject::delete_language()` calls
-  `wp_delete_object_term_relationships()`, so the nav is left genuinely **untagged** and
-  `pll_get_post_language()` returns `false` (verified against Polylang 3.8.6 in this repo's test
-  environment). Nothing in the database then distinguishes it from the legacy untagged nav the
-  fix exists for, so it lands in the default-language bucket, and `duplicates()` reports a fatal
-  "carried by 2 navigation entities" that blocks the seed until the operator deletes or re-keys
-  the orphan. That is louder and safer than the previous silent unlinking, and it matches how
-  entries have always behaved (`StateReader::languageOf()`, `Applier::repairLanguage()`) — but it
-  is a behaviour change nobody chose deliberately. Pinned by
-  `NavLanguageTest::test_a_nav_orphaned_by_a_dropped_language_is_reported_not_ignored`. Decide
-  whether the duplicate error is the wanted outcome, or whether dropping a language should offer
-  to clean up the navs it orphans.
+- [ ] **Decided: a nav orphaned by a dropped Polylang language collides with the default
+  language and hard-blocks the seed, rather than being silently ignored.** Was recorded as an
+  open design question by the untagged-nav fix in `NavSeeder::languageOf()` (migration step 6a
+  final review, item 1). The human partner has since ruled: take the block, it is the wanted
+  behaviour. `Languages::delete()` → `TranslatableObject::delete_language()` calls
+  `wp_delete_object_term_relationships()`, so a nav orphaned by removing a language is left
+  genuinely **untagged** — byte-identical in the database to a legacy nav that was never
+  language-tagged — and no rule reading only the language taxonomy can tell the two apart.
+  Reasoning: an errored plan writes nothing for the whole seed, not just navs (`Runner::run()`
+  returns on `Plan::hasErrors()` before `MediaSeeder::apply()`, `Applier::apply()`, and
+  `NavSeeder::apply()` all run), so the failure is loud and lossless — and the alternative already
+  exists as a known, silently-lossy parked defect (the entry above, "A coordinated language
+  removal silently unlinks that language's translation groups"); blocking here stops the nav half
+  of that from staying silent instead of growing a second quiet-data-loss path alongside it. Cost,
+  stated plainly: a site that has dropped a language has **every subsequent seed hard-blocked** —
+  not just its nav phase — until an operator deletes or re-keys the orphaned navigation post
+  (`NavSeeder::duplicates()`'s "carried by 2 navigation entities" error; see docs/seeding.md's
+  "Duplicate seed key" failure mode). Pinned by
+  `NavLanguageTest::test_a_nav_orphaned_by_a_dropped_language_is_reported_not_ignored`. The
+  seeder-marker alternative that would separate the two cases cleanly is recorded next, and
+  remains genuinely open.
+- [ ] **Open: a seeder-written `_pediment_seed_lang` marker would separate a legacy untagged
+  nav from a language-orphaned one — for navs created after the marker exists.** Identified by a
+  later review of the decision above; not decided against, just not built. Stamping a
+  `_pediment_seed_lang` meta key in `NavSeeder::apply()`'s CREATE branch, alongside `Meta::KEY`
+  and `setLanguage()`, would let `languageOf()` tell the two untagged cases apart: no marker at
+  all means legacy (default-language bucket, as today); a marker naming a language no longer in
+  `$this->lang->languages()` means orphan. It does not violate this branch's core property that a
+  claim writes exactly one meta key — the marker would be written only on CREATE, never by
+  `Claimer`. Its limit: it cannot retro-classify navs created before the marker existed, so it
+  fixes the future, not the rows already on a site being migrated. **Do not substitute a slug
+  heuristic for it:** a seeder-created nav's slug is `slugFor()`'s derived form (`primary-fr`), so
+  "untagged and slug matches `<key>-<unconfigured language>`" looks like a cheap stand-in — but
+  the production migration target's legacy menus are literally named `primary-2`, which parses
+  identically to `primary-<language "2">`. Adopting that heuristic would misclassify the exact
+  legacy-nav case the slug-blind claim rule exists to handle.
 - [ ] **Race window in the deferred header seed.** `pediment_bootstrap_maybe_seed_header()`
   (`plugin/inc/bootstrap.php`) does `get_option()` then `delete_option()` non-atomically, so two
   concurrent requests arriving right after a theme switch could both pass the flag check and both
