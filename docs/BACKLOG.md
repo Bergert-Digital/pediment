@@ -49,14 +49,6 @@ _(none currently known — verify by running a user-journey audit)_
   retired parent/child theme stack, and the claim path (`Pediment\Seeder\Claimer`) has only ever
   run against fixtures and CI, never a real legacy database. Write the cutover plan, and rehearse
   claim against a copy of Workation's actual content, before touching production.
-- [ ] **A malformed manifest throws an uncaught `ManifestError` on both claim front doors.**
-  `Runner::run()` catches it around `Manifest::load()` and turns it into a plan error;
-  `ClaimRunner::run()` (`plugin/src/Seeder/ClaimRunner.php`) never did — its own docblock notes
-  the gap deliberately rather than closing it, since nothing in the refactor that unified the two
-  front doors asked for the behavior to change. On Pediment's admin-only hosting, a bad manifest
-  hit through `wp pediment claim` or the wp-admin Seeding tab's claim buttons is a WordPress
-  critical-error screen instead of a report — the one door that exists on that hosting. Worth
-  fixing to match `Runner`'s behavior.
 - [ ] **Commercial protection — licence keys gate updates, a server gates capability.** Needs its
   own spec; the design rationale is in
   [2026-08-05-licensing-and-hygiene-design.md](superpowers/specs/2026-08-05-licensing-and-hygiene-design.md#35-backlog-entry-for-commercial-protection).
@@ -170,10 +162,12 @@ _(none currently known — verify by running a user-journey audit)_
 - [ ] **A real, non-dry-run `wp pediment claim` against a site with no manifest still prints
   "Pediment claim — dry run" and "Nothing was written (--dry-run)".** `Reporter::claimText()`'s
   wording comes from `ClaimResult->applied`, and `ClaimRunner::run()` returns `applied: false`
-  whenever no manifest is found, regardless of whether `--dry-run` was passed
-  (`plugin/wp-cli/ClaimCommand.php` around the manifest-missing branch). Accurate in effect —
-  nothing was applied because there was nothing to apply — but misleading in wording for an
-  operator who ran the command for real.
+  whenever no manifest is found, regardless of whether `--dry-run` was passed. The branch that
+  hardcodes `applied: false` is in `plugin/src/Seeder/ClaimRunner.php`, not in
+  `plugin/wp-cli/ClaimCommand.php` — the command only renders what the runner already decided.
+  The same is now true of the malformed-manifest and language-mismatch branches beside it.
+  Accurate in effect — nothing was applied because there was nothing to apply — but misleading
+  in wording for an operator who ran the command for real.
 - [ ] **The wp-admin missing-manifest message is untranslated.** `ClaimRunner::run()`'s "No seed
   manifest found. Create …" string (`plugin/src/Seeder/ClaimRunner.php`) has no `__()` wrapper,
   following `Runner::run()`'s existing precedent for the identical message, so it renders in
