@@ -168,9 +168,33 @@ class BootstrapTest extends WP_UnitTestCase {
 	 * `<stylesheet>/header` pattern is registered, exactly as a fresh
 	 * activation can produce. Only a later `init` (standing in for the next
 	 * request's real pattern scan) is where the pattern becomes available.
+	 *
+	 * The pattern is registered *on* `init` at priority 10 -- core's own
+	 * priority for `_register_theme_block_patterns()` -- rather than eagerly
+	 * before `do_action( 'init' )`. That is what makes the deferred seed's own
+	 * priority load-bearing here: registering eagerly pins only
+	 * deferral-to-init, so dropping bootstrap.php's `add_action( 'init', ...,
+	 * 100 )` to anything below 10 would leave this test green while every real
+	 * site silently fell back to the generic header again. Registered on the
+	 * hook, a seed that runs before priority 10 sees an empty registry and the
+	 * assertion below fails, which is the whole point.
 	 */
 	public function test_a_real_theme_switch_seeds_the_header_only_once_its_pattern_is_registered(): void {
 		$theme = get_stylesheet();
+
+		// Stand-in for the *next* real request's `init`: core's
+		// _register_theme_block_patterns() scans the now-active theme's
+		// patterns/*.php on `init` at the default priority 10.
+		$register_pattern = static function () use ( $theme ): void {
+			register_block_pattern(
+				$theme . '/header',
+				array(
+					'title'    => 'Header',
+					'content'  => '<!-- wp:paragraph --><p>Branded via init</p><!-- /wp:paragraph -->',
+					'inserter' => false,
+				)
+			);
+		};
 
 		try {
 			switch_theme( $theme );
@@ -180,17 +204,7 @@ class BootstrapTest extends WP_UnitTestCase {
 			// registered yet -- exactly like a real deployment.
 			do_action( 'after_switch_theme', $theme );
 
-			// Stand-in for the *next* real request's `init`: core's
-			// _register_theme_block_patterns() would scan the now-active
-			// theme's patterns/*.php and register them here.
-			register_block_pattern(
-				$theme . '/header',
-				array(
-					'title'    => 'Header',
-					'content'  => '<!-- wp:paragraph --><p>Branded via init</p><!-- /wp:paragraph -->',
-					'inserter' => false,
-				)
-			);
+			add_action( 'init', $register_pattern, 10 );
 			do_action( 'init' );
 
 			$this->assertStringContainsString(
@@ -199,6 +213,7 @@ class BootstrapTest extends WP_UnitTestCase {
 				'the header must be seeded from the pattern once it is actually registered, not from whatever the registry held at the instant after_switch_theme fired'
 			);
 		} finally {
+			remove_action( 'init', $register_pattern, 10 );
 			unregister_block_pattern( $theme . '/header' );
 			// Literal option name (rather than the bootstrap.php constant): this
 			// test must also compile and run against the pre-fix code, which
