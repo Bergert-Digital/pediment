@@ -186,4 +186,137 @@ class NavSeederTest extends WP_UnitTestCase {
 
 		$this->assertSame( [], $seeder->errors(), 'serialize() is a formatter, not a reporter' );
 	}
+
+	private function submenuManifest( array $items ): Manifest {
+		return Manifest::fromArray(
+			[
+				'pages' => [
+					'home'  => [ 'title' => 'Home', 'content' => '' ],
+					'guide' => [ 'title' => 'Guide', 'content' => '' ],
+					'faq'   => [ 'title' => 'FAQ', 'content' => '' ],
+				],
+				'navs'  => [ 'primary' => [ 'title' => 'Primary', 'items' => $items ] ],
+			],
+			'/tmp/theme'
+		);
+	}
+
+	public function test_an_item_with_children_serializes_as_a_submenu() {
+		$seeder = new NavSeeder( new NullProvider() );
+		$m      = $this->submenuManifest(
+			[
+				[ 'entry' => 'home' ],
+				[ 'entry' => 'guide', 'children' => [ [ 'entry' => 'faq' ] ] ],
+			]
+		);
+
+		$markup = $seeder->serialize( $m->navs()['primary'], '', [ 'home|' => 11, 'guide|' => 12, 'faq|' => 13 ] );
+
+		$this->assertStringContainsString( '<!-- wp:navigation-submenu ', $markup );
+		$this->assertStringContainsString( '<!-- /wp:navigation-submenu -->', $markup );
+		$this->assertSame( 1, substr_count( $markup, '<!-- wp:navigation-submenu ' ) );
+		$this->assertSame( 2, substr_count( $markup, 'wp:navigation-link' ), 'home and faq are links; guide is a submenu' );
+		$this->assertStringContainsString( '"id":13', $markup );
+	}
+
+	public function test_a_submenu_parent_keeps_the_same_attribute_order_as_a_link() {
+		$seeder = new NavSeeder( new NullProvider() );
+		$id     = self::factory()->post->create( [ 'post_type' => 'page', 'post_title' => 'Guide' ] );
+		$m      = $this->submenuManifest( [ [ 'entry' => 'guide', 'children' => [ [ 'entry' => 'faq' ] ] ] ] );
+
+		$markup = $seeder->serialize( $m->navs()['primary'], '', [ 'guide|' => $id, 'faq|' => 13 ] );
+
+		$this->assertMatchesRegularExpression(
+			'/wp:navigation-submenu \{"label":".*?","type":".*?","id":\d+,"kind":"post-type","url":/',
+			$markup
+		);
+	}
+
+	public function test_a_url_item_may_carry_children() {
+		$seeder = new NavSeeder( new NullProvider() );
+		$m      = $this->submenuManifest(
+			[ [ 'url' => '/more', 'label' => 'More', 'children' => [ [ 'entry' => 'faq' ] ] ] ]
+		);
+
+		$markup = $seeder->serialize( $m->navs()['primary'], '', [ 'faq|' => 13 ] );
+
+		$this->assertStringContainsString( '"label":"More"', $markup );
+		$this->assertStringContainsString( '"kind":"custom"', $markup );
+		$this->assertSame( 1, substr_count( $markup, '<!-- wp:navigation-submenu ' ) );
+	}
+
+	public function test_an_unresolved_submenu_parent_takes_its_children_with_it() {
+		$seeder = new NavSeeder( new NullProvider() );
+		$m      = $this->submenuManifest(
+			[
+				[ 'entry' => 'home' ],
+				[ 'entry' => 'guide', 'children' => [ [ 'entry' => 'faq' ] ] ],
+			]
+		);
+
+		$markup = $seeder->serialize( $m->navs()['primary'], '', [ 'home|' => 11, 'faq|' => 13 ] );
+
+		$this->assertStringNotContainsString( 'navigation-submenu', $markup );
+		$this->assertStringNotContainsString( '"id":13', $markup, 'a child without its parent is not promoted to top level' );
+		$this->assertSame( 1, substr_count( $markup, 'wp:navigation-link' ) );
+	}
+
+	public function test_an_unresolved_child_leaves_the_whole_menu_alone() {
+		$seeder = new NavSeeder( new NullProvider() );
+		$guide  = self::factory()->post->create( [ 'post_type' => 'page' ] );
+		$faq    = self::factory()->post->create( [ 'post_type' => 'page' ] );
+
+		$full   = $this->submenuManifest( [ [ 'entry' => 'guide', 'children' => [ [ 'entry' => 'faq' ] ] ] ] );
+		$ids    = [ 'guide|' => $guide, 'faq|' => $faq ];
+		$navIds = $seeder->apply( $seeder->plan( $full, $ids ), $full, $ids );
+		$before = get_post( $navIds['primary|'] )->post_content;
+
+		// The child's page disappears — its ID no longer resolves.
+		$short = [ 'guide|' => $guide ];
+		$seeder->apply( $seeder->plan( $full, $short ), $full, $short );
+
+		$this->assertSame( $before, get_post( $navIds['primary|'] )->post_content, 'never write a shortened menu' );
+		$this->assertContains(
+			'navs.primary: "faq" has no seeded post yet — the link is missing from the menu.',
+			$seeder->errors()
+		);
+	}
+
+	public function test_the_planned_item_count_includes_children() {
+		$seeder = new NavSeeder( new NullProvider() );
+		$m      = $this->submenuManifest(
+			[
+				[ 'entry' => 'home' ],
+				[ 'entry' => 'guide', 'children' => [ [ 'entry' => 'faq' ] ] ],
+			]
+		);
+
+		$plan = $seeder->plan( $m, [] );
+
+		$this->assertSame( PlanItem::CREATE, $plan->items()[0]->action );
+		$this->assertSame( 3, $plan->items()[0]->changes['items']['to'], 'home + guide + faq' );
+	}
+
+	public function test_an_existing_submenu_is_counted_when_it_changes() {
+		$seeder = new NavSeeder( new NullProvider() );
+		$ids    = [
+			'home|'  => self::factory()->post->create( [ 'post_type' => 'page' ] ),
+			'guide|' => self::factory()->post->create( [ 'post_type' => 'page' ] ),
+			'faq|'   => self::factory()->post->create( [ 'post_type' => 'page' ] ),
+		];
+		$first  = $this->submenuManifest( [ [ 'entry' => 'guide', 'children' => [ [ 'entry' => 'faq' ] ] ] ] );
+		$seeder->apply( $seeder->plan( $first, $ids ), $first, $ids );
+
+		$second = $this->submenuManifest(
+			[
+				[ 'entry' => 'home' ],
+				[ 'entry' => 'guide', 'children' => [ [ 'entry' => 'faq' ] ] ],
+			]
+		);
+		$plan   = $seeder->plan( $second, $ids );
+
+		$this->assertSame( PlanItem::UPDATE, $plan->items()[0]->action );
+		$this->assertSame( 2, $plan->items()[0]->changes['items']['from'], 'the stored submenu and its one child' );
+		$this->assertSame( 3, $plan->items()[0]->changes['items']['to'] );
+	}
 }

@@ -164,16 +164,7 @@ final class Manifest {
 			$declared = (array) $declared;
 			$items    = [];
 			foreach ( (array) ( $declared['items'] ?? [] ) as $index => $item ) {
-				$item = (array) $item;
-				if ( isset( $item['entry'] ) ) {
-					$target = (string) $item['entry'];
-					if ( ! isset( $entries[ $target ] ) ) {
-						throw new ManifestError( "navs.{$key}.items.{$index}: unknown entry '{$target}'." ); // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- exception message for the operator, not echoed output.
-					}
-				} elseif ( ! isset( $item['url'], $item['label'] ) ) {
-					throw new ManifestError( "navs.{$key}.items.{$index}: needs either 'entry' or both 'url' and 'label'." ); // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- exception message for the operator, not echoed output.
-				}
-				$items[] = $item;
+				$items[] = self::navItem( (array) $item, $entries, "navs.{$key}.items.{$index}", true );
 			}
 			$navs[ $key ] = new NavSpec( $key, (string) ( $declared['title'] ?? ucfirst( $key ) ), $items );
 		}
@@ -202,6 +193,50 @@ final class Manifest {
 		}
 
 		return new self( $path, $baseDir, $entries, $media, $navs, $postTypes, $siteLogo, $languages, $defaultLanguage );
+	}
+
+	/**
+	 * Validate one navigation item, and its children when it has them.
+	 *
+	 * One level of nesting is all a header menu is, and all the serializer
+	 * emits. Rejecting a second level here — rather than dropping it quietly —
+	 * is what keeps a manifest that declares a three-level menu from shipping a
+	 * two-level one and looking correct in review.
+	 *
+	 * @param array<string,mixed>     $item
+	 * @param array<string,EntrySpec> $entries
+	 * @param string                  $path          Operator-facing location, e.g. `navs.primary.items.2`.
+	 * @param bool                    $allowChildren False for an item that is already a child.
+	 * @return array<string,mixed>
+	 *
+	 * @throws ManifestError When the item names an unknown entry, declares neither
+	 *                       an entry nor a url/label pair, or nests too deeply.
+	 */
+	private static function navItem( array $item, array $entries, string $path, bool $allowChildren ): array {
+		if ( isset( $item['entry'] ) ) {
+			$target = (string) $item['entry'];
+			if ( ! isset( $entries[ $target ] ) ) {
+				throw new ManifestError( "{$path}: unknown entry '{$target}'." ); // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- exception message for the operator, not echoed output.
+			}
+		} elseif ( ! isset( $item['url'], $item['label'] ) ) {
+			throw new ManifestError( "{$path}: needs either 'entry' or both 'url' and 'label'." ); // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- exception message for the operator, not echoed output.
+		}
+
+		if ( ! isset( $item['children'] ) ) {
+			return $item;
+		}
+
+		if ( ! $allowChildren ) {
+			throw new ManifestError( "{$path}: 'children' may not nest — a header menu is two levels, and deeper trees are not serialized." ); // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- exception message for the operator, not echoed output.
+		}
+
+		$children = [];
+		foreach ( (array) $item['children'] as $index => $child ) {
+			$children[] = self::navItem( (array) $child, $entries, "{$path}.children.{$index}", false );
+		}
+		$item['children'] = $children;
+
+		return $item;
 	}
 
 	/**

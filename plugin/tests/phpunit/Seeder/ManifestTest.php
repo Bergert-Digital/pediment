@@ -448,4 +448,70 @@ class ManifestTest extends WP_UnitTestCase {
 		$this->assertSame( 'about', $spec->slugFor( '', '' ) );
 		$this->assertSame( 'x/about', $spec->patternFor( '', '' ) );
 	}
+
+	private function navManifest( array $items ): array {
+		return [
+			'pages' => [
+				'home'  => [ 'title' => 'Home', 'content' => '' ],
+				'guide' => [ 'title' => 'Guide', 'content' => '' ],
+				'faq'   => [ 'title' => 'FAQ', 'content' => '' ],
+			],
+			'navs'  => [ 'primary' => [ 'title' => 'Primary', 'items' => $items ] ],
+		];
+	}
+
+	public function test_a_nav_item_may_declare_children() {
+		$manifest = Manifest::fromArray(
+			$this->navManifest(
+				[
+					[ 'entry' => 'home' ],
+					[ 'entry' => 'guide', 'children' => [ [ 'entry' => 'faq' ] ] ],
+				]
+			),
+			'/tmp/theme'
+		);
+
+		$items = $manifest->navs()['primary']->items;
+
+		$this->assertCount( 2, $items );
+		$this->assertArrayNotHasKey( 'children', $items[0] );
+		$this->assertSame( 'faq', $items[1]['children'][0]['entry'] );
+	}
+
+	public function test_a_child_naming_an_undeclared_entry_is_rejected() {
+		$this->expectException( ManifestError::class );
+		$this->expectExceptionMessage( "navs.primary.items.0.children.0: unknown entry 'nope'." );
+
+		Manifest::fromArray(
+			$this->navManifest( [ [ 'entry' => 'guide', 'children' => [ [ 'entry' => 'nope' ] ] ] ] ),
+			'/tmp/theme'
+		);
+	}
+
+	public function test_a_child_needs_an_entry_or_a_url_and_label() {
+		$this->expectException( ManifestError::class );
+		$this->expectExceptionMessage( "navs.primary.items.0.children.0: needs either 'entry' or both 'url' and 'label'." );
+
+		Manifest::fromArray(
+			$this->navManifest( [ [ 'entry' => 'guide', 'children' => [ [ 'label' => 'Orphan' ] ] ] ] ),
+			'/tmp/theme'
+		);
+	}
+
+	public function test_children_may_not_nest_a_second_level() {
+		$this->expectException( ManifestError::class );
+		$this->expectExceptionMessage( "navs.primary.items.0.children.0: 'children' may not nest" );
+
+		Manifest::fromArray(
+			$this->navManifest(
+				[
+					[
+						'entry'    => 'guide',
+						'children' => [ [ 'entry' => 'faq', 'children' => [ [ 'entry' => 'home' ] ] ] ],
+					],
+				]
+			),
+			'/tmp/theme'
+		);
+	}
 }
