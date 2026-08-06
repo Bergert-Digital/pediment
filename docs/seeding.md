@@ -885,9 +885,12 @@ Two shapes:
   any error writes nothing at all — media, entries, and navs alike
   (`Runner::run()` returns before any of the three `apply()` calls run) — so
   the failure is loud rather than a silent loss of the menu's translation
-  link. Fix: delete or re-key the orphaned navigation entity (whichever of
-  the two you don't want — check which one still carries the dropped
-  language's term in Polylang's own data), then re-run. Until then, every
+  link. Fix: delete or re-key the orphaned navigation entity, then re-run.
+  Telling the two apart is easy at this point even though no automated rule
+  can: the orphan is the one with **no language assigned** — the drop
+  deleted its term — while the nav the seeder still manages carries the
+  default language. Its slug is also the giveaway, still derived from the
+  language you removed (`primary-fr`). Until you resolve it, every
   subsequent `wp pediment seed` on that site is blocked outright, not just
   its nav phase.
 
