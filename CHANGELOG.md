@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.2.1](https://github.com/Bergert-Digital/pediment/compare/v3.2.0...v3.2.1) (2026-08-07)
+
+
+### Bug Fixes
+
+* **seeder:** re-assert a translation's shared slug once its language is set ([#81](https://github.com/Bergert-Digital/pediment/issues/81)) ([b99dd70](https://github.com/Bergert-Digital/pediment/commit/b99dd7087b3d36e829c9c34d9a87e0c00a5a5e63))
+
 ## [3.2.0](https://github.com/Bergert-Digital/pediment/compare/v3.1.0...v3.2.0) (2026-08-06)
 
 
