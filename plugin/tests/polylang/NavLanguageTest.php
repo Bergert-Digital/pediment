@@ -28,6 +28,33 @@ class NavLanguageTest extends PolylangTestCase {
 		$this->assertNotContains( 'wp_navigation', (array) apply_filters( 'pll_get_post_types', [], true ) );
 	}
 
+	/**
+	 * Polylang Pro's full-site-editing module adds wp_template_part as a
+	 * translated post type (PLL_FSE_Post_Types::add_post_types(), on
+	 * `pll_get_post_types` at priority 10), which language-scopes it. Pediment
+	 * seeds ONE header and one footer, shared across every language and tagged
+	 * with no language — under Pro the language-less parts then match no
+	 * language, and the `wp:template-part` block resolves to nothing, taking the
+	 * whole navigation with it. Pro is not installed in this Free-backed suite,
+	 * so a stand-in adds wp_template_part exactly as Pro does; the assertion is
+	 * that this plugin removes it again while leaving wp_navigation translated.
+	 */
+	public function test_template_parts_are_kept_out_of_translation_even_when_pro_adds_them() {
+		$pro = static function ( $post_types ) {
+			$post_types['wp_template_part'] = 'wp_template_part';
+			return $post_types;
+		};
+		add_filter( 'pll_get_post_types', $pro, 10, 1 );
+		try {
+			$types = (array) apply_filters( 'pll_get_post_types', [], false );
+		} finally {
+			remove_filter( 'pll_get_post_types', $pro, 10 );
+		}
+
+		$this->assertNotContains( 'wp_template_part', $types, 'The shared header/footer parts must stay language-agnostic, or Pro hides them.' );
+		$this->assertContains( 'wp_navigation', $types, 'Removing template parts must not disturb the translated navigation.' );
+	}
+
 	public function test_one_navigation_entity_per_language() {
 		$manifest = $this->manifest();
 		$lang     = new PolylangProvider();
