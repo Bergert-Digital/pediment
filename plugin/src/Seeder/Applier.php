@@ -123,6 +123,20 @@ final class Applier {
 		// Same write path as creation — never a second pass (8593c73).
 		$this->lang->setLanguage( $postId, $entry->language );
 
+		// A translation may deliberately share its default-language sibling's
+		// slug (/en/home and /de/home both `home`). The insert above ran
+		// wp_unique_post_slug BEFORE the post had a Polylang language, so
+		// Polylang Pro's share-slug filter could not yet tell the collision
+		// was cross-language and WordPress uniquified it to `home-2`. Now that
+		// the language is set, re-assert the declared slug: under Pro it lands
+		// the shared slug; under Free (no share-slug filter) it re-uniquifies
+		// exactly as the bare insert did, so this is a no-op there. Guarded so
+		// the overwhelming majority of entries — whose slug never collided —
+		// take no second write.
+		if ( get_post_field( 'post_name', $postId ) !== $entry->slug ) {
+			wp_update_post( wp_slash( [ 'ID' => $postId, 'post_name' => $entry->slug ] ) );
+		}
+
 		update_post_meta( $postId, Meta::KEY, $entry->key );
 		$this->recordHashes( $postId, $entry );
 
