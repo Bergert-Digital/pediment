@@ -38,3 +38,29 @@ function pediment_polylang_translate_navigation_menus( $post_types, $is_settings
 	return $post_types;
 }
 add_filter( 'pll_get_post_types', 'pediment_polylang_translate_navigation_menus', 10, 2 );
+
+/**
+ * Keep template parts out of Polylang's translated post types.
+ *
+ * Polylang Pro's full-site-editing module registers wp_template_part as a
+ * translated post type (PLL_FSE_Post_Types::add_post_types(), on
+ * `pll_get_post_types` at priority 10), which language-scopes it. A Pediment
+ * site seeds ONE header and one footer, shared across every language and tagged
+ * with no language — the per-language element is the navigation, the
+ * wp_navigation post kept translatable above. Under Pro the language-less parts
+ * then match no current language, so the `wp:template-part` block resolves to
+ * nothing and the header (with its whole navigation) disappears on every front
+ * end. Polylang Free never scoped template parts, so this only surfaces on Pro.
+ *
+ * Priority 100 so it runs AFTER Pro's own priority-10 filter has added the type.
+ * Only wp_template_part is removed; wp_navigation and the translated content
+ * pages are untouched.
+ *
+ * @param string[] $post_types Post types Polylang manages.
+ * @return string[]
+ */
+function pediment_polylang_share_template_parts( $post_types ) {
+	unset( $post_types['wp_template_part'] );
+	return $post_types;
+}
+add_filter( 'pll_get_post_types', 'pediment_polylang_share_template_parts', 100, 1 );
