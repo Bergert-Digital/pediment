@@ -198,4 +198,75 @@ class ApplierTranslationTest extends PolylangTestCase {
 			'A 2-of-3 map must not be linked just because the failure left English and German behind — the group must wait for French to actually exist.'
 		);
 	}
+
+	/**
+	 * A translation that declares the SAME slug as its default-language
+	 * sibling — the shared-slug case Polylang Pro's PLL_Share_Post_Slug exists
+	 * to serve (/en/home and /de/home both `home`) — must actually land that
+	 * slug, not WordPress's uniquified `home-2`. create() inserts the post
+	 * (WordPress uniquifies the colliding slug there and then) BEFORE the post
+	 * is given a Polylang language, so Pro's `wp_unique_post_slug` filter —
+	 * which shares a colliding slug only once the post HAS a language and the
+	 * rival holding it is in another language — never gets its chance. Pro is
+	 * not installed in this Free-backed suite, so a faithful stand-in for that
+	 * documented contract (mirroring PLL_Share_Post_Slug::wp_unique_post_slug)
+	 * stands in for it; the assertion is on the Applier's real stored slug.
+	 */
+	public function test_a_translation_may_share_its_default_siblings_slug() {
+		$sharePostSlug = static function ( $slug, $post_ID, $post_status, $post_type, $post_parent, $original_slug ) {
+			if ( $slug === $original_slug ) {
+				return $slug; // WordPress did not uniquify — nothing to share.
+			}
+			$lang = pll_get_post_language( $post_ID );
+			if ( empty( $lang ) ) {
+				return $slug; // No language yet — Pro cannot tell the collision is cross-language.
+			}
+			$rivals = get_posts(
+				[
+					'post_type'        => $post_type,
+					'post_status'      => 'any',
+					'name'             => $original_slug,
+					'post__not_in'     => [ $post_ID ],
+					'posts_per_page'   => -1,
+					'fields'           => 'ids',
+					'lang'             => '',
+					'suppress_filters' => true,
+				]
+			);
+			foreach ( $rivals as $rival ) {
+				if ( pll_get_post_language( $rival ) === $lang ) {
+					return $slug; // A genuine same-language collision stays unique.
+				}
+			}
+			return $original_slug; // Only a cross-language collision — Pro shares it.
+		};
+		add_filter( 'wp_unique_post_slug', $sharePostSlug, 10, 6 );
+
+		try {
+			$manifest = Manifest::fromArray(
+				[
+					'languages' => [ 'en' => [ 'name' => 'English', 'locale' => 'en_US', 'default' => true ], 'de' => [ 'name' => 'Deutsch', 'locale' => 'de_DE' ] ],
+					'pages'     => [
+						'home' => [ 'title' => 'Home', 'content' => '<p>home</p>', 'languages' => [ 'de' => [ 'title' => 'Startseite', 'slug' => 'home' ] ] ],
+					],
+				],
+				get_stylesheet_directory()
+			);
+
+			$lang    = new PolylangProvider();
+			$desired = ( new DesiredState( $lang, new ContentResolver( new MediaMap( [] ) ) ) )->build( $manifest );
+			$reader  = new StateReader( $lang );
+			$plan    = ( new Differ() )->diff( $desired, $reader->read(), $reader->duplicates() );
+			$applied = ( new Applier( $lang ) )->apply( $plan, $desired );
+		} finally {
+			remove_filter( 'wp_unique_post_slug', $sharePostSlug, 10 );
+		}
+
+		$this->assertSame(
+			'home',
+			get_post( $applied->ids['home|de'] )->post_name,
+			'The German home shares the English home\'s slug under Pro; the seed must re-assert it once the post has a language, not leave WordPress\'s uniquified "home-2".'
+		);
+		$this->assertSame( [], $applied->errors, 'A shared slug that lands is not a collision to report.' );
+	}
 }
