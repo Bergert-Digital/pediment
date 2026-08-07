@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.2.2](https://github.com/Bergert-Digital/pediment/compare/v3.2.1...v3.2.2) (2026-08-07)
+
+
+### Bug Fixes
+
+* keep template parts out of Polylang so the shared header renders under Pro ([#83](https://github.com/Bergert-Digital/pediment/issues/83)) ([2c5e4fb](https://github.com/Bergert-Digital/pediment/commit/2c5e4fbca3c4a927e1249a8142888d4c893e12ee))
+
 ## [3.2.1](https://github.com/Bergert-Digital/pediment/compare/v3.2.0...v3.2.1) (2026-08-07)
 
 
