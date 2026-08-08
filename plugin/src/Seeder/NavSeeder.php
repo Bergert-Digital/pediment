@@ -222,7 +222,21 @@ final class NavSeeder {
 		$blocks = [];
 
 		foreach ( $spec->items as $item ) {
-			$item  = (array) $item;
+			$item = (array) $item;
+
+			// A language switcher is a dynamic Polylang Pro block, not a link to a
+			// seeded post — emit it verbatim and move on. `dropdown` defaults on
+			// (the "English ▾" menu-item form); an array value overrides the block
+			// attributes. Language-agnostic, so every language's menu carries it.
+			if ( isset( $item['language_switcher'] ) ) {
+				$switcherAttrs = array_merge(
+					[ 'dropdown' => true ],
+					is_array( $item['language_switcher'] ) ? $item['language_switcher'] : []
+				);
+				$blocks[] = '<!-- wp:polylang/navigation-language-switcher ' . wp_json_encode( $switcherAttrs, JSON_UNESCAPED_SLASHES ) . ' /-->';
+				continue;
+			}
+
 			$attrs = $this->linkAttrs( $item, $language, $entryIds );
 
 			// Reported by apply() via unresolvedEntries(), not from here:
@@ -421,6 +435,12 @@ final class NavSeeder {
 	private static function countLinks( array $items ): int {
 		$count = 0;
 		foreach ( $items as $item ) {
+			// A language switcher is not a link; skip it so this count stays
+			// symmetric with plan()'s `from` tally (which counts only
+			// navigation-link/-submenu markup in the stored nav).
+			if ( isset( ( (array) $item )['language_switcher'] ) ) {
+				continue;
+			}
 			++$count;
 			$count += self::countLinks( (array) ( ( (array) $item )['children'] ?? [] ) );
 		}

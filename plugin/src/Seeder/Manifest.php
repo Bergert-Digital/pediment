@@ -213,6 +213,17 @@ final class Manifest {
 	 *                       an entry nor a url/label pair, or nests too deeply.
 	 */
 	private static function navItem( array $item, array $entries, string $path, bool $allowChildren ): array {
+		if ( isset( $item['language_switcher'] ) ) {
+			// A dynamic Polylang block, resolved at render time — it names no entry
+			// and is a leaf. Rejecting children here keeps a `language_switcher`
+			// with a stray submenu from validating and then serializing as a bare
+			// switcher, silently dropping the children.
+			if ( isset( $item['children'] ) ) {
+				throw new ManifestError( "{$path}: a language_switcher item is a leaf and may not declare 'children'." ); // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- exception message for the operator, not echoed output.
+			}
+			return $item;
+		}
+
 		if ( isset( $item['entry'] ) ) {
 			$target = (string) $item['entry'];
 			if ( ! isset( $entries[ $target ] ) ) {
