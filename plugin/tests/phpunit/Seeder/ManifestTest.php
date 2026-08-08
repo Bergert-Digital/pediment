@@ -478,6 +478,28 @@ class ManifestTest extends WP_UnitTestCase {
 		$this->assertSame( 'faq', $items[1]['children'][0]['entry'] );
 	}
 
+	public function test_a_nav_item_may_be_a_language_switcher() {
+		$manifest = Manifest::fromArray(
+			$this->navManifest( [ [ 'entry' => 'home' ], [ 'language_switcher' => true ] ] ),
+			'/tmp/theme'
+		);
+
+		$items = $manifest->navs()['primary']->items;
+
+		$this->assertCount( 2, $items );
+		$this->assertTrue( $items[1]['language_switcher'] );
+	}
+
+	public function test_a_language_switcher_may_not_declare_children() {
+		$this->expectException( ManifestError::class );
+		$this->expectExceptionMessageMatches( '/language_switcher/' );
+
+		Manifest::fromArray(
+			$this->navManifest( [ [ 'language_switcher' => true, 'children' => [ [ 'entry' => 'home' ] ] ] ] ),
+			'/tmp/theme'
+		);
+	}
+
 	public function test_a_child_naming_an_undeclared_entry_is_rejected() {
 		$this->expectException( ManifestError::class );
 		$this->expectExceptionMessage( "navs.primary.items.0.children.0: unknown entry 'nope'." );
