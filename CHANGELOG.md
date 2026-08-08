@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.3.0](https://github.com/Bergert-Digital/pediment/compare/v3.2.2...v3.3.0) (2026-08-08)
+
+
+### Features
+
+* **seeder:** a language_switcher nav item seeds the Polylang switcher block ([#85](https://github.com/Bergert-Digital/pediment/issues/85)) ([9390a34](https://github.com/Bergert-Digital/pediment/commit/9390a34b479bff27ab7a89f9a7eca9f0cb3569bf))
+
 ## [3.2.2](https://github.com/Bergert-Digital/pediment/compare/v3.2.1...v3.2.2) (2026-08-07)
 
 
