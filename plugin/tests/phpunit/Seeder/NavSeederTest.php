@@ -31,6 +31,20 @@ class NavSeederTest extends WP_UnitTestCase {
 		$this->assertStringContainsString( 'wp:navigation-link', $markup );
 	}
 
+	public function test_serializes_a_language_switcher_item() {
+		$seeder = new NavSeeder( new NullProvider() );
+		$m      = $this->manifest( [ [ 'entry' => 'home' ], [ 'language_switcher' => true ] ] );
+
+		$markup = $seeder->serialize( $m->navs()['primary'], '', [ 'home|' => 12 ] );
+
+		// A dropdown switcher block — Polylang Pro renders it into the "English ▾"
+		// menu item with a dropdown of the language names.
+		$this->assertStringContainsString( 'wp:polylang/navigation-language-switcher', $markup );
+		$this->assertStringContainsString( '"dropdown":true', $markup );
+		// It sits alongside the ordinary links, not in place of them.
+		$this->assertStringContainsString( 'wp:navigation-link', $markup );
+	}
+
 	public function test_creates_one_entity_per_nav_key() {
 		$seeder = new NavSeeder( new NullProvider() );
 		$m      = $this->manifest( [ [ 'entry' => 'home' ] ] );
