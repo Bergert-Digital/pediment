@@ -8,10 +8,11 @@ inputs:
     default: "."
   plugin-source:
     description: >-
-      Optional path to a locally built plugin directory (one whose basename is `pediment`).
-      When set, it replaces the pinned release URL in .wp-env.json so a PR tests its own
-      plugin build. A directory, not a zip — wp-env's local-path support for directories is
-      the well-trodden path, and the monorepo's own .wp-env.json already relies on it.
+      Optional path to a locally built plugin directory (one whose basename is `pediment-plugin`,
+      the slug wp-env derives from the released pediment-plugin.zip URL — the scaffolded env:start
+      activates that slug). When set, it replaces the pinned release URL in .wp-env.json so a PR
+      tests its own plugin build. A directory, not a zip — wp-env's local-path support for
+      directories is the well-trodden path, and the monorepo's own .wp-env.json already relies on it.
     required: false
     default: ""
   assert-block:

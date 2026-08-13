@@ -117,9 +117,13 @@ jobs:
           set -euo pipefail
           composer install --no-dev --optimize-autoloader --prefer-dist --no-progress -d plugin
           cd plugin && npm ci && npm run build && cd ..
-          mkdir -p stage-plugin/pediment
-          rsync -a --exclude-from=plugin/.distignore plugin/ stage-plugin/pediment/
-          ls stage-plugin/pediment/plugin.php
+          # Basename must be `pediment-plugin`: that is the slug wp-env derives from the
+          # released pediment-plugin.zip URL (it renames the zip's inner dir to the URL
+          # basename), and the scaffolded env:start runs `wp plugin activate pediment-plugin`.
+          # Staging under any other name would test a slug real installs never produce.
+          mkdir -p stage-plugin/pediment-plugin
+          rsync -a --exclude-from=plugin/.distignore plugin/ stage-plugin/pediment-plugin/
+          ls stage-plugin/pediment-plugin/plugin.php
 
       - name: Scaffold a client site from the template
         run: |
@@ -136,7 +140,7 @@ jobs:
         uses: ./.github/actions/seed-check
         with:
           theme-path: ${{ runner.temp }}/${{ matrix.slug }}
-          plugin-source: ${{ github.workspace }}/stage-plugin/pediment
+          plugin-source: ${{ github.workspace }}/stage-plugin/pediment-plugin
           assert-block: ${{ matrix.assert-block }}
 
       - name: Upload the scaffolded site on failure

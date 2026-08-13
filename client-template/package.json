@@ -8,7 +8,7 @@
     "plugin": "__PEDIMENT_PLUGIN_VERSION__"
   },
   "scripts": {
-    "env:start": "wp-env start && wp-env run cli wp theme activate __PEDIMENT_SLUG__ && wp-env run cli wp plugin activate pediment",
+    "env:start": "wp-env start && wp-env run cli wp theme activate __PEDIMENT_SLUG__ && wp-env run cli wp plugin activate pediment-plugin",
     "env:stop": "wp-env stop",
     "languages": "wp-env run cli wp pediment languages",
     "seed:plan": "wp-env run cli wp pediment seed --dry-run",
