@@ -16,6 +16,6 @@
     "wp-content/themes/pediment-fixture": "./tests/fixtures/client-theme",
     "wp-content/plugins/pediment-ai": "./plugin",
     "wp-content/uploads": "./tests/fixtures/uploads",
-    "wp-content/mu-plugins/activate-pediment.php": "./plugin/tests/fixtures/mu-activate-theme.php"
+    "wp-content/mu-plugins": "./plugin/tests/fixtures/mu-plugins"
   }
 }
