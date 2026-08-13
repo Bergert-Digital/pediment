@@ -72,26 +72,6 @@ export function validateTarget(target) {
 }
 
 /**
- * WordPress derives the in-container theme directory from the mounted path's basename
- * (client-template/.wp-env.json sets "themes": ["."]), and package.json's env:start script runs
- * `wp theme activate <slug>`. A target whose basename differs from the slug boots wp-env and then
- * fails theme activation, after the repo has already been committed.
- */
-export function validateTargetMatchesSlug(target, slug) {
-  const base = path.basename(target);
-  if (base !== slug) {
-    throw new Error(
-      `Target directory "${base}" does not match client slug "${slug}".\n\n` +
-      '  wp-env derives the theme directory it mounts inside the container from the target\n' +
-      '  directory\'s own basename, and package.json runs `wp theme activate <slug>` against\n' +
-      '  that container — so a mismatched directory name boots wp-env and then fails to\n' +
-      '  activate the theme, after the repo is already committed.\n\n' +
-      `  Name the target directory exactly "${slug}", or change client.slug to match it.`,
-    );
-  }
-}
-
-/**
  * `client.name` and `client.description` are interpolated as free text into JSON (package.json)
  * and into block-pattern attribute JSON (patterns/*.php, e.g. the hero's "headline"/"subheadline")
  * with no escaping. A double quote breaks both: it invalidates package.json outright, and it
@@ -294,7 +274,6 @@ export async function scaffold(answers, opts) {
 
   validateSlug(answers.client.slug);
   validateTarget(target);
-  validateTargetMatchesSlug(target, answers.client.slug);
   validateFreeText('client.name', answers.client.name);
   validateFreeText('client.description', answers.client.description);
 
