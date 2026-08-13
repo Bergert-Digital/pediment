@@ -307,6 +307,7 @@ test('scaffold mounts the theme at a slug-named path, even when the target direc
 
   await rm(dir, { recursive: true, force: true });
 });
+
 test('scaffold adds Polylang to .wp-env.json for a multilingual site', async () => {
   const dir = await temp();
   const target = path.join(dir, 'bergwerk-hotel');

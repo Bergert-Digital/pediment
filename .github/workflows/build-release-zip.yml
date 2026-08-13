@@ -46,6 +46,11 @@ jobs:
           cd plugin && npm pkg set version="${VERSION}"
 
       - name: Stage and zip plugin
+        # The inner dir is `pediment` (NOT `pediment-plugin`): production installs via a wp-admin
+        # zip upload, which extracts this inner folder, so the production plugin slug is `pediment`.
+        # That is deliberately different from wp-env, which names the plugin after the zip URL's
+        # basename (`pediment-plugin`) — see ci.yml's stage-plugin/pediment-plugin. Do not "unify"
+        # them: changing this folder would silently repoint the production slug and its updater.
         run: |
           mkdir -p stage-plugin/pediment
           rsync -a --exclude-from=plugin/.distignore plugin/ stage-plugin/pediment/

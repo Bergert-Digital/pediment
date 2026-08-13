@@ -283,17 +283,15 @@ _(none currently known — verify by running a user-journey audit)_
   left by review. `client-kit/tests/fixtures/answers-multilingual.json` (de + en)
   already exists, so a second matrix entry over the fixture path — feeding both the
   scaffold step and the `seed-check` action — is the whole fix.
-- [ ] **`npx wp-env start` cannot boot a freshly destroyed environment on macOS.** Not caused
-  by any branch; nobody had recorded it, and it has cost multiple people an hour each. The first
-  start after `wp-env destroy` fails with an OCI runtime error mounting
-  `plugin/tests/fixtures/mu-activate-theme.php` to `wp-content/mu-plugins/activate-pediment.php`:
-  Docker Desktop's virtiofs cannot see the mountpoint file wp-env itself just created on the
-  host. The failed start leaves MariaDB half-initialized, so every retry then fails with "Error
-  establishing a database connection" and retrying never clears it. **The working recovery,
-  verified:** `npx wp-env stop`, then
-  `docker volume rm a3dc8692d63bbaed34b7c5faf40dce3f_mysql a3dc8692d63bbaed34b7c5faf40dce3f_mysql-test`,
-  then `npx wp-env start` — by then the mountpoint files exist, the mount succeeds and MariaDB
-  initializes cleanly. macOS Docker Desktop only; CI runs on Linux runners and is unaffected.
+- [x] **`npx wp-env start` failed to boot on macOS with Docker's containerd image store.** The
+  start failed with an OCI runtime error mounting the mu-plugin fixture to
+  `wp-content/mu-plugins/activate-pediment.php` (`mountpoint … is outside of rootfs`): Docker
+  Desktop's containerd image store cannot bind-mount a single host file over virtiofs. The failed
+  start also left MariaDB half-initialized, so retries then failed with "Error establishing a
+  database connection". **Fixed** by mounting the mu-plugin as a directory
+  (`plugin/tests/fixtures/mu-plugins/`) instead of a single file — see the commit that moved
+  `mu-activate-theme.php` to `mu-plugins/activate-pediment.php`. macOS Docker Desktop only; CI runs
+  on Linux runners and was unaffected.
 - [ ] **Decided: a nav orphaned by a dropped Polylang language collides with the default
   language and hard-blocks the seed, rather than being silently ignored.** Was recorded as an
   open design question by the untagged-nav fix in `NavSeeder::languageOf()` (migration step 6a
