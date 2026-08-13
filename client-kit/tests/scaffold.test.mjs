@@ -8,7 +8,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
   TOKENS, replaceTokens, validateTarget, validateSlug,
-  validateTargetMatchesSlug, validateFreeText, validatePagesHavePatterns,
+  validateFreeText, validatePagesHavePatterns,
   copyTemplate, assertNoTokens, resolveTemplate, scaffold,
 } from '../scripts/scaffold.mjs';
 
@@ -62,12 +62,6 @@ test('validateTarget accepts a missing directory and an empty one', async () => 
   validateTarget(dir);
   validateTarget(path.join(dir, 'does-not-exist-yet'));
   await rm(dir, { recursive: true, force: true });
-});
-
-test('validateTargetMatchesSlug accepts a matching basename and rejects a mismatched one', () => {
-  validateTargetMatchesSlug('/tmp/acme-roofing', 'acme-roofing');
-  validateTargetMatchesSlug('/tmp/acme-roofing/', 'acme-roofing');
-  assert.throws(() => validateTargetMatchesSlug('/tmp/acme', 'acme-roofing'), /does not match client slug/i);
 });
 
 test('validateFreeText accepts plain text and rejects quotes and backslashes', () => {
@@ -299,6 +293,21 @@ test('scaffold pins the plugin release in .wp-env.json and omits Polylang when m
   await rm(dir, { recursive: true, force: true });
 });
 
+test('scaffold mounts the theme at a slug-named path, even when the target directory differs', async () => {
+  const dir = await temp();
+  // A Conductor workspace directory ("seattle") never matches the client slug. The theme must
+  // still mount at wp-content/themes/<slug> so `wp theme activate <slug>` resolves — that is
+  // exactly what the removed "themes": ["."] behaviour (mount under the checkout basename) broke.
+  const target = path.join(dir, 'seattle');
+  await scaffold(greenfield, { target, template: MINI, git: false });
+
+  const env = JSON.parse(await readFile(path.join(target, '.wp-env.json'), 'utf8'));
+  assert.equal(env.themes, undefined);
+  assert.equal(env.mappings['wp-content/themes/acme-roofing'], '.');
+
+  await rm(dir, { recursive: true, force: true });
+});
+
 test('scaffold adds Polylang to .wp-env.json for a multilingual site', async () => {
   const dir = await temp();
   const target = path.join(dir, 'bergwerk-hotel');
@@ -386,14 +395,17 @@ test('scaffold refuses a bad slug before writing anything', async () => {
   await rm(dir, { recursive: true, force: true });
 });
 
-test('scaffold refuses a target whose basename does not match the slug, before writing anything', async () => {
+test('scaffold accepts a target whose basename differs from the slug and writes the tree', async () => {
   const dir = await temp();
+  // The theme now mounts via a slug-named mapping rather than "themes": ["."], so the checkout
+  // directory no longer has to be named after the slug — a Conductor workspace can scaffold freely.
   const target = path.join(dir, 'not-the-slug');
-  await assert.rejects(
-    scaffold(greenfield, { target, template: MINI, git: false }),
-    /does not match client slug/i,
-  );
-  assert.equal(existsSync(target), false);
+  await scaffold(greenfield, { target, template: MINI, git: false });
+
+  assert.equal(existsSync(path.join(target, 'style.css')), true);
+  const css = await readFile(path.join(target, 'style.css'), 'utf8');
+  assert.match(css, /Text Domain: acme-roofing/);
+
   await rm(dir, { recursive: true, force: true });
 });
 

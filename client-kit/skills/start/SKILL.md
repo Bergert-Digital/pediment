@@ -135,9 +135,10 @@ Rules:
 - `plugin.version` / `template.version`: Set both `plugin.version` and `template.version` to `V`,
   the exact version read from the installed kit manifest in Phase 0. They identify one monorepo
   release and must never diverge.
-- Ask the user where the repo should go and confirm the absolute path before writing anything —
-  the target directory's **basename must equal `client.slug` exactly**; `scaffold.mjs` refuses
-  otherwise, because wp-env derives the in-container theme directory name from it.
+- Ask the user where the repo should go and confirm the absolute path before writing anything.
+  The target directory's basename no longer has to match `client.slug`: `.wp-env.json` mounts the
+  theme at `wp-content/themes/<slug>` via a mapping, so the checkout directory can be named
+  anything (a Conductor workspace, `/tmp/scratch`, etc.).
 
 ---
 
