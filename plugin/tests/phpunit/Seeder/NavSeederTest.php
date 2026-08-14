@@ -3,6 +3,7 @@
 
 use Pediment\Language\NullProvider;
 use Pediment\Seeder\Manifest;
+use Pediment\Seeder\MegaBlocks;
 use Pediment\Seeder\Meta;
 use Pediment\Seeder\NavSeeder;
 use Pediment\Seeder\PlanItem;
@@ -332,5 +333,69 @@ class NavSeederTest extends WP_UnitTestCase {
 		$this->assertSame( PlanItem::UPDATE, $plan->items()[0]->action );
 		$this->assertSame( 2, $plan->items()[0]->changes['items']['from'], 'the stored submenu and its one child' );
 		$this->assertSame( 3, $plan->items()[0]->changes['items']['to'] );
+	}
+
+	private function megaItems( string $label = 'Products' ): array {
+		return [
+			[ 'entry' => 'home' ],
+			[
+				'mega' => [
+					'label'   => $label,
+					'columns' => [
+						[
+							'heading' => 'Pages',
+							'icon'    => 'bank',
+							'links'   => [
+								[ 'entry' => 'about', 'description' => 'Who we are' ],
+								[ 'label' => 'Savings', 'url' => '/savings/' ],
+							],
+						],
+					],
+				],
+			],
+		];
+	}
+
+	public function test_serializes_a_mega_item_with_fixed_key_order() {
+		$seeder  = new NavSeeder( new NullProvider() );
+		$aboutId = self::factory()->post->create( [ 'post_type' => 'page', 'post_title' => 'About' ] );
+		$m       = $this->manifest( $this->megaItems() );
+
+		$markup = $seeder->serialize( $m->navs()['primary'], '', [ 'home|' => 12, 'about|' => $aboutId ] );
+
+		$this->assertStringContainsString(
+			'<!-- wp:pediment/mega-menu {"label":"Products","columns":[{"heading":"Pages","icon":"bank","links":['
+				. '{"label":"About","description":"Who we are","url":"' . get_permalink( $aboutId ) . '"},'
+				. '{"label":"Savings","url":"/savings/"}'
+				. ']}]} /-->',
+			$markup
+		);
+		$this->assertStringContainsString( 'wp:navigation-link', $markup, 'ordinary items still serialize around it' );
+	}
+
+	public function test_optional_mega_keys_are_omitted_not_emitted_empty() {
+		$seeder = new NavSeeder( new NullProvider() );
+		$m      = $this->manifest(
+			[ [ 'mega' => [ 'label' => 'P', 'columns' => [ [ 'heading' => 'H', 'links' => [ [ 'label' => 'L', 'url' => '/l/' ] ] ] ] ] ] ]
+		);
+
+		$markup = $seeder->serialize( $m->navs()['primary'], '', [] );
+
+		$this->assertStringNotContainsString( '"icon"', $markup );
+		$this->assertStringNotContainsString( '"description"', $markup );
+	}
+
+	public function test_an_unresolved_mega_entry_is_dropped_and_reported() {
+		$seeder = new NavSeeder( new NullProvider() );
+		$m      = $this->manifest( $this->megaItems() );
+		$ids    = [ 'home|' => self::factory()->post->create( [ 'post_type' => 'page' ] ) ]; // 'about' never seeded.
+
+		$markup = $seeder->serialize( $m->navs()['primary'], '', $ids );
+		$seeder->apply( $seeder->plan( $m, $ids ), $m, $ids );
+
+		$this->assertStringNotContainsString( '"description":"Who we are"', $markup, 'the unresolved link is dropped' );
+		$this->assertStringContainsString( '"label":"Savings"', $markup, 'resolvable links stay' );
+		$this->assertNotEmpty( $seeder->errors() );
+		$this->assertStringContainsString( 'about', $seeder->errors()[0] );
 	}
 }

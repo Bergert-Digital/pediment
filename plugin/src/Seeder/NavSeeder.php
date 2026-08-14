@@ -224,6 +224,14 @@ final class NavSeeder {
 		foreach ( $spec->items as $item ) {
 			$item = (array) $item;
 
+			// A mega item is one self-closing block; its links are JSON
+			// attributes, not nested navigation-link blocks, which is why
+			// countLinks() and plan()'s needles both count it as 1.
+			if ( isset( $item['mega'] ) ) {
+				$blocks[] = $this->megaMarkup( (array) $item['mega'], $language, $entryIds );
+				continue;
+			}
+
 			// A language switcher is a dynamic Polylang Pro block, not a link to a
 			// seeded post — emit it verbatim and move on. `dropdown` defaults on
 			// (the "English ▾" menu-item form); an array value overrides the block
@@ -308,6 +316,60 @@ final class NavSeeder {
 			'kind'  => 'post-type',
 			'url'   => (string) get_permalink( $postId ),
 		];
+	}
+
+	/**
+	 * One `pediment/mega-menu` block from a manifest mega item.
+	 *
+	 * Key order is load-bearing for the same reason as linkAttrs(): label,
+	 * columns; per column heading, icon, links; per link label, description,
+	 * url — optional keys are omitted, never emitted empty. Entry links
+	 * resolve through linkAttrs() (per-language permalink, label falls back
+	 * to the post title); the resolver's id/kind/type keys are dropped
+	 * because the block schema does not know them.
+	 *
+	 * @param array<string,mixed> $mega
+	 * @param array<string,int>   $entryIds
+	 */
+	private function megaMarkup( array $mega, string $language, array $entryIds ): string {
+		$columns = [];
+
+		foreach ( (array) $mega['columns'] as $column ) {
+			$column = (array) $column;
+			$links  = [];
+
+			foreach ( (array) $column['links'] as $link ) {
+				$link  = (array) $link;
+				$attrs = $this->linkAttrs( $link, $language, $entryIds );
+				// Same contract as the top-level items: an unresolved entry is
+				// dropped here and reported by apply() via unresolvedEntries(),
+				// which also refuses to write the shortened menu.
+				if ( [] === $attrs ) {
+					continue;
+				}
+
+				$out = [ 'label' => (string) $attrs['label'] ];
+				if ( isset( $link['description'] ) ) {
+					$out['description'] = (string) $link['description'];
+				}
+				$out['url'] = (string) $attrs['url'];
+				$links[]    = $out;
+			}
+
+			$col = [ 'heading' => (string) $column['heading'] ];
+			if ( isset( $column['icon'] ) ) {
+				$col['icon'] = (string) $column['icon'];
+			}
+			$col['links'] = $links;
+			$columns[]    = $col;
+		}
+
+		$attrs = [
+			'label'   => (string) $mega['label'],
+			'columns' => $columns,
+		];
+
+		return '<!-- wp:pediment/mega-menu ' . wp_json_encode( $attrs, JSON_UNESCAPED_SLASHES ) . ' /-->';
 	}
 
 	/**
@@ -418,6 +480,12 @@ final class NavSeeder {
 
 		foreach ( (array) ( $item['children'] ?? [] ) as $child ) {
 			$missing = array_merge( $missing, $this->unresolvedItem( (array) $child, $language, $entryIds ) );
+		}
+
+		foreach ( (array) ( ( (array) ( $item['mega'] ?? [] ) )['columns'] ?? [] ) as $column ) {
+			foreach ( (array) ( ( (array) $column )['links'] ?? [] ) as $link ) {
+				$missing = array_merge( $missing, $this->unresolvedItem( (array) $link, $language, $entryIds ) );
+			}
 		}
 
 		return $missing;
