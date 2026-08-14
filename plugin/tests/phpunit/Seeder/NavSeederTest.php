@@ -604,4 +604,67 @@ class NavSeederTest extends WP_UnitTestCase {
 
 		$this->assertSame( '', (string) get_post_meta( $navId, Meta::MEGA_HASH, true ) );
 	}
+
+	public function test_a_saved_mega_nav_round_trips_byte_identical() {
+		// The nav-side version of the slashes trap, for nested JSON full of
+		// client copy: if any byte shifts on save, the stored markup never
+		// matches a fresh serialize() and the nav rewrites on every run.
+		$seeder = new NavSeeder( new NullProvider() );
+		$m      = $this->manifest(
+			[
+				[
+					'mega' => [
+						'label'   => 'Zoë & Sons — "Products"',
+						'columns' => [
+							[
+								'heading' => 'Straße & Co',
+								'links'   => [
+									[ 'label' => 'A/B', 'url' => '/a/b/c/', 'description' => 'Ünïcode, "quotes" & ampersands' ],
+								],
+							],
+						],
+					],
+				],
+			]
+		);
+
+		$navId = $seeder->apply( $seeder->plan( $m, [] ), $m, [] )['primary|'];
+
+		$this->assertSame( PlanItem::UNCHANGED, $seeder->plan( $m, [] )->items()[0]->action );
+		$this->assertNotSame( '', get_post( $navId )->post_content );
+	}
+
+	public function test_a_mega_free_manifest_serializes_exactly_as_before() {
+		// Locks the no-rewrite-once guarantee: byte-identical output for
+		// manifests that never mention mega, so upgraded sites plan UNCHANGED.
+		$seeder  = new NavSeeder( new NullProvider() );
+		$homeId  = self::factory()->post->create( [ 'post_type' => 'page', 'post_title' => 'Home' ] );
+		$aboutId = self::factory()->post->create( [ 'post_type' => 'page', 'post_title' => 'About' ] );
+		$ids     = [ 'home|' => $homeId, 'about|' => $aboutId ];
+		$m       = $this->manifest(
+			[
+				[ 'entry' => 'home' ],
+				[ 'url' => '/contact', 'label' => 'Contact' ],
+				[ 'entry' => 'about', 'children' => [ [ 'url' => '/faq', 'label' => 'FAQ' ] ] ],
+				[ 'language_switcher' => true ],
+			]
+		);
+
+		$expected = implode(
+			"\n",
+			[
+				'<!-- wp:navigation-link {"label":"Home","type":"page","id":' . $homeId . ',"kind":"post-type","url":"' . get_permalink( $homeId ) . '"} /-->',
+				'<!-- wp:navigation-link {"label":"Contact","url":"/contact","kind":"custom"} /-->',
+				'<!-- wp:navigation-submenu {"label":"About","type":"page","id":' . $aboutId . ',"kind":"post-type","url":"' . get_permalink( $aboutId ) . '"} -->'
+					. "\n" . '<!-- wp:navigation-link {"label":"FAQ","url":"/faq","kind":"custom"} /-->' . "\n"
+					. '<!-- /wp:navigation-submenu -->',
+				'<!-- wp:polylang/navigation-language-switcher {"dropdown":true} /-->',
+			]
+		);
+
+		$this->assertSame( $expected, $seeder->serialize( $m->navs()['primary'], '', $ids ) );
+
+		$navIds = $seeder->apply( $seeder->plan( $m, $ids ), $m, $ids );
+		$this->assertSame( '', (string) get_post_meta( $navIds['primary|'], Meta::MEGA_HASH, true ) );
+	}
 }
