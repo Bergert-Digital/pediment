@@ -174,7 +174,7 @@ final class NavSeeder {
 					$postId = (int) $postId;
 					$this->lang->setLanguage( $postId, $item->language );
 					update_post_meta( $postId, Meta::KEY, $spec->key );
-					MegaBlocks::writeHashes( $postId, '', $content );
+					MegaBlocks::writeHashes( $postId, '' );
 				} elseif ( PlanItem::RESTORE === $item->action ) {
 					$postId  = $item->postId;
 					$old     = (string) get_post( $postId )->post_content;
@@ -198,7 +198,7 @@ final class NavSeeder {
 						continue;
 					}
 					Meta::clearTrashBookkeeping( $postId );
-					MegaBlocks::writeHashes( $postId, $old, $content );
+					MegaBlocks::writeHashes( $postId, $old );
 				} else {
 					$postId  = $item->postId;
 					$old     = (string) get_post( $postId )->post_content;
@@ -208,7 +208,7 @@ final class NavSeeder {
 						$this->errors[] = sprintf( 'navs.%s: could not update the navigation entity — %s', $spec->key, $updated->get_error_message() );
 						continue;
 					}
-					MegaBlocks::writeHashes( $postId, $old, $content );
+					MegaBlocks::writeHashes( $postId, $old );
 				}
 
 				$ids[ $item->mapKey() ] = $postId;
