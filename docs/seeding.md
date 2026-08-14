@@ -197,6 +197,59 @@ Two consequences worth knowing before you declare one:
   and, as with any unresolved link, `unresolvedEntries()` reports it and the
   navigation is left exactly as it is rather than written short.
 
+#### Mega menus
+
+An item may declare `mega`, which serializes as a self-closing
+`pediment/mega-menu` block — the panel of icon-and-description link columns
+the header renders for it:
+
+```php
+array(
+	'mega' => array(
+		'label'   => 'Products',
+		'columns' => array(
+			array(
+				'heading' => 'Banking',
+				'icon'    => 'bank', // optional pediment icon slug
+				'links'   => array(
+					array( 'entry' => 'features', 'description' => 'Everyday account' ),
+					array( 'label' => 'Savings', 'url' => '/savings/', 'description' => 'Earn more' ),
+				),
+			),
+		),
+	),
+),
+```
+
+Each link follows the same rule as a top-level item — `entry` (resolved to the
+live per-language permalink, label falling back to the post title) or
+`url` + `label` — plus an optional `description`. A `mega` item is a leaf: it
+may not declare `children`, may not appear inside `children`, and may not
+combine with the other item types. All of it is validated at parse time with
+exact paths (`navs.primary.items.1.mega.columns.0.links.2`).
+
+Ownership is split, and this is the one place nav seeding deviates from
+"membership is git-owned; editor changes are reverted":
+
+- **Membership is still git-owned.** Where the mega menu sits, and that it
+  exists at all, comes from the manifest. Deleting the block in the editor
+  brings it back on the next seed; adding a second one removes it.
+- **Content is hash-arbitrated, exactly like page content** ("The two hashes"
+  above, scoped to one block). The seeder stores a per-position hash of each
+  mega block it writes (`_pediment_seed_mega_hash` on the nav entity). While
+  the stored block still matches, manifest changes flow through on re-seed.
+  The moment someone edits the block in the Site Editor the hash stops
+  matching, and from then on the seeder splices the stored block through
+  verbatim — the client's edits win, on every future run.
+- **Re-asserting git** = delete the block in the editor and re-seed:
+  membership re-creates it from the manifest and re-hashes it.
+
+A claimed legacy nav carries no hash, so a hand-built mega menu survives its
+first seed — the same "a claimed row's very first seed is safe" property pages
+have. Matching between manifest mega items and stored blocks is positional
+(nth item ↔ nth block): swapping two mega items within one nav transfers
+their edit-ownership, so treat multi-mega navs with care.
+
 ### `post_types`
 
 Not exercised by the fixture manifest above — client themes that need a custom
@@ -743,6 +796,8 @@ see a menu there and will not guess.
 > `primary-2` that cannot slug-match, which is the case it was built for — so
 > the safeguard is you, reading the `navigation "<title>" (ID <n>)` note in
 > `wp pediment claim --dry-run` and confirming it names the menu you meant.
+>
+> The one exception is mega-menu *content*, which is hash-arbitrated per block — see "Mega menus" under `navs`.
 
 ### Re-running claim
 
@@ -1011,7 +1066,7 @@ other claim re-run (see "Re-running claim" above).
   `wp pediment seed`. An `entry`-type link the manifest references but that
   has no seeded post yet is reported as unresolved on *every* run (not just
   the one that changes the nav), so a missing link doesn't silently disappear
-  from the report once the nav itself stops needing a rewrite.
+  from the report once the nav itself stops needing a rewrite. Mega-menu *content* is the exception: it is hash-arbitrated like page content, so a client's edits to a seeded mega menu persist ("Mega menus" above).
 - **The site logo is git-owned, not client-editable.** Like nav membership,
   `site.logo` is re-asserted whenever `custom_logo` differs from the manifest's
   media key, so a client who picks a different logo in the Customizer will see
