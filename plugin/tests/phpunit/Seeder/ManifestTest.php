@@ -536,4 +536,108 @@ class ManifestTest extends WP_UnitTestCase {
 			'/tmp/theme'
 		);
 	}
+
+	private function withNav( array $items ): array {
+		$raw         = $this->raw();
+		$raw['navs'] = [ 'primary' => [ 'title' => 'Primary', 'items' => $items ] ];
+		return $raw;
+	}
+
+	private function megaSpec( array $overrides = [] ): array {
+		return array_merge(
+			[
+				'label'   => 'Products',
+				'columns' => [
+					[
+						'heading' => 'Guides',
+						'icon'    => 'bank',
+						'links'   => [
+							[ 'entry' => 'guide', 'description' => 'The handbook' ],
+							[ 'label' => 'Savings', 'url' => '/savings/' ],
+						],
+					],
+				],
+			],
+			$overrides
+		);
+	}
+
+	public function test_a_valid_mega_item_parses() {
+		$m = Manifest::fromArray( $this->withNav( [ [ 'mega' => $this->megaSpec() ] ] ), '/tmp/theme' );
+
+		$this->assertSame( 'Products', $m->navs()['primary']->items[0]['mega']['label'] );
+		$this->assertSame( 'Guides', $m->navs()['primary']->items[0]['mega']['columns'][0]['heading'] );
+	}
+
+	public function test_a_mega_item_is_a_leaf() {
+		$this->expectException( ManifestError::class );
+		$this->expectExceptionMessageMatches( '/navs\.primary\.items\.0: a mega item is a leaf/' );
+		Manifest::fromArray(
+			$this->withNav( [ [ 'mega' => $this->megaSpec(), 'children' => [ [ 'url' => '/x', 'label' => 'X' ] ] ] ] ),
+			'/tmp/theme'
+		);
+	}
+
+	public function test_mega_inside_children_is_rejected() {
+		$this->expectException( ManifestError::class );
+		$this->expectExceptionMessageMatches( "/navs\.primary\.items\.0\.children\.0: a mega item may not appear inside 'children'/" );
+		Manifest::fromArray(
+			$this->withNav( [ [ 'entry' => 'guide', 'children' => [ [ 'mega' => $this->megaSpec() ] ] ] ] ),
+			'/tmp/theme'
+		);
+	}
+
+	public function test_mega_does_not_combine_with_other_item_types() {
+		$this->expectException( ManifestError::class );
+		$this->expectExceptionMessageMatches( "/navs\.primary\.items\.0: 'mega' is its own item type and may not combine with 'entry'/" );
+		Manifest::fromArray( $this->withNav( [ [ 'mega' => $this->megaSpec(), 'entry' => 'guide' ] ] ), '/tmp/theme' );
+	}
+
+	public function test_mega_label_is_required() {
+		$this->expectException( ManifestError::class );
+		$this->expectExceptionMessageMatches( "/navs\.primary\.items\.0\.mega: 'label' is required/" );
+		Manifest::fromArray( $this->withNav( [ [ 'mega' => $this->megaSpec( [ 'label' => ' ' ] ) ] ] ), '/tmp/theme' );
+	}
+
+	public function test_mega_columns_must_be_a_non_empty_array() {
+		$this->expectException( ManifestError::class );
+		$this->expectExceptionMessageMatches( "/navs\.primary\.items\.0\.mega: 'columns' must be a non-empty array/" );
+		Manifest::fromArray( $this->withNav( [ [ 'mega' => $this->megaSpec( [ 'columns' => [] ] ) ] ] ), '/tmp/theme' );
+	}
+
+	public function test_a_mega_column_needs_a_heading() {
+		$mega = $this->megaSpec();
+		unset( $mega['columns'][0]['heading'] );
+
+		$this->expectException( ManifestError::class );
+		$this->expectExceptionMessageMatches( "/mega\.columns\.0: 'heading' is required/" );
+		Manifest::fromArray( $this->withNav( [ [ 'mega' => $mega ] ] ), '/tmp/theme' );
+	}
+
+	public function test_a_mega_column_needs_links() {
+		$mega                        = $this->megaSpec();
+		$mega['columns'][0]['links'] = [];
+
+		$this->expectException( ManifestError::class );
+		$this->expectExceptionMessageMatches( "/mega\.columns\.0: 'links' must be a non-empty array/" );
+		Manifest::fromArray( $this->withNav( [ [ 'mega' => $mega ] ] ), '/tmp/theme' );
+	}
+
+	public function test_a_mega_link_needs_an_entry_or_a_url_label_pair() {
+		$mega                           = $this->megaSpec();
+		$mega['columns'][0]['links'][1] = [ 'label' => 'Dangling' ];
+
+		$this->expectException( ManifestError::class );
+		$this->expectExceptionMessageMatches( "/mega\.columns\.0\.links\.1: needs either 'entry' or both 'url' and 'label'/" );
+		Manifest::fromArray( $this->withNav( [ [ 'mega' => $mega ] ] ), '/tmp/theme' );
+	}
+
+	public function test_a_mega_link_naming_an_unknown_entry_is_rejected() {
+		$mega                           = $this->megaSpec();
+		$mega['columns'][0]['links'][0] = [ 'entry' => 'ghost' ];
+
+		$this->expectException( ManifestError::class );
+		$this->expectExceptionMessageMatches( "/mega\.columns\.0\.links\.0: unknown entry 'ghost'/" );
+		Manifest::fromArray( $this->withNav( [ [ 'mega' => $mega ] ] ), '/tmp/theme' );
+	}
 }
