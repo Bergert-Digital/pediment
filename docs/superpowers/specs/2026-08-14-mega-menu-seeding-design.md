@@ -98,7 +98,15 @@ Validation happens at parse time in `Manifest::navItem()`, in the existing
   `label`, `columns`; per column `heading`, `icon`, `links` (omit `icon` when
   not declared — never emit an empty placeholder); per link `label`,
   `description`, `url` (omit `description` when not declared).
-  `JSON_UNESCAPED_SLASHES` throughout, matching the editor and KSES.
+  **Amended during final review:** mega attrs are encoded with core's
+  `serialize_block_attributes()`, not bare
+  `wp_json_encode( …, JSON_UNESCAPED_SLASHES )` as this spec originally said.
+  Gutenberg re-serializes every block on any nav save (raw UTF-8; `&`, `"`,
+  `--`, `<`, `>` hex-escaped), so only core's serializer keeps an *untouched*
+  block byte-identical across editor saves — with the original encoding, an
+  umlaut or ampersand in the copy would flip the block client-owned without
+  any human edit. Links/switcher deliberately keep `wp_json_encode`: their
+  byte format is locked by existing sites (zero-mega golden).
 - Entry links reuse `linkAttrs()` for per-language resolution (post ID →
   permalink, label defaults to the post title), then map to the block's link
   shape: `label`, `description` (from the manifest), `url` (the resolved
