@@ -117,4 +117,35 @@ class VerifierTest extends WP_UnitTestCase {
 
 		$this->assertStringContainsString( 'logo', implode( "\n", $problems ) );
 	}
+
+	public function test_an_edited_mega_block_passes_verification() {
+		$seeder = new NavSeeder( new NullProvider() );
+		$m      = Manifest::fromArray(
+			[
+				'pages' => [ 'home' => [ 'title' => 'Home', 'content' => '<p>h</p>' ] ],
+				'navs'  => [
+					'primary' => [
+						'title' => 'Primary',
+						'items' => [
+							[ 'url' => '/features/', 'label' => 'Features' ],
+							[ 'mega' => [ 'label' => 'Products', 'columns' => [ [ 'heading' => 'H', 'links' => [ [ 'label' => 'L', 'url' => '/l/' ] ] ] ] ] ],
+						],
+					],
+				],
+			],
+			'/tmp/theme'
+		);
+
+		$navIds = $seeder->apply( $seeder->plan( $m, [] ), $m, [] );
+		$navId  = $navIds['primary|'];
+		$edited = str_replace( '"label":"L"', '"label":"Edited"', get_post( $navId )->post_content );
+		wp_update_post( [ 'ID' => $navId, 'post_content' => wp_slash( $edited ) ] );
+
+		$id = self::factory()->post->create( [ 'post_type' => 'page', 'post_name' => 'home', 'post_title' => 'Home' ] );
+		update_post_meta( $id, Meta::KEY, 'home' );
+
+		$problems = ( new Verifier( new NullProvider(), $seeder ) )->verify( $m, $this->desired( $m ), [ 'home|' => $id ], new MediaMap( [] ), $navIds );
+
+		$this->assertSame( [], $problems, 'a client-owned mega block is not a membership mismatch' );
+	}
 }
