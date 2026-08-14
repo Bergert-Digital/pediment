@@ -390,7 +390,20 @@ final class NavSeeder {
 			'columns' => $columns,
 		];
 
-		return '<!-- wp:pediment/mega-menu ' . wp_json_encode( $attrs, JSON_UNESCAPED_SLASHES ) . ' /-->';
+		// Mega attrs carry client copy, and Gutenberg's JS serializeAttributes()
+		// re-serializes EVERY block in the post whenever the nav is saved in the
+		// Site Editor, not just the ones a human touched. serialize_block_attributes()
+		// is core's PHP twin of that JS function (wp_json_encode with
+		// JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE, then --/</>/&/\" each
+		// rewritten to a \u escape) — matching it byte-for-byte is what keeps an
+		// UNTOUCHED mega block's stored hash matching after an unrelated editor
+		// save. wp_json_encode() alone would byte-shift any label/description
+		// containing an umlaut, `&`, `"`, or `--`, and the block would be silently
+		// captured as client-owned. The links/switcher lines below deliberately
+		// keep plain wp_json_encode( …, JSON_UNESCAPED_SLASHES ): their byte format
+		// is locked by existing sites, and the zero-mega golden test
+		// (test_a_mega_free_manifest_serializes_exactly_as_before) enforces that.
+		return '<!-- wp:pediment/mega-menu ' . serialize_block_attributes( $attrs ) . ' /-->';
 	}
 
 	/**
