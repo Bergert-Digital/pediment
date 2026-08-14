@@ -492,4 +492,116 @@ class NavSeederTest extends WP_UnitTestCase {
 
 		$this->assertSame( 'membership is git-owned; mega menu content is kept once edited in the editor', $plan->items()[0]->note );
 	}
+
+	public function test_seeding_writes_one_hash_per_mega_position() {
+		$seeder = new NavSeeder( new NullProvider() );
+		$m      = $this->manifest( $this->megaItems() );
+		$ids    = [
+			'home|'  => self::factory()->post->create( [ 'post_type' => 'page' ] ),
+			'about|' => self::factory()->post->create( [ 'post_type' => 'page', 'post_title' => 'About' ] ),
+		];
+
+		$navId  = $seeder->apply( $seeder->plan( $m, $ids ), $m, $ids )['primary|'];
+		$hashes = MegaBlocks::storedHashes( $navId );
+
+		$this->assertCount( 1, $hashes );
+		$this->assertTrue( MegaBlocks::gitOwns( MegaBlocks::extract( get_post( $navId )->post_content )[0], $hashes[0] ) );
+	}
+
+	public function test_a_manifest_change_to_an_untouched_mega_applies_and_rehashes() {
+		$seeder = new NavSeeder( new NullProvider() );
+		$ids    = [
+			'home|'  => self::factory()->post->create( [ 'post_type' => 'page' ] ),
+			'about|' => self::factory()->post->create( [ 'post_type' => 'page', 'post_title' => 'About' ] ),
+		];
+		$first  = $this->manifest( $this->megaItems( 'Products' ) );
+		$navId  = $seeder->apply( $seeder->plan( $first, $ids ), $first, $ids )['primary|'];
+
+		$second = $this->manifest( $this->megaItems( 'Solutions' ) );
+		$plan   = $seeder->plan( $second, $ids );
+		$seeder->apply( $plan, $second, $ids );
+
+		$this->assertSame( PlanItem::UPDATE, $plan->items()[0]->action, 'git still owns an untouched block' );
+		$this->assertStringContainsString( '"label":"Solutions"', get_post( $navId )->post_content );
+		$this->assertSame( PlanItem::UNCHANGED, $seeder->plan( $second, $ids )->items()[0]->action, 'the fresh hash matches again' );
+	}
+
+	public function test_a_manifest_change_to_an_edited_mega_is_not_applied() {
+		$seeder = new NavSeeder( new NullProvider() );
+		$ids    = [
+			'home|'  => self::factory()->post->create( [ 'post_type' => 'page' ] ),
+			'about|' => self::factory()->post->create( [ 'post_type' => 'page', 'post_title' => 'About' ] ),
+		];
+		$first  = $this->manifest( $this->megaItems( 'Products' ) );
+		$navId  = $seeder->apply( $seeder->plan( $first, $ids ), $first, $ids )['primary|'];
+
+		$edited = str_replace( '"label":"Savings"', '"label":"ISA"', get_post( $navId )->post_content );
+		wp_update_post( [ 'ID' => $navId, 'post_content' => wp_slash( $edited ) ] );
+
+		$second = $this->manifest( $this->megaItems( 'Solutions' ) );
+		$plan   = $seeder->plan( $second, $ids );
+		$seeder->apply( $plan, $second, $ids );
+
+		$this->assertSame( PlanItem::UNCHANGED, $plan->items()[0]->action, 'the client owns the block; the manifest change does not apply' );
+		$this->assertStringContainsString( '"label":"ISA"', get_post( $navId )->post_content );
+	}
+
+	public function test_a_membership_rewrite_keeps_an_edited_mega_client_owned() {
+		$seeder = new NavSeeder( new NullProvider() );
+		$ids    = [
+			'home|'  => self::factory()->post->create( [ 'post_type' => 'page' ] ),
+			'about|' => self::factory()->post->create( [ 'post_type' => 'page', 'post_title' => 'About' ] ),
+		];
+		$first  = $this->manifest( $this->megaItems( 'Products' ) );
+		$navId  = $seeder->apply( $seeder->plan( $first, $ids ), $first, $ids )['primary|'];
+
+		$edited = str_replace( '"label":"Savings"', '"label":"ISA"', get_post( $navId )->post_content );
+		wp_update_post( [ 'ID' => $navId, 'post_content' => wp_slash( $edited ) ] );
+
+		// A membership change (extra item) rewrites the nav around the block.
+		$wider = $this->manifest( array_merge( [ [ 'entry' => 'about' ] ], $this->megaItems( 'Products' ) ) );
+		$plan  = $seeder->plan( $wider, $ids );
+		$seeder->apply( $plan, $wider, $ids );
+
+		$this->assertSame( PlanItem::UPDATE, $plan->items()[0]->action );
+		$this->assertStringContainsString( '"label":"ISA"', get_post( $navId )->post_content, 'the edit survives the rewrite' );
+
+		// The block must STILL be client-owned afterwards: a later manifest
+		// change to the mega spec does not apply. Without the hash
+		// carry-forward this is the case that silently reverts client edits.
+		$widerChanged = $this->manifest( array_merge( [ [ 'entry' => 'about' ] ], $this->megaItems( 'Solutions' ) ) );
+		$seeder->apply( $seeder->plan( $widerChanged, $ids ), $widerChanged, $ids );
+		$this->assertStringContainsString( '"label":"ISA"', get_post( $navId )->post_content );
+	}
+
+	public function test_a_reseeded_mega_after_deletion_returns_to_git_ownership() {
+		$seeder = new NavSeeder( new NullProvider() );
+		$ids    = [
+			'home|'  => self::factory()->post->create( [ 'post_type' => 'page' ] ),
+			'about|' => self::factory()->post->create( [ 'post_type' => 'page', 'post_title' => 'About' ] ),
+		];
+		$first  = $this->manifest( $this->megaItems( 'Products' ) );
+		$navId  = $seeder->apply( $seeder->plan( $first, $ids ), $first, $ids )['primary|'];
+
+		$block   = MegaBlocks::extract( get_post( $navId )->post_content )[0];
+		$without = trim( str_replace( $block, '', get_post( $navId )->post_content ) );
+		wp_update_post( [ 'ID' => $navId, 'post_content' => wp_slash( $without ) ] );
+		$seeder->apply( $seeder->plan( $first, $ids ), $first, $ids );
+
+		// Delete-and-reseed is the documented way to re-assert git.
+		$second = $this->manifest( $this->megaItems( 'Solutions' ) );
+		$seeder->apply( $seeder->plan( $second, $ids ), $second, $ids );
+
+		$this->assertStringContainsString( '"label":"Solutions"', get_post( $navId )->post_content );
+	}
+
+	public function test_no_hash_meta_is_written_for_mega_free_navs() {
+		$seeder = new NavSeeder( new NullProvider() );
+		$m      = $this->manifest( [ [ 'entry' => 'home' ] ] );
+		$ids    = [ 'home|' => self::factory()->post->create( [ 'post_type' => 'page' ] ) ];
+
+		$navId = $seeder->apply( $seeder->plan( $m, $ids ), $m, $ids )['primary|'];
+
+		$this->assertSame( '', (string) get_post_meta( $navId, Meta::MEGA_HASH, true ) );
+	}
 }

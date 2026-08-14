@@ -153,17 +153,9 @@ final class NavSeeder {
 					continue;
 				}
 
-				// A CREATE writes pure manifest content — there is no stored nav
-				// yet. RESTORE/UPDATE splice through arbitrated mega content: without
-				// the stored post_content and ID here, this would recompute content
-				// that disagrees with what plan() already decided for the same item
-				// — the half-truth plan() and apply() must never tell separately.
-				$content = PlanItem::CREATE === $item->action
-					? $this->serialize( $spec, $item->language, $entryIds )
-					: $this->serialize( $spec, $item->language, $entryIds, (string) get_post( $item->postId )->post_content, $item->postId );
-
 				if ( PlanItem::CREATE === $item->action ) {
-					$postId = wp_insert_post(
+					$content = $this->serialize( $spec, $item->language, $entryIds );
+					$postId  = wp_insert_post(
 						wp_slash(
 							[
 								'post_type'    => 'wp_navigation',
@@ -182,8 +174,11 @@ final class NavSeeder {
 					$postId = (int) $postId;
 					$this->lang->setLanguage( $postId, $item->language );
 					update_post_meta( $postId, Meta::KEY, $spec->key );
+					MegaBlocks::writeHashes( $postId, '', $content );
 				} elseif ( PlanItem::RESTORE === $item->action ) {
-					$postId = $item->postId;
+					$postId  = $item->postId;
+					$old     = (string) get_post( $postId )->post_content;
+					$content = $this->serialize( $spec, $item->language, $entryIds, $old, $postId );
 					// The slug is rewritten too: wp_trash_post() renames it to
 					// `primary__trashed`, and leaving that behind is what a later
 					// create would collide with.
@@ -203,13 +198,17 @@ final class NavSeeder {
 						continue;
 					}
 					Meta::clearTrashBookkeeping( $postId );
+					MegaBlocks::writeHashes( $postId, $old, $content );
 				} else {
 					$postId  = $item->postId;
+					$old     = (string) get_post( $postId )->post_content;
+					$content = $this->serialize( $spec, $item->language, $entryIds, $old, $postId );
 					$updated = wp_update_post( wp_slash( [ 'ID' => $postId, 'post_content' => $content ] ), true );
 					if ( is_wp_error( $updated ) ) {
 						$this->errors[] = sprintf( 'navs.%s: could not update the navigation entity — %s', $spec->key, $updated->get_error_message() );
 						continue;
 					}
+					MegaBlocks::writeHashes( $postId, $old, $content );
 				}
 
 				$ids[ $item->mapKey() ] = $postId;
