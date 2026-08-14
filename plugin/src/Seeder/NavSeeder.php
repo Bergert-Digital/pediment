@@ -40,9 +40,8 @@ final class NavSeeder {
 
 		foreach ( $this->lang->languages() as $language ) {
 			foreach ( $manifest->navs() as $key => $spec ) {
-				$mapKey  = $key . '|' . $language;
-				$desired = $this->serialize( $spec, $language, $entryIds );
-				$postId  = (int) ( $existing[ $mapKey ] ?? 0 );
+				$mapKey = $key . '|' . $language;
+				$postId = (int) ( $existing[ $mapKey ] ?? 0 );
 
 				if ( 0 === $postId ) {
 					$items[] = new PlanItem(
@@ -73,6 +72,7 @@ final class NavSeeder {
 				}
 
 				$current = (string) get_post( $postId )->post_content;
+				$desired = $this->serialize( $spec, $language, $entryIds, $current, $postId );
 				$items[] = $current === $desired
 					? new PlanItem( PlanItem::UNCHANGED, PlanItem::KIND_NAV, $key, $language, $postId )
 					: new PlanItem(
@@ -86,13 +86,18 @@ final class NavSeeder {
 								// The `<!-- ` prefix on the submenu needle is deliberate: the
 								// closing delimiter is `<!-- /wp:navigation-submenu -->`, and a
 								// bare needle would match it too and double every submenu.
+								// mega-menu is self-closing, so its needle has no such twin;
+								// the full prefix is used for consistency.
 								'from' => substr_count( $current, 'wp:navigation-link' )
-									+ substr_count( $current, '<!-- wp:navigation-submenu' ),
+									+ substr_count( $current, '<!-- wp:navigation-submenu' )
+									+ substr_count( $current, '<!-- wp:pediment/mega-menu' ),
 								'to'   => self::countLinks( $spec->items ),
 							],
 						],
 						[],
-						'membership is git-owned; editor changes to this menu are reverted'
+						self::hasMega( $spec )
+							? 'membership is git-owned; mega menu content is kept once edited in the editor'
+							: 'membership is git-owned; editor changes to this menu are reverted'
 					);
 			}
 		}
@@ -148,7 +153,14 @@ final class NavSeeder {
 					continue;
 				}
 
-				$content = $this->serialize( $spec, $item->language, $entryIds );
+				// A CREATE writes pure manifest content — there is no stored nav
+				// yet. RESTORE/UPDATE splice through arbitrated mega content: without
+				// the stored post_content and ID here, this would recompute content
+				// that disagrees with what plan() already decided for the same item
+				// — the half-truth plan() and apply() must never tell separately.
+				$content = PlanItem::CREATE === $item->action
+					? $this->serialize( $spec, $item->language, $entryIds )
+					: $this->serialize( $spec, $item->language, $entryIds, (string) get_post( $item->postId )->post_content, $item->postId );
 
 				if ( PlanItem::CREATE === $item->action ) {
 					$postId = wp_insert_post(
@@ -218,17 +230,27 @@ final class NavSeeder {
 	}
 
 	/** @param array<string,int> $entryIds */
-	public function serialize( NavSpec $spec, string $language, array $entryIds ): string {
-		$blocks = [];
+	public function serialize( NavSpec $spec, string $language, array $entryIds, string $current = '', int $navId = 0 ): string {
+		$blocks     = [];
+		$storedMega = MegaBlocks::extract( $current );
+		$megaHashes = 0 < $navId ? MegaBlocks::storedHashes( $navId ) : [];
+		$megaIndex  = 0;
 
 		foreach ( $spec->items as $item ) {
 			$item = (array) $item;
 
-			// A mega item is one self-closing block; its links are JSON
-			// attributes, not nested navigation-link blocks, which is why
-			// countLinks() and plan()'s needles both count it as 1.
+			// Membership is git-owned, content is hash-arbitrated: the block
+			// always (re)appears where the manifest says, but once a human
+			// edits it in the editor its stored markup stops hashing to what
+			// the seeder last wrote, and from then on it is spliced through
+			// verbatim. Matching is positional: nth mega item, nth stored
+			// block. See docs/seeding.md ("Mega menus").
 			if ( isset( $item['mega'] ) ) {
-				$blocks[] = $this->megaMarkup( (array) $item['mega'], $language, $entryIds );
+				$stored   = $storedMega[ $megaIndex ] ?? null;
+				$blocks[] = null !== $stored && ! MegaBlocks::gitOwns( $stored, (string) ( $megaHashes[ $megaIndex ] ?? '' ) )
+					? $stored
+					: $this->megaMarkup( (array) $item['mega'], $language, $entryIds );
+				++$megaIndex;
 				continue;
 			}
 
@@ -491,12 +513,25 @@ final class NavSeeder {
 		return $missing;
 	}
 
+	/** Whether any of the spec's items declares a mega menu. */
+	private static function hasMega( NavSpec $spec ): bool {
+		foreach ( $spec->items as $item ) {
+			if ( isset( ( (array) $item )['mega'] ) ) {
+				return true;
+			}
+		}
+		return false;
+	}
+
 	/**
 	 * Total links a nav spec describes, counting submenu parents and children.
 	 *
 	 * The plan's `items` change is operator-facing arithmetic, so it has to
 	 * count the same things on both sides: `count( $spec->items )` would report
 	 * a two-level menu as its top-level width and read as a shrink.
+	 *
+	 * A mega item counts as 1: its links are JSON attributes, invisible to the
+	 * needles plan() counts on the stored side.
 	 *
 	 * @param array<int,array<string,mixed>> $items
 	 */
