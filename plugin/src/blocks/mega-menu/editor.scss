@@ -23,6 +23,22 @@
   top: calc(100% + 3rem);
 }
 
+/* Editor preview only: front-end style.scss centers the panel under its
+   trigger (left:50%; translateX(-50%)), which stays on-canvas because the
+   live header centers the nav. While editing, the navigation block packs its
+   items hard against the canvas's left edge, so a centered panel's left half
+   renders at negative x and its first column is clipped ("LEARN" -> "ARN").
+   Anchor the preview to the trigger's left edge instead, opening rightward
+   into the canvas. Both reveal paths (hover + is-preview-open) get it; the
+   .is-preview-open selector guarantees the override wins regardless of the
+   front-end/editor stylesheet load order. */
+.starter-mega-menu__panel,
+.starter-mega-menu__panel.is-preview-open {
+  left: 0;
+  right: auto;
+  transform: none;
+}
+
 .starter-mega-menu__trigger {
   font-weight: 600;
   cursor: default;
