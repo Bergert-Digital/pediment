@@ -43,8 +43,12 @@ class MegaBlocksTest extends WP_UnitTestCase {
 		// The client edited the block; a membership rewrite splices it through.
 		$edited = str_replace( 'Features', 'Edited', self::BLOCK );
 		$new    = '<!-- wp:navigation-link {"label":"About","url":"/about/","kind":"custom"} /-->' . "\n" . $edited;
+		// writeHashes() now reads the persisted row, not a string handed in —
+		// same rule as ContentHash::forPost() — so the write has to actually
+		// land before the call, exactly as apply() does it.
+		wp_update_post( [ 'ID' => $navId, 'post_content' => wp_slash( $new ) ] );
 
-		MegaBlocks::writeHashes( $navId, $edited, $new );
+		MegaBlocks::writeHashes( $navId, $edited );
 
 		$stored = MegaBlocks::storedHashes( $navId );
 		$this->assertSame( MegaBlocks::hash( self::BLOCK ), $stored[0], 'the stale hash is carried forward, so the block stays client-owned' );
@@ -58,8 +62,9 @@ class MegaBlocksTest extends WP_UnitTestCase {
 		// Git changed the manifest; the old block was untouched, so the new
 		// markup was emitted from the manifest and gets a fresh hash.
 		$new = str_replace( 'Products', 'Solutions', self::BLOCK );
+		wp_update_post( [ 'ID' => $navId, 'post_content' => wp_slash( $new ) ] );
 
-		MegaBlocks::writeHashes( $navId, self::BLOCK, $new );
+		MegaBlocks::writeHashes( $navId, self::BLOCK );
 
 		$this->assertSame( [ MegaBlocks::hash( $new ) ], MegaBlocks::storedHashes( $navId ) );
 	}
@@ -68,8 +73,28 @@ class MegaBlocksTest extends WP_UnitTestCase {
 		$navId = self::factory()->post->create( [ 'post_type' => 'wp_navigation' ] );
 		update_post_meta( $navId, Meta::MEGA_HASH, wp_json_encode( [ MegaBlocks::hash( self::BLOCK ) ] ) );
 
-		MegaBlocks::writeHashes( $navId, self::BLOCK, '<!-- wp:navigation-link {"label":"Home","url":"/","kind":"custom"} /-->' );
+		wp_update_post(
+			[
+				'ID'           => $navId,
+				'post_content' => wp_slash( '<!-- wp:navigation-link {"label":"Home","url":"/","kind":"custom"} /-->' ),
+			]
+		);
+
+		MegaBlocks::writeHashes( $navId, self::BLOCK );
 
 		$this->assertSame( '', (string) get_post_meta( $navId, Meta::MEGA_HASH, true ) );
+	}
+
+	public function test_write_hashes_is_a_no_op_when_the_post_is_gone() {
+		// A deleted-mid-request guard, same shape as ContentHash::forPost():
+		// writing hashes for content that no longer exists would be nonsense,
+		// not a safe default.
+		$navId = self::factory()->post->create( [ 'post_type' => 'wp_navigation' ] );
+		update_post_meta( $navId, Meta::MEGA_HASH, wp_json_encode( [ MegaBlocks::hash( self::BLOCK ) ] ) );
+		wp_delete_post( $navId, true );
+
+		MegaBlocks::writeHashes( $navId, self::BLOCK );
+
+		$this->assertSame( '', (string) get_post_meta( $navId, Meta::MEGA_HASH, true ), 'no meta is written for a post that is gone' );
 	}
 }

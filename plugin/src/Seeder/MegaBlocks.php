@@ -74,13 +74,28 @@ final class MegaBlocks {
 	 *
 	 * Ownership is re-derived from the pre-write content and hashes, so this
 	 * needs no side channel from serialize().
+	 *
+	 * Hashes the row as WordPress actually stored it, not the string handed to
+	 * wp_update_post() — same rule as ContentHash::forPost(), same reason: any
+	 * content_save_pre filter that touches a byte on the way in would make the
+	 * hash computed from the intended write mismatch what's actually in the
+	 * database, and the block would be captured as client-owned right after its
+	 * first seed. clean_post_cache() + get_post() forces a fresh read past
+	 * object-cache staleness; a non-WP_Post result (post deleted mid-request)
+	 * is a no-op rather than writing hashes for content that isn't there.
 	 */
-	public static function writeHashes( int $navId, string $oldContent, string $newContent ): void {
+	public static function writeHashes( int $navId, string $oldContent ): void {
+		clean_post_cache( $navId );
+		$post = get_post( $navId );
+		if ( ! $post instanceof \WP_Post ) {
+			return;
+		}
+
 		$oldBlocks = self::extract( $oldContent );
 		$oldHashes = self::storedHashes( $navId );
 
 		$next = [];
-		foreach ( self::extract( $newContent ) as $i => $block ) {
+		foreach ( self::extract( (string) $post->post_content ) as $i => $block ) {
 			$next[] = self::gitOwns( $oldBlocks[ $i ] ?? null, (string) ( $oldHashes[ $i ] ?? '' ) )
 				? self::hash( $block )
 				: (string) ( $oldHashes[ $i ] ?? '' );

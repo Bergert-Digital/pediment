@@ -248,7 +248,11 @@ A claimed legacy nav carries no hash, so a hand-built mega menu survives its
 first seed — the same "a claimed row's very first seed is safe" property pages
 have. Matching between manifest mega items and stored blocks is positional
 (nth item ↔ nth block): swapping two mega items within one nav transfers
-their edit-ownership, so treat multi-mega navs with care.
+their edit-ownership, so treat multi-mega navs with care. Deleting or
+inserting a mega item in a multi-mega nav likewise shifts the positions after
+it, so an edited block's ownership can transfer to a neighboring position —
+it does not flip back to git (the carry-forward still holds), but placement
+can surprise.
 
 ### `post_types`
 
