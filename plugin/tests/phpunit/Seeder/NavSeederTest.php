@@ -398,4 +398,98 @@ class NavSeederTest extends WP_UnitTestCase {
 		$this->assertNotEmpty( $seeder->errors() );
 		$this->assertStringContainsString( 'about', $seeder->errors()[0] );
 	}
+
+	public function test_an_editor_edited_mega_block_is_preserved() {
+		$seeder = new NavSeeder( new NullProvider() );
+		$m      = $this->manifest( $this->megaItems() );
+		$ids    = [
+			'home|'  => self::factory()->post->create( [ 'post_type' => 'page' ] ),
+			'about|' => self::factory()->post->create( [ 'post_type' => 'page', 'post_title' => 'About' ] ),
+		];
+		$navId  = $seeder->apply( $seeder->plan( $m, $ids ), $m, $ids )['primary|'];
+
+		$edited = str_replace( '"label":"Savings"', '"label":"ISA"', get_post( $navId )->post_content );
+		wp_update_post( [ 'ID' => $navId, 'post_content' => wp_slash( $edited ) ] );
+
+		$plan = $seeder->plan( $m, $ids );
+		$seeder->apply( $plan, $m, $ids );
+
+		$this->assertSame( PlanItem::UNCHANGED, $plan->items()[0]->action, 'the edit belongs to the client' );
+		$this->assertStringContainsString( '"label":"ISA"', get_post( $navId )->post_content );
+	}
+
+	public function test_a_deleted_mega_block_is_reseeded_from_the_manifest() {
+		$seeder = new NavSeeder( new NullProvider() );
+		$m      = $this->manifest( $this->megaItems() );
+		$ids    = [
+			'home|'  => self::factory()->post->create( [ 'post_type' => 'page' ] ),
+			'about|' => self::factory()->post->create( [ 'post_type' => 'page', 'post_title' => 'About' ] ),
+		];
+		$navId  = $seeder->apply( $seeder->plan( $m, $ids ), $m, $ids )['primary|'];
+
+		$block   = MegaBlocks::extract( get_post( $navId )->post_content )[0];
+		$without = trim( str_replace( $block, '', get_post( $navId )->post_content ) );
+		wp_update_post( [ 'ID' => $navId, 'post_content' => wp_slash( $without ) ] );
+
+		$plan = $seeder->plan( $m, $ids );
+		$seeder->apply( $plan, $m, $ids );
+
+		$this->assertSame( PlanItem::UPDATE, $plan->items()[0]->action, 'membership is git-owned — the block comes back' );
+		$this->assertStringContainsString( 'wp:pediment/mega-menu', get_post( $navId )->post_content );
+	}
+
+	public function test_a_legacy_hand_built_mega_is_preserved_on_first_seed() {
+		// A claimed nav carries a seed key but no hash meta — exactly what
+		// Claimer leaves behind. Its mega content must survive the first seed,
+		// like a claimed page's content does.
+		$seeder   = new NavSeeder( new NullProvider() );
+		$m        = $this->manifest( $this->megaItems() );
+		$ids      = [
+			'home|'  => self::factory()->post->create( [ 'post_type' => 'page' ] ),
+			'about|' => self::factory()->post->create( [ 'post_type' => 'page', 'post_title' => 'About' ] ),
+		];
+		$handmade = '<!-- wp:pediment/mega-menu {"label":"Hand-built","columns":[{"heading":"Mine","links":[{"label":"Keep","url":"/keep/"}]}]} /-->';
+		$navId    = self::factory()->post->create(
+			[ 'post_type' => 'wp_navigation', 'post_status' => 'publish', 'post_content' => $handmade ]
+		);
+		update_post_meta( $navId, Meta::KEY, 'primary' );
+
+		$seeder->apply( $seeder->plan( $m, $ids ), $m, $ids );
+
+		$content = get_post( $navId )->post_content;
+		$this->assertStringContainsString( '"label":"Hand-built"', $content, 'the hand-built block is spliced through verbatim' );
+		$this->assertStringContainsString( 'wp:navigation-link', $content, 'membership still comes from the manifest' );
+	}
+
+	public function test_the_items_tally_counts_a_mega_item_as_one_on_both_sides() {
+		$seeder = new NavSeeder( new NullProvider() );
+		$ids    = [
+			'home|'  => self::factory()->post->create( [ 'post_type' => 'page' ] ),
+			'about|' => self::factory()->post->create( [ 'post_type' => 'page', 'post_title' => 'About' ] ),
+		];
+		$first  = $this->manifest( [ [ 'entry' => 'home' ] ] );
+		$seeder->apply( $seeder->plan( $first, $ids ), $first, $ids );
+
+		$mega = $this->manifest( $this->megaItems() );
+		$grow = $seeder->plan( $mega, $ids );
+		$this->assertSame( [ 'from' => 1, 'to' => 2 ], $grow->items()[0]->changes['items'] );
+
+		$seeder->apply( $grow, $mega, $ids );
+		$shrink = $seeder->plan( $first, $ids );
+		$this->assertSame( [ 'from' => 2, 'to' => 1 ], $shrink->items()[0]->changes['items'], 'the stored mega block is counted by its own needle' );
+	}
+
+	public function test_the_plan_note_names_the_mega_ownership_split() {
+		$seeder = new NavSeeder( new NullProvider() );
+		$ids    = [
+			'home|'  => self::factory()->post->create( [ 'post_type' => 'page' ] ),
+			'about|' => self::factory()->post->create( [ 'post_type' => 'page', 'post_title' => 'About' ] ),
+		];
+		$first  = $this->manifest( [ [ 'entry' => 'home' ] ] );
+		$seeder->apply( $seeder->plan( $first, $ids ), $first, $ids );
+
+		$plan = $seeder->plan( $this->manifest( $this->megaItems() ), $ids );
+
+		$this->assertSame( 'membership is git-owned; mega menu content is kept once edited in the editor', $plan->items()[0]->note );
+	}
 }
