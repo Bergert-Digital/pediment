@@ -146,7 +146,7 @@ final class Verifier {
 						'' === $language ? '(default)' : $language
 					);
 				}
-				if ( (string) $nav->post_content !== $this->navSeeder->serialize( $spec, $language, $ids ) ) {
+				if ( (string) $nav->post_content !== $this->navSeeder->serialize( $spec, $language, $ids, (string) $nav->post_content, $navId ) ) {
 					$problems[] = sprintf( 'navs.%s: stored membership does not match the manifest.', $mapKey );
 				}
 			}

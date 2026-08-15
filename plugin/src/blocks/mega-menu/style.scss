@@ -48,12 +48,35 @@
     border-radius: 0.5rem;
     box-shadow: var(--wp--preset--shadow--lifted);
 
-    &[hidden] { display: none; }
+    &[hidden] {
+      display: none;
+      opacity: 0;
+    }
   }
 }
 
+/* Fade the dropdown in on open and out on close. `transition-behavior:
+   allow-discrete` lets the display:none <-> display:grid switch take part in the
+   transition, so the panel stays rendered while it fades out instead of vanishing
+   instantly; @starting-style supplies the opacity:0 the panel animates from when
+   it is first shown. Browsers without these features fall back to an instant
+   show/hide, and the display:none path keeps the mobile accordion collapsing and
+   no-JS hiding the panel. */
 .starter-mega-menu__panel {
-  transition: opacity 160ms ease;
+  opacity: 1;
+  /* Longhand (not the `transition` shorthand) so the CSS minifier can't drop the
+     display sublayer's duration — display needs the full 160ms for allow-discrete
+     to hold the panel on screen through the fade-out. */
+  transition-property: opacity, display;
+  transition-duration: 160ms;
+  transition-timing-function: ease;
+  transition-behavior: allow-discrete;
+}
+
+@starting-style {
+  .starter-mega-menu__panel:not([hidden]) {
+    opacity: 0;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

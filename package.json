@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "build": "cd plugin && npm run build",
+    "start": "cd plugin && npm run start",
     "env:start": "node tools/check-folder-name.mjs && wp-env start",
     "env:stop": "wp-env stop",
     "e2e": "cd plugin && npm run e2e",

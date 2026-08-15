@@ -40,9 +40,8 @@ final class NavSeeder {
 
 		foreach ( $this->lang->languages() as $language ) {
 			foreach ( $manifest->navs() as $key => $spec ) {
-				$mapKey  = $key . '|' . $language;
-				$desired = $this->serialize( $spec, $language, $entryIds );
-				$postId  = (int) ( $existing[ $mapKey ] ?? 0 );
+				$mapKey = $key . '|' . $language;
+				$postId = (int) ( $existing[ $mapKey ] ?? 0 );
 
 				if ( 0 === $postId ) {
 					$items[] = new PlanItem(
@@ -73,6 +72,7 @@ final class NavSeeder {
 				}
 
 				$current = (string) get_post( $postId )->post_content;
+				$desired = $this->serialize( $spec, $language, $entryIds, $current, $postId );
 				$items[] = $current === $desired
 					? new PlanItem( PlanItem::UNCHANGED, PlanItem::KIND_NAV, $key, $language, $postId )
 					: new PlanItem(
@@ -86,13 +86,18 @@ final class NavSeeder {
 								// The `<!-- ` prefix on the submenu needle is deliberate: the
 								// closing delimiter is `<!-- /wp:navigation-submenu -->`, and a
 								// bare needle would match it too and double every submenu.
+								// mega-menu is self-closing, so its needle has no such twin;
+								// the full prefix is used for consistency.
 								'from' => substr_count( $current, 'wp:navigation-link' )
-									+ substr_count( $current, '<!-- wp:navigation-submenu' ),
+									+ substr_count( $current, '<!-- wp:navigation-submenu' )
+									+ substr_count( $current, '<!-- wp:pediment/mega-menu' ),
 								'to'   => self::countLinks( $spec->items ),
 							],
 						],
 						[],
-						'membership is git-owned; editor changes to this menu are reverted'
+						self::hasMega( $spec )
+							? 'membership is git-owned; mega menu content is kept once edited in the editor'
+							: 'membership is git-owned; editor changes to this menu are reverted'
 					);
 			}
 		}
@@ -148,10 +153,9 @@ final class NavSeeder {
 					continue;
 				}
 
-				$content = $this->serialize( $spec, $item->language, $entryIds );
-
 				if ( PlanItem::CREATE === $item->action ) {
-					$postId = wp_insert_post(
+					$content = $this->serialize( $spec, $item->language, $entryIds );
+					$postId  = wp_insert_post(
 						wp_slash(
 							[
 								'post_type'    => 'wp_navigation',
@@ -170,8 +174,11 @@ final class NavSeeder {
 					$postId = (int) $postId;
 					$this->lang->setLanguage( $postId, $item->language );
 					update_post_meta( $postId, Meta::KEY, $spec->key );
+					MegaBlocks::writeHashes( $postId, '' );
 				} elseif ( PlanItem::RESTORE === $item->action ) {
-					$postId = $item->postId;
+					$postId  = $item->postId;
+					$old     = (string) get_post( $postId )->post_content;
+					$content = $this->serialize( $spec, $item->language, $entryIds, $old, $postId );
 					// The slug is rewritten too: wp_trash_post() renames it to
 					// `primary__trashed`, and leaving that behind is what a later
 					// create would collide with.
@@ -191,13 +198,17 @@ final class NavSeeder {
 						continue;
 					}
 					Meta::clearTrashBookkeeping( $postId );
+					MegaBlocks::writeHashes( $postId, $old );
 				} else {
 					$postId  = $item->postId;
+					$old     = (string) get_post( $postId )->post_content;
+					$content = $this->serialize( $spec, $item->language, $entryIds, $old, $postId );
 					$updated = wp_update_post( wp_slash( [ 'ID' => $postId, 'post_content' => $content ] ), true );
 					if ( is_wp_error( $updated ) ) {
 						$this->errors[] = sprintf( 'navs.%s: could not update the navigation entity — %s', $spec->key, $updated->get_error_message() );
 						continue;
 					}
+					MegaBlocks::writeHashes( $postId, $old );
 				}
 
 				$ids[ $item->mapKey() ] = $postId;
@@ -218,11 +229,29 @@ final class NavSeeder {
 	}
 
 	/** @param array<string,int> $entryIds */
-	public function serialize( NavSpec $spec, string $language, array $entryIds ): string {
-		$blocks = [];
+	public function serialize( NavSpec $spec, string $language, array $entryIds, string $current = '', int $navId = 0 ): string {
+		$blocks     = [];
+		$storedMega = MegaBlocks::extract( $current );
+		$megaHashes = 0 < $navId ? MegaBlocks::storedHashes( $navId ) : [];
+		$megaIndex  = 0;
 
 		foreach ( $spec->items as $item ) {
 			$item = (array) $item;
+
+			// Membership is git-owned, content is hash-arbitrated: the block
+			// always (re)appears where the manifest says, but once a human
+			// edits it in the editor its stored markup stops hashing to what
+			// the seeder last wrote, and from then on it is spliced through
+			// verbatim. Matching is positional: nth mega item, nth stored
+			// block. See docs/seeding.md ("Mega menus").
+			if ( isset( $item['mega'] ) ) {
+				$stored   = $storedMega[ $megaIndex ] ?? null;
+				$blocks[] = null !== $stored && ! MegaBlocks::gitOwns( $stored, (string) ( $megaHashes[ $megaIndex ] ?? '' ) )
+					? $stored
+					: $this->megaMarkup( (array) $item['mega'], $language, $entryIds );
+				++$megaIndex;
+				continue;
+			}
 
 			// A language switcher is a dynamic Polylang Pro block, not a link to a
 			// seeded post — emit it verbatim and move on. `dropdown` defaults on
@@ -308,6 +337,73 @@ final class NavSeeder {
 			'kind'  => 'post-type',
 			'url'   => (string) get_permalink( $postId ),
 		];
+	}
+
+	/**
+	 * One `pediment/mega-menu` block from a manifest mega item.
+	 *
+	 * Key order is load-bearing for the same reason as linkAttrs(): label,
+	 * columns; per column heading, icon, links; per link label, description,
+	 * url — optional keys are omitted, never emitted empty. Entry links
+	 * resolve through linkAttrs() (per-language permalink, label falls back
+	 * to the post title); the resolver's id/kind/type keys are dropped
+	 * because the block schema does not know them.
+	 *
+	 * @param array<string,mixed> $mega
+	 * @param array<string,int>   $entryIds
+	 */
+	private function megaMarkup( array $mega, string $language, array $entryIds ): string {
+		$columns = [];
+
+		foreach ( (array) $mega['columns'] as $column ) {
+			$column = (array) $column;
+			$links  = [];
+
+			foreach ( (array) $column['links'] as $link ) {
+				$link  = (array) $link;
+				$attrs = $this->linkAttrs( $link, $language, $entryIds );
+				// Same contract as the top-level items: an unresolved entry is
+				// dropped here and reported by apply() via unresolvedEntries(),
+				// which also refuses to write the shortened menu.
+				if ( [] === $attrs ) {
+					continue;
+				}
+
+				$out = [ 'label' => (string) $attrs['label'] ];
+				if ( isset( $link['description'] ) ) {
+					$out['description'] = (string) $link['description'];
+				}
+				$out['url'] = (string) $attrs['url'];
+				$links[]    = $out;
+			}
+
+			$col = [ 'heading' => (string) $column['heading'] ];
+			if ( isset( $column['icon'] ) ) {
+				$col['icon'] = (string) $column['icon'];
+			}
+			$col['links'] = $links;
+			$columns[]    = $col;
+		}
+
+		$attrs = [
+			'label'   => (string) $mega['label'],
+			'columns' => $columns,
+		];
+
+		// Mega attrs carry client copy, and Gutenberg's JS serializeAttributes()
+		// re-serializes EVERY block in the post whenever the nav is saved in the
+		// Site Editor, not just the ones a human touched. serialize_block_attributes()
+		// is core's PHP twin of that JS function (wp_json_encode with
+		// JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE, then --/</>/&/\" each
+		// rewritten to a \u escape) — matching it byte-for-byte is what keeps an
+		// UNTOUCHED mega block's stored hash matching after an unrelated editor
+		// save. wp_json_encode() alone would byte-shift any label/description
+		// containing an umlaut, `&`, `"`, or `--`, and the block would be silently
+		// captured as client-owned. The links/switcher lines below deliberately
+		// keep plain wp_json_encode( …, JSON_UNESCAPED_SLASHES ): their byte format
+		// is locked by existing sites, and the zero-mega golden test
+		// (test_a_mega_free_manifest_serializes_exactly_as_before) enforces that.
+		return '<!-- wp:pediment/mega-menu ' . serialize_block_attributes( $attrs ) . ' /-->';
 	}
 
 	/**
@@ -420,7 +516,23 @@ final class NavSeeder {
 			$missing = array_merge( $missing, $this->unresolvedItem( (array) $child, $language, $entryIds ) );
 		}
 
+		foreach ( (array) ( ( (array) ( $item['mega'] ?? [] ) )['columns'] ?? [] ) as $column ) {
+			foreach ( (array) ( ( (array) $column )['links'] ?? [] ) as $link ) {
+				$missing = array_merge( $missing, $this->unresolvedItem( (array) $link, $language, $entryIds ) );
+			}
+		}
+
 		return $missing;
+	}
+
+	/** Whether any of the spec's items declares a mega menu. */
+	private static function hasMega( NavSpec $spec ): bool {
+		foreach ( $spec->items as $item ) {
+			if ( isset( ( (array) $item )['mega'] ) ) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	/**
@@ -429,6 +541,9 @@ final class NavSeeder {
 	 * The plan's `items` change is operator-facing arithmetic, so it has to
 	 * count the same things on both sides: `count( $spec->items )` would report
 	 * a two-level menu as its top-level width and read as a shrink.
+	 *
+	 * A mega item counts as 1: its links are JSON attributes, invisible to the
+	 * needles plan() counts on the stored side.
 	 *
 	 * @param array<int,array<string,mixed>> $items
 	 */
