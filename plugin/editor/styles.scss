@@ -31,5 +31,7 @@
   &__chip-type    { font-weight: 600; }
   &__chip-preview { color: #555; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   &__quick   { display: flex; flex-wrap: wrap; gap: 4px; padding: 4px 12px 0; }
+  &__history-actions { display: flex; justify-content: flex-end; padding: 0 12px; }
+  &__confirm-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 12px; }
 }
 @keyframes pediment-blink { 50% { opacity: 0; } }
