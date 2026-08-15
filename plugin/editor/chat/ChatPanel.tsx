@@ -1,5 +1,6 @@
 import { useSelect } from '@wordpress/data';
-import { Button } from '@wordpress/components';
+import { useState } from '@wordpress/element';
+import { Button, Modal } from '@wordpress/components';
 import { __ } from '@wordpress/i18n';
 import useConversation from '../hooks/useConversation';
 import useChatTurn from '../hooks/useChatTurn';
@@ -30,6 +31,7 @@ export default function ChatPanel( { hideSelectionChip = false }: Props ) {
 		[]
 	);
 	const selected = useSelectedBlockContext();
+	const [ confirmDelete, setConfirmDelete ] = useState( false );
 
 	const messages = pendingUserMessage
 		? [ ...( conv?.messages ?? [] ), pendingUserMessage ]
@@ -57,9 +59,6 @@ export default function ChatPanel( { hideSelectionChip = false }: Props ) {
 				<span className="pediment-chat__title">
 					{ __( 'AI Chat', 'pediment' ) }
 				</span>
-				<Button variant="tertiary" size="small" onClick={ clear }>
-					{ __( 'Clear', 'pediment' ) }
-				</Button>
 			</div>
 			<MessageList messages={ messages } streaming={ streaming } />
 			{ error && <div className="pediment-chat__error">{ error }</div> }
@@ -73,12 +72,57 @@ export default function ChatPanel( { hideSelectionChip = false }: Props ) {
 					busy={ !! streaming || ! conv || ! postId }
 				/>
 			) }
+			{ messages.length > 0 && (
+				<div className="pediment-chat__history-actions">
+					<Button
+						variant="tertiary"
+						size="small"
+						isDestructive
+						disabled={ !! streaming }
+						onClick={ () => setConfirmDelete( true ) }
+					>
+						{ __( 'Delete history', 'pediment' ) }
+					</Button>
+				</div>
+			) }
 			<Composer
 				onSubmit={ send }
 				onStop={ stop }
 				busy={ !! streaming }
 				ready={ !! conv && !! postId }
 			/>
+			{ confirmDelete && (
+				<Modal
+					title={ __( 'Delete history', 'pediment' ) }
+					onRequestClose={ () => setConfirmDelete( false ) }
+					size="small"
+				>
+					<p>
+						{ __(
+							"Delete this chat's history? This can't be undone.",
+							'pediment'
+						) }
+					</p>
+					<div className="pediment-chat__confirm-actions">
+						<Button
+							variant="tertiary"
+							onClick={ () => setConfirmDelete( false ) }
+						>
+							{ __( 'Cancel', 'pediment' ) }
+						</Button>
+						<Button
+							variant="primary"
+							isDestructive
+							onClick={ () => {
+								setConfirmDelete( false );
+								clear();
+							} }
+						>
+							{ __( 'Delete', 'pediment' ) }
+						</Button>
+					</div>
+				</Modal>
+			) }
 		</div>
 	);
 }
