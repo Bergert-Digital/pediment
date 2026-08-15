@@ -213,6 +213,22 @@ final class Manifest {
 	 *                       an entry nor a url/label pair, or nests too deeply.
 	 */
 	private static function navItem( array $item, array $entries, string $path, bool $allowChildren ): array {
+		if ( isset( $item['mega'] ) ) {
+			if ( ! $allowChildren ) {
+				throw new ManifestError( "{$path}: a mega item may not appear inside 'children' — the block only renders at the top level of the menu." ); // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- exception message for the operator, not echoed output.
+			}
+			if ( isset( $item['children'] ) ) {
+				throw new ManifestError( "{$path}: a mega item is a leaf and may not declare 'children'." ); // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- exception message for the operator, not echoed output.
+			}
+			foreach ( [ 'entry', 'url', 'label', 'language_switcher' ] as $other ) {
+				if ( isset( $item[ $other ] ) ) {
+					throw new ManifestError( "{$path}: 'mega' is its own item type and may not combine with '{$other}'." ); // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- exception message for the operator, not echoed output.
+				}
+			}
+			$item['mega'] = self::megaItem( (array) $item['mega'], $entries, "{$path}.mega" );
+			return $item;
+		}
+
 		if ( isset( $item['language_switcher'] ) ) {
 			// A dynamic Polylang block, resolved at render time — it names no entry
 			// and is a leaf. Rejecting children here keeps a `language_switcher`
@@ -248,6 +264,66 @@ final class Manifest {
 		$item['children'] = $children;
 
 		return $item;
+	}
+
+	/**
+	 * Validate one mega item's full shape at parse time, leaf by leaf.
+	 *
+	 * Same argument as the nesting rule above: a mega menu that quietly drops
+	 * a malformed column or link would look correct in review and ship a
+	 * different menu than the manifest declares.
+	 *
+	 * @param array<string,mixed>     $mega
+	 * @param array<string,EntrySpec> $entries
+	 * @param string                  $path Operator-facing location, e.g. `navs.primary.items.1.mega`.
+	 * @return array<string,mixed>
+	 *
+	 * @throws ManifestError When the label or a column/link is malformed, or a
+	 *                       link names an unknown entry.
+	 */
+	private static function megaItem( array $mega, array $entries, string $path ): array {
+		if ( ! isset( $mega['label'] ) || '' === trim( (string) $mega['label'] ) ) {
+			throw new ManifestError( "{$path}: 'label' is required — it is the menu item the panel opens from." ); // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- exception message for the operator, not echoed output.
+		}
+		if ( ! isset( $mega['columns'] ) || ! is_array( $mega['columns'] ) || [] === $mega['columns'] ) {
+			throw new ManifestError( "{$path}: 'columns' must be a non-empty array." ); // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- exception message for the operator, not echoed output.
+		}
+
+		$columns = [];
+		foreach ( array_values( $mega['columns'] ) as $columnIndex => $column ) {
+			$columnPath = "{$path}.columns.{$columnIndex}";
+			$column     = (array) $column;
+
+			if ( ! isset( $column['heading'] ) || '' === trim( (string) $column['heading'] ) ) {
+				throw new ManifestError( "{$columnPath}: 'heading' is required." ); // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- exception message for the operator, not echoed output.
+			}
+			if ( ! isset( $column['links'] ) || ! is_array( $column['links'] ) || [] === $column['links'] ) {
+				throw new ManifestError( "{$columnPath}: 'links' must be a non-empty array." ); // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- exception message for the operator, not echoed output.
+			}
+
+			$links = [];
+			foreach ( array_values( $column['links'] ) as $linkIndex => $link ) {
+				$linkPath = "{$columnPath}.links.{$linkIndex}";
+				$link     = (array) $link;
+
+				if ( isset( $link['entry'] ) ) {
+					$target = (string) $link['entry'];
+					if ( ! isset( $entries[ $target ] ) ) {
+						throw new ManifestError( "{$linkPath}: unknown entry '{$target}'." ); // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- exception message for the operator, not echoed output.
+					}
+				} elseif ( ! isset( $link['url'], $link['label'] ) ) {
+					throw new ManifestError( "{$linkPath}: needs either 'entry' or both 'url' and 'label'." ); // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- exception message for the operator, not echoed output.
+				}
+
+				$links[] = $link;
+			}
+
+			$column['links'] = $links;
+			$columns[]       = $column;
+		}
+		$mega['columns'] = $columns;
+
+		return $mega;
 	}
 
 	/**

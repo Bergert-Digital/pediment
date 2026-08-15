@@ -9,7 +9,7 @@ setup = "npm install && composer install -d plugin && (cd plugin && npm install 
 # plugin editor bundle.
 # WP_ENV_PORT / WP_ENV_TESTS_PORT keep each workspace's WordPress + tests containers on
 # distinct ports so multiple workspaces can run side by side.
-run = "WP_ENV_PORT=$CONDUCTOR_PORT WP_ENV_TESTS_PORT=$((CONDUCTOR_PORT + 1)) npm run env:start && (cd plugin && npm run start)"
+run = "WP_ENV_PORT=$CONDUCTOR_PORT WP_ENV_TESTS_PORT=$((CONDUCTOR_PORT + 1)) npm run env:start && npm start"
 
 # Tear down the workspace's Docker containers when archiving to free ports and resources.
 archive = "npm run env:stop || true"

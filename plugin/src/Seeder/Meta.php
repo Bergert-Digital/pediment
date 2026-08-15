@@ -24,6 +24,15 @@ final class Meta {
 	public const SOURCE = '_pediment_seed_source';
 
 	/**
+	 * JSON array of per-position hashes over the pediment/mega-menu blocks in
+	 * a navigation entity, as last written by the seeder. Arbitrates mega
+	 * content the way HASH arbitrates page content: matching = git owns the
+	 * block and manifest changes flow through; anything else = the client
+	 * edited it in the editor and keeps it. See MegaBlocks.
+	 */
+	public const MEGA_HASH = '_pediment_seed_mega_hash';
+
+	/**
 	 * Drop what wp_trash_post() left behind.
 	 *
 	 * Every restore in this engine writes post_status directly, which skips the

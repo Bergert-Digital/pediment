@@ -285,4 +285,41 @@ class NavLanguageTest extends PolylangTestCase {
 			get_stylesheet_directory()
 		);
 	}
+
+	public function test_a_mega_link_resolves_per_language() {
+		$manifest = Manifest::fromArray(
+			[
+				'languages' => [ 'en' => [ 'name' => 'English', 'locale' => 'en_US', 'default' => true ], 'de' => [ 'name' => 'Deutsch', 'locale' => 'de_DE' ] ],
+				'pages'     => [ 'about' => [ 'title' => 'About', 'content' => '' ] ],
+				'navs'      => [
+					'primary' => [
+						'title' => 'Primary',
+						'items' => [
+							[
+								'mega' => [
+									'label'   => 'Products',
+									'columns' => [ [ 'heading' => 'H', 'links' => [ [ 'entry' => 'about', 'description' => 'D' ] ] ] ],
+								],
+							],
+						],
+					],
+				],
+			],
+			get_stylesheet_directory()
+		);
+
+		$lang     = new PolylangProvider();
+		$seeder   = new NavSeeder( $lang );
+		$en       = $this->page( 'en' );
+		$de       = $this->page( 'de' );
+		$entryIds = [ 'about|en' => $en, 'about|de' => $de ];
+
+		$ids = $seeder->apply( $seeder->plan( $manifest, $entryIds ), $manifest, $entryIds );
+
+		$this->assertSame( [], $seeder->errors() );
+		$deContent = get_post( $ids['primary|de'] )->post_content;
+		$this->assertStringContainsString( '"label":"About de"', $deContent, 'the mega link label falls back to the per-language post title' );
+		$this->assertStringContainsString( '"url":"' . get_permalink( $de ) . '"', $deContent );
+		$this->assertStringNotContainsString( '"url":"' . get_permalink( $en ) . '"', $deContent, 'the full url attribute is compared so ?page_id prefixes cannot collide' );
+	}
 }
