@@ -1,5 +1,31 @@
 # Changelog
 
+## [3.4.0](https://github.com/Bergert-Digital/pediment/compare/v3.3.0...v3.4.0) (2026-08-15)
+
+
+### Features
+
+* **dev:** auto-activate + seed the fixture theme on local env start ([6e35ef8](https://github.com/Bergert-Digital/pediment/commit/6e35ef8496818d29a9c3d9a3038b8130b7d2aef2))
+* **mega-menu:** fade the dropdown panel in and out ([4712df5](https://github.com/Bergert-Digital/pediment/commit/4712df53b5fd492bbda8dca5b2fb40bfe97ecd26))
+* **mega-menu:** manifest-seeded mega menus, editable in the WP backend ([#90](https://github.com/Bergert-Digital/pediment/issues/90)) ([26d8333](https://github.com/Bergert-Digital/pediment/commit/26d83330709e84eae59884561a8f786c4c7574ec))
+* **seeder:** hash-arbitrated splice keeps editor-owned mega content ([3140fdb](https://github.com/Bergert-Digital/pediment/commit/3140fdb6fb9da10230e784579880c5f7f7a7dd97))
+* **seeder:** MegaBlocks extraction and per-position hash arbitration ([40148fc](https://github.com/Bergert-Digital/pediment/commit/40148fc3b7ef1f2e8161248ef72fc261de83ee20))
+* **seeder:** record and carry forward mega ownership hashes on apply ([4c7f8a9](https://github.com/Bergert-Digital/pediment/commit/4c7f8a9cbf82149a28ff93a5e005151c1ab17749))
+* **seeder:** serialize manifest mega items as pediment/mega-menu blocks ([256e364](https://github.com/Bergert-Digital/pediment/commit/256e36441ec1f3652e7c1f3e83c4d1c24ea3af15))
+* **seeder:** validate the mega nav-item grammar in the manifest ([1534073](https://github.com/Bergert-Digital/pediment/commit/15340733f592e763922f092a6a3d2f29673f2ae5))
+
+
+### Bug Fixes
+
+* **build:** stop the editor watch from wiping the blocks build ([6096938](https://github.com/Bergert-Digital/pediment/commit/60969382e7fd95f3423a7d5d7709f6f145b0656f))
+* **dev:** add root `start` script so Conductor's run command works ([c6d5033](https://github.com/Bergert-Digital/pediment/commit/c6d5033ed888895aa0157d949f078da85bf3fbdd))
+* **env:** reliable wp-env start + correct client scaffold plugin/theme slugs ([#87](https://github.com/Bergert-Digital/pediment/issues/87)) ([1459bdc](https://github.com/Bergert-Digital/pediment/commit/1459bdc7eb95812a7a5e6d9f371a1da3af1dfd81))
+* **mega-menu:** anchor editor preview panel to trigger left edge ([6e52acf](https://github.com/Bergert-Digital/pediment/commit/6e52acf7599c9226eb8036cb491cf8b60fc579d8))
+* **mega-menu:** mark block with contentRole so it inserts in the nav editor ([20ac9f6](https://github.com/Bergert-Digital/pediment/commit/20ac9f68a1038933a59e07eb2eb1c41673f8408f))
+* **seeder:** hash persisted nav row for mega ownership ([2801412](https://github.com/Bergert-Digital/pediment/commit/2801412c32366712368ee24064ecc0fcf02831c7))
+* **seeder:** match Gutenberg attribute serialization for mega blocks ([d30271d](https://github.com/Bergert-Digital/pediment/commit/d30271d2c8275b676595cedefaf746f45f382be3))
+* **seeder:** verifier honors editor-owned mega content ([5a32966](https://github.com/Bergert-Digital/pediment/commit/5a32966ebbd13a6b9a436a2e65837b202cbf943f))
+
 ## [3.3.0](https://github.com/Bergert-Digital/pediment/compare/v3.2.2...v3.3.0) (2026-08-08)
 
 
