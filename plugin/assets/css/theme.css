@@ -182,6 +182,15 @@ header.site-header{
   backdrop-filter:blur(10px);
   -webkit-backdrop-filter:blur(10px);
 }
+/* backdrop-filter makes the header a containing block for its position:fixed
+   descendants, which traps core's full-screen mobile nav overlay inside the
+   header box (clipped to header height, internal scrollbar). Drop the filter
+   while the overlay is open — the header is fully covered by the overlay then,
+   so the frosted look is not visible anyway. */
+header.site-header:has(.wp-block-navigation__responsive-container.is-menu-open){
+  backdrop-filter:none;
+  -webkit-backdrop-filter:none;
+}
 /* Header layout: the alignwide group uses justify-content:space-between
    with three children (brand, nav, CTA). The nav must size to its
    content so space-between can distribute the slack — explicitly
