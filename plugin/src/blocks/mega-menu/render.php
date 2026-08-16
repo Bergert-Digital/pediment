@@ -39,7 +39,7 @@ if ( ! empty( $attributes['className'] ) ) {
 }
 
 $wrapper = sprintf(
-	'class="%s" data-wp-interactive="pediment/mega-menu" data-wp-context="%s" data-wp-init="callbacks.init" data-wp-on--focusout="actions.onFocusOut" data-wp-on--mouseenter="actions.onPointerEnter" data-wp-on--mouseleave="actions.onPointerLeave"',
+	'class="%s" data-wp-interactive="pediment/mega-menu" data-wp-context="%s" data-wp-init="callbacks.init" data-wp-on--focusout="actions.onFocusOut" data-wp-on--pointerenter="actions.onPointerEnter" data-wp-on--pointerleave="actions.onPointerLeave"',
 	esc_attr( implode( ' ', $wrapper_classes ) ),
 	esc_attr( '{ "isOpen": false }' )
 );
@@ -61,8 +61,13 @@ ob_start();
 			aria-label="<?php echo esc_attr__( 'Menu', 'pediment' ); ?>"<?php endif; ?>
 		data-wp-bind--aria-expanded="context.isOpen"
 		data-wp-on--focus="actions.onTriggerFocus"
+		data-wp-on--pointerdown="actions.onPointerDown"
 		data-wp-on--click="actions.toggle"
-	><?php echo wp_kses_post( $label ); ?></button>
+	><?php echo wp_kses_post( $label ); ?>
+		<?php if ( $has_panel ) : ?>
+			<span class="starter-mega-menu__caret" aria-hidden="true"></span>
+		<?php endif; ?>
+	</button>
 	<?php if ( $has_panel ) : ?>
 		<div
 			id="<?php echo esc_attr( $panel_id ); ?>"
