@@ -1,11 +1,9 @@
 import { store, getContext, getElement } from '@wordpress/interactivity';
 
-type Ctx = { isOpen: boolean; suppressFocus?: boolean };
+type Ctx = { isOpen: boolean; suppressFocus?: boolean; pointerType?: string };
 
 // Per-instance hover-close timers, keyed by the block root element.
 const timers = new WeakMap< Element, ReturnType< typeof setTimeout > >();
-
-const hoverCapable = () => window.matchMedia( '(hover: hover)' ).matches;
 
 const inResponsiveOverlay = ( ref: Element | null ) =>
 	Boolean(
@@ -38,16 +36,23 @@ const { actions } = store( 'pediment/mega-menu', {
 		close() {
 			getContext< Ctx >().isOpen = false;
 		},
+		onPointerDown( event: PointerEvent ) {
+			// Record the actual pointer type of the interaction so toggle()
+			// (a plain click, which carries no pointerType) can tell a mouse
+			// click apart from a finger/stylus tap. This is what makes hybrid
+			// touchscreen laptops (hover-capable AND touch) behave correctly.
+			getContext< Ctx >().pointerType = event?.pointerType || '';
+		},
 		toggle() {
 			const { ref } = getElement();
-			// Hover devices drive open/close via pointer + focus; the click
-			// is a no-op there to avoid an open()+toggle() double-fire on
-			// hybrid touch/hover devices. Responsive overlays always use the
-			// accordion click interaction, even when the device can hover.
-			if ( hoverCapable() && ! inResponsiveOverlay( ref ) ) {
+			const ctx = getContext< Ctx >();
+			// Mouse users drive open/close via pointer + focus; a mouse click
+			// on the trigger is a no-op to avoid an open()+toggle() double-fire.
+			// Touch/pen taps and every interaction inside the responsive
+			// overlay use this click to toggle the accordion.
+			if ( ctx.pointerType === 'mouse' && ! inResponsiveOverlay( ref ) ) {
 				return;
 			}
-			const ctx = getContext< Ctx >();
 			if ( ctx.isOpen ) {
 				actions.close();
 			} else {
@@ -64,23 +69,35 @@ const { actions } = store( 'pediment/mega-menu', {
 				return;
 			}
 			const { ref } = getElement();
-			// On non-hover (touch) devices the tap also fires click ->
-			// toggle(); let that own open/close so focus+click don't
-			// cancel out. Hover/keyboard devices open on focus here.
-			if ( ! hoverCapable() || inResponsiveOverlay( ref ) ) {
+			// A touch/pen tap also fires click -> toggle(); let that own
+			// open/close so the tap's focus doesn't cancel it out. Inside the
+			// overlay the click owns it too. Keyboard/mouse focus opens here.
+			if (
+				ctx.pointerType === 'touch' ||
+				ctx.pointerType === 'pen' ||
+				inResponsiveOverlay( ref )
+			) {
 				return;
 			}
 			actions.open();
 		},
-		onPointerEnter() {
+		onPointerEnter( event: PointerEvent ) {
+			const ctx = getContext< Ctx >();
+			ctx.pointerType = event?.pointerType || '';
 			const { ref } = getElement();
-			if ( hoverCapable() && ! inResponsiveOverlay( ref ) ) {
+			// Only a real mouse hover opens the dropdown; touch/pen wait for
+			// the tap. Never hover-open inside the responsive overlay.
+			if ( ctx.pointerType === 'mouse' && ! inResponsiveOverlay( ref ) ) {
 				actions.open();
 			}
 		},
-		onPointerLeave() {
+		onPointerLeave( event: PointerEvent ) {
 			const { ref } = getElement();
-			if ( ! hoverCapable() || ! ref || inResponsiveOverlay( ref ) ) {
+			if (
+				( event?.pointerType || '' ) !== 'mouse' ||
+				! ref ||
+				inResponsiveOverlay( ref )
+			) {
 				return;
 			}
 			const ctx = getContext< Ctx >();

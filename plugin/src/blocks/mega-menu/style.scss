@@ -25,6 +25,27 @@
     }
   }
 
+  /* Chevron affordance. Hidden on desktop so the trigger stays visually
+     identical to its sibling nav links; the overlay rules below reveal it,
+     where an expand/collapse cue is needed. Drawn from two borders so it
+     inherits `currentColor` and tracks the trigger's hover/open colour. */
+  &__caret {
+    display: none;
+    inline-size: 0.45em;
+    block-size: 0.45em;
+    margin-inline-start: 0.5rem;
+    border-right: 2px solid currentColor;
+    border-bottom: 2px solid currentColor;
+    border-radius: 1px;
+    transform: translateY(-0.15em) rotate(45deg);
+    transition: transform 0.15s ease;
+    flex: 0 0 auto;
+  }
+
+  &__trigger[aria-expanded="true"] &__caret {
+    transform: translateY(0.05em) rotate(225deg);
+  }
+
   &__panel {
     /* Insulate the dropdown from the trigger's typography: block-supports
        font-size lands on the wrapper, but the panel keeps its own base size
@@ -80,7 +101,8 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .starter-mega-menu__panel {
+  .starter-mega-menu__panel,
+  .starter-mega-menu__caret {
     transition: none;
   }
 }
@@ -156,6 +178,19 @@ svg.starter-mega-column__icon {
 
 /* Inside the core hamburger overlay: accordion, not a floating dropdown. */
 .wp-block-navigation__responsive-container.is-menu-open {
+  /* Full-width row so the caret sits at the trailing edge, giving the
+     accordion an obvious expand/collapse affordance the dropdown doesn't need. */
+  .starter-mega-menu__trigger {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    inline-size: 100%;
+  }
+
+  .starter-mega-menu__caret {
+    display: inline-block;
+  }
+
   .starter-mega-menu__panel {
     position: static;
     left: auto;
