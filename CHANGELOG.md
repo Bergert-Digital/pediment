@@ -1,5 +1,17 @@
 # Changelog
 
+## [3.5.0](https://github.com/Bergert-Digital/pediment/compare/v3.4.0...v3.5.0) (2026-08-16)
+
+
+### Features
+
+* **chat:** visible "Delete history" button with confirmation ([5803bb4](https://github.com/Bergert-Digital/pediment/commit/5803bb450884e9c1d1486b2bc933a811ee34889d))
+
+
+### Bug Fixes
+
+* **mega-menu:** full-height mobile overlay, caret affordance, robust touch ([a4097f4](https://github.com/Bergert-Digital/pediment/commit/a4097f47bec3e3beb6a043c77299bcdc4c36bf7f))
+
 ## [3.4.0](https://github.com/Bergert-Digital/pediment/compare/v3.3.0...v3.4.0) (2026-08-15)
 
 
