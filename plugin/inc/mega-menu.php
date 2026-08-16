@@ -3,8 +3,13 @@
  * Mega menu: allow pediment/mega-menu to render as a core/navigation item.
  *
  * Editor insertion is handled by the block's own "parent": ["core/navigation"]
- * declaration. Render-time, core only wraps known blocks in the nav <li>; we
- * add ours to that set via the core filter (WP 6.5.0+).
+ * declaration -- and it must be `parent`, not `ancestor`. core/navigation ships
+ * an `allowedBlocks` allowlist that excludes third-party blocks; in
+ * canInsertBlockType that makes `hasParentAllowedBlock` false. Only a matching
+ * `parent` sets `hasBlockAllowedParent` true, which is the term that rescues the
+ * result to insertable. `ancestor` leaves that term null, so the block is
+ * refused. Render-time, core only wraps known blocks in the nav <li>; we add
+ * ours to that set via the core filter (WP 6.5.0+).
  *
  * @package Pediment
  */
