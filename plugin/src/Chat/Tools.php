@@ -123,6 +123,23 @@ final class Tools {
 			],
 		];
 
+		// Post-level field tool: lets the model set the excerpt (used as the meta
+		// description by SEO plugins) and the title. Not a block op — applied to
+		// the post entity client-side, so it has no VirtualTree effect.
+		$metaTools = [
+			[
+				'name'         => 'set_page_meta',
+				'description'  => "Set the post's SEO fields — excerpt (the meta description) and title. This is a post-level field, not a block. Set a concise excerpt after you build or substantially change the page. Set the title only when the current post_title is empty or \"Auto Draft\", or when the user asks. Pass only the field(s) you want to change.",
+				'input_schema' => [
+					'type'       => 'object',
+					'properties' => [
+						'title'   => [ 'type' => 'string', 'description' => 'The post title (also feeds <title> and og:title).' ],
+						'excerpt' => [ 'type' => 'string', 'description' => 'A concise, plain-text summary (~150-160 chars) used as the meta description.' ],
+					],
+				],
+			],
+		];
+
 		// Anthropic-hosted server tools: let the model read the live web so it can
 		// build a page from a reference URL or look one up by name. These execute
 		// on Anthropic's side — no input_schema, no client-side dispatch. web_fetch
@@ -153,7 +170,7 @@ final class Tools {
 		 */
 		$webTools = (array) apply_filters( 'pediment_ai_web_tools', $webTools );
 
-		return array_merge( $blockTools, $webTools );
+		return array_merge( $blockTools, $metaTools, $webTools );
 	}
 
 	/**
@@ -278,6 +295,8 @@ final class Tools {
 				return $this->applyMove( $tree, $input );
 			case 'read_block':
 				return $this->applyRead( $tree, $input );
+			case 'set_page_meta':
+				return $this->applySetPageMeta( $input );
 		}
 		return [ 'content' => "Unknown tool: {$tool}", 'is_error' => true ];
 	}
@@ -362,6 +381,30 @@ final class Tools {
 		return $ok
 			? [ 'content' => [ 'ok' => true ] ]
 			: [ 'content' => "Block not found: {$cid}", 'is_error' => true ];
+	}
+
+	/**
+	 * @param array<string,mixed> $input
+	 * @return array{content:mixed, is_error?:bool}
+	 */
+	/**
+	 * Acknowledge a set_page_meta call. It carries no block mutation, so there is
+	 * nothing to validate against the tree — the real effect (editPost) happens
+	 * client-side. Echo the (already escape-repaired) fields back so the model sees
+	 * confirmation of what it set.
+	 *
+	 * @param array<string,mixed> $input
+	 * @return array{content:mixed, is_error?:bool}
+	 */
+	private function applySetPageMeta( array $input ): array {
+		$out = [ 'ok' => true ];
+		if ( isset( $input['title'] ) && is_string( $input['title'] ) ) {
+			$out['title'] = $input['title'];
+		}
+		if ( isset( $input['excerpt'] ) && is_string( $input['excerpt'] ) ) {
+			$out['excerpt'] = $input['excerpt'];
+		}
+		return [ 'content' => $out ];
 	}
 
 	/**

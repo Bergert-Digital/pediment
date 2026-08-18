@@ -46,6 +46,8 @@ final class PromptBuilder {
 		$lines[] = '';
 		$lines[] = 'Composing new section types: always prefer a purpose-built pediment block when one fits the content (hero, cta, stat-grid, testimonial-grid, faq, media-text, prose, section-head). ONLY when the library has no block for a section type the page genuinely needs — a pricing table, a feature/benefit grid, a logo wall, a comparison, a process or timeline — compose it from primitives instead of forcing an ill-fitting block or emitting a flat stack of paragraphs. Build the section inside its band core/group; for multi-column layouts emit one core/columns (set "align":"wide") with a core/column per column, and put each column\'s core/heading / core/paragraph / core/list / core/image / core/buttons in that column\'s innerBlocks. Use pediment/section-head for the section heading. Keep nesting shallow. Do NOT set custom colors, font sizes or spacing on composed blocks — rely on the theme\'s own styles so the section stays on-brand. Stats stay the exception: never put pediment/stat in core/columns — use pediment/stat-grid. A core/columns needs at least two core/column children; for a single block of content use the band core/group directly, not core/columns.';
 		$lines[] = '';
+		$lines[] = 'SEO metadata: after you build or substantially change the page, call set_page_meta to write a concise excerpt — one plain-text sentence of roughly 150-160 characters, no HTML — that becomes the page\'s meta description. Set it in the same turn you build the page. Use the SAME tool to set the title ONLY when the current post_title (shown in the context as post_title) is empty or "Auto Draft", or when the user explicitly asks for a title; never overwrite a title the user has already chosen.';
+		$lines[] = '';
 		$lines[] = 'Available blocks (use these — do not invent block names). A line tagged [contains: …] is a container: build it in ONE insert_block call with each child placed in block.innerBlocks (every child is {name, attributes}). You cannot add children to a container after it exists — there is no insert-into-parent operation. A line tagged [child of: …] may only appear nested inside that parent; never insert it on its own (it is rejected).';
 		foreach ( $this->blockSchema as $name => $info ) {
 			$description = isset( $info['description'] ) ? (string) $info['description'] : '';
@@ -82,9 +84,12 @@ final class PromptBuilder {
 
 	/**
 	 * Returns a single user-content text part representing the current tree + selection.
+	 * The current post_title is included so the model can decide whether set_page_meta
+	 * should set the title (only when it is empty / "Auto Draft") or leave it alone.
 	 */
-	public function contextMessage( VirtualTree $tree, ?string $selectedClientId ): string {
+	public function contextMessage( VirtualTree $tree, ?string $selectedClientId, ?string $title = null ): string {
 		$payload = [
+			'post_title'     => $title,
 			'block_tree'     => $tree->skeleton( $selectedClientId, 3 ),
 			'selected_block' => null === $selectedClientId ? null : $tree->find( $selectedClientId ),
 		];

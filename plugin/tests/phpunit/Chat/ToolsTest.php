@@ -17,9 +17,44 @@ class ToolsTest extends \WP_UnitTestCase {
 	public function test_definitions_lists_block_and_web_tools(): void {
 		$names = array_column( $this->tools()->definitions(), 'name' );
 		$this->assertEqualsCanonicalizing(
-			[ 'insert_block', 'update_block', 'delete_block', 'move_block', 'read_block', 'web_search', 'web_fetch' ],
+			[ 'insert_block', 'update_block', 'delete_block', 'move_block', 'read_block', 'set_page_meta', 'web_search', 'web_fetch' ],
 			$names
 		);
+	}
+
+	public function test_set_page_meta_schema_has_optional_title_and_excerpt_strings(): void {
+		$byName = [];
+		foreach ( $this->tools()->definitions() as $tool ) {
+			$byName[ $tool['name'] ] = $tool;
+		}
+		$schema = $byName['set_page_meta']['input_schema'];
+		$this->assertSame( 'string', $schema['properties']['title']['type'] );
+		$this->assertSame( 'string', $schema['properties']['excerpt']['type'] );
+		// Both are optional — the model may set just one.
+		$this->assertArrayNotHasKey( 'required', $schema );
+	}
+
+	public function test_apply_set_page_meta_returns_ok_without_touching_tree(): void {
+		$tree   = new VirtualTree( [
+			[ 'clientId' => 'a', 'name' => 'core/paragraph', 'attributes' => [ 'content' => 'Body' ], 'innerBlocks' => [] ],
+		] );
+		$result = $this->tools()->apply( $tree, 'set_page_meta', [
+			'title'   => 'Our Services',
+			'excerpt' => 'A concise summary.',
+		] );
+		$this->assertFalse( $result['is_error'] ?? false );
+		$this->assertTrue( $result['content']['ok'] );
+		// The block tree is untouched — this is a post-level field, not a block op.
+		$this->assertCount( 1, $tree->toArray() );
+		$this->assertSame( 'core/paragraph', $tree->toArray()[0]['name'] );
+	}
+
+	public function test_apply_set_page_meta_repairs_orphaned_unicode_escapes(): void {
+		$tree   = new VirtualTree( [] );
+		$result = $this->tools()->apply( $tree, 'set_page_meta', [
+			'title' => 'Transfer u0026 Verankerung',
+		] );
+		$this->assertSame( 'Transfer & Verankerung', $result['content']['title'] );
 	}
 
 	public function test_web_tools_are_server_side_definitions(): void {

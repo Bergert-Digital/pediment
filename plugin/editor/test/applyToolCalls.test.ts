@@ -18,6 +18,7 @@ type Node = {
  */
 function makeStore( root: Node[] ) {
 	let counter = 0;
+	const postAttrs: Record< string, any > = {};
 
 	const childrenOf = ( rootClientId: string ): Node[] | null => {
 		if ( rootClientId === '' ) {
@@ -107,6 +108,9 @@ function makeStore( root: Node[] ) {
 			}
 		},
 		normalize: () => {},
+		editPost: ( attrs ) => {
+			Object.assign( postAttrs, attrs );
+		},
 	};
 
 	// Resolve a children-array back to the clientId of the node that owns it.
@@ -125,7 +129,7 @@ function makeStore( root: Node[] ) {
 		return owner;
 	}
 
-	return { api, root };
+	return { api, root, postAttrs };
 }
 
 const group = ( clientId: string, innerBlocks: Node[] ): Node => ( {
@@ -259,6 +263,51 @@ describe( 'applyToolCallsToEditor — addressing nested targets', () => {
 			'h1',
 			'p1',
 		] );
+	} );
+} );
+
+describe( 'applyToolCallsToEditor — set_page_meta', () => {
+	it( 'writes the title and excerpt to the post', () => {
+		const { api, root, postAttrs } = makeStore( [] );
+
+		applyToolCallsToEditor( api, [
+			{
+				tool: 'set_page_meta',
+				input: { title: 'Our Services', excerpt: 'What we do.' },
+			},
+		] );
+
+		expect( postAttrs ).toEqual( {
+			title: 'Our Services',
+			excerpt: 'What we do.',
+		} );
+		// It is a post-level field, not a block — nothing lands on the canvas.
+		expect( root ).toHaveLength( 0 );
+	} );
+
+	it( 'writes only the fields the model provided', () => {
+		const { api, postAttrs } = makeStore( [] );
+
+		applyToolCallsToEditor( api, [
+			{ tool: 'set_page_meta', input: { excerpt: 'Just a summary.' } },
+		] );
+
+		expect( postAttrs ).toEqual( { excerpt: 'Just a summary.' } );
+		expect( postAttrs ).not.toHaveProperty( 'title' );
+	} );
+
+	it( 'skips an errored set_page_meta call', () => {
+		const { api, postAttrs } = makeStore( [] );
+
+		applyToolCallsToEditor( api, [
+			{
+				tool: 'set_page_meta',
+				input: { title: 'Nope' },
+				is_error: true,
+			},
+		] );
+
+		expect( postAttrs ).toEqual( {} );
 	} );
 } );
 
