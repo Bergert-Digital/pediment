@@ -109,6 +109,7 @@ final class ChatController {
 		$post_id         = (int) $r->get_param( 'post_id' );
 		$conversation_id = (int) $r->get_param( 'conversation_id' );
 		$message         = trim( (string) $r->get_param( 'message' ) );
+		$title           = (string) $r->get_param( 'title' );
 		$selected        = $r->get_param( 'selected_block' );
 		$images = $this->normalizeImages( $r->get_param( 'images' ) );
 		if ( '' === $message && [] === $images ) {
@@ -138,13 +139,14 @@ final class ChatController {
 		$mode = (string) apply_filters( 'pediment_ai_dispatch_mode', 'auto' );
 
 		if ( 'inline' === $mode ) {
-			$this->processTurn( $turn_id, $conversation_id, new VirtualTree( $tree_source ), $selected, $message, $images );
+			$this->processTurn( $turn_id, $conversation_id, new VirtualTree( $tree_source ), $selected, $message, $images, $title );
 			return new \WP_REST_Response( [ 'turn_id' => $turn_id ], 202 );
 		}
 
 		$dispatcher->stashInput( $turn_id, [
 			'conversation_id' => $conversation_id,
 			'message'         => $message,
+			'title'           => $title,
 			'selected_block'  => $selected,
 			'block_tree'      => $tree_source,
 			'user_message_id' => $user_message_id,
@@ -201,7 +203,8 @@ final class ChatController {
 			$tree,
 			$input['selected_block'] ?? null,
 			(string) $input['message'],
-			$images
+			$images,
+			(string) ( $input['title'] ?? '' )
 		);
 		return new \WP_REST_Response( null, 204 );
 	}
@@ -211,7 +214,7 @@ final class ChatController {
 	/**
 	 * @param array<string,mixed>|null $selected
 	 */
-	public function processTurn( int $turn_id, int $conversation_id, VirtualTree $tree, $selected, string $message, array $images = [] ): void {
+	public function processTurn( int $turn_id, int $conversation_id, VirtualTree $tree, $selected, string $message, array $images = [], string $title = '' ): void {
 		$store = new ConversationStore();
 		$conv  = $store->findById( $conversation_id );
 		// Build history (everything except the just-inserted user+assistant pair).
@@ -234,7 +237,8 @@ final class ChatController {
 			history:        $history,
 			selectedId:     $selectedId,
 			currentUserMsg: $message,
-			images:         $images
+			images:         $images,
+			title:          $title
 		);
 	}
 
