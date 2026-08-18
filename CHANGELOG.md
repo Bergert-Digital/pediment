@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.6.0](https://github.com/Bergert-Digital/pediment/compare/v3.5.0...v3.6.0) (2026-08-18)
+
+
+### Features
+
+* **chat:** let the AI set page excerpt and title for SEO ([f3ee61e](https://github.com/Bergert-Digital/pediment/commit/f3ee61e232cb289e2bbd6b26bdaa2fd2678270b1))
+
 ## [3.5.0](https://github.com/Bergert-Digital/pediment/compare/v3.4.0...v3.5.0) (2026-08-16)
 
 
