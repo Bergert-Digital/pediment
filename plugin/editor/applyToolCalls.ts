@@ -19,6 +19,7 @@ export default function applyToolCalls( calls: ToolCall[] ): void {
 
 	const blockEditor = dispatch( 'core/block-editor' ) as any;
 	const blockSelect = select( 'core/block-editor' ) as any;
+	const editor = dispatch( 'core/editor' ) as any;
 
 	applyToolCallsToEditor(
 		{
@@ -45,6 +46,7 @@ export default function applyToolCalls( calls: ToolCall[] ): void {
 					toRoot,
 					index
 				),
+			editPost: ( attrs ) => editor.editPost( attrs ),
 			normalize: () =>
 				normalizeSections(
 					{

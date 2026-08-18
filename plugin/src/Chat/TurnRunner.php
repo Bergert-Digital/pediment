@@ -43,7 +43,8 @@ final class TurnRunner {
 		array $history,
 		?string $selectedId,
 		string $currentUserMsg,
-		array $images = []
+		array $images = [],
+		string $title = ''
 	): void {
 		if ( $this->store->isAborted( $turn_id ) ) {
 			return;
@@ -62,7 +63,7 @@ final class TurnRunner {
 
 		// The most recent user message — built as blocks so tree context (and any
 		// prefetched reference content) sit alongside the user's text.
-		$userContent = [ [ 'type' => 'text', 'text' => $this->prompts->contextMessage( $tree, $selectedId ) ] ];
+		$userContent = [ [ 'type' => 'text', 'text' => $this->prompts->contextMessage( $tree, $selectedId, $title ) ] ];
 
 		// Image attachments lead the turn — Anthropic recommends images before text.
 		if ( [] !== $images ) {

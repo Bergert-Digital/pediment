@@ -99,6 +99,14 @@ export default function useChatTurn() {
 			const blockTree = blocksToTree(
 				( wpSelect( 'core/block-editor' ) as any ).getBlocks()
 			);
+			// Live, possibly-unsaved title so the model can decide whether
+			// set_page_meta should set the title or leave a chosen one alone.
+			const title =
+				( (
+					wpSelect( 'core/editor' ) as any
+				 )?.getEditedPostAttribute?.( 'title' ) as
+					| string
+					| undefined ) ?? '';
 			let turnId: number;
 			try {
 				const r = await apiFetch< { turn_id: number } >( {
@@ -108,6 +116,7 @@ export default function useChatTurn() {
 						conversation_id: args.conversationId,
 						post_id: args.postId,
 						message: args.message,
+						title,
 						selected_block: args.selectedBlock,
 						block_tree: blockTree,
 						images: args.images,

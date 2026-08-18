@@ -26,6 +26,26 @@ class PromptBuilderTest extends \WP_UnitTestCase {
 		$this->assertStringContainsString( '"clientId":"a"',   $msg );
 	}
 
+	public function test_context_message_includes_current_title(): void {
+		// The model needs the live title to decide whether set_page_meta should
+		// set it (only when empty/Auto Draft) or leave a user-chosen title alone.
+		$pb   = new PromptBuilder( [ 'core/paragraph' => [ 'attributes' => [], 'allowsInnerBlocks' => false ] ] );
+		$tree = new VirtualTree( [] );
+		$msg  = $pb->contextMessage( $tree, null, 'Existing Title' );
+		$this->assertStringContainsString( '"post_title"', $msg );
+		$this->assertStringContainsString( 'Existing Title', $msg );
+	}
+
+	public function test_system_prompt_instructs_setting_excerpt_and_title(): void {
+		$pb     = new PromptBuilder( [ 'core/paragraph' => [ 'description' => 'A paragraph.' ] ] );
+		$prompt = $pb->systemPrompt();
+		// The set_page_meta tool and its two fields must be described.
+		$this->assertStringContainsString( 'set_page_meta', $prompt );
+		$this->assertStringContainsStringIgnoringCase( 'excerpt', $prompt );
+		// The title rule: only set it when empty / Auto Draft, or when asked.
+		$this->assertStringContainsString( 'Auto Draft', $prompt );
+	}
+
 	public function test_history_slice_keeps_last_n_turns(): void {
 		$pb = new PromptBuilder( [] );
 		$history = [];

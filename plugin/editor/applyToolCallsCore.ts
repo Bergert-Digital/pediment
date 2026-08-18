@@ -32,6 +32,8 @@ export type EditorApi = {
 	) => void;
 	/** Run after all calls are applied (section normalization). */
 	normalize: () => void;
+	/** Set post-level attributes (title, excerpt) — not block content. */
+	editPost: ( attrs: { title?: string; excerpt?: string } ) => void;
 };
 
 /**
@@ -232,6 +234,22 @@ export function applyToolCallsToEditor(
 					}
 				}
 				api.moveBlockToPosition( id, fromRoot, toRoot, newIndex );
+				break;
+			}
+			case 'set_page_meta': {
+				// A post-level field, not a block op. Pass through only the keys
+				// the model actually supplied so an absent field never blanks an
+				// existing value.
+				const attrs: { title?: string; excerpt?: string } = {};
+				if ( typeof c.input?.title === 'string' ) {
+					attrs.title = c.input.title;
+				}
+				if ( typeof c.input?.excerpt === 'string' ) {
+					attrs.excerpt = c.input.excerpt;
+				}
+				if ( Object.keys( attrs ).length ) {
+					api.editPost( attrs );
+				}
 				break;
 			}
 		}
