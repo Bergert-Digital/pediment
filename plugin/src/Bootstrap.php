@@ -69,12 +69,15 @@ final class Bootstrap {
 			);
 			// Tell the chat sidebar whether the AI can actually answer, so mock
 			// mode and a missing API key surface as a notice instead of leaving
-			// the user to puzzle over canned or failing replies. The settings
-			// link is only offered when the standalone options page exists (the
-			// settings-hub path mounts elsewhere) and the user may open it.
-			$settings_url = current_user_can( 'manage_options' ) && ! function_exists( 'pediment_settings_register_tab' )
-				? admin_url( 'options-general.php?page=' . \Pediment\Settings\Page::SLUG )
-				: '';
+			// the user to puzzle over canned or failing replies. Admins get a
+			// deep link to the AI tab of the settings hub (or the legacy
+			// standalone page when the hub is absent).
+			$settings_url = '';
+			if ( current_user_can( 'manage_options' ) ) {
+				$settings_url = function_exists( 'pediment_settings_page_url' )
+					? pediment_settings_page_url( 'ai' )
+					: admin_url( 'options-general.php?page=' . \Pediment\Settings\Page::SLUG );
+			}
 			wp_add_inline_script(
 				'pediment-editor',
 				'window.pedimentAiEditor = ' . wp_json_encode( [
