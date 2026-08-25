@@ -58,6 +58,28 @@ class ChatControllerTest extends \WP_UnitTestCase {
 		$this->assertSame( 'assistant', $loaded['messages'][1]['role'] );
 	}
 
+	public function test_post_turn_fails_with_clear_message_when_no_api_key(): void {
+		if ( defined( 'ANTHROPIC_API_KEY' ) ) {
+			$this->markTestSkipped( 'ANTHROPIC_API_KEY constant is defined in this environment.' );
+		}
+		// No mock provider and no stored key: the turn must fail fast with an
+		// actionable message instead of a cryptic Anthropic 401 mid-turn.
+		remove_all_filters( 'pediment_ai_provider' );
+		delete_option( \Pediment\Settings\OptionsStore::OPTION );
+
+		$conv = ( new ConversationStore() )->getOrCreate( $this->post_id, get_current_user_id() );
+		$req  = new \WP_REST_Request( 'POST', '/pediment/v1/chat/turns' );
+		$req->set_param( 'conversation_id', $conv['id'] );
+		$req->set_param( 'post_id', $this->post_id );
+		$req->set_param( 'message', 'Hi' );
+		$res = $this->server->dispatch( $req );
+
+		$this->assertSame( 409, $res->get_status() );
+		$data = $res->get_data();
+		$this->assertSame( 'pediment_ai_not_configured', $data['code'] );
+		$this->assertStringContainsStringIgnoringCase( 'API key', $data['message'] );
+	}
+
 	public function test_get_turn_returns_turn_state(): void {
 		$conv = ( new ConversationStore() )->getOrCreate( $this->post_id, get_current_user_id() );
 		$req  = new \WP_REST_Request( 'POST', '/pediment/v1/chat/turns' );
