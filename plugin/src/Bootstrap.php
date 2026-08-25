@@ -67,6 +67,22 @@ final class Bootstrap {
 				$asset['version'] ?? PEDIMENT_AI_VERSION,
 				true
 			);
+			// Tell the chat sidebar whether the AI can actually answer, so mock
+			// mode and a missing API key surface as a notice instead of leaving
+			// the user to puzzle over canned or failing replies. The settings
+			// link is only offered when the standalone options page exists (the
+			// settings-hub path mounts elsewhere) and the user may open it.
+			$settings_url = current_user_can( 'manage_options' ) && ! function_exists( 'pediment_settings_register_tab' )
+				? admin_url( 'options-general.php?page=' . \Pediment\Settings\Page::SLUG )
+				: '';
+			wp_add_inline_script(
+				'pediment-editor',
+				'window.pedimentAiEditor = ' . wp_json_encode( [
+					'aiStatus'    => \Pediment\Anthropic\ProviderStatus::current(),
+					'settingsUrl' => $settings_url,
+				] ) . ';',
+				'before'
+			);
 			if ( file_exists( PEDIMENT_AI_PLUGIN_DIR . '/build/index.css' ) ) {
 				wp_enqueue_style(
 					'pediment-editor',

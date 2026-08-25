@@ -1,9 +1,10 @@
 import { useSelect } from '@wordpress/data';
 import { useState } from '@wordpress/element';
-import { Button, Modal } from '@wordpress/components';
+import { Button, Modal, Notice } from '@wordpress/components';
 import { __ } from '@wordpress/i18n';
 import useConversation from '../hooks/useConversation';
 import useChatTurn from '../hooks/useChatTurn';
+import { getAiStatus, aiStatusNotice } from './aiStatus';
 import useSelectedBlockContext from '../hooks/useSelectedBlockContext';
 import MessageList from './MessageList';
 import Composer from './Composer';
@@ -32,6 +33,8 @@ export default function ChatPanel( { hideSelectionChip = false }: Props ) {
 	);
 	const selected = useSelectedBlockContext();
 	const [ confirmDelete, setConfirmDelete ] = useState( false );
+	const { status: aiStatus, settingsUrl } = getAiStatus();
+	const statusNotice = aiStatusNotice( aiStatus );
 
 	const messages = pendingUserMessage
 		? [ ...( conv?.messages ?? [] ), pendingUserMessage ]
@@ -60,6 +63,23 @@ export default function ChatPanel( { hideSelectionChip = false }: Props ) {
 					{ __( 'AI Chat', 'pediment' ) }
 				</span>
 			</div>
+			{ statusNotice && (
+				<Notice
+					className="pediment-chat__status-notice"
+					status="warning"
+					isDismissible={ false }
+				>
+					{ statusNotice }
+					{ settingsUrl && (
+						<>
+							{ ' ' }
+							<a href={ settingsUrl }>
+								{ __( 'Open settings', 'pediment' ) }
+							</a>
+						</>
+					) }
+				</Notice>
+			) }
 			<MessageList messages={ messages } streaming={ streaming } />
 			{ error && <div className="pediment-chat__error">{ error }</div> }
 			{ selected && ! hideSelectionChip && (
