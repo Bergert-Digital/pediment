@@ -116,6 +116,16 @@ final class ChatController {
 			return new \WP_Error( 'pediment_ai_invalid', __( 'A message or an image is required.', 'pediment' ), [ 'status' => 400 ] );
 		}
 
+		// Fail fast with an actionable message when no provider can answer —
+		// otherwise the turn dies mid-run on a cryptic Anthropic 401.
+		if ( \Pediment\Anthropic\ProviderStatus::MISSING_KEY === \Pediment\Anthropic\ProviderStatus::current() ) {
+			return new \WP_Error(
+				'pediment_ai_not_configured',
+				__( 'No Anthropic API key is set. Add one in the Pediment settings to enable AI chat.', 'pediment' ),
+				[ 'status' => 409 ]
+			);
+		}
+
 		$limits = (array) get_option( 'pediment_ai_rate_limits', \Pediment\Usage\RateLimiter::DEFAULTS );
 		if ( ! ( new \Pediment\Usage\RateLimiter( $limits ) )->consume( get_current_user_id(), 'compose' ) ) {
 			return new \WP_Error( 'pediment_ai_rate_limited', __( 'Rate limit reached.', 'pediment' ), [ 'status' => 429 ] );

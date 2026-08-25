@@ -80,6 +80,9 @@ final class SchemaBuilder {
 			'attributes'        => [
 				'tagName'   => [ 'type' => 'string', 'default' => 'section' ],
 				'className' => [ 'type' => 'string' ],
+				'align'     => [ 'type' => 'string' ],
+				'style'     => [ 'type' => 'object' ],
+				'layout'    => [ 'type' => 'object' ],
 			],
 			'allowsInnerBlocks' => true,
 		],
@@ -150,6 +153,10 @@ final class SchemaBuilder {
 			if ( '' === $description ) {
 				continue;
 			}
+
+			// WP injects lock/metadata into every registered block's attributes. The
+			// model must never set them, so keep them out of the schema and the prompt.
+			unset( $attributes['lock'], $attributes['metadata'] );
 
 			// Extract per-attribute `required: true` markers into a JSON-Schema-shaped
 			// block-level array and drop the non-standard flag from each attribute.

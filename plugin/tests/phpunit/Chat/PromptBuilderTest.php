@@ -142,6 +142,68 @@ class PromptBuilderTest extends \WP_UnitTestCase {
 		);
 	}
 
+	public function test_system_prompt_lists_attribute_keys_per_block(): void {
+		$pb = new PromptBuilder( [
+			'pediment/feature' => [
+				'description' => 'A single icon + title + text + optional link card.',
+				'attributes'  => [
+					'icon'     => [ 'type' => 'string', 'default' => 'trend-up' ],
+					'title'    => [ 'type' => 'string', 'default' => '' ],
+					'text'     => [ 'type' => 'string', 'default' => '' ],
+					'linkText' => [ 'type' => 'string', 'default' => '' ],
+					'linkUrl'  => [ 'type' => 'string', 'default' => '' ],
+				],
+			],
+			'core/buttons' => [
+				'description' => 'A row of buttons.',
+				'attributes'  => [],
+			],
+		] );
+		$prompt = $pb->systemPrompt();
+
+		// Every attribute key is spelled out so the model never has to guess them.
+		$this->assertStringContainsString( '[attrs: icon, title, text, linkText, linkUrl]', $prompt );
+		// The legend explains the tag: use exactly these keys.
+		$this->assertStringContainsString( '[attrs: ', $prompt );
+		$this->assertStringContainsStringIgnoringCase( 'attribute keys', $prompt );
+		// A block without attributes gets no attrs tag.
+		$this->assertStringNotContainsString( 'A row of buttons. [attrs', $prompt );
+	}
+
+	public function test_system_prompt_marks_required_and_typed_attributes(): void {
+		$pb = new PromptBuilder( [
+			'pediment/section-head' => [
+				'description'        => 'A section heading.',
+				'attributes'         => [
+					'headline' => [ 'type' => 'string' ],
+					'level'    => [ 'type' => 'number', 'default' => 2 ],
+					'centered' => [ 'type' => 'boolean', 'default' => true ],
+				],
+				'requiredAttributes' => [ 'headline' ],
+			],
+		] );
+		$prompt = $pb->systemPrompt();
+
+		// Required attributes carry a *, non-string types are annotated, strings stay bare.
+		$this->assertStringContainsString( '[attrs: headline*, level (number), centered (boolean)]', $prompt );
+	}
+
+	public function test_system_prompt_advertises_feature_link_attributes(): void {
+		// End to end: the real registered pediment/feature block must surface its
+		// linkText/linkUrl keys to the model, or it guesses (url/href) and the
+		// values save as dead attributes.
+		\Pediment\Anthropic\SchemaBuilder::invalidate();
+		$schema = ( new \Pediment\Anthropic\SchemaBuilder() )->build( true );
+		$this->assertArrayHasKey( 'pediment/feature', $schema['blocks'] );
+
+		$prompt = ( new PromptBuilder( $schema['blocks'] ) )->systemPrompt();
+		$this->assertSame( 1, preg_match( '/^- pediment\/feature\b.*$/m', $prompt, $m ) );
+		$this->assertStringContainsString( 'linkText', $m[0] );
+		$this->assertStringContainsString( 'linkUrl', $m[0] );
+
+		\Pediment\Anthropic\SchemaBuilder::invalidate();
+	}
+
 	public function test_system_prompt_is_filterable(): void {
 		$cb = static function ( $prompt, $schema ) {
 			return $prompt . "\n\nAcme brand voice: confident and concise.";

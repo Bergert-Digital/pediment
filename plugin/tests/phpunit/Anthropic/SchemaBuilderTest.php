@@ -116,6 +116,37 @@ class SchemaBuilderTest extends \WP_UnitTestCase {
 		unregister_block_type( 'thirdparty/widget' );
 	}
 
+	public function test_feature_entry_captures_link_attributes(): void {
+		// The AI can only set a feature card's link reliably if the schema carries
+		// the exact keys — linkText and linkUrl — for the prompt to advertise.
+		$blocks = ( new SchemaBuilder() )->build( true )['blocks'];
+
+		$this->assertArrayHasKey( 'pediment/feature', $blocks );
+		$this->assertArrayHasKey( 'linkText', $blocks['pediment/feature']['attributes'] );
+		$this->assertArrayHasKey( 'linkUrl', $blocks['pediment/feature']['attributes'] );
+	}
+
+	public function test_discovered_attributes_exclude_wp_internal_keys(): void {
+		// WP injects lock/metadata into every registered block's attributes. They are
+		// never model-settable, so they must not bloat the schema (and the prompt).
+		$blocks = ( new SchemaBuilder() )->build( true )['blocks'];
+
+		$this->assertArrayHasKey( 'pediment/feature', $blocks );
+		$this->assertArrayHasKey( 'linkText', $blocks['pediment/feature']['attributes'] );
+		$this->assertArrayNotHasKey( 'lock', $blocks['pediment/feature']['attributes'] );
+		$this->assertArrayNotHasKey( 'metadata', $blocks['pediment/feature']['attributes'] );
+	}
+
+	public function test_core_group_advertises_band_attributes(): void {
+		// The prompt's band recipe sets align/style/layout on core/group; the curated
+		// entry must list those keys or the [attrs: …] tag contradicts the recipe.
+		$attrs = ( new SchemaBuilder() )->build( true )['blocks']['core/group']['attributes'];
+
+		$this->assertArrayHasKey( 'align', $attrs );
+		$this->assertArrayHasKey( 'style', $attrs );
+		$this->assertArrayHasKey( 'layout', $attrs );
+	}
+
 	public function test_parent_child_pair_exposes_allowed_children_and_requires_parent(): void {
 		\Pediment\Anthropic\SchemaBuilder::invalidate();
 
