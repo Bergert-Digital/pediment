@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.8.0](https://github.com/Bergert-Digital/pediment/compare/v3.7.0...v3.8.0) (2026-08-25)
+
+
+### Features
+
+* **blocks:** allow an image in place of the icon on feature cards ([8e6aca5](https://github.com/Bergert-Digital/pediment/commit/8e6aca5461499cf1f9e9942594eab0ab3661eda0))
+
 ## [3.7.0](https://github.com/Bergert-Digital/pediment/compare/v3.6.0...v3.7.0) (2026-08-25)
 
 
