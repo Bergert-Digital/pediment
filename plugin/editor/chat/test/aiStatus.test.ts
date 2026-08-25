@@ -12,7 +12,8 @@ describe( 'getAiStatus', () => {
 	it( 'reads the injected status and settings url', () => {
 		( window as any ).pedimentAiEditor = {
 			aiStatus: 'missing_key',
-			settingsUrl: 'https://example.test/wp-admin/options-general.php?page=pediment',
+			settingsUrl:
+				'https://example.test/wp-admin/options-general.php?page=pediment',
 		};
 		expect( getAiStatus() ).toEqual( {
 			status: 'missing_key',
