@@ -1,5 +1,19 @@
 # Changelog
 
+## [3.7.0](https://github.com/Bergert-Digital/pediment/compare/v3.6.0...v3.7.0) (2026-08-25)
+
+
+### Features
+
+* **chat:** advertise block attribute keys and surface AI provider status ([#95](https://github.com/Bergert-Digital/pediment/issues/95)) ([fac87ec](https://github.com/Bergert-Digital/pediment/commit/fac87ec946b2d4d9110040935a3d1ff9202efdad))
+* **chat:** advertise each block's attribute keys to the AI ([5978764](https://github.com/Bergert-Digital/pediment/commit/5978764d9270f0f10095f1fde2df83129e586819))
+* **chat:** surface mock mode and a missing API key in the sidebar ([d7d029d](https://github.com/Bergert-Digital/pediment/commit/d7d029d57d9d12c9c799b270e3f10869079f85d1))
+
+
+### Bug Fixes
+
+* **chat:** deep-link the AI-status notice to the settings hub AI tab ([bd9724f](https://github.com/Bergert-Digital/pediment/commit/bd9724fea52ea68f447f610053fee0e0c1c1d940))
+
 ## [3.6.0](https://github.com/Bergert-Digital/pediment/compare/v3.5.0...v3.6.0) (2026-08-18)
 
 
