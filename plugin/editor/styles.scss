@@ -16,6 +16,7 @@
   &__tools-toggle { background: none; border: 0; padding: 0; color: inherit; cursor: pointer; font-size: 11px; }
   &__tools-detail { background: #f6f7f7; padding: 6px; font-size: 11px; max-height: 200px; overflow: auto; }
   &__error    { color: #b32d2e; padding: 4px 12px; font-size: 12px; }
+  &__status-notice { margin: 0; font-size: 12px; }
   &__composer { border-top: 1px solid #ddd; padding: 8px 12px; display: flex; flex-direction: column; gap: 6px; }
   &__composer textarea { width: 100%; resize: vertical; font-size: 12px; }
   &__composer.is-dragging { outline: 2px dashed #007cba; outline-offset: -2px; }

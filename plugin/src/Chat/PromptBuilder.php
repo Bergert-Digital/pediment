@@ -48,10 +48,15 @@ final class PromptBuilder {
 		$lines[] = '';
 		$lines[] = 'SEO metadata: after you build or substantially change the page, call set_page_meta to write a concise excerpt — one plain-text sentence of roughly 150-160 characters, no HTML — that becomes the page\'s meta description. Set it in the same turn you build the page. Use the SAME tool to set the title ONLY when the current post_title (shown in the context as post_title) is empty or "Auto Draft", or when the user explicitly asks for a title; never overwrite a title the user has already chosen.';
 		$lines[] = '';
-		$lines[] = 'Available blocks (use these — do not invent block names). A line tagged [contains: …] is a container: build it in ONE insert_block call with each child placed in block.innerBlocks (every child is {name, attributes}). You cannot add children to a container after it exists — there is no insert-into-parent operation. A line tagged [child of: …] may only appear nested inside that parent; never insert it on its own (it is rejected).';
+		$lines[] = 'Available blocks (use these — do not invent block names). A line tagged [attrs: …] lists the block\'s exact attribute keys — use ONLY these keys in `attributes` (a * marks a required key; keys are strings unless a type is given in parentheses); never invent other keys, they are silently ignored. A line tagged [contains: …] is a container: build it in ONE insert_block call with each child placed in block.innerBlocks (every child is {name, attributes}). You cannot add children to a container after it exists — there is no insert-into-parent operation. A line tagged [child of: …] may only appear nested inside that parent; never insert it on its own (it is rejected).';
 		foreach ( $this->blockSchema as $name => $info ) {
 			$description = isset( $info['description'] ) ? (string) $info['description'] : '';
 			$line        = '' !== $description ? "- {$name} — {$description}" : "- {$name}";
+
+			$attrsTag = $this->attributesTag( $info );
+			if ( '' !== $attrsTag ) {
+				$line .= ' ' . $attrsTag;
+			}
 
 			$children = isset( $info['allowedChildBlocks'] ) && is_array( $info['allowedChildBlocks'] )
 				? array_values( array_unique( $info['allowedChildBlocks'] ) )
@@ -80,6 +85,40 @@ final class PromptBuilder {
 		 * @param array<string,array<string,mixed>> $blockSchema The block schema available to this turn.
 		 */
 		return (string) apply_filters( 'pediment_ai_system_prompt', $prompt, $this->blockSchema );
+	}
+
+	/**
+	 * Render a block's attribute keys as a compact prompt tag, e.g.
+	 * `[attrs: icon, title, linkText, linkUrl]`. The tool schema accepts a free-form
+	 * attributes object, so this tag is the only place the model learns the exact
+	 * optional keys — without it, a key like linkUrl gets guessed (url, href) and the
+	 * value lands as a dead attribute. A * marks a required key; non-string types are
+	 * annotated in parentheses. Returns '' for a block with no attributes.
+	 *
+	 * @param array<string,mixed> $info Block schema entry.
+	 */
+	private function attributesTag( array $info ): string {
+		$attributes = isset( $info['attributes'] ) && is_array( $info['attributes'] ) ? $info['attributes'] : [];
+		if ( empty( $attributes ) ) {
+			return '';
+		}
+		$required = isset( $info['requiredAttributes'] ) && is_array( $info['requiredAttributes'] )
+			? $info['requiredAttributes']
+			: [];
+
+		$parts = [];
+		foreach ( $attributes as $attrName => $spec ) {
+			$part = (string) $attrName;
+			if ( in_array( $attrName, $required, true ) ) {
+				$part .= '*';
+			}
+			$type = is_array( $spec ) && isset( $spec['type'] ) && is_string( $spec['type'] ) ? $spec['type'] : '';
+			if ( '' !== $type && 'string' !== $type ) {
+				$part .= " ({$type})";
+			}
+			$parts[] = $part;
+		}
+		return '[attrs: ' . implode( ', ', $parts ) . ']';
 	}
 
 	/**
