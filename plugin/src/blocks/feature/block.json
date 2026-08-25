@@ -10,6 +10,7 @@
 	"supports": { "html": false, "inserter": false },
 	"attributes": {
 		"icon": { "type": "string", "default": "trend-up" },
+		"imageId": { "type": "integer", "default": 0 },
 		"title": { "type": "string", "default": "" },
 		"text": { "type": "string", "default": "" },
 		"linkText": { "type": "string", "default": "" },
