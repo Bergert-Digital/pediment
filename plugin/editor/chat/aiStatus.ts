@@ -14,7 +14,9 @@ type AiEditorConfig = {
 };
 
 export function getAiStatus(): { status: AiStatus; settingsUrl: string } {
-	const cfg = ( window as any ).pedimentAiEditor as AiEditorConfig | undefined;
+	const cfg = ( window as any ).pedimentAiEditor as
+		| AiEditorConfig
+		| undefined;
 	const raw = cfg?.aiStatus;
 	const status: AiStatus =
 		raw === 'mock' || raw === 'missing_key' ? raw : 'ok';
