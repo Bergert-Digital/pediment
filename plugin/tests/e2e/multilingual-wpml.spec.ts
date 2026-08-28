@@ -26,7 +26,12 @@ const wp = ( cmd: string ) =>
 		.toString()
 		.trim();
 
-test.describe( 'multilingual seeding (WPML)', () => {
+// Tagged @wpml so it runs ONLY in a WPML env: the default `npm run e2e` (which
+// runs against the Polylang env) excludes it with --grep-invert @wpml, and the
+// `wpml` CI job / `npm run e2e:wpml` selects it with --grep @wpml. Running it in
+// the Polylang env fatals (no $sitepress) and its re-seed would corrupt the
+// Polylang suite's shared state.
+test.describe( 'multilingual seeding (WPML)', { tag: '@wpml' }, () => {
 	// Skip the whole suite when the running env is not WPML with en+de active,
 	// so a stray run against the Polylang env (or an unconfigured WPML env)
 	// no-ops instead of failing with confusing errors. This is the WPML
