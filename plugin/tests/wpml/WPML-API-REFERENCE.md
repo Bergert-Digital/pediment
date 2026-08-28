@@ -63,12 +63,13 @@ before it queries `language-item`. So `language-item` must NOT be a descendant o
 `current-language-item` — if it is, the removal strips it and non-current
 languages never render. Keep the two templates siblings.
 
-#### Default: hover-to-reveal dropdown that lists EVERY language
+#### Default: hover-to-reveal dropdown
 
 `WpmlProvider::languageSwitcherBlock()` emits a **dropdown** by default: the
-current language is the always-visible toggle, and hovering opens a menu card
-listing EVERY configured language (with en+de: both Deutsch and English; scales
-to N).
+current language is a compact, always-visible toggle, and hovering/focusing it
+opens a menu card BELOW it listing the languages you can switch to (with en+de:
+Deutsch is the toggle, English is in the panel; scales to N non-current
+languages).
 
 ##### The WPML Render limitation (why it is one list, not a toggle + sub-menu)
 
@@ -84,38 +85,40 @@ matched node is not a child of the last node's parent (reproduced live:
 `Parser.php:92`). So a native "toggle + sub-menu-of-others" can only ever list the
 OTHER languages, never the current one.
 
-To list ALL languages we therefore emit a **single list** — one
-`current-language-item` and one `language-item` as siblings in one `ul.wpml-ls-menu`.
-Render fills the current node and clones the language node once per non-current
-language, so the `<ul>` ends up with every active language:
+That limitation is exactly why we use the standard pattern: the current
+language is the **toggle** (its single `current-language-item`), and the
+`language-item` (cloned per non-current language) fills a **panel** of the
+languages you can switch to. The markup is a compact toggle plus a separate
+panel list:
 
 ```html
-<!-- wp:wpml/language-switcher --><div class="wpml-language-switcher-block wpml-ls"><div class="wpml-ls-dropdown open-on-hover-click"><ul class="wpml-ls-menu"><li data-wpml="current-language-item" class="wpml-ls-item wpml-ls-current-language"><a data-wpml="link" href="#"><span data-wpml="label" data-wpml-label-type="native"></span></a></li><li data-wpml="language-item" class="wpml-ls-item"><a data-wpml="link" href="#"><span data-wpml="label" data-wpml-label-type="native"></span></a></li></ul></div></div><!-- /wp:wpml/language-switcher -->
+<!-- wp:wpml/language-switcher --><div class="wpml-language-switcher-block wpml-ls"><span data-wpml="current-language-item" class="wpml-ls-current-language wpml-ls-toggle" tabindex="0"><a data-wpml="link" href="#"><span data-wpml="label" data-wpml-label-type="native"></span></a></span><ul class="wpml-ls-panel"><li data-wpml="language-item" class="wpml-ls-item"><a data-wpml="link" href="#"><span data-wpml="label" data-wpml-label-type="native"></span></a></li></ul></div><!-- /wp:wpml/language-switcher -->
 ```
 
 The dropdown BEHAVIOUR (toggle + reveal + spacing) is the PLUGIN's own front-end
-CSS in `plugin/assets/css/theme.css`, scoped to `.wpml-language-switcher-block`,
-NOT WPML's block CSS (the single-list markup does not carry the
-`wp-block-navigation__submenu-container` the block CSS keys off). The current
-language (`.wpml-ls-current-language`) is `order:-1` and always visible (the
-toggle); the other `.wpml-ls-item`s are `display:none` until
-`.wpml-ls-dropdown:hover`/`:focus-within`, at which point the whole list opens as
-a bordered, padded, shadowed menu card listing every language.
+CSS in `plugin/assets/css/theme.css`, scoped to `.wpml-language-switcher-block`.
+`.wpml-ls-toggle` (the current language) is the compact, always-visible control,
+in flow. `.wpml-ls-panel` (the other languages) is **always** `position:absolute;
+top:100%` and `display:none`, flipped to `display:block` on
+`.wpml-language-switcher-block:hover`/`:focus-within`. Because the panel is out
+of flow, opening it does NOT reflow the header row, and it opens BELOW the toggle
+(not over it). The header nav items also carry `white-space:nowrap` so the added
+switcher width never forces a multi-word item (e.g. "Über uns") to wrap.
 
 **Render evidence** (live WPML env, `do_blocks()` on the string above, styles
-stripped), current language `de` — the one `<ul>` lists BOTH languages, the
-current marked `wpml-ls-current-language`:
+stripped), current language `de` — the toggle is Deutsch (current), the panel
+holds English (the language to switch to), each with real per-language URLs:
 
 ```html
-<div class="wpml-language-switcher-block wpml-ls"><div class="wpml-ls-dropdown open-on-hover-click"><ul class="wpml-ls-menu"><li data-wpml="language-item" class="wpml-ls-item"><a data-wpml="link" href="http://localhost:8920/" aria-label="Switch to English"><span data-wpml="label" data-wpml-label-type="native">English</span></a></li><li data-wpml="current-language-item" class="wpml-ls-item wpml-ls-current-language"><a data-wpml="link" href="http://localhost:8920/de/" aria-label="Switch to Deutsch"><span data-wpml="label" data-wpml-label-type="native">Deutsch</span></a></li></ul></div></div>
+<div class="wpml-language-switcher-block wpml-ls"><span data-wpml="current-language-item" class="wpml-ls-current-language wpml-ls-toggle" tabindex="0"><a data-wpml="link" href="http://localhost:8920/de/" aria-label="Switch to Deutsch"><span data-wpml="label" data-wpml-label-type="native">Deutsch</span></a></span><ul class="wpml-ls-panel"><li data-wpml="language-item" class="wpml-ls-item"><a data-wpml="link" href="http://localhost:8920/" aria-label="Switch to English"><span data-wpml="label" data-wpml-label-type="native">English</span></a></li></ul></div>
 ```
 
-Rendering with current language `en` mirrors it (Deutsch becomes the non-current
-`language-item`, English the `current-language-item`). No fatal; real per-language
-URLs; current language marked. It scales to N because Render clones the
-`language-item` once per non-current language into the same `<ul>`. Verified
-visually in the seeded header: collapsed shows the current language; hover opens a
-roomy card listing Deutsch + English.
+Rendering with current language `en` mirrors it (English becomes the toggle,
+Deutsch the panel `language-item`). No fatal; real per-language URLs. The panel
+scales to N because Render clones the `language-item` once per non-current
+language. Verified visually in the seeded header: collapsed shows the current
+language as a compact toggle; hover opens a roomy card BELOW it, and the header
+row does not shift.
 
 #### Opt-out: flat horizontal list
 

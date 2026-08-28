@@ -5,33 +5,32 @@ use Pediment\Language\WpmlProvider;
 class WpmlSwitcherTest extends WpmlTestCase {
 
 	/**
-	 * The DEFAULT renderable form: a hover-to-reveal dropdown that lists EVERY
-	 * language. A bare `<!-- wp:wpml/language-switcher /-->` fatals on the WPML
+	 * The DEFAULT renderable form: a compact toggle (the current language) with a
+	 * hover/focus dropdown panel of the languages you can switch to, opened BELOW
+	 * the toggle. A bare `<!-- wp:wpml/language-switcher /-->` fatals on the WPML
 	 * front end (Parser::parse() returns null for empty saved HTML, Render.php then
 	 * dereferences it), so the provider emits the block WITH the `data-wpml` item
 	 * template WPML clones per active language. WPML fills the current language
-	 * exactly once, so to list ALL languages the markup is a SINGLE list
-	 * (`ul.wpml-ls-menu`) carrying one `current-language-item` and one
-	 * `language-item` template: Render fills the current and clones the language
-	 * item per non-current language, so the list ends up with every active
-	 * language. The current language carries `wpml-ls-current-language`, which the
-	 * plugin's front-end CSS uses to make it the always-visible toggle and reveal
-	 * the rest on hover. Verified by rendering on the live WPML env in both
-	 * language contexts (see tests/wpml/WPML-API-REFERENCE.md).
+	 * exactly once (two current-language-item nodes fatal in its Parser — see
+	 * tests/wpml/WPML-API-REFERENCE.md), so the single `current-language-item` is
+	 * the toggle and the `language-item` (cloned per non-current language) fills
+	 * the panel. The plugin's front-end CSS (assets/css/theme.css) styles
+	 * `.wpml-ls-toggle` as the always-visible control and `.wpml-ls-panel` as an
+	 * absolutely-positioned card that opens on hover/focus, so the header never
+	 * reflows. Verified by rendering on the live WPML env in both language
+	 * contexts.
 	 */
 	private const DROPDOWN_SWITCHER =
 		'<!-- wp:wpml/language-switcher -->'
 		. '<div class="wpml-language-switcher-block wpml-ls">'
-		. '<div class="wpml-ls-dropdown open-on-hover-click">'
-		. '<ul class="wpml-ls-menu">'
-		. '<li data-wpml="current-language-item" class="wpml-ls-item wpml-ls-current-language">'
+		. '<span data-wpml="current-language-item" class="wpml-ls-current-language wpml-ls-toggle" tabindex="0">'
 		. '<a data-wpml="link" href="#"><span data-wpml="label" data-wpml-label-type="native"></span></a>'
-		. '</li>'
+		. '</span>'
+		. '<ul class="wpml-ls-panel">'
 		. '<li data-wpml="language-item" class="wpml-ls-item">'
 		. '<a data-wpml="link" href="#"><span data-wpml="label" data-wpml-label-type="native"></span></a>'
 		. '</li>'
 		. '</ul>'
-		. '</div>'
 		. '</div>'
 		. '<!-- /wp:wpml/language-switcher -->';
 
