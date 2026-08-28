@@ -97,13 +97,19 @@ function pediment_seeded_nav_id( string $language ): int {
  * header away. An explicitly-set ref is always left alone — that is a Site
  * Editor decision and outranks this.
  *
- * Candidate order is current language, then default, then the unscoped ('')
- * lookup. Building it as `array_filter( [ $current, $default ] )` — rather
- * than folding '' into the filtered set — matters on a monolingual site:
- * there $current and $default are both '', array_filter() drops them both,
- * and unconditionally appending '' afterwards is what keeps the unscoped
- * lookup reachable instead of leaving the candidate list empty and the
- * loop never running.
+ * Resolution order, per candidate language (current, then default): first the
+ * translation-group lookup via the provider seam (`translationOf` on the
+ * seeded '' anchor), then the language-term query (`pediment_seeded_nav_id`).
+ * The seam is the ONLY mechanism that works under WPML — its query scoping
+ * does not survive `get_posts()`' default suppress_filters=true (see
+ * WpmlProvider::unscopedQuery, which sets that flag specifically to bypass
+ * WPML scoping). The term query is Polylang's mechanism, and also covers a
+ * partial seed where a nav is language-tagged but not yet linked into a
+ * group. When neither candidate resolves, the unscoped '' anchor is the last
+ * resort: it serves a monolingual site (current/default both '') and an
+ * untagged legacy nav no language candidate matched. `array_filter( [
+ * $current, $default ] )` drops the empty slugs on a monolingual site so the
+ * per-language loop never runs there, and the anchor fallback carries it.
  *
  * @param array<string,mixed> $parsed_block Parsed block, pre-render.
  * @return array<string,mixed>
@@ -131,19 +137,37 @@ function pediment_bind_navigation_ref( $parsed_block ) {
 	$current  = $provider->currentLanguage();
 	$default  = $provider->defaultLanguage();
 
-	$candidates   = array_values( array_unique( array_filter( [ $current, $default ] ) ) );
-	$candidates[] = '';
+	// The unscoped anchor: the seeded 'primary' nav, oldest wins. The ''
+	// lookup is language-agnostic under both plugins.
+	$anchor = pediment_seeded_nav_id( '' );
 
+	// Resolve per language through the seam FIRST: translationOf() follows the
+	// nav translation group, which is the only mechanism that works under WPML
+	// (its query scoping does not survive get_posts()' suppress_filters=true —
+	// see WpmlProvider::unscopedQuery). Fall back to the language-term query,
+	// which is Polylang's mechanism and also covers a partial seed where a nav
+	// is tagged but not yet linked.
+	$candidates = array_values( array_unique( array_filter( [ $current, $default ] ) ) );
 	foreach ( $candidates as $language ) {
-		$ref = pediment_seeded_nav_id( (string) $language );
+		$ref = $anchor > 0 ? $provider->translationOf( $anchor, (string) $language ) : 0;
+		if ( $ref <= 0 ) {
+			$ref = pediment_seeded_nav_id( (string) $language );
+		}
 		if ( $ref > 0 ) {
 			$parsed_block['attrs']['ref'] = $ref;
 			return $parsed_block;
 		}
 	}
 
+	// Unscoped fallback: monolingual (current/default both ''), or an untagged
+	// legacy nav that no language candidate matched. Better a menu chosen badly
+	// than an empty header.
+	if ( $anchor > 0 ) {
+		$parsed_block['attrs']['ref'] = $anchor;
+		return $parsed_block;
+	}
+
 	// Nothing seeded: leave the block alone and let core's own fallback run.
-	// Better a menu chosen badly than an empty header.
 	return $parsed_block;
 }
 add_filter( 'render_block_data', 'pediment_bind_navigation_ref' );
