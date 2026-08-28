@@ -19,6 +19,7 @@ type Node = {
 function makeStore( root: Node[] ) {
 	let counter = 0;
 	const postAttrs: Record< string, any > = {};
+	const normalize = jest.fn();
 
 	const childrenOf = ( rootClientId: string ): Node[] | null => {
 		if ( rootClientId === '' ) {
@@ -107,7 +108,7 @@ function makeStore( root: Node[] ) {
 				toArr.splice( index, 0, node );
 			}
 		},
-		normalize: () => {},
+		normalize,
 		editPost: ( attrs ) => {
 			Object.assign( postAttrs, attrs );
 		},
@@ -129,7 +130,7 @@ function makeStore( root: Node[] ) {
 		return owner;
 	}
 
-	return { api, root, postAttrs };
+	return { api, root, postAttrs, normalize };
 }
 
 const group = ( clientId: string, innerBlocks: Node[] ): Node => ( {
@@ -263,6 +264,104 @@ describe( 'applyToolCallsToEditor — addressing nested targets', () => {
 			'h1',
 			'p1',
 		] );
+	} );
+} );
+
+describe( 'applyToolCallsToEditor — normalize gating', () => {
+	it( 'normalizes after a structural insert', () => {
+		const { api, normalize } = makeStore( [] );
+		applyToolCallsToEditor( api, [
+			{
+				tool: 'insert_block',
+				input: {
+					position: 'end',
+					after_client_id: null,
+					block: { name: 'core/paragraph', attributes: {} },
+				},
+				output: { client_id: 'srv-1' },
+			},
+		] );
+		expect( normalize ).toHaveBeenCalledTimes( 1 );
+	} );
+
+	it( 'normalizes after a structural move', () => {
+		const { api, normalize } = makeStore( [
+			group( 'A', [ leaf( 'a0', 'core/heading' ) ] ),
+			group( 'B', [ leaf( 'b0', 'core/heading' ) ] ),
+		] );
+		applyToolCallsToEditor( api, [
+			{
+				tool: 'move_block',
+				input: {
+					client_id: 'A',
+					target_client_id: 'B',
+					position: 'after',
+				},
+			},
+		] );
+		expect( normalize ).toHaveBeenCalledTimes( 1 );
+	} );
+
+	it( 'normalizes after a structural delete', () => {
+		const { api, normalize } = makeStore( [
+			group( 'A', [ leaf( 'a0', 'core/heading' ) ] ),
+		] );
+		applyToolCallsToEditor( api, [
+			{ tool: 'delete_block', input: { client_id: 'A' } },
+		] );
+		expect( normalize ).toHaveBeenCalledTimes( 1 );
+	} );
+
+	it( 'does NOT normalize a set_page_meta-only turn (excerpt generation)', () => {
+		// The reported /activities/ corruption: an excerpt turn made zero block
+		// edits, yet a blind normalize pass wrapped the page's full-bleed
+		// sections into a cream band. A meta-only turn must not normalize.
+		const { api, normalize } = makeStore( [
+			leaf( 'hero', 'workation/page-hero' ),
+		] );
+		applyToolCallsToEditor( api, [
+			{ tool: 'set_page_meta', input: { excerpt: 'A summary.' } },
+		] );
+		expect( normalize ).not.toHaveBeenCalled();
+	} );
+
+	it( 'does NOT normalize a read-only turn (e.g. read_block)', () => {
+		const { api, normalize } = makeStore( [
+			leaf( 'hero', 'workation/page-hero' ),
+		] );
+		applyToolCallsToEditor( api, [
+			{ tool: 'read_block', input: { client_id: 'hero' } },
+		] );
+		expect( normalize ).not.toHaveBeenCalled();
+	} );
+
+	it( 'does NOT normalize an update-only turn (attributes, not structure)', () => {
+		const { api, normalize } = makeStore( [
+			group( 'A', [ leaf( 'a0', 'core/heading' ) ] ),
+		] );
+		applyToolCallsToEditor( api, [
+			{
+				tool: 'update_block',
+				input: { client_id: 'a0', attrs: { level: 3 } },
+			},
+		] );
+		expect( normalize ).not.toHaveBeenCalled();
+	} );
+
+	it( 'does NOT normalize when the only structural op errored', () => {
+		const { api, normalize } = makeStore( [] );
+		applyToolCallsToEditor( api, [
+			{
+				tool: 'insert_block',
+				input: {
+					position: 'end',
+					after_client_id: null,
+					block: { name: 'core/paragraph', attributes: {} },
+				},
+				is_error: true,
+			},
+		] );
+		expect( normalize ).not.toHaveBeenCalled();
 	} );
 } );
 
