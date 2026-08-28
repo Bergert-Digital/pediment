@@ -25,7 +25,17 @@ final class LanguageRegistry {
 		// Detection, not configuration: an activated-but-unconfigured Polylang
 		// is NOT multilingual, and treating it as one crosses the manifest with
 		// zero languages and writes nothing while reporting success.
-		$detected = PolylangProvider::isActive() ? new PolylangProvider() : new NullProvider();
+		//
+		// Precedence: Polylang, then WPML, then monolingual. Polylang wins the
+		// (unsupported) both-active tie for backward compatibility; either can be
+		// forced via the pediment_language_provider filter below.
+		if ( PolylangProvider::isActive() ) {
+			$detected = new PolylangProvider();
+		} elseif ( WpmlProvider::isActive() ) {
+			$detected = new WpmlProvider();
+		} else {
+			$detected = new NullProvider();
+		}
 
 		/**
 		 * Filter the active language provider.
