@@ -55,7 +55,18 @@ final class LanguageRegistry {
 			return self::$setup;
 		}
 
-		$detected = new PolylangSetup();
+		// Precedence mirrors provider(): Polylang, then WPML, then Polylang as the
+		// default. PolylangSetup::configure() returns a clean "Polylang is not
+		// active" error when neither is present, and LanguagesCommand already
+		// short-circuits on an empty manifest — so a monolingual site never
+		// reaches a write.
+		if ( PolylangProvider::isActive() ) {
+			$detected = new PolylangSetup();
+		} elseif ( WpmlProvider::isActive() ) {
+			$detected = new WpmlSetup();
+		} else {
+			$detected = new PolylangSetup();
+		}
 
 		/**
 		 * Filter the active language setup.
