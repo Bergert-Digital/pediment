@@ -1,5 +1,37 @@
 # Changelog
 
+## [3.9.0](https://github.com/Bergert-Digital/pediment/compare/v3.8.0...v3.9.0) (2026-08-28)
+
+
+### Features
+
+* **wpml:** declare wp_navigation translatable, template parts shared ([0f90e0e](https://github.com/Bergert-Digital/pediment/commit/0f90e0e2b99876d6df3e20cb582e071934b57e57))
+* **wpml:** detect WpmlProvider in the registry (Polylang &gt; WPML &gt; Null) ([9825c6a](https://github.com/Bergert-Digital/pediment/commit/9825c6ae37d1cebbe658096519184700ba3f102d))
+* **wpml:** dropdown lists all languages + roomy menu card ([05afc49](https://github.com/Bergert-Digital/pediment/commit/05afc494e3675f43a835fc3aae66755d27007552))
+* **wpml:** emit native wpml/language-switcher block ([63c3d0b](https://github.com/Bergert-Digital/pediment/commit/63c3d0bec8eed4b1705f1942ad4c93c4d6a8cfad))
+* **wpml:** hover-to-reveal dropdown language switcher ([24f0287](https://github.com/Bergert-Digital/pediment/commit/24f0287cd75df1552363223b7aa89b955c902999))
+* **wpml:** WpmlProvider read methods (detection, languages, translationOf) ([5736a37](https://github.com/Bergert-Digital/pediment/commit/5736a37acf909fccc0f3850deced9c0e51b7d446))
+* **wpml:** WpmlProvider write methods via trid management ([1cd35ef](https://github.com/Bergert-Digital/pediment/commit/1cd35ef9c63110a61fa87eccd7a808578be3a8db))
+* **wpml:** WpmlSetup configures WPML languages from the manifest ([5822e0a](https://github.com/Bergert-Digital/pediment/commit/5822e0a79d20bda89ea0c55ca55485e51728c1a1))
+
+
+### Bug Fixes
+
+* **editor:** stop the AI normalizer from corrupting full-bleed section pages ([719a993](https://github.com/Bergert-Digital/pediment/commit/719a9938fdbf42527c8e983fd793778b351b23b1))
+* **wpml:** bind per-language nav through the provider seam, not query scoping ([e1093dd](https://github.com/Bergert-Digital/pediment/commit/e1093dd16bc6ecd73bf3ffe17e27800aa47c8b23))
+* **wpml:** emit a renderable language-switcher block ([fb3b76a](https://github.com/Bergert-Digital/pediment/commit/fb3b76acdc0116c22ffe7d86a74300afabf80315))
+* **wpml:** resolve nav link permalinks in the target language ([d84b349](https://github.com/Bergert-Digital/pediment/commit/d84b349a706ee4c4401cb220973b8f3971e5516e))
+* **wpml:** restore WPML language on every path in permalinkInLanguage ([a70db63](https://github.com/Bergert-Digital/pediment/commit/a70db63764b2b4da37cc4f1481a90a04359f419d))
+* **wpml:** setup() gates the WPML branch on isLoaded(), not isActive() ([5e41f01](https://github.com/Bergert-Digital/pediment/commit/5e41f0115252c0843616afde42c8d79c0893e74d))
+* **wpml:** switcher dropdown opens below as a compact toggle + panel; stop nav wrap ([783eeca](https://github.com/Bergert-Digital/pediment/commit/783eeca68c9ce585232a9ea63a950aead314fbc6))
+* **wpml:** WpmlSetup triggers WPML config parse so headless deploys translate navigation ([6b984b9](https://github.com/Bergert-Digital/pediment/commit/6b984b9b6dd619aa8b7b1776dc559fcee4a5e4e5))
+
+
+### Refactors
+
+* **language:** extract LanguageSetup interface + registry resolver ([9f28273](https://github.com/Bergert-Digital/pediment/commit/9f2827357b12b6bac88db3be24b1b00e8bd40aea))
+* **language:** route current-language + switcher block through the provider seam ([eeba67f](https://github.com/Bergert-Digital/pediment/commit/eeba67f5c7fa1f4062803f4916864e4cc2816d50))
+
 ## [3.8.0](https://github.com/Bergert-Digital/pediment/compare/v3.7.0...v3.8.0) (2026-08-25)
 
 
