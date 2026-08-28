@@ -9,7 +9,7 @@ declare(strict_types=1);
 
 namespace Pediment\Cli;
 
-use Pediment\Language\PolylangSetup;
+use Pediment\Language\LanguageRegistry;
 use Pediment\Seeder\Manifest;
 use Pediment\Seeder\ManifestError;
 
@@ -64,7 +64,7 @@ final class LanguagesCommand {
 			return;
 		}
 
-		$result = ( new PolylangSetup() )->configure( $manifest->languages(), $manifest->defaultLanguage(), $dryRun );
+		$result = LanguageRegistry::setup()->configure( $manifest->languages(), $manifest->defaultLanguage(), $dryRun );
 
 		if ( ! class_exists( '\WP_CLI' ) ) {
 			return;

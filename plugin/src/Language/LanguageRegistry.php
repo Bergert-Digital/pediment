@@ -15,6 +15,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 final class LanguageRegistry {
 	private static ?LanguageProvider $provider = null;
+	private static ?LanguageSetup $setup = null;
 
 	public static function provider(): LanguageProvider {
 		if ( self::$provider instanceof LanguageProvider ) {
@@ -39,7 +40,28 @@ final class LanguageRegistry {
 		return self::$provider;
 	}
 
+	public static function setup(): LanguageSetup {
+		if ( self::$setup instanceof LanguageSetup ) {
+			return self::$setup;
+		}
+
+		$detected = new PolylangSetup();
+
+		/**
+		 * Filter the active language setup.
+		 *
+		 * @param LanguageSetup $setup Defaults to PolylangSetup; a WPML build
+		 *                             swaps WpmlSetup in via Task 9's detection.
+		 */
+		$filtered = apply_filters( 'pediment_language_setup', $detected );
+
+		self::$setup = $filtered instanceof LanguageSetup ? $filtered : $detected;
+
+		return self::$setup;
+	}
+
 	public static function reset(): void {
 		self::$provider = null;
+		self::$setup    = null;
 	}
 }
