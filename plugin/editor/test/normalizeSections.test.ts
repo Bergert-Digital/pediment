@@ -96,6 +96,39 @@ describe( 'planSections', () => {
 		] );
 	} );
 
+	it( 'leaves a theme section block untouched and self-delimiting (not swallowed)', () => {
+		// The /activities/ bug: a page of full-bleed theme section blocks with no
+		// band or separator was lumped into ONE wrap → a cream band swallowing
+		// the hero. With the theme declaring these as section blocks, each stays
+		// its own passthrough section.
+		const isSection = ( name: string ) =>
+			name === 'workation/page-hero' ||
+			name === 'workation/activity-list';
+		const blocks = [
+			b( 'workation/page-hero' ),
+			b( 'workation/activity-list' ),
+		];
+		expect( planSections( blocks, isSection ) ).toEqual( [
+			{ kind: 'passthrough', index: 0 },
+			{ kind: 'passthrough', index: 1 },
+		] );
+	} );
+
+	it( 'a section block flushes a preceding loose run without a separator', () => {
+		const isSection = ( name: string ) => name === 'workation/page-hero';
+		const blocks = [
+			b( 'core/heading' ),
+			b( 'core/paragraph' ),
+			b( 'workation/page-hero' ),
+			b( 'pediment/cta' ),
+		];
+		expect( planSections( blocks, isSection ) ).toEqual( [
+			{ kind: 'wrap', indices: [ 0, 1 ] },
+			{ kind: 'passthrough', index: 2 },
+			{ kind: 'wrap', indices: [ 3 ] },
+		] );
+	} );
+
 	it( 'a legacy starter-section (without starter-band) is NOT a boundary — it gets wrapped as loose content', () => {
 		// After flattenLegacyWrappers these are unwrapped, but planSections on
 		// its own treats a bare starter-section as ordinary content.
@@ -139,8 +172,12 @@ const band = (
 /**
  * Run normalizeSections against an in-memory root, returning the new blocks.
  * @param root
+ * @param isSectionBlock
  */
-function run( root: Node[] ): { ids: string[]; blocks: any[] } | null {
+function run(
+	root: Node[],
+	isSectionBlock?: ( name: string ) => boolean
+): { ids: string[]; blocks: any[] } | null {
 	const replaceBlocks = jest.fn();
 	let n = 0;
 	normalizeSections(
@@ -150,7 +187,8 @@ function run( root: Node[] ): { ids: string[]; blocks: any[] } | null {
 			attributes,
 			innerBlocks,
 			clientId: 'fresh-' + n++,
-		} )
+		} ),
+		isSectionBlock
 	);
 	if ( replaceBlocks.mock.calls.length === 0 ) {
 		return null;
@@ -376,6 +414,68 @@ describe( 'normalizeSections applier — band model', () => {
 			'pediment/feature-grid',
 			'pediment/cta',
 		] );
+	} );
+
+	it( 'leaves theme section blocks untouched at the top level instead of banding them', () => {
+		// End-to-end of the /activities/ corruption via the applier: a hero +
+		// activity list are passed through verbatim, NOT wrapped in a cream band.
+		const isSection = ( name: string ) =>
+			name === 'workation/page-hero' ||
+			name === 'workation/activity-list';
+		const root = [
+			node( 'hero', 'workation/page-hero', { align: 'full' } ),
+			node( 'list', 'workation/activity-list', { align: 'full' } ),
+		];
+		const res = run( root, isSection )!;
+		expect( res.blocks ).toHaveLength( 2 );
+		expect( res.blocks.map( ( bl: any ) => bl.name ) ).toEqual( [
+			'workation/page-hero',
+			'workation/activity-list',
+		] );
+		// Attributes preserved verbatim — no band className, no forced layout.
+		res.blocks.forEach( ( bl: any ) => {
+			expect( bl.attributes ).toEqual( { align: 'full' } );
+			expect( bl.attributes.className ).toBeUndefined();
+		} );
+	} );
+
+	it( 'wraps loose content but passes a section block through in the same page', () => {
+		const isSection = ( name: string ) => name === 'workation/page-hero';
+		const root = [
+			node( 'hero', 'workation/page-hero', { align: 'full' } ),
+			node( 'h', 'core/heading' ),
+			node( 'p', 'core/paragraph' ),
+		];
+		const res = run( root, isSection )!;
+		expect( res.blocks ).toHaveLength( 2 );
+		expect( res.blocks[ 0 ].name ).toBe( 'workation/page-hero' );
+		expect( res.blocks[ 0 ].attributes ).toEqual( { align: 'full' } );
+		// The trailing loose run becomes a band.
+		expect( res.blocks[ 1 ].attributes.className ).toContain(
+			'starter-band'
+		);
+		expect(
+			res.blocks[ 1 ].innerBlocks.map( ( x: any ) => x.name )
+		).toEqual( [ 'core/heading', 'core/paragraph' ] );
+	} );
+
+	it( 'is idempotent on a page of theme section blocks (fresh clientIds, same shape)', () => {
+		const isSection = ( name: string ) => name === 'workation/page-hero';
+		const root = [
+			node( 'hero', 'workation/page-hero', { align: 'full' } ),
+		];
+		const first = run( root, isSection )!;
+		const rebuilt = first.blocks.map( ( bl: any, i: number ) => ( {
+			clientId: 'live-' + i,
+			name: bl.name,
+			attributes: bl.attributes,
+			innerBlocks: bl.innerBlocks,
+		} ) );
+		const second = run( rebuilt, isSection )!;
+		expect( second.blocks.map( ( bl: any ) => bl.name ) ).toEqual( [
+			'workation/page-hero',
+		] );
+		expect( second.blocks[ 0 ].attributes ).toEqual( { align: 'full' } );
 	} );
 
 	it( 'clones children so no new block reuses an original (removed) clientId', () => {
