@@ -67,6 +67,33 @@ final class WpmlProvider implements LanguageProvider {
 	}
 
 	/**
+	 * WPML resolves `get_permalink()` against its CURRENT language context, so
+	 * a default-language (en) seed writes English URLs into German nav items
+	 * (Finding 2). Switch the ambient language to $language around the call,
+	 * then restore it.
+	 *
+	 * `wpml_switch_language` is WPML's own public action (inc/template-functions.php
+	 * `wpml_switch_language_action()` → `SitePress::switch_lang()`); it is the same
+	 * call WPML's switcher makes. We capture the current code first and switch
+	 * back to it — never leaving the request in the target language.
+	 */
+	public function permalinkInLanguage( int $postId, string $language ): string {
+		if ( $postId <= 0 || '' === $language ) {
+			return (string) get_permalink( $postId );
+		}
+
+		$previous = $this->currentLanguage();
+
+		do_action( 'wpml_switch_language', $language );
+		$url = (string) get_permalink( $postId );
+		// A null code restores WPML's original request language; pass the
+		// captured code when we have one, else fall back to that reset.
+		do_action( 'wpml_switch_language', '' !== $previous ? $previous : null );
+
+		return $url;
+	}
+
+	/**
 	 * Whether a post carries a language assignment at all — the untagged-post
 	 * signal Applier's repair relies on. WPML returns null for an element it
 	 * has never seen.
