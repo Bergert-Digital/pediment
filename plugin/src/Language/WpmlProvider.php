@@ -106,9 +106,83 @@ final class WpmlProvider implements LanguageProvider {
 		return $args;
 	}
 
-	public function setLanguage( int $postId, string $language ): void {}
+	public function setLanguage( int $postId, string $language ): void {
+		if ( $postId <= 0 || '' === $language ) {
+			return;
+		}
+		$type = 'post_' . get_post_type( $postId );
 
-	public function linkTranslations( array $map ): void {}
+		// Reuse an existing trid so re-tagging a post keeps its group; false
+		// tells WPML to mint a new translation group.
+		$trid = apply_filters( 'wpml_element_trid', null, $postId, $type );
+
+		do_action(
+			'wpml_set_element_language_details',
+			[
+				'element_id'           => $postId,
+				'element_type'         => $type,
+				'trid'                 => $trid ?: false,
+				'language_code'        => $language,
+				'source_language_code' => null,
+			]
+		);
+	}
+
+	/**
+	 * @param array<string,int> $map language code => post ID
+	 */
+	public function linkTranslations( array $map ): void {
+		$clean = array_filter(
+			$map,
+			static fn( $postId, $language ): bool => is_int( $postId ) && $postId > 0 && '' !== $language,
+			ARRAY_FILTER_USE_BOTH
+		);
+
+		if ( count( $clean ) < 2 ) {
+			return;
+		}
+
+		// Anchor the group on one member's trid (the default language's when
+		// present, else the first), then re-register every other member onto
+		// that same trid with a source language. This is WPML's equivalent of
+		// Polylang's "replace the whole group".
+		$default    = $this->defaultLanguage();
+		$anchorLang = isset( $clean[ $default ] ) ? $default : (string) array_key_first( $clean );
+		$anchorId   = (int) $clean[ $anchorLang ];
+		$anchorType = 'post_' . get_post_type( $anchorId );
+
+		$trid = apply_filters( 'wpml_element_trid', null, $anchorId, $anchorType );
+		if ( ! $trid ) {
+			// Anchor must belong to a group first; assign it, then re-read.
+			do_action(
+				'wpml_set_element_language_details',
+				[
+					'element_id'           => $anchorId,
+					'element_type'         => $anchorType,
+					'trid'                 => false,
+					'language_code'        => $anchorLang,
+					'source_language_code' => null,
+				]
+			);
+			$trid = apply_filters( 'wpml_element_trid', null, $anchorId, $anchorType );
+		}
+
+		foreach ( $clean as $language => $postId ) {
+			if ( $language === $anchorLang ) {
+				continue;
+			}
+			do_action(
+				'wpml_set_element_language_details',
+				[
+					'element_id'           => (int) $postId,
+					'element_type'         => 'post_' . get_post_type( (int) $postId ),
+					'trid'                 => $trid,
+					'language_code'        => (string) $language,
+					'source_language_code' => $anchorLang,
+				]
+			);
+		}
+	}
 
 	/** @param bool|array<string,mixed> $config */
 	public function languageSwitcherBlock( $config ): string {
