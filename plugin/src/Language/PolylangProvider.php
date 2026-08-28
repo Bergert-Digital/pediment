@@ -138,6 +138,14 @@ final class PolylangProvider implements LanguageProvider {
 		return function_exists( 'pll_current_language' ) ? (string) pll_current_language() : '';
 	}
 
+	public function permalinkInLanguage( int $postId, string $language ): string {
+		// Polylang's `_get_page_link`/`post_link` filter resolves a permalink
+		// from the post's OWN language term, independent of the ambient request
+		// language, so no context switch is needed — the raw permalink is
+		// already the $language URL for a post tagged $language.
+		return (string) get_permalink( $postId );
+	}
+
 	/**
 	 * @param bool|array<string,mixed> $config
 	 */

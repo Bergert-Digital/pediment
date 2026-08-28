@@ -220,16 +220,13 @@ test.describe( 'multilingual seeding (WPML)', () => {
 		} );
 	} );
 
-	// KNOWN DEFECT #2 (see task-11-report.md, "Concerns"). NavSeeder::linkAttrs()
-	// stores `get_permalink( $germanPostId )` resolved in the DEFAULT-language
-	// (en) context during the CLI seed, so the German menu items store the
-	// ENGLISH page URLs (Kontakt -> /contact/ instead of /de/kontakt/). Core's
-	// navigation-link render uses the stored `url` verbatim, so the German
-	// header links to English pages. get_permalink() only returns the /de/ URL
-	// when WPML's language context is switched to the post's language — a switch
-	// the seeder does not perform. Unblock once the seeder resolves per-language
-	// permalinks in the item's language context under WPML.
-	test.fixme(
+	// FIXED (Task 16). NavSeeder::linkAttrs() now resolves the item's url via
+	// LanguageProvider::permalinkInLanguage( $postId, $language ), which under
+	// WPML switches the language context to the item's language around
+	// get_permalink() — so a German menu item stores its /de/ URL instead of the
+	// ambient English one. Core's navigation-link render uses the stored `url`
+	// verbatim, so the German header now links to German pages.
+	test(
 		'the German header links point at German URLs',
 		async ( { page } ) => {
 			await page.goto( '/de/ueber-uns/' );

@@ -457,6 +457,58 @@ class SeedingBehaviorTest extends WpmlTestCase {
 		$this->assertSame( 4242, $block['attrs']['ref'] );
 	}
 
+	// ---------------------------------------------------------------------
+	// NavSeeder per-language URL — Finding 2. A German nav item's `url` must be
+	// resolved in the item's OWN language, not WPML's ambient (default) one.
+	// ---------------------------------------------------------------------
+
+	/**
+	 * The German nav item's stored `url` is resolved through the provider in the
+	 * `de` context, not the raw ambient permalink. WPML's front-end URL converter
+	 * is inert under WP_UnitTestCase (see the class-level NavBindingTest note), so
+	 * the language-correct `/de/` URL itself is asserted by the multilingual-wpml
+	 * e2e; here we prove the seeder routes through `permalinkInLanguage()` in the
+	 * item's language — WPML is switched to `de` while the German item's url is
+	 * built — which is the seam the e2e result depends on.
+	 */
+	public function test_a_german_nav_item_url_is_resolved_in_the_items_language() {
+		$lang = new WpmlProvider();
+		$de   = self::factory()->post->create( [ 'post_type' => 'page', 'post_name' => 'kontakt', 'post_title' => 'Kontakt' ] );
+		$lang->setLanguage( $de, 'de' );
+
+		$manifest = Manifest::fromArray(
+			[
+				'languages' => [ 'en' => [ 'name' => 'English', 'locale' => 'en_US', 'default' => true ], 'de' => [ 'name' => 'Deutsch', 'locale' => 'de_DE' ] ],
+				'pages'     => [ 'contact' => [ 'title' => 'Contact', 'content' => '' ] ],
+				'navs'      => [ 'primary' => [ 'title' => 'Primary', 'items' => [ [ 'entry' => 'contact', 'label' => 'Kontakt' ] ] ] ],
+			],
+			get_stylesheet_directory()
+		);
+
+		$switches = [];
+		add_action(
+			'wpml_switch_language',
+			static function ( $code ) use ( &$switches ) {
+				$switches[] = $code;
+			},
+			5,
+			1
+		);
+
+		$markup = ( new \Pediment\Seeder\NavSeeder( $lang ) )->serialize(
+			$manifest->navs()['primary'],
+			'de',
+			[ 'contact|de' => $de ]
+		);
+
+		$this->assertContains( 'de', $switches, 'The German item must build its url with WPML switched to de.' );
+		$this->assertStringContainsString(
+			'"url":"' . $lang->permalinkInLanguage( $de, 'de' ) . '"',
+			$markup,
+			'The stored url must be the one the provider resolves for the item language.'
+		);
+	}
+
 	public function test_other_blocks_are_untouched() {
 		$block = [ 'blockName' => 'core/paragraph', 'attrs' => [] ];
 
