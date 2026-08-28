@@ -279,17 +279,28 @@ final class WpmlProvider implements LanguageProvider {
 
 	/** The hover-to-reveal dropdown saved markup (the default): one list of ALL languages. */
 	private function dropdownTemplate(): string {
+		/*
+		 * A self-contained dropdown, styled by the pediment-theme sheet (see the
+		 * .wpml-language-switcher-block rules in assets/css/theme.css):
+		 *   - the current language is the compact toggle, always visible, in flow;
+		 *   - the other languages live in an ALWAYS-absolute panel that opens
+		 *     BELOW the toggle on hover/focus, so the header never reflows.
+		 * WPML fills the single current-language-item (the toggle) and clones the
+		 * language-item (in the panel) once per non-current language, so the panel
+		 * lists every language you can switch to. WPML fills the current language
+		 * exactly once (two current-language-item nodes fatal in its Parser — see
+		 * plugin/tests/wpml/WPML-API-REFERENCE.md), which is why the current
+		 * language is the toggle rather than also a row inside the panel.
+		 */
 		return '<div class="wpml-language-switcher-block wpml-ls">'
-			. '<div class="wpml-ls-dropdown open-on-hover-click">'
-			. '<ul class="wpml-ls-menu">'
-			. '<li data-wpml="current-language-item" class="wpml-ls-item wpml-ls-current-language">'
+			. '<span data-wpml="current-language-item" class="wpml-ls-current-language wpml-ls-toggle" tabindex="0">'
 			. '<a data-wpml="link" href="#"><span data-wpml="label" data-wpml-label-type="native"></span></a>'
-			. '</li>'
+			. '</span>'
+			. '<ul class="wpml-ls-panel">'
 			. '<li data-wpml="language-item" class="wpml-ls-item">'
 			. '<a data-wpml="link" href="#"><span data-wpml="label" data-wpml-label-type="native"></span></a>'
 			. '</li>'
 			. '</ul>'
-			. '</div>'
 			. '</div>';
 	}
 
