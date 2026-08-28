@@ -1081,9 +1081,11 @@ Replaces the switcher stub with the native `wpml/language-switcher` block, using
 - Consumes: `plugin/tests/wpml/WPML-API-REFERENCE.md` (the captured block name + default attributes).
 - Produces: real `languageSwitcherBlock( bool|array ): string`.
 
+**Task 3 finding (binding):** WPML 4.9.7's native block `wpml/language-switcher` is **dynamic and takes NO attributes** — its captured default markup is exactly `<!-- wp:wpml/language-switcher /-->` (see `WPML-API-REFERENCE.md`). So, unlike Polylang's `{dropdown}` block, the WPML switcher ignores the manifest's `language_switcher` override value: any truthy config emits the same bare block. This is correct and intended.
+
 - [ ] **Step 1: Write the failing test**
 
-`plugin/tests/wpml/WpmlSwitcherTest.php` — assert the exact captured markup. Fill `<attrs>` from `WPML-API-REFERENCE.md`:
+`plugin/tests/wpml/WpmlSwitcherTest.php`:
 
 ```php
 <?php
@@ -1092,18 +1094,19 @@ use Pediment\Language\WpmlProvider;
 
 class WpmlSwitcherTest extends WpmlTestCase {
 
-	public function test_switcher_emits_the_native_wpml_block() {
-		$block = ( new WpmlProvider() )->languageSwitcherBlock( true );
-		// Exact default attrs captured in tests/wpml/WPML-API-REFERENCE.md.
+	public function test_switcher_emits_the_native_attributeless_wpml_block() {
 		$this->assertSame(
-			'<!-- wp:wpml/language-switcher {<captured-default-attrs>} /-->',
-			$block
+			'<!-- wp:wpml/language-switcher /-->',
+			( new WpmlProvider() )->languageSwitcherBlock( true )
 		);
 	}
 
-	public function test_switcher_merges_array_overrides() {
-		$block = ( new WpmlProvider() )->languageSwitcherBlock( [ '<attr>' => '<value>' ] );
-		$this->assertStringContainsString( '"<attr>":"<value>"', $block );
+	public function test_array_config_still_emits_the_bare_block() {
+		// WPML's block accepts no attributes; a manifest override cannot change it.
+		$this->assertSame(
+			'<!-- wp:wpml/language-switcher /-->',
+			( new WpmlProvider() )->languageSwitcherBlock( [ 'dropdown' => false ] )
+		);
 	}
 }
 ```
@@ -1115,22 +1118,19 @@ Expected: FAIL — stub returns `''`.
 
 - [ ] **Step 3: Implement the switcher**
 
-In `plugin/src/Language/WpmlProvider.php`, replace the stub with (fill the default attrs from the captured reference):
+In `plugin/src/Language/WpmlProvider.php`, replace the stub with:
 
 ```php
 	/**
+	 * WPML's native language-switcher block is dynamic and takes no attributes
+	 * (captured in tests/wpml/WPML-API-REFERENCE.md, WPML 4.9.7), so the
+	 * manifest's `language_switcher` override — if any — has nothing to apply
+	 * to; every truthy config emits the same bare block.
+	 *
 	 * @param bool|array<string,mixed> $config
 	 */
 	public function languageSwitcherBlock( $config ): string {
-		// Default attributes are the ones WPML's own inserter produces for the
-		// native block, captured in tests/wpml/WPML-API-REFERENCE.md; an array
-		// value in the manifest overrides them.
-		$attrs = array_merge(
-			[ /* <captured-default-attrs-as-php-array> */ ],
-			is_array( $config ) ? $config : []
-		);
-
-		return '<!-- wp:wpml/language-switcher ' . wp_json_encode( $attrs, JSON_UNESCAPED_SLASHES ) . ' /-->';
+		return '<!-- wp:wpml/language-switcher /-->';
 	}
 ```
 
@@ -1486,24 +1486,27 @@ final class WpmlSetup implements LanguageSetup {
 			return [ 'changes' => $changes, 'errors' => $errors ];
 		}
 
-		// The confirmed-working activation from tests/wpml/WPML-API-REFERENCE.md.
-		// Written through WPML's own settings, mirroring PolylangSetup writing
-		// PLL()->options rather than update_option() blindly.
-		$settings = get_option( 'icl_sitepress_settings', [] );
-		$settings['active_languages'] = array_combine( $wanted, $wanted );
-		$settings['default_language'] = $default;
-		update_option( 'icl_sitepress_settings', $settings );
-
-		if ( function_exists( 'wpml_reload_active_languages_setting' ) ) {
-			wpml_reload_active_languages_setting( true );
+		// Confirmed activation path (tests/wpml/WPML-API-REFERENCE.md): a raw
+		// icl_sitepress_settings write does NOT flip the `active` flag in
+		// wp_icl_languages, so wpml_active_languages stays empty. WPML's own
+		// setup instance is what actually activates a language — the analogue of
+		// PolylangSetup going through PLL()'s API rather than update_option().
+		if ( ! function_exists( 'wpml_get_setup_instance' ) ) {
+			$errors[] = 'WPML setup API unavailable — cannot activate languages.';
+			return [ 'changes' => $changes, 'errors' => $errors ];
 		}
+
+		$setup = wpml_get_setup_instance();
+		$setup->finish_step1( $default );      // sets the default/first language
+		$setup->set_active_languages( $wanted ); // reconciles the active set to the manifest
+		$setup->finish_installation();          // marks setup complete; flips the active flags
 
 		return [ 'changes' => $changes, 'errors' => $errors ];
 	}
 }
 ```
 
-(Replace the activation block with whatever Task 3 confirmed as the minimal working write — e.g. `SitePress::set_active_languages()` plus row inserts — if the option alone is not enough. The `{changes, errors}` contract and the diff logic stay as written.)
+**Confirm against the live WPML env (Task 9 runs in it):** this three-call sequence is the one Task 3 captured for first-time activation. Verify it is idempotent on an already-installed site (the `test_already_configured_reports_no_changes` path must not error, and a re-run must not corrupt state). If `finish_step1`/`finish_installation` misbehave when setup is already complete, keep only `set_active_languages( $wanted )` plus the default-language setter the reference documents, guarded so the diff logic still governs whether anything is written. The `{changes, errors}` contract and the diff logic above stay as written.
 
 - [ ] **Step 4: Wire `setup()` detection**
 
@@ -1690,29 +1693,44 @@ In `.github/workflows/ci.yml`, add a `wpml` job mirroring `phpunit`, gated on th
       - run: npm ci
       - run: composer install --prefer-dist --no-progress -d plugin
       - run: cd plugin && npm ci && npm run build
-      - name: Provide the WPML zip (skips the job's tests if the secret is unset)
+      - name: Provide WPML (extracted dir — single-file zip mounts fail under Docker)
         env:
           WPML_ZIP_B64: ${{ secrets.WPML_ZIP_B64 }}
         run: |
           set -euo pipefail
           if [ -z "${WPML_ZIP_B64:-}" ]; then
-            echo "WPML_ZIP_B64 not set — WPML suite will skip."
+            echo "WPML_ZIP_B64 not set — WPML suite will be skipped."
+            echo "HAS_WPML=false" >> "$GITHUB_ENV"
             exit 0
           fi
-          mkdir -p plugin/.wpml
-          echo "$WPML_ZIP_B64" | base64 -d > plugin/.wpml/sitepress-multilingual-cms.zip
-      - run: cd plugin && npx wp-env start --config .wp-env.wpml.json
-      - run: npx wp-env run tests-wordpress --env-cwd=wp-content/plugins/pediment-ai ./vendor/bin/phpunit -c phpunit-wpml.xml.dist
-      - if: always()
-        run: cd plugin && npx wp-env stop --config .wp-env.wpml.json
+          mkdir -p plugin/wpml
+          echo "$WPML_ZIP_B64" | base64 -d > plugin/wpml/wpml.zip
+          rm -rf plugin/wpml/sitepress-multilingual-cms
+          unzip -q plugin/wpml/wpml.zip -d plugin/wpml/
+          test -f plugin/wpml/sitepress-multilingual-cms/sitepress.php
+          echo "HAS_WPML=true" >> "$GITHUB_ENV"
+      - name: Start the WPML env
+        if: env.HAS_WPML == 'true'
+        run: |
+          set -euo pipefail
+          cp .wp-env.wpml.json .wp-env.override.json
+          npx wp-env start
+      - name: Run the WPML PHPUnit suite
+        if: env.HAS_WPML == 'true'
+        run: npx wp-env run tests-wordpress --env-cwd=wp-content/plugins/pediment-ai ./vendor/bin/phpunit -c phpunit-wpml.xml.dist
+      - if: always() && env.HAS_WPML == 'true'
+        run: npx wp-env stop || true
 ```
 
-(Confirm the `wp-env --config` flag path works in the CI runner; if wp-env needs the config as the default file, copy `.wp-env.wpml.json` to `.wp-env.override.json` before start instead.)
+Notes for the implementer:
+- The wp-env project root is the repo root; `wp-env start`/`run` execute from there. wp-env 10.39 has no `--config` flag — copying `.wp-env.wpml.json` to `.wp-env.override.json` is the mechanism.
+- Single-file zip mounts fail under this Docker storage driver, so the env mounts an **extracted directory** (`plugin/wpml/sitepress-multilingual-cms/`); CI must `unzip` before start. Exact local repro: `unzip -q plugin/wpml/wpml.zip -d plugin/wpml/`.
+- Secret unset → `HAS_WPML=false` skips start/run and the job stays green. The `markTestSkipped` bootstrap guard (Step 1) is the second layer for a non-WPML env.
 
 - [ ] **Step 3: Verify the skip path locally (no zip)**
 
-Run with no `plugin/.wpml/` present: `... phpunit -c phpunit-wpml.xml.dist`
-Expected: tests reported SKIPPED, exit 0.
+Restore the Polylang env (`rm .wp-env.override.json && WP_ENV_PORT=8920 WP_ENV_TESTS_PORT=8921 npx wp-env start`) so WPML is not loaded, then run the WPML suite against it: `WP_ENV_PORT=8920 WP_ENV_TESTS_PORT=8921 npx wp-env run tests-wordpress --env-cwd=wp-content/plugins/pediment-ai ./vendor/bin/phpunit -c phpunit-wpml.xml.dist`
+Expected: tests reported SKIPPED, exit 0. (Then switch back to the WPML env for any remaining WPML work.)
 
 - [ ] **Step 4: Commit**
 
