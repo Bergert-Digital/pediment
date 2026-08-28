@@ -21,11 +21,15 @@ const WP_ENV_CWD = process.env.WP_ENV_CWD || process.cwd();
  * admin visits wp-admin, and until it is translatable WPML's `wpml_object_id`
  * returns the default-language nav for EVERY language — the seeded German menu
  * is never linked as a translation, and both languages render the English
- * header. We invoke here the exact call a real admin-only deploy fires by
- * opening wp-admin, so the parse runs through WPML's real config path (it reads
- * `inc/wpml-compat.php`'s filter — nothing is hand-set). It MUST run before the
- * seed: NavSeeder builds the nav translation group during the seed, and that
- * only holds once `wp_navigation` is translatable.
+ * header. `WpmlSetup::configure()` (which `wp pediment languages` routes to) now
+ * fires `WPML_Config::load_config_run()` itself after activating the languages,
+ * so the parse runs through WPML's real config path (it reads
+ * `inc/wpml-compat.php`'s filter — nothing is hand-set) as part of the headless
+ * deploy. This proves the real CLI path end-to-end: no manual load_config_run
+ * here. The parse MUST have run before the seed: NavSeeder builds the nav
+ * translation group during the seed, and that only holds once `wp_navigation`
+ * is translatable — `wp pediment languages` runs before `wp pediment seed`
+ * below, so that ordering is preserved.
  *
  * @param wp Runs a wp-cli command inside the wp-env `cli` container.
  */
@@ -33,14 +37,11 @@ function setupWpml( wp: ( cmd: string ) => string ): void {
 	// WPML is supplied by the env's plugin list; make sure it is on, then
 	// configure en+de through `wp pediment languages` (routes to WpmlSetup,
 	// which drives WPML's own installation API — a raw icl_sitepress_settings
-	// write does not activate languages).
+	// write does not activate languages — and then triggers WPML's config parse
+	// so `wp_navigation` becomes translatable via the real headless CLI path,
+	// before the nav translation group is built).
 	wp( `plugin activate sitepress-multilingual-cms` );
 	wp( `pediment languages` );
-
-	// Trigger WPML's config parse (the deploy trigger documented above) so
-	// `wp_navigation` becomes translatable through WPML's real config path
-	// before the nav translation group is built.
-	wp( `eval 'WPML_Config::load_config_run();'` );
 
 	wp( `pediment seed` );
 }
