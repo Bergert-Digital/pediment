@@ -205,3 +205,54 @@ header.site-header:has(.wp-block-navigation__responsive-container.is-menu-open){
    spacing--30 by default; bumping it here doesn't disturb the gap used
    between spacers/ul/buttons at the content layer above). */
 .site-header .wp-block-navigation__container{ gap:calc(var(--wp--preset--spacing--30) * 2); }
+
+/* WPML language switcher — hover-to-reveal dropdown listing ALL languages.
+   WpmlProvider emits ONE list (ul.wpml-ls-menu) of every active language, with
+   the current language marked .wpml-ls-current-language. WPML can only fill the
+   current language once (see plugin/tests/wpml/WPML-API-REFERENCE.md), so it is
+   both the always-visible toggle AND the first row of the open menu; the other
+   languages hide until the control is hovered/focused, then the whole list opens
+   as a roomy menu card. Scoped to .wpml-language-switcher-block so no other nav
+   submenu is touched. */
+.wpml-language-switcher-block{ display:inline-flex; align-items:center; }
+.wpml-language-switcher-block .wpml-ls-dropdown{
+  position:relative; display:inline-block;
+  /* reserve the collapsed toggle's footprint so opening the card (which pulls
+     the list out of flow) does not reflow the header row */
+  min-width:5.5rem; min-height:1.9rem;
+}
+.wpml-language-switcher-block .wpml-ls-menu{
+  display:flex; flex-direction:column;
+  margin:0; padding:0; list-style:none;
+}
+.wpml-language-switcher-block .wpml-ls-item{ margin:0; }
+.wpml-language-switcher-block .wpml-ls-item > a{
+  display:block; white-space:nowrap; text-decoration:none; line-height:1.3;
+  padding:8px 14px; border-radius:var(--r-md, 14px);
+  color:var(--wp--preset--color--foreground);
+}
+/* the current language is the toggle: pinned to the top, always visible */
+.wpml-language-switcher-block .wpml-ls-current-language{ order:-1; }
+/* the other languages are hidden until the control opens */
+.wpml-language-switcher-block .wpml-ls-menu > .wpml-ls-item:not(.wpml-ls-current-language){
+  display:none;
+}
+/* open state (hover or keyboard focus): the list becomes a menu card anchored to
+   the toggle, with breathing room, listing EVERY language */
+.wpml-language-switcher-block .wpml-ls-dropdown:hover .wpml-ls-menu,
+.wpml-language-switcher-block .wpml-ls-dropdown:focus-within .wpml-ls-menu{
+  position:absolute; top:0; left:0; z-index:30;
+  min-width:10rem; padding:6px;
+  background:var(--wp--preset--color--surface-elevated, var(--wp--preset--color--surface));
+  border:1px solid var(--wp--preset--color--border);
+  border-radius:var(--r-md, 14px);
+  box-shadow:var(--wp--preset--shadow--medium);
+}
+.wpml-language-switcher-block .wpml-ls-dropdown:hover .wpml-ls-menu > .wpml-ls-item:not(.wpml-ls-current-language),
+.wpml-language-switcher-block .wpml-ls-dropdown:focus-within .wpml-ls-menu > .wpml-ls-item:not(.wpml-ls-current-language){
+  display:block;
+}
+.wpml-language-switcher-block .wpml-ls-item > a:hover{
+  background:var(--wp--preset--color--accent-tint);
+  color:var(--wp--preset--color--accent);
+}
