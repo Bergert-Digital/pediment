@@ -240,14 +240,67 @@ final class WpmlProvider implements LanguageProvider {
 	 * part), which renders via do_blocks() without the the_content do_shortcode
 	 * pass, so the shortcode would survive as literal text.
 	 *
-	 * The block takes no meaningful per-instance attributes for our purposes, so
-	 * the manifest's `language_switcher` override — if any — has nothing to apply
-	 * to; every truthy config emits the same working switcher.
+	 * The default is a **hover-to-reveal dropdown**: the current language shows as
+	 * a toggle, and the other languages live in a sub-menu that is hidden until
+	 * hover. This is expressed entirely in the saved markup's structure + CSS
+	 * classes (the block carries no dropdown *attribute*): the wrapper nests a
+	 * `wpml-ls-dropdown open-on-hover-click` div; the current-language toggle is a
+	 * `wp-block-navigation-submenu__toggle` holding the `data-wpml="current-language-item"`
+	 * node; the other languages sit in a `wp-block-navigation__submenu-container`
+	 * <ul> holding the `data-wpml="language-item"` node. The block's own front-end
+	 * CSS (Loader::frontendPrintStyleIfBlockIsUsed) then hides that sub-menu by
+	 * default and reveals it on hover via
+	 * `.wpml-language-switcher-block .wpml-ls-dropdown .has-child:not(.open-on-click):hover > .wp-block-navigation__submenu-container`,
+	 * so `wpml-language-switcher-block` MUST wrap `wpml-ls-dropdown` (ancestor, not
+	 * the same node) for the selector to match. Parser finds both `data-wpml`
+	 * templates because they are siblings — neither nested inside the other — so
+	 * removing the current-item subtree first does not strip the language-item.
+	 * Confirmed by rendering through `do_blocks()` on the live WPML 4.9.7 env in
+	 * both language contexts (see tests/wpml/WPML-API-REFERENCE.md).
+	 *
+	 * WPML's block has no other per-instance knobs we expose, so the only override
+	 * we honour is `['dropdown' => false]`, which opts out to the original flat
+	 * horizontal list. Any truthy non-array config, `true`, or `['dropdown' => true]`
+	 * (and any array without a `dropdown` key) emits the dropdown.
 	 *
 	 * @param bool|array<string,mixed> $config
 	 */
 	public function languageSwitcherBlock( $config ): string {
-		$template = '<div class="wpml-ls wpml-ls-legacy-list-horizontal">'
+		$dropdown = true;
+		if ( is_array( $config ) && array_key_exists( 'dropdown', $config ) ) {
+			$dropdown = (bool) $config['dropdown'];
+		}
+
+		return '<!-- wp:wpml/language-switcher -->'
+			. ( $dropdown ? $this->dropdownTemplate() : $this->flatListTemplate() )
+			. '<!-- /wp:wpml/language-switcher -->';
+	}
+
+	/** The hover-to-reveal dropdown saved markup (the default). */
+	private function dropdownTemplate(): string {
+		return '<div class="wpml-language-switcher-block wpml-ls">'
+			. '<div class="wpml-ls-dropdown open-on-hover-click">'
+			. '<ul class="wp-block-navigation__container">'
+			. '<li class="wp-block-navigation-item has-child wp-block-navigation-submenu open-on-hover-click">'
+			. '<div class="wp-block-navigation-item__content wp-block-navigation-submenu__toggle" aria-expanded="false" aria-haspopup="true" aria-controls="wpml-ls-submenu-default" tabindex="0">'
+			. '<span data-wpml="current-language-item" class="wpml-ls-item wpml-ls-current-language current-language-item">'
+			. '<a data-wpml="link" href="#"><span data-wpml="label" data-wpml-label-type="native"></span></a>'
+			. '</span>'
+			. '</div>'
+			. '<ul id="wpml-ls-submenu-default" class="wp-block-navigation__submenu-container">'
+			. '<li data-wpml="language-item" class="wpml-ls-item wp-block-navigation-item">'
+			. '<a data-wpml="link" href="#"><span data-wpml="label" data-wpml-label-type="native"></span></a>'
+			. '</li>'
+			. '</ul>'
+			. '</li>'
+			. '</ul>'
+			. '</div>'
+			. '</div>';
+	}
+
+	/** The flat horizontal list saved markup (the `['dropdown' => false]` opt-out). */
+	private function flatListTemplate(): string {
+		return '<div class="wpml-ls wpml-ls-legacy-list-horizontal">'
 			. '<ul>'
 			. '<li data-wpml="current-language-item" class="wpml-ls-item wpml-ls-current-language">'
 			. '<a data-wpml="link" href="#"><span data-wpml="label" data-wpml-label-type="native"></span></a>'
@@ -257,7 +310,5 @@ final class WpmlProvider implements LanguageProvider {
 			. '</li>'
 			. '</ul>'
 			. '</div>';
-
-		return '<!-- wp:wpml/language-switcher -->' . $template . '<!-- /wp:wpml/language-switcher -->';
 	}
 }
