@@ -85,12 +85,17 @@ final class WpmlProvider implements LanguageProvider {
 		$previous = $this->currentLanguage();
 
 		do_action( 'wpml_switch_language', $language );
-		$url = (string) get_permalink( $postId );
-		// A null code restores WPML's original request language; pass the
-		// captured code when we have one, else fall back to that reset.
-		do_action( 'wpml_switch_language', '' !== $previous ? $previous : null );
-
-		return $url;
+		try {
+			return (string) get_permalink( $postId );
+		} finally {
+			// try/finally so the restore ALWAYS fires: if get_permalink() (or a
+			// filter it triggers) throws, skipping the restore would leave WPML
+			// stuck in $language for the rest of the seed run, so every later nav
+			// item and anything reading the ambient language resolves wrong. A
+			// null code restores WPML's original request language; pass the
+			// captured code when we have one, else fall back to that reset.
+			do_action( 'wpml_switch_language', '' !== $previous ? $previous : null );
+		}
 	}
 
 	/**
