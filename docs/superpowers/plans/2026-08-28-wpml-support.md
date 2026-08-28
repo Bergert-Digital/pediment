@@ -1519,14 +1519,23 @@ with:
 ```php
 		if ( PolylangProvider::isActive() ) {
 			$detected = new PolylangSetup();
-		} elseif ( WpmlProvider::isActive() ) {
+		} elseif ( WpmlProvider::isLoaded() ) {
 			$detected = new WpmlSetup();
 		} else {
 			$detected = new PolylangSetup();
 		}
 ```
 
-(Null case defaults to `PolylangSetup`, matching Task 1 — `LanguagesCommand` already short-circuits on an empty manifest, and `PolylangSetup::configure` returns a clean "Polylang is not active" error otherwise, so a monolingual site never reaches a write.)
+**Why `isLoaded()`, NOT `isActive()`, for the setup branch (corrected after Task 9 review):** `setup()` is what *creates* the languages, so it must fire on a WPML site that is installed but not yet configured — precisely the zero-active-languages state where `WpmlProvider::isActive()` (which requires a non-empty `wpml_active_languages`) is false. Gating on `isActive()` would make `WpmlSetup` unreachable for its headline use case (`wp pediment languages` on a fresh WPML site), falling through to `PolylangSetup` and printing a nonsensical "Polylang is not active" error. This differs from `provider()`, which correctly uses `isActive()` because content seeding *does* require languages to already exist.
+
+To keep the WPML-symbol quarantine (no `ICL_*` in `LanguageRegistry.php`), add a static to the already-WPML-quarantined `WpmlProvider`:
+```php
+	/** Whether the WPML plugin is loaded (regardless of whether languages are configured yet). */
+	public static function isLoaded(): bool {
+		return defined( 'ICL_SITEPRESS_VERSION' );
+	}
+```
+(Null case still defaults to `PolylangSetup`, matching Task 1; a monolingual site never reaches a write because `LanguagesCommand` short-circuits on an empty manifest.)
 
 - [ ] **Step 5: Run the WPML suite + the Polylang setup test**
 
