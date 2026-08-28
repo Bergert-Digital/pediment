@@ -2,7 +2,19 @@ export type BlockLike = { name: string; attributes?: { className?: string } };
 
 export type SectionPlan =
 	| { kind: 'keep'; index: number }
+	| { kind: 'passthrough'; index: number }
 	| { kind: 'wrap'; indices: number[] };
+
+/**
+ * Does this top-level block name identify a full-bleed section block the active
+ * theme registered as its own section? Such blocks already span the canvas and
+ * carry their own layout, so the normalizer must leave them alone rather than
+ * swallow them into a `starter-band` (the "/activities/ header shifted down"
+ * corruption). Themes opt a block in via the `pediment.section` block support;
+ * the default treats no block as a section (plugin-only, band-model pages).
+ */
+export type IsSectionBlock = ( name: string ) => boolean;
+const NO_SECTION_BLOCKS: IsSectionBlock = () => false;
 
 // The theme's section unit is a top-level full-width `core/group` carrying the
 // `starter-band` class (plus an `is-style-band-*` background style). Every band
@@ -50,22 +62,28 @@ function isLegacyWrapper( b: BlockLike ): boolean {
 /**
  * Partition a flat top-level block list into a deterministic section plan.
  *
- * Two kinds of self-delimiting boundary:
+ * Three kinds of self-delimiting boundary:
  *  - `core/separator`: a consumed boundary (dropped); flushes the pending run.
  *  - an already-correct band (`core/group.starter-band`): its own complete
  *    section — flushes the pending run, then is kept as-is.
+ *  - a theme section block (`isSectionBlock`): a full-bleed section that owns
+ *    its layout — flushes the pending run, then passes through untouched.
  *
  * Any maximal run of other blocks between boundaries becomes one wrapped band.
  * Adjacent correct bands are each kept, never collapsed into one parent wrap,
  * which makes the canonical flat-band page idempotent.
  * @param blocks
+ * @param isSectionBlock
  */
-export function planSections( blocks: BlockLike[] ): SectionPlan[] {
+export function planSections(
+	blocks: BlockLike[],
+	isSectionBlock: IsSectionBlock = NO_SECTION_BLOCKS
+): SectionPlan[] {
 	const out: SectionPlan[] = [];
 	let segment: number[] = [];
 
-	// The segment only ever holds non-band, non-separator blocks, so a flush is
-	// always a wrap.
+	// The segment only ever holds non-band, non-separator, non-section blocks, so
+	// a flush is always a wrap.
 	const flush = () => {
 		if ( segment.length === 0 ) {
 			return;
@@ -80,6 +98,9 @@ export function planSections( blocks: BlockLike[] ): SectionPlan[] {
 		} else if ( isBand( blk ) ) {
 			flush();
 			out.push( { kind: 'keep', index: i } );
+		} else if ( isSectionBlock( blk.name ) ) {
+			flush();
+			out.push( { kind: 'passthrough', index: i } );
 		} else {
 			segment.push( i );
 		}
@@ -199,14 +220,17 @@ function bandAttributes( base?: any ): any {
  * Deterministically rewrite the editor root into a flat list of full-width
  * `starter-band` section groups. Legacy `starter-section` wrappers are
  * unwrapped first (healing nested pages), then every top-level run is either
- * kept (an existing band, band-shape attrs enforced) or wrapped into a new
- * band. Idempotent in structure.
+ * kept (an existing band, band-shape attrs enforced), passed through (a theme
+ * section block, left verbatim) or wrapped into a new band. Idempotent in
+ * structure.
  * @param deps
  * @param create
+ * @param isSectionBlock
  */
 export function normalizeSections(
 	deps: NormalizeDeps,
-	create: CreateBlock
+	create: CreateBlock,
+	isSectionBlock: IsSectionBlock = NO_SECTION_BLOCKS
 ): void {
 	const root = deps.getBlocks();
 	if ( root.length === 0 ) {
@@ -214,7 +238,7 @@ export function normalizeSections(
 	}
 
 	const flat = flattenLegacyWrappers( root );
-	const plan = planSections( flat );
+	const plan = planSections( flat, isSectionBlock );
 
 	const next = plan.map( ( p ) => {
 		if ( p.kind === 'keep' ) {
@@ -224,6 +248,12 @@ export function normalizeSections(
 				bandAttributes( g.attributes ),
 				( g.innerBlocks ?? [] ).map( ( c ) => cloneBlock( c, create ) )
 			);
+		}
+		if ( p.kind === 'passthrough' ) {
+			// A theme section block: rebuilt with a fresh clientId (required by
+			// replaceBlocks) but otherwise verbatim — no band wrapper, no attr
+			// rewriting.
+			return cloneBlock( flat[ p.index ], create );
 		}
 		return create(
 			'core/group',
