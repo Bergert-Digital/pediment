@@ -20,8 +20,9 @@ require_once __DIR__ . '/language-definitions.php';
 tests_add_filter( 'muplugins_loaded', function () {
 	$wpml = WP_PLUGIN_DIR . '/sitepress-multilingual-cms/sitepress.php';
 	if ( ! is_readable( $wpml ) ) {
-		echo "WPML is not installed at {$wpml}. Provide plugin/wpml/wpml.zip and start the WPML env.\n";
-		exit( 1 );
+		echo "WPML is not installed at {$wpml}. Provide plugin/wpml/wpml.zip and start the WPML env; the suite will be skipped.\n";
+		define( 'PEDIMENT_WPML_MISSING', true );
+		return;
 	}
 
 	require $wpml;

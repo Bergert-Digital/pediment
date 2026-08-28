@@ -57,6 +57,51 @@ jobs:
       - if: always()
         run: npm run env:stop
 
+  wpml:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: plugin/package-lock.json
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.1"
+          tools: composer
+      - run: npm ci
+      - run: composer install --prefer-dist --no-progress -d plugin
+      - run: cd plugin && npm ci && npm run build
+      - name: Provide WPML (extracted dir — single-file zip mounts fail under Docker)
+        env:
+          WPML_ZIP_B64: ${{ secrets.WPML_ZIP_B64 }}
+        run: |
+          set -euo pipefail
+          if [ -z "${WPML_ZIP_B64:-}" ]; then
+            echo "WPML_ZIP_B64 not set — WPML suite will be skipped."
+            echo "HAS_WPML=false" >> "$GITHUB_ENV"
+            exit 0
+          fi
+          mkdir -p plugin/wpml
+          echo "$WPML_ZIP_B64" | base64 -d > plugin/wpml/wpml.zip
+          rm -rf plugin/wpml/sitepress-multilingual-cms
+          unzip -q plugin/wpml/wpml.zip -d plugin/wpml/
+          test -f plugin/wpml/sitepress-multilingual-cms/sitepress.php
+          echo "HAS_WPML=true" >> "$GITHUB_ENV"
+      - name: Start the WPML env
+        if: env.HAS_WPML == 'true'
+        run: |
+          set -euo pipefail
+          cp .wp-env.wpml.json .wp-env.override.json
+          npx wp-env start
+      - name: Run the WPML PHPUnit suite
+        if: env.HAS_WPML == 'true'
+        run: npx wp-env run tests-wordpress --env-cwd=wp-content/plugins/pediment-ai ./vendor/bin/phpunit -c phpunit-wpml.xml.dist
+      - if: always() && env.HAS_WPML == 'true'
+        run: npx wp-env stop || true
+
   e2e:
     runs-on: ubuntu-latest
     steps:

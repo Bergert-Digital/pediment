@@ -11,4 +11,11 @@ abstract class WpmlTestCase extends WP_UnitTestCase {
 	public static function wpSetUpBeforeClass( $factory ): void {
 		pediment_wpml_activate_languages();
 	}
+
+	public function set_up(): void {
+		if ( defined( 'PEDIMENT_WPML_MISSING' ) ) {
+			$this->markTestSkipped( 'WPML zip not provided; skipping the WPML suite.' );
+		}
+		parent::set_up();
+	}
 }
