@@ -99,6 +99,18 @@ jobs:
       - name: Run the WPML PHPUnit suite
         if: env.HAS_WPML == 'true'
         run: npx wp-env run tests-wordpress --env-cwd=wp-content/plugins/pediment-ai ./vendor/bin/phpunit -c phpunit-wpml.xml.dist
+      - name: Run the WPML e2e suite
+        if: env.HAS_WPML == 'true'
+        run: |
+          set -euo pipefail
+          cd plugin
+          npx playwright install --with-deps chromium
+          npm run e2e:wpml
+      - if: failure() && env.HAS_WPML == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report-wpml
+          path: plugin/playwright-report/
       - if: always() && env.HAS_WPML == 'true'
         run: npx wp-env stop || true
 
