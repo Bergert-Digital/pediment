@@ -1797,6 +1797,155 @@ git commit -m "docs(wpml): document WPML support and close the backlog entry"
 
 ---
 
+### Task 14: Per-language nav binding through the provider seam (fixes the WPML runtime scoping gap)
+
+**Added after Task 10 review** (opus-confirmed load-bearing defect). `pediment_seeded_nav_id()` scopes by Polylang's `lang` query var; under WPML that arg is inert and `get_posts()`'s default `suppress_filters=true` disables WPML's `posts_where` scoping (the codebase's own `WpmlProvider::unscopedQuery()` sets that flag *specifically to bypass* WPML scoping). Result at a real WPML front-end: every non-default-language header binds to the default (English) menu — the exact failure the nav mechanism exists to prevent. Fix: resolve the current-language nav through the `LanguageProvider` seam (`translationOf` on the linked nav group), falling back to the existing term query so Polylang behavior is unchanged.
+
+**Files:**
+- Modify: `plugin/inc/nav-language.php` (`pediment_bind_navigation_ref` only; `pediment_seeded_nav_id` stays as-is, still used for the unscoped anchor and the fallback)
+- Test: `plugin/tests/wpml/NavBindingTest.php` (new — WPML two-language discrimination)
+- Possibly Modify: one Polylang mechanism-level test if it asserts the old candidate structure (see Step 5)
+
+**Interfaces:**
+- Consumes: `LanguageProvider::translationOf(int,string)` (Tasks 4/5 for WPML; pre-existing for Polylang/Null), `currentLanguage()`, `defaultLanguage()`, and `pediment_seeded_nav_id()`.
+- Produces: no new public surface — `pediment_bind_navigation_ref` behavior is corrected.
+
+**Design (hybrid — verified against every Polylang NavBindingTest case):** try the translation-group lookup first, then the term query. This keeps all Polylang outcome tests green (their navs are tagged-but-unlinked, so `translationOf` returns 0 and the term-query fallback discriminates), and fixes WPML (production navs are linked via `NavSeeder::linkTranslations`, so `translationOf` resolves directly).
+
+- [ ] **Step 1: Write the failing WPML discrimination test**
+
+`plugin/tests/wpml/NavBindingTest.php` (extends `WpmlTestCase`) — create en+de `primary` navs, assign languages, and **link them** (mirroring real seeding), then assert the bound ref differs by current language:
+
+```php
+<?php
+
+use Pediment\Language\WpmlProvider;
+use Pediment\Seeder\Meta;
+
+class NavBindingTest extends WpmlTestCase {
+
+	private int $en;
+	private int $de;
+
+	public function set_up(): void {
+		parent::set_up();
+		$provider = new WpmlProvider();
+		$this->en = self::factory()->post->create( [ 'post_type' => 'wp_navigation', 'post_title' => 'Primary EN', 'post_status' => 'publish' ] );
+		$this->de = self::factory()->post->create( [ 'post_type' => 'wp_navigation', 'post_title' => 'Primary DE', 'post_status' => 'publish' ] );
+		update_post_meta( $this->en, Meta::KEY, 'primary' );
+		update_post_meta( $this->de, Meta::KEY, 'primary' );
+		$provider->setLanguage( $this->en, 'en' );
+		$provider->setLanguage( $this->de, 'de' );
+		$provider->linkTranslations( [ 'en' => $this->en, 'de' => $this->de ] );
+	}
+
+	public function tear_down(): void {
+		remove_filter( 'wpml_current_language', '__return_de', 99 );
+		parent::tear_down();
+	}
+
+	private function bind( string $current ): array {
+		add_filter( 'wpml_current_language', static fn() => $current, 99 );
+		$out = pediment_bind_navigation_ref( [ 'blockName' => 'core/navigation', 'attrs' => [] ] );
+		remove_all_filters( 'wpml_current_language' ); // scoped to this helper; restore in tear_down if needed
+		return $out;
+	}
+
+	public function test_english_current_binds_the_english_menu() {
+		$this->assertSame( $this->en, $this->bind( 'en' )['attrs']['ref'] ?? 0 );
+	}
+
+	public function test_german_current_binds_the_german_menu() {
+		$this->assertSame( $this->de, $this->bind( 'de' )['attrs']['ref'] ?? 0 );
+	}
+}
+```
+
+Confirm `test_german_current_binds_the_german_menu` FAILS against the current (unfixed) `pediment_bind_navigation_ref` — it binds `$this->en` (the wrong menu), demonstrating the gap. (If forcing `wpml_current_language` via `add_filter` does not move `currentLanguage()`, set the current language the way WPML's real request path does — check `plugin/tests/wpml/WPML-API-REFERENCE.md` / how Task 10 forced it; the point is a genuine current-language switch.)
+
+- [ ] **Step 2: Run it to see the German case fail**
+
+Run: `WP_ENV_PORT=8920 WP_ENV_TESTS_PORT=8921 npx wp-env run tests-wordpress --env-cwd=wp-content/plugins/pediment-ai ./vendor/bin/phpunit -c phpunit-wpml.xml.dist --filter NavBindingTest`
+Expected: `test_german_current_binds_the_german_menu` FAILS (binds English).
+
+- [ ] **Step 3: Apply the hybrid fix in `pediment_bind_navigation_ref`**
+
+Replace the candidate loop (the part after the guard clauses, from `$candidates = ...` through the final `return`) with:
+
+```php
+	$provider = \Pediment\Language\LanguageRegistry::provider();
+	$current  = $provider->currentLanguage();
+	$default  = $provider->defaultLanguage();
+
+	// The unscoped anchor: the seeded 'primary' nav, oldest wins. The ''
+	// lookup is language-agnostic under both plugins.
+	$anchor = pediment_seeded_nav_id( '' );
+
+	// Resolve per language through the seam FIRST: translationOf() follows the
+	// nav translation group, which is the only mechanism that works under WPML
+	// (its query scoping does not survive get_posts()' suppress_filters=true —
+	// see WpmlProvider::unscopedQuery). Fall back to the language-term query,
+	// which is Polylang's mechanism and also covers a partial seed where a nav
+	// is tagged but not yet linked.
+	$candidates = array_values( array_unique( array_filter( [ $current, $default ] ) ) );
+	foreach ( $candidates as $language ) {
+		$ref = $anchor > 0 ? $provider->translationOf( $anchor, (string) $language ) : 0;
+		if ( $ref <= 0 ) {
+			$ref = pediment_seeded_nav_id( (string) $language );
+		}
+		if ( $ref > 0 ) {
+			$parsed_block['attrs']['ref'] = $ref;
+			return $parsed_block;
+		}
+	}
+
+	// Unscoped fallback: monolingual (current/default both ''), or an untagged
+	// legacy nav that no language candidate matched. Better a menu chosen badly
+	// than an empty header.
+	if ( $anchor > 0 ) {
+		$parsed_block['attrs']['ref'] = $anchor;
+		return $parsed_block;
+	}
+
+	// Nothing seeded: leave the block alone and let core's own fallback run.
+	return $parsed_block;
+```
+
+Update the function's docblock paragraph about candidate order to match the new resolution (seam-first, then term query, then unscoped anchor).
+
+- [ ] **Step 4: WPML tests green**
+
+Run: `... phpunit -c phpunit-wpml.xml.dist --filter NavBindingTest` → both PASS.
+Run the FULL WPML suite (no --filter) → all green, no pollution.
+
+- [ ] **Step 5: Verify Polylang stays green (switch envs)**
+
+The fix touches shared front-end code, so the Polylang suite MUST be re-run. Switch this workspace's single wp-env instance back to Polylang:
+```bash
+rm .wp-env.override.json
+WP_ENV_PORT=8920 WP_ENV_TESTS_PORT=8921 npx wp-env start
+WP_ENV_PORT=8920 WP_ENV_TESTS_PORT=8921 npx wp-env run tests-wordpress --env-cwd=wp-content/plugins/pediment-ai ./vendor/bin/phpunit -c phpunit-polylang.xml.dist
+```
+Expected: all Polylang tests PASS. The outcome tests (`test_english_gets_the_english_menu`, `test_german_gets_the_german_menu`, `test_a_language_with_no_menu_falls_back_to_the_default`, `test_an_untagged_legacy_nav_is_found_by_the_unscoped_fallback`, explicit-ref, other-blocks, inner-blocks) must all stay green — the hybrid's term-query fallback preserves them. If `test_the_unscoped_candidate_queries_with_lang_set_not_omitted` (a mechanism-level assertion about the old candidate structure) fails because the '' lookup moved, update THAT test to assert the anchor lookup still queries with `lang` set (the mechanism it guards still exists, at the top of the function now) — do not weaken it, re-point it. Justify any test change in the report. Also run the full monolingual suite (`... ./vendor/bin/phpunit`) to confirm NullProvider binding (anchor fallback) is unaffected.
+
+- [ ] **Step 6: Return the env to WPML for the remaining tasks**
+
+```bash
+cp .wp-env.wpml.json .wp-env.override.json
+WP_ENV_PORT=8920 WP_ENV_TESTS_PORT=8921 npx wp-env start
+```
+Confirm the WPML suite is green once more. Lint: `composer lint -d plugin`.
+
+- [ ] **Step 7: Commit**
+
+```bash
+git add plugin/inc/nav-language.php plugin/tests/wpml/NavBindingTest.php
+# plus any re-pointed Polylang mechanism test
+git commit -m "fix(wpml): bind per-language nav through the provider seam, not query scoping"
+```
+
+---
+
 ## Self-Review
 
 **Spec coverage:**
