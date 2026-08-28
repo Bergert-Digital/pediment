@@ -22,7 +22,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-final class PolylangSetup {
+final class PolylangSetup implements LanguageSetup {
 	/**
 	 * @param array<string,LanguageSpec> $languages Declaration order, default first.
 	 * @return array{changes:string[],errors:string[]}
