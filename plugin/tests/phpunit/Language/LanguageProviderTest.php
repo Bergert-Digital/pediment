@@ -84,4 +84,9 @@ class LanguageProviderTest extends WP_UnitTestCase {
 	public function test_null_provider_emits_no_switcher() {
 		$this->assertSame( '', ( new NullProvider() )->languageSwitcherBlock( true ) );
 	}
+
+	public function test_wpml_branch_is_inert_when_wpml_absent() {
+		LanguageRegistry::reset();
+		$this->assertInstanceOf( NullProvider::class, LanguageRegistry::provider() );
+	}
 }
