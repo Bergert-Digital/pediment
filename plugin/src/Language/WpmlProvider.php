@@ -240,23 +240,24 @@ final class WpmlProvider implements LanguageProvider {
 	 * part), which renders via do_blocks() without the the_content do_shortcode
 	 * pass, so the shortcode would survive as literal text.
 	 *
-	 * The default is a **hover-to-reveal dropdown**: the current language shows as
-	 * a toggle, and the other languages live in a sub-menu that is hidden until
-	 * hover. This is expressed entirely in the saved markup's structure + CSS
-	 * classes (the block carries no dropdown *attribute*): the wrapper nests a
-	 * `wpml-ls-dropdown open-on-hover-click` div; the current-language toggle is a
-	 * `wp-block-navigation-submenu__toggle` holding the `data-wpml="current-language-item"`
-	 * node; the other languages sit in a `wp-block-navigation__submenu-container`
-	 * <ul> holding the `data-wpml="language-item"` node. The block's own front-end
-	 * CSS (Loader::frontendPrintStyleIfBlockIsUsed) then hides that sub-menu by
-	 * default and reveals it on hover via
-	 * `.wpml-language-switcher-block .wpml-ls-dropdown .has-child:not(.open-on-click):hover > .wp-block-navigation__submenu-container`,
-	 * so `wpml-language-switcher-block` MUST wrap `wpml-ls-dropdown` (ancestor, not
-	 * the same node) for the selector to match. Parser finds both `data-wpml`
-	 * templates because they are siblings — neither nested inside the other — so
-	 * removing the current-item subtree first does not strip the language-item.
-	 * Confirmed by rendering through `do_blocks()` on the live WPML 4.9.7 env in
-	 * both language contexts (see tests/wpml/WPML-API-REFERENCE.md).
+	 * The default is a **hover-to-reveal dropdown that lists EVERY configured
+	 * language**. WPML's Render fills the current language exactly once — it
+	 * cannot repeat it in a separate sub-menu (two `data-wpml="current-language-item"`
+	 * nodes in different parents fatal in Parser::getTemplateNode's removeChild;
+	 * confirmed on the live env). So a native "toggle + sub-menu-of-others" only
+	 * ever lists the OTHER languages. To list ALL languages, we emit a SINGLE
+	 * list (`ul.wpml-ls-menu`) holding one `data-wpml="current-language-item"` and
+	 * one `data-wpml="language-item"` template as siblings: Render fills the
+	 * current-language node and clones the language-item once per non-current
+	 * language, so the `<ul>` ends up with every active language (en+de → both
+	 * Deutsch and English; scales to N by construction). The current language
+	 * carries `wpml-ls-current-language`, which the plugin's front-end CSS
+	 * (assets/css/theme.css) keys off to make it the always-visible toggle and
+	 * hide the rest until `:hover`/`:focus-within`, then reveal the full list as a
+	 * roomy menu card. `wpml-language-switcher-block` wraps `wpml-ls-dropdown` so
+	 * the scoped CSS only styles this switcher. Confirmed by rendering through
+	 * `do_blocks()` on the live WPML 4.9.7 env in both language contexts (see
+	 * tests/wpml/WPML-API-REFERENCE.md).
 	 *
 	 * WPML's block has no other per-instance knobs we expose, so the only override
 	 * we honour is `['dropdown' => false]`, which opts out to the original flat
@@ -276,22 +277,16 @@ final class WpmlProvider implements LanguageProvider {
 			. '<!-- /wp:wpml/language-switcher -->';
 	}
 
-	/** The hover-to-reveal dropdown saved markup (the default). */
+	/** The hover-to-reveal dropdown saved markup (the default): one list of ALL languages. */
 	private function dropdownTemplate(): string {
 		return '<div class="wpml-language-switcher-block wpml-ls">'
 			. '<div class="wpml-ls-dropdown open-on-hover-click">'
-			. '<ul class="wp-block-navigation__container">'
-			. '<li class="wp-block-navigation-item has-child wp-block-navigation-submenu open-on-hover-click">'
-			. '<div class="wp-block-navigation-item__content wp-block-navigation-submenu__toggle" aria-expanded="false" aria-haspopup="true" aria-controls="wpml-ls-submenu-default" tabindex="0">'
-			. '<span data-wpml="current-language-item" class="wpml-ls-item wpml-ls-current-language current-language-item">'
-			. '<a data-wpml="link" href="#"><span data-wpml="label" data-wpml-label-type="native"></span></a>'
-			. '</span>'
-			. '</div>'
-			. '<ul id="wpml-ls-submenu-default" class="wp-block-navigation__submenu-container">'
-			. '<li data-wpml="language-item" class="wpml-ls-item wp-block-navigation-item">'
+			. '<ul class="wpml-ls-menu">'
+			. '<li data-wpml="current-language-item" class="wpml-ls-item wpml-ls-current-language">'
 			. '<a data-wpml="link" href="#"><span data-wpml="label" data-wpml-label-type="native"></span></a>'
 			. '</li>'
-			. '</ul>'
+			. '<li data-wpml="language-item" class="wpml-ls-item">'
+			. '<a data-wpml="link" href="#"><span data-wpml="label" data-wpml-label-type="native"></span></a>'
 			. '</li>'
 			. '</ul>'
 			. '</div>'

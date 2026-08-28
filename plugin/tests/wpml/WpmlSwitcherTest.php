@@ -5,34 +5,30 @@ use Pediment\Language\WpmlProvider;
 class WpmlSwitcherTest extends WpmlTestCase {
 
 	/**
-	 * The DEFAULT renderable form: a hover-to-reveal dropdown. A bare
-	 * `<!-- wp:wpml/language-switcher /-->` fatals on the WPML front end
-	 * (Parser::parse() returns null for empty saved HTML, Render.php then
+	 * The DEFAULT renderable form: a hover-to-reveal dropdown that lists EVERY
+	 * language. A bare `<!-- wp:wpml/language-switcher /-->` fatals on the WPML
+	 * front end (Parser::parse() returns null for empty saved HTML, Render.php then
 	 * dereferences it), so the provider emits the block WITH the `data-wpml` item
-	 * template WPML clones per active language. The dropdown behaviour is expressed
-	 * in the saved markup's structure + CSS classes (`wpml-ls-dropdown`
-	 * `open-on-hover-click`, a `wp-block-navigation-submenu__toggle` for the current
-	 * language, and a `wp-block-navigation__submenu-container` for the others), not
-	 * in block attributes. `wpml-language-switcher-block` wraps `wpml-ls-dropdown`
-	 * so the block's front-end hover CSS matches. Verified by rendering on the live
-	 * WPML env in both language contexts (see tests/wpml/WPML-API-REFERENCE.md).
+	 * template WPML clones per active language. WPML fills the current language
+	 * exactly once, so to list ALL languages the markup is a SINGLE list
+	 * (`ul.wpml-ls-menu`) carrying one `current-language-item` and one
+	 * `language-item` template: Render fills the current and clones the language
+	 * item per non-current language, so the list ends up with every active
+	 * language. The current language carries `wpml-ls-current-language`, which the
+	 * plugin's front-end CSS uses to make it the always-visible toggle and reveal
+	 * the rest on hover. Verified by rendering on the live WPML env in both
+	 * language contexts (see tests/wpml/WPML-API-REFERENCE.md).
 	 */
 	private const DROPDOWN_SWITCHER =
 		'<!-- wp:wpml/language-switcher -->'
 		. '<div class="wpml-language-switcher-block wpml-ls">'
 		. '<div class="wpml-ls-dropdown open-on-hover-click">'
-		. '<ul class="wp-block-navigation__container">'
-		. '<li class="wp-block-navigation-item has-child wp-block-navigation-submenu open-on-hover-click">'
-		. '<div class="wp-block-navigation-item__content wp-block-navigation-submenu__toggle" aria-expanded="false" aria-haspopup="true" aria-controls="wpml-ls-submenu-default" tabindex="0">'
-		. '<span data-wpml="current-language-item" class="wpml-ls-item wpml-ls-current-language current-language-item">'
-		. '<a data-wpml="link" href="#"><span data-wpml="label" data-wpml-label-type="native"></span></a>'
-		. '</span>'
-		. '</div>'
-		. '<ul id="wpml-ls-submenu-default" class="wp-block-navigation__submenu-container">'
-		. '<li data-wpml="language-item" class="wpml-ls-item wp-block-navigation-item">'
+		. '<ul class="wpml-ls-menu">'
+		. '<li data-wpml="current-language-item" class="wpml-ls-item wpml-ls-current-language">'
 		. '<a data-wpml="link" href="#"><span data-wpml="label" data-wpml-label-type="native"></span></a>'
 		. '</li>'
-		. '</ul>'
+		. '<li data-wpml="language-item" class="wpml-ls-item">'
+		. '<a data-wpml="link" href="#"><span data-wpml="label" data-wpml-label-type="native"></span></a>'
 		. '</li>'
 		. '</ul>'
 		. '</div>'
