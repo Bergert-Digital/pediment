@@ -19,3 +19,6 @@ tests/fixtures/uploads/*
 
 # /pediment:start and /pediment:port-page scratch files
 .context/
+
+# Licensed WPML plugin zip (commercial — never commit)
+plugin/wpml/
