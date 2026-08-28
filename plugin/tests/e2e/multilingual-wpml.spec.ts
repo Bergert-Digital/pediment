@@ -211,45 +211,44 @@ test.describe( 'multilingual seeding (WPML)', () => {
 				/Fatal error|critical error/i
 			);
 
-			// A working switcher control is present in the header, rendered as a
-			// hover-to-reveal dropdown that lists EVERY language: the CURRENT
-			// language (Deutsch on the German page) is the always-visible toggle,
-			// and the whole list — Deutsch AND English — is revealed on hover.
-			const switcher = page.locator( 'header .wpml-ls' ).first();
+			// A working switcher control is present in the header: a compact
+			// toggle showing the CURRENT language (Deutsch on the German page),
+			// with a hover/focus dropdown panel of the languages you can switch to.
+			const switcher = page
+				.locator( 'header .wpml-language-switcher-block' )
+				.first();
 			await expect( switcher ).toBeVisible();
 
-			// It is the dropdown variant, not the flat list.
-			await expect( switcher.locator( '.wpml-ls-dropdown' ) ).toHaveCount( 1 );
+			// The toggle is the current language, always visible, and links to the
+			// current (German) page.
+			const toggle = switcher.locator( '.wpml-ls-toggle' );
+			await expect( toggle ).toBeVisible();
+			await expect( toggle ).toContainText( 'Deutsch' );
+			await expect(
+				toggle.getByRole( 'link', { name: 'Deutsch' } )
+			).toHaveAttribute( 'href', /\/de\// );
 
-			// The current language is the always-visible toggle.
-			const currentToggle = switcher.locator( '.wpml-ls-current-language' );
-			await expect( currentToggle ).toBeVisible();
-			await expect( currentToggle ).toContainText( 'Deutsch' );
-
-			// Both languages are present in the list, each with the real
-			// per-language href WPML filled in (German page -> /de/…, English
-			// alternative -> the English page). Reference with includeHidden since
-			// the non-current one is hidden until hover.
-			const german = switcher.getByRole( 'link', {
-				name: 'Deutsch',
-				includeHidden: true,
-			} );
-			const english = switcher.getByRole( 'link', {
+			// The panel lists the OTHER languages (English), each with the real
+			// per-language href WPML filled in, hidden until the toggle opens.
+			const panel = switcher.locator( '.wpml-ls-panel' );
+			const english = panel.getByRole( 'link', {
 				name: 'English',
 				includeHidden: true,
 			} );
-			await expect( german ).toHaveAttribute( 'href', /\/de\// );
 			await expect( english ).toHaveAttribute( 'href', /\/about\/?$/ );
-
-			// HOVER-TO-REVEAL — the feature the user asked for. The other language
-			// is hidden until the toggle is hovered; then the OPEN dropdown lists
-			// ALL languages (Deutsch AND English both visible). This proves the
-			// state CHANGES on hover, not merely that it starts hidden.
 			await expect( english ).toBeHidden();
-			await currentToggle.hover();
-			await expect( german ).toBeVisible();
+
+			// HOVER-TO-REVEAL — the feature the user asked for. Hovering the
+			// toggle reveals the panel; the state CHANGES from hidden to visible.
+			await toggle.hover();
 			await expect( english ).toBeVisible();
-			await expect( english ).toHaveAttribute( 'href', /\/about\/?$/ );
+
+			// …and the panel opens BELOW the toggle, not over it (the earlier bug).
+			const tb = await toggle.boundingBox();
+			const pb = await panel.boundingBox();
+			expect( pb ).not.toBeNull();
+			expect( tb ).not.toBeNull();
+			expect( pb!.y ).toBeGreaterThanOrEqual( tb!.y + tb!.height - 2 );
 		} );
 	} );
 
