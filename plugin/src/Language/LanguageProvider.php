@@ -56,6 +56,18 @@ interface LanguageProvider {
 	public function currentLanguage(): string;
 
 	/**
+	 * The post's permalink as it should appear for $language.
+	 *
+	 * Exists because `get_permalink()` alone is not language-correct on every
+	 * plugin: under WPML it resolves against the CURRENT language context, so a
+	 * default-language (en) seed writes English URLs into German nav items. This
+	 * seam lets the WPML adapter switch context around the call, while Polylang
+	 * — whose permalink filter already resolves per the post's own language —
+	 * and the monolingual path just return `get_permalink($postId)` unchanged.
+	 */
+	public function permalinkInLanguage( int $postId, string $language ): string;
+
+	/**
 	 * Serialized language-switcher block for the seeded header, or '' when the
 	 * active plugin has no switcher (monolingual). $config is the manifest's
 	 * `language_switcher` value: `true`, or an array of block-attribute overrides.

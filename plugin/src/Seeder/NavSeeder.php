@@ -334,7 +334,11 @@ final class NavSeeder {
 			'type'  => $post ? $post->post_type : 'page',
 			'id'    => $postId,
 			'kind'  => 'post-type',
-			'url'   => (string) get_permalink( $postId ),
+			// Per-language permalink: under WPML get_permalink() resolves in the
+			// ambient (default) language, so a German item would otherwise store
+			// the English URL. The provider switches context under WPML and is a
+			// plain get_permalink() under Polylang/monolingual.
+			'url'   => (string) $this->lang->permalinkInLanguage( $postId, $language ),
 		];
 	}
 
