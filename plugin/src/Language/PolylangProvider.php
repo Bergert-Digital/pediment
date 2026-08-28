@@ -133,4 +133,23 @@ final class PolylangProvider implements LanguageProvider {
 
 		return $args;
 	}
+
+	public function currentLanguage(): string {
+		return function_exists( 'pll_current_language' ) ? (string) pll_current_language() : '';
+	}
+
+	/**
+	 * @param bool|array<string,mixed> $config
+	 */
+	public function languageSwitcherBlock( $config ): string {
+		// `dropdown` defaults on (the "English ▾" menu-item form); an array
+		// value overrides the block attributes. Language-agnostic — every
+		// language's menu carries the same block.
+		$attrs = array_merge(
+			[ 'dropdown' => true ],
+			is_array( $config ) ? $config : []
+		);
+
+		return '<!-- wp:polylang/navigation-language-switcher ' . wp_json_encode( $attrs, JSON_UNESCAPED_SLASHES ) . ' /-->';
+	}
 }

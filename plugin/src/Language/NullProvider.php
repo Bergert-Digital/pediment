@@ -49,4 +49,16 @@ class NullProvider implements LanguageProvider {
 	public function unscopedQuery( array $args ): array {
 		return $args;
 	}
+
+	public function currentLanguage(): string {
+		return '';
+	}
+
+	/**
+	 * @param bool|array<string,mixed> $config
+	 */
+	public function languageSwitcherBlock( $config ): string {
+		// Monolingual: no switcher.
+		return '';
+	}
 }
