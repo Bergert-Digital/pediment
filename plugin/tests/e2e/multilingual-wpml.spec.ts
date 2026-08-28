@@ -211,14 +211,46 @@ test.describe( 'multilingual seeding (WPML)', () => {
 				/Fatal error|critical error/i
 			);
 
-			// A working switcher control is present in the header, with the real
-			// per-language link WPML filled into the saved template (the German
-			// page shows an "English" alternative pointing at the English page).
+			// A working switcher control is present in the header, rendered as a
+			// hover-to-reveal dropdown: the toggle shows the CURRENT language
+			// (Deutsch on the German page), and the OTHER language lives in the
+			// sub-menu, hidden until hover.
 			const switcher = page.locator( 'header .wpml-ls' ).first();
 			await expect( switcher ).toBeVisible();
-			await expect(
-				switcher.getByRole( 'link', { name: 'English' } )
-			).toHaveAttribute( 'href', /\/about\/?$/ );
+
+			// It is the dropdown variant, not the flat list.
+			await expect( switcher.locator( '.wpml-ls-dropdown' ) ).toHaveCount( 1 );
+
+			// The toggle is the current language and is visible.
+			const toggle = switcher.locator(
+				'.wp-block-navigation-submenu__toggle'
+			);
+			await expect( toggle ).toBeVisible();
+			await expect( toggle ).toContainText( 'Deutsch' );
+
+			// The sub-menu carries the real per-language link WPML filled into the
+			// saved template (English -> the English page). It is present in the DOM
+			// but hidden by default (revealed on hover), so reference it with
+			// includeHidden.
+			const subMenu = switcher.locator(
+				'.wp-block-navigation__submenu-container'
+			);
+			await expect( subMenu ).toHaveCount( 1 );
+			const englishLink = subMenu.getByRole( 'link', {
+				name: 'English',
+				includeHidden: true,
+			} );
+			await expect( englishLink ).toHaveAttribute( 'href', /\/about\/?$/ );
+
+			// HOVER-TO-REVEAL — the feature the user asked for. The sub-menu link is
+			// hidden until the toggle is hovered, then it is shown. This proves the
+			// state CHANGES on hover (the block's own
+			// `.has-child:not(.open-on-click):hover > .wp-block-navigation__submenu-container`
+			// CSS reaching the seeded markup), not merely that it starts hidden.
+			await expect( englishLink ).toBeHidden();
+			await toggle.hover();
+			await expect( englishLink ).toBeVisible();
+			await expect( englishLink ).toHaveAttribute( 'href', /\/about\/?$/ );
 		} );
 	} );
 
