@@ -127,8 +127,9 @@ function pediment_bind_navigation_ref( $parsed_block ) {
 		return $parsed_block;
 	}
 
-	$current = function_exists( 'pll_current_language' ) ? (string) pll_current_language() : '';
-	$default = function_exists( 'pll_default_language' ) ? (string) pll_default_language() : '';
+	$provider = \Pediment\Language\LanguageRegistry::provider();
+	$current  = $provider->currentLanguage();
+	$default  = $provider->defaultLanguage();
 
 	$candidates   = array_values( array_unique( array_filter( [ $current, $default ] ) ) );
 	$candidates[] = '';

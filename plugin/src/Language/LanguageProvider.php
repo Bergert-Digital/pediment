@@ -51,4 +51,16 @@ interface LanguageProvider {
 	 * @return array<string,mixed>
 	 */
 	public function unscopedQuery( array $args ): array;
+
+	/** The current request's language code; '' when monolingual. */
+	public function currentLanguage(): string;
+
+	/**
+	 * Serialized language-switcher block for the seeded header, or '' when the
+	 * active plugin has no switcher (monolingual). $config is the manifest's
+	 * `language_switcher` value: `true`, or an array of block-attribute overrides.
+	 *
+	 * @param bool|array<string,mixed> $config
+	 */
+	public function languageSwitcherBlock( $config ): string;
 }
