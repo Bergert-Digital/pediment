@@ -1107,12 +1107,23 @@ other claim re-run (see "Re-running claim" above).
   (`PolylangSetup::configure()`). `MediaMap` keys media globally, and the
   engine's terms are create-only (above); per-language copies of either would
   have nothing to reconcile them against and would drift on the first edit.
-- **Only Polylang is implemented.** Everything Polylang-specific lives behind
-  the `LanguageProvider` interface (`plugin/src/Language/LanguageProvider.php`)
-  — `PolylangProvider`, `PolylangSetup`, and the two files under `plugin/inc/`
-  that touch the front end are the only code that may call a `pll_*`
-  function. That seam is where a WPML adapter would go; nothing in the
-  seeding engine itself assumes Polylang.
+- **Both Polylang and WPML are implemented.** Everything plugin-specific lives
+  behind the `LanguageProvider` / `LanguageSetup` seam
+  (`plugin/src/Language/LanguageProvider.php`,
+  `plugin/src/Language/LanguageSetup.php`) — `PolylangProvider`,
+  `PolylangSetup`, and the two files under `plugin/inc/` that touch the front
+  end are the only code that may call a `pll_*` function; `WpmlProvider`,
+  `WpmlSetup`, and `plugin/inc/wpml-compat.php` are the only code that may
+  call a `wpml_*`/`icl_*` function or read an `ICL_*` constant. Nothing in the
+  seeding engine itself assumes either plugin. `LanguageRegistry` detects
+  which one is active — Polylang first, then WPML, then monolingual
+  (`NullProvider`/`PolylangSetup`'s own "not active" error) — so a site
+  running neither still seeds successfully with no language behaviour.
+  `wp pediment languages` configures whichever plugin is detected the same
+  way it always configured Polylang; per-language nav menu binding and the
+  front-end language switcher both go through the active provider, so a WPML
+  site gets WPML's own native `wpml/language-switcher` block seeded into its
+  navigation instead of Polylang's.
 - **Translation *content* is not generated.** The seeder never writes prose —
   it resolves what the manifest and pattern files already declare, reports
   what's missing in the `TRANSLATIONS` section of a dry-run plan, and

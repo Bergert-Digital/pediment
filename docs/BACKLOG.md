@@ -202,13 +202,12 @@ _(none currently known — verify by running a user-journey audit)_
   Phosphor catalog (virtualized list + search from B's icon-name manifest), wired into
   `pediment/mega-link`'s `icon` attribute and reusable across blocks. Depends on B; until
   then the field is a relocated `TextControl`. Deferred from sub-project A.
-- [ ] **A WPML adapter for the `LanguageProvider` seam.** Migration step 4 built the
-  Polylang implementation only; `LanguageProvider`
-  (`plugin/src/Language/LanguageProvider.php`) is the interface the seeding engine
-  actually depends on, and everything Polylang-specific lives behind it
-  (`PolylangProvider`, `PolylangSetup`, and the two `inc/` files that call `pll_*`
-  directly). A WPML implementation is roughly 150 lines against the same interface —
-  build it when a client site actually needs WPML, not speculatively now.
+- [x] **A WPML adapter for the `LanguageProvider` seam.** Shipped: the
+  2026-08-28 `wpml-support` plan added `WpmlProvider`, `WpmlSetup`, and
+  `plugin/inc/wpml-compat.php` against the same `LanguageProvider`/
+  `LanguageSetup` interface `PolylangProvider`/`PolylangSetup` already used.
+  `LanguageRegistry` detects Polylang, then WPML, then falls back to
+  monolingual. See `docs/seeding.md#languages`.
 - [ ] **Per-language media and taxonomy translation.** Migration step 4 deliberately
   ships one attachment and one term set per site, locked off in Polylang's own config
   (`media_support => 0`, `taxonomies => []`, see `docs/seeding.md#languages`). Revisit
