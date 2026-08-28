@@ -1,7 +1,23 @@
 import { dispatch, select } from '@wordpress/data';
-import { createBlock } from '@wordpress/blocks';
+import { createBlock, getBlockType } from '@wordpress/blocks';
 import { normalizeSections } from './normalizeSections';
 import { applyToolCallsToEditor, type ToolCall } from './applyToolCallsCore';
+
+/**
+ * A block is a full-bleed "section" the normalizer must leave untouched when the
+ * active theme registered it with the `pediment.section` block support, e.g.
+ * `"supports": { "pediment": { "section": true } }` in the block's block.json.
+ * Such blocks own their layout and already span the canvas, so wrapping them in
+ * a `starter-band` shifts the page down (the "/activities/" corruption). Unknown
+ * or unregistered blocks are not sections.
+ * @param name
+ */
+function isSectionBlock( name: string ): boolean {
+	const supports = getBlockType( name )?.supports as
+		| { pediment?: { section?: boolean } }
+		| undefined;
+	return supports?.pediment?.section === true;
+}
 
 /**
  * Apply a list of tool calls from a completed turn to the canvas as a single
@@ -54,7 +70,8 @@ export default function applyToolCalls( calls: ToolCall[] ): void {
 						replaceBlocks: ( ids: string[], blocks: any[] ) =>
 							blockEditor.replaceBlocks( ids, blocks ),
 					},
-					createBlock
+					createBlock,
+					isSectionBlock
 				),
 		},
 		calls

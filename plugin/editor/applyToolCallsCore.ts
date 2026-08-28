@@ -129,12 +129,21 @@ export function applyToolCallsToEditor(
 	const resolve = ( id?: string | null ): string | null =>
 		id === null || id === undefined ? null : idMap[ id ] ?? id;
 
+	// Section normalization only needs to run when a turn actually changed the
+	// top-level block structure. Read-only turns (`read_block`), post-meta turns
+	// (excerpt/title generation) and attribute-only updates leave the section
+	// layout alone — normalizing them anyway re-wraps already-full-bleed section
+	// blocks into a band (the "/activities/ header shifted down" corruption).
+	// Only insert/move/delete can alter which blocks sit at the top level.
+	let structural = false;
+
 	for ( const c of calls ) {
 		if ( c.is_error ) {
 			continue;
 		}
 		switch ( c.tool ) {
 			case 'insert_block': {
+				structural = true;
 				const block = createBlockFromSpec( api, c.input.block );
 				const target = resolve( c.input.after_client_id );
 				if ( c.input.position === 'start' ) {
@@ -194,6 +203,7 @@ export function applyToolCallsToEditor(
 				const id = resolve( c.input.client_id );
 				if ( id ) {
 					api.removeBlock( id );
+					structural = true;
 				}
 				break;
 			}
@@ -234,6 +244,7 @@ export function applyToolCallsToEditor(
 					}
 				}
 				api.moveBlockToPosition( id, fromRoot, toRoot, newIndex );
+				structural = true;
 				break;
 			}
 			case 'set_page_meta': {
@@ -255,5 +266,7 @@ export function applyToolCallsToEditor(
 		}
 	}
 
-	api.normalize();
+	if ( structural ) {
+		api.normalize();
+	}
 }

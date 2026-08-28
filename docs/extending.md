@@ -15,6 +15,36 @@ add_filter( 'pediment_ai_block_namespaces', function ( $namespaces ) {
 
 Blocks under `acme/*` registered with a non-empty `description` will appear in the AI's block schema. The schema is cached in a transient, so if you add the filter after the plugin has already built the schema, call `\Pediment\Anthropic\SchemaBuilder::invalidate()` (e.g. in a one-shot WP-CLI command or in test setup) to force re-discovery.
 
+## Full-bleed section blocks
+
+After a chat turn that changes the page structure, the editor runs a section
+normalizer that wraps loose top-level content into the theme's `starter-band`
+section groups. A client theme that ships its own full-bleed section blocks (a
+page hero, a full-width listing) does **not** want those wrapped — they already
+span the canvas and own their layout. Wrapping them in a constrained band pushes
+the page down and leaves a surface strip behind the transparent header.
+
+Declare such a block as a section in its `block.json` so the normalizer leaves
+it untouched at the top level:
+
+```json
+{
+    "name": "acme/page-hero",
+    "supports": {
+        "pediment": { "section": true }
+    }
+}
+```
+
+The normalizer then treats the block as its own self-delimiting section: it is
+never wrapped in a band, its attributes are preserved verbatim, and it acts as a
+boundary that flushes any preceding loose run into its own band. Blocks meant to
+live *inside* a band (most `pediment/*` content blocks) should not declare it.
+
+Note the normalizer only runs after a turn that inserts, moves, or deletes a
+block. Read-only turns and post-meta turns (title/excerpt generation) never
+normalize, so they can never restructure a page.
+
 ## System prompt
 
 Wrap the prompt to inject domain examples or extra constraints. The filter runs on every chat turn — there is no caching to invalidate.
