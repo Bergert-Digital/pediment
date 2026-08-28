@@ -59,6 +59,10 @@ require_once PEDIMENT_AI_PLUGIN_DIR . '/inc/mega-menu.php';
 // only path, and it is a no-op when Polylang is inactive.
 require_once PEDIMENT_AI_PLUGIN_DIR . '/inc/polylang-compat.php';
 
+// The WPML analogue of polylang-compat.php: wp_navigation translatable,
+// wp_template_part shared. No-op when WPML is inactive.
+require_once PEDIMENT_AI_PLUGIN_DIR . '/inc/wpml-compat.php';
+
 // Templates, patterns (incl. the footer pattern), the header-seeding
 // bootstrap, and global CSS/JS enqueues moved from the theme (Task 6 of the
 // plugin-absorbs-theme migration): the theme.json tokens (Pediment\Tokens\Injector)
