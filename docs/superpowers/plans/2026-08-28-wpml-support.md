@@ -1950,6 +1950,70 @@ git commit -m "fix(wpml): bind per-language nav through the provider seam, not q
 
 ---
 
+### Task 15: Make the WPML language switcher render without fatal (fixes Finding 1)
+
+**Added after Task 11 e2e** (opus-confirmed). `WpmlProvider::languageSwitcherBlock()` emits a bare `<!-- wp:wpml/language-switcher /-->`. WPML's block render (`.../block-editor/Blocks/LanguageSwitcher/Parser.php`, `Render.php`) returns `null` for empty saved HTML and then dereferences it → **fatal**. The fixture seeds no switcher so the shipped site is safe, but any client manifest with a `language_switcher` nav item crashes the WPML front end. The Task-3 reference's "bare comment renders via render_callback" was wrong.
+
+**Files:**
+- Modify: `plugin/src/Language/WpmlProvider.php` (`languageSwitcherBlock`)
+- Modify: `plugin/tests/wpml/WpmlSwitcherTest.php` (assert the new renderable form)
+- Modify: `plugin/tests/wpml/WPML-API-REFERENCE.md` (correct the switcher note)
+- Modify: `plugin/tests/e2e/multilingual-wpml.spec.ts` (re-enable the switcher-render `test.fixme`)
+
+- [ ] **Step 1: Determine the renderable form against real WPML.** Inspect the installed plugin at `plugin/wpml/sitepress-multilingual-cms/` (`classes/block-editor/Blocks/LanguageSwitcher/*`) and/or insert the switcher in a real editor, to find what makes it render without fatal. Two candidate outcomes, pick the one that actually renders on the front end (verify by rendering, don't assume):
+  - **(a) Native block with the saved template markup** WPML's editor stores (the `data-wpml`/inner-HTML structure `Parser::parse` needs to be non-empty), emitted as the serialized block; OR
+  - **(b) A shortcode block wrapping WPML's switcher shortcode** — `<!-- wp:shortcode -->[wpml_language_switcher]<!-- /wp:shortcode -->` (or the exact shortcode WPML registers) — robust across versions and independent of the block's saved-HTML requirement.
+  Prefer (a) if a stable saved-markup form exists; fall back to (b) if the native block cannot be emitted renderably from a seeder. Record the decision + evidence in `WPML-API-REFERENCE.md`.
+- [ ] **Step 2: Update `languageSwitcherBlock()`** to emit the chosen renderable form (still attribute-agnostic per Task 6 — a truthy config emits the working switcher; array overrides remain inapplicable to WPML's block).
+- [ ] **Step 3: Update `WpmlSwitcherTest`** to assert the new exact emitted string (both config forms still yield the same working switcher). RED→GREEN.
+- [ ] **Step 4: Re-enable and run the e2e switcher-render assertion.** Change the switcher `test.fixme` in `multilingual-wpml.spec.ts` back to a real test that seeds a manifest WITH a `language_switcher` and asserts the header renders (no fatal / HTTP 200) AND a working switcher control is present. Run `cd plugin && npx playwright test tests/e2e/multilingual-wpml.spec.ts` — the switcher test must now PASS. Run the full WPML PHPUnit suite and lint.
+- [ ] **Step 5: Commit** `fix(wpml): emit a renderable language-switcher block`.
+
+---
+
+### Task 16: Per-language nav link URLs under WPML (fixes Finding 2)
+
+**Added after Task 11 e2e** (opus-confirmed). `NavSeeder::linkAttrs()` stores `get_permalink($postId)`. Under Polylang, `get_permalink()` resolves from the post's own language, so German items get `/de/...` URLs (covered by the Polylang e2e). Under WPML, `get_permalink()` resolves against the *current* language context, so in the default-language seed context German nav items link to English URLs. Fix: resolve the permalink in the target language through a new provider seam, so it works for both plugins.
+
+**Files:**
+- Modify: `plugin/src/Language/LanguageProvider.php` (add `permalinkInLanguage`)
+- Modify: `plugin/src/Language/PolylangProvider.php`, `NullProvider.php`, `WpmlProvider.php` (implement it)
+- Modify: `plugin/src/Seeder/NavSeeder.php` (`linkAttrs` uses the seam instead of raw `get_permalink`)
+- Test: `plugin/tests/wpml/` (a NavSeeder-URL test), Polylang regression, and re-enable the German-URL `test.fixme` in `multilingual-wpml.spec.ts`
+
+**Interfaces:**
+- Produces: `LanguageProvider::permalinkInLanguage( int $postId, string $language ): string` — the post's permalink as it should appear for `$language`. `NullProvider`/`PolylangProvider` return `get_permalink($postId)` unchanged (Polylang's permalink filter already resolves per post-language); `WpmlProvider` switches WPML's language context around `get_permalink` (e.g. `do_action('wpml_switch_language', $language)` / restore, or the documented WPML API) so the URL is the `$language` one.
+
+- [ ] **Step 1:** Add `permalinkInLanguage(int,string): string` to the interface; implement in `NullProvider` and `PolylangProvider` as `return get_permalink($postId);` (behavior-preserving — confirm the Polylang e2e URL tests still pass in Step 4).
+- [ ] **Step 2:** Implement in `WpmlProvider` by switching WPML's current language to `$language` around `get_permalink`, then restoring. Confirm the exact switch API against installed WPML (`wpml_switch_language` action or `SitePress::switch_lang`); verify with a WPML test that `permalinkInLanguage($dePageId,'de')` yields the `/de/` URL while ambient language is en.
+- [ ] **Step 3:** Change `NavSeeder::linkAttrs()` to resolve the URL via `$this->lang->permalinkInLanguage( $postId, $language )` instead of `get_permalink( $postId )`. (Read `linkAttrs` first; keep every other attribute and the unresolved-link handling identical.)
+- [ ] **Step 4:** Tests — add a WPML test asserting a seeded German nav item's `url` is the `/de/` URL; re-enable the German-URL `test.fixme` in the e2e and confirm it PASSES. **Switch to the Polylang env** and run the full Polylang suite (`-c phpunit-polylang.xml.dist`) + the Polylang e2e URL tests to confirm no regression; run the monolingual suite. **Return the env to WPML.** Lint.
+- [ ] **Step 5: Commit** `fix(wpml): resolve nav link permalinks in the target language`.
+
+---
+
+### Task 17: `WpmlSetup` triggers WPML's config parse for headless deploys (fixes Finding 3)
+
+**Added after Task 11 e2e** (opus-confirmed; mitigated on Pediment's admin-only hosting but a real robustness gap). WPML only makes `wp_navigation` translatable after it parses `wpml_config_array` via `WPML_Config::load_config_run()`, which fires on an admin visit / setup-wizard finish — never from a headless `wp pediment languages` + `wp pediment seed`. So a purely CLI deploy leaves both languages collapsed to the English header until someone opens wp-admin.
+
+**Files:**
+- Modify: `plugin/src/Language/WpmlSetup.php` (`configure` calls `WPML_Config::load_config_run()` after activation)
+- Modify: `plugin/tests/e2e/global-setup.ts` (rely on `wp pediment languages` firing the parse, instead of the manual `load_config_run` call — proving the headless path end-to-end)
+
+- [ ] **Step 1:** After the activation calls in `WpmlSetup::configure()`, invoke WPML's config parse, guarded so it no-ops when the class/method is absent:
+```php
+		if ( class_exists( 'WPML_Config' ) && method_exists( 'WPML_Config', 'load_config_run' ) ) {
+			\WPML_Config::load_config_run();
+		}
+```
+  Confirm the exact class/method against installed WPML (`plugin/wpml/sitepress-multilingual-cms/`); if `load_config_run` is not statically callable, use the correct entry point WPML exposes for re-parsing config, documented in the report. Keep it quarantined to `WpmlSetup.php`.
+- [ ] **Step 2:** Add/adjust a WPML test proving that after `WpmlSetup::configure()` (with `wpml-compat.php` active), `wp_navigation` is WPML-translatable — i.e. the persisted `custom_posts_sync_option`/`is_translated_post_type('wp_navigation')` is set WITHOUT any manual `custom_posts_sync_option` write. (If suite-global-state constraints make this brittle, assert it in a way that restores state in tear-down; document.)
+- [ ] **Step 3:** In `global-setup.ts`, replace the manual `WPML_Config::load_config_run()` call with a `wp pediment languages` run (which now triggers it), so the e2e proves the real headless deploy path. Re-run the WPML e2e — the distinct-menus tests must still PASS with translatability arriving via `wp pediment languages` alone.
+- [ ] **Step 4:** Full WPML suite + lint. **Return env to WPML** if any switch occurred.
+- [ ] **Step 5: Commit** `fix(wpml): WpmlSetup triggers WPML config parse so headless deploys translate navigation`.
+
+---
+
 ## Self-Review
 
 **Spec coverage:**
