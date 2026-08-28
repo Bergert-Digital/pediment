@@ -38,11 +38,9 @@ class NavSeederTest extends WP_UnitTestCase {
 
 		$markup = $seeder->serialize( $m->navs()['primary'], '', [ 'home|' => 12 ] );
 
-		// A dropdown switcher block — Polylang Pro renders it into the "English ▾"
-		// menu item with a dropdown of the language names.
-		$this->assertStringContainsString( 'wp:polylang/navigation-language-switcher', $markup );
-		$this->assertStringContainsString( '"dropdown":true', $markup );
-		// It sits alongside the ordinary links, not in place of them.
+		// NullProvider has no switcher block to emit — a monolingual site's
+		// menu shows the ordinary links and nothing where the switcher item was.
+		$this->assertStringNotContainsString( 'wp:polylang/navigation-language-switcher', $markup );
 		$this->assertStringContainsString( 'wp:navigation-link', $markup );
 	}
 
@@ -658,7 +656,8 @@ class NavSeederTest extends WP_UnitTestCase {
 				'<!-- wp:navigation-submenu {"label":"About","type":"page","id":' . $aboutId . ',"kind":"post-type","url":"' . get_permalink( $aboutId ) . '"} -->'
 					. "\n" . '<!-- wp:navigation-link {"label":"FAQ","url":"/faq","kind":"custom"} /-->' . "\n"
 					. '<!-- /wp:navigation-submenu -->',
-				'<!-- wp:polylang/navigation-language-switcher {"dropdown":true} /-->',
+				// NullProvider emits no switcher block; a monolingual site's
+				// language_switcher item is simply omitted.
 			]
 		);
 

@@ -253,16 +253,15 @@ final class NavSeeder {
 				continue;
 			}
 
-			// A language switcher is a dynamic Polylang Pro block, not a link to a
-			// seeded post — emit it verbatim and move on. `dropdown` defaults on
-			// (the "English ▾" menu-item form); an array value overrides the block
-			// attributes. Language-agnostic, so every language's menu carries it.
+			// A language switcher is a dynamic multilingual-plugin block, not a
+			// link to a seeded post. The active provider owns the block name and
+			// attribute shape (Polylang vs WPML); a monolingual site returns ''
+			// and the switcher is simply omitted.
 			if ( isset( $item['language_switcher'] ) ) {
-				$switcherAttrs = array_merge(
-					[ 'dropdown' => true ],
-					is_array( $item['language_switcher'] ) ? $item['language_switcher'] : []
-				);
-				$blocks[] = '<!-- wp:polylang/navigation-language-switcher ' . wp_json_encode( $switcherAttrs, JSON_UNESCAPED_SLASHES ) . ' /-->';
+				$switcher = $this->lang->languageSwitcherBlock( $item['language_switcher'] );
+				if ( '' !== $switcher ) {
+					$blocks[] = $switcher;
+				}
 				continue;
 			}
 
