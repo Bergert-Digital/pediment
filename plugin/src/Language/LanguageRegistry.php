@@ -60,9 +60,15 @@ final class LanguageRegistry {
 		// active" error when neither is present, and LanguagesCommand already
 		// short-circuits on an empty manifest — so a monolingual site never
 		// reaches a write.
+		//
+		// The WPML branch gates on isLoaded(), not isActive(): setup()'s whole
+		// job is to configure a WPML site that has ZERO active languages yet
+		// (WPML seeds every language row with active=0 on install), so gating on
+		// "already configured" would make WpmlSetup unreachable on exactly the
+		// fresh-install case it exists to serve.
 		if ( PolylangProvider::isActive() ) {
 			$detected = new PolylangSetup();
-		} elseif ( WpmlProvider::isActive() ) {
+		} elseif ( WpmlProvider::isLoaded() ) {
 			$detected = new WpmlSetup();
 		} else {
 			$detected = new PolylangSetup();
