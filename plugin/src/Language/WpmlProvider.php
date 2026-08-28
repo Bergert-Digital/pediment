@@ -32,6 +32,11 @@ final class WpmlProvider implements LanguageProvider {
 		return is_array( $active ) && [] !== $active;
 	}
 
+	/** Whether the WPML plugin is loaded (regardless of whether languages are configured yet). */
+	public static function isLoaded(): bool {
+		return defined( 'ICL_SITEPRESS_VERSION' );
+	}
+
 	/**
 	 * Configured language codes, default first — the order DesiredState and
 	 * Applier depend on (a default that is not first writes children before
