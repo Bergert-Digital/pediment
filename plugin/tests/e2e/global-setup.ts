@@ -2,6 +2,50 @@ import { execSync } from 'node:child_process';
 const WP_ENV_CWD = process.env.WP_ENV_CWD || process.cwd();
 
 /**
+ * Bring a WPML wp-env up to the same seeded, deterministic state the Polylang
+ * branch produces — with one extra step that has no Polylang analogue.
+ *
+ * The critical difference is `WPML_Config::load_config_run()`. Pediment ships
+ * `inc/wpml-compat.php`, whose `wpml_config_array` filter declares
+ * `wp_navigation` translatable (and `wp_template_part` shared). WPML does NOT
+ * consume that filter continuously: `WPML_Config::load_config()` parses it and
+ * persists the result to `custom_posts_sync_option` only on an is_admin()
+ * request that lands on a whitelisted admin page (plugins.php, themes.php, the
+ * WPML languages screen) or when the setup-wizard's FinishStep endpoint runs
+ * (both call `WPML_Config::load_config_run()`, see the installed source at
+ * classes/xml-config/class-wpml-config.php and classes/setup/endpoints/FinishStep.php).
+ * `wp pediment languages` (WpmlSetup) activates the languages but does NOT
+ * trigger that parse, and a WP-CLI request is not is_admin().
+ *
+ * So on a headless deploy, `wp_navigation` stays non-translatable until an
+ * admin visits wp-admin, and until it is translatable WPML's `wpml_object_id`
+ * returns the default-language nav for EVERY language — the seeded German menu
+ * is never linked as a translation, and both languages render the English
+ * header. We invoke here the exact call a real admin-only deploy fires by
+ * opening wp-admin, so the parse runs through WPML's real config path (it reads
+ * `inc/wpml-compat.php`'s filter — nothing is hand-set). It MUST run before the
+ * seed: NavSeeder builds the nav translation group during the seed, and that
+ * only holds once `wp_navigation` is translatable.
+ *
+ * @param wp Runs a wp-cli command inside the wp-env `cli` container.
+ */
+function setupWpml( wp: ( cmd: string ) => string ): void {
+	// WPML is supplied by the env's plugin list; make sure it is on, then
+	// configure en+de through `wp pediment languages` (routes to WpmlSetup,
+	// which drives WPML's own installation API — a raw icl_sitepress_settings
+	// write does not activate languages).
+	wp( `plugin activate sitepress-multilingual-cms` );
+	wp( `pediment languages` );
+
+	// Trigger WPML's config parse (the deploy trigger documented above) so
+	// `wp_navigation` becomes translatable through WPML's real config path
+	// before the nav translation group is built.
+	wp( `eval 'WPML_Config::load_config_run();'` );
+
+	wp( `pediment seed` );
+}
+
+/**
  * Prepare the wp-env site so the e2e suite is deterministic:
  * active fixture theme, pretty permalinks, manifest-seeded demo content (pages/posts/nav/logo),
  * static front page, dismissed editor welcome guides (otherwise the Site/Post
@@ -27,16 +71,29 @@ export default async function globalSetup(): Promise< void > {
 
 	wp( `rewrite structure '/%postname%/' --hard` );
 
-	// Languages first, always: content written before the languages exist
-	// carries no language, is invisible to every translation lookup, and has
-	// previously removed a live site's header outright. `wp pediment seed`
-	// refuses to run when the two disagree, so this is also what unblocks it.
-	wp( `plugin activate polylang` );
-	wp( `pediment languages` );
+	// One global-setup serves two mutually-exclusive envs: the default Polylang
+	// wp-env (.wp-env.json) and the WPML wp-env (.wp-env.override.json /
+	// .wp-env.wpml.json). They cannot both be active — the WPML env has no
+	// Polylang installed and vice-versa — so branch on which multilingual
+	// plugin the running env actually carries rather than hardcoding one.
+	const usesWpml = wp( `plugin list --field=name --status=active` ).includes(
+		'sitepress-multilingual-cms'
+	);
 
-	// Content comes from the fixture theme's seed manifest, applied by the real
-	// engine — the suite exercises `wp pediment seed` on every run.
-	wp( `pediment seed` );
+	if ( usesWpml ) {
+		setupWpml( wp );
+	} else {
+		// Languages first, always: content written before the languages exist
+		// carries no language, is invisible to every translation lookup, and has
+		// previously removed a live site's header outright. `wp pediment seed`
+		// refuses to run when the two disagree, so this is also what unblocks it.
+		wp( `plugin activate polylang` );
+		wp( `pediment languages` );
+
+		// Content comes from the fixture theme's seed manifest, applied by the
+		// real engine — the suite exercises `wp pediment seed` on every run.
+		wp( `pediment seed` );
+	}
 
 	wp( `rewrite flush --hard` );
 
