@@ -50,29 +50,65 @@ The block only renders when its **saved HTML carries the `data-wpml` item
 template** that `Render` clones once per active language, filling in each
 language's `href`, native name and `aria-label` from WPML's own Repository. That
 template is language- and settings-agnostic — two languages or ten, en+de or any
-pair, the same markup renders the live switcher. So `WpmlProvider::languageSwitcherBlock()`
-emits:
+pair, the same markup renders the live switcher.
+
+`Parser` needs at least one `data-wpml="current-language-item"` and one
+`data-wpml="language-item"`, each inside a container, each holding a
+`data-wpml="link"` and a labelled `data-wpml="label"` (the `data-wpml-label-type="native"`
+attr makes `Render` fill in the native language name; the link/label are found by
+a `//` descendant XPath, so they may be nested). The placeholder `href="#"` is
+overwritten per language at render time. **Order matters**: `Parser::parse()`
+processes `current-language-item` first and *removes its subtree from the DOM*
+before it queries `language-item`. So `language-item` must NOT be a descendant of
+`current-language-item` — if it is, the removal strips it and non-current
+languages never render. Keep the two templates siblings.
+
+#### Default: hover-to-reveal dropdown
+
+`WpmlProvider::languageSwitcherBlock()` emits a **dropdown** by default: the
+current language is a toggle, the other languages live in a sub-menu hidden until
+hover. The dropdown is expressed purely in the saved markup's structure + CSS
+classes (the block has no dropdown *attribute*):
+
+```html
+<!-- wp:wpml/language-switcher --><div class="wpml-language-switcher-block wpml-ls"><div class="wpml-ls-dropdown open-on-hover-click"><ul class="wp-block-navigation__container"><li class="wp-block-navigation-item has-child wp-block-navigation-submenu open-on-hover-click"><div class="wp-block-navigation-item__content wp-block-navigation-submenu__toggle" aria-expanded="false" aria-haspopup="true" aria-controls="wpml-ls-submenu-default" tabindex="0"><span data-wpml="current-language-item" class="wpml-ls-item wpml-ls-current-language current-language-item"><a data-wpml="link" href="#"><span data-wpml="label" data-wpml-label-type="native"></span></a></span></div><ul id="wpml-ls-submenu-default" class="wp-block-navigation__submenu-container"><li data-wpml="language-item" class="wpml-ls-item wp-block-navigation-item"><a data-wpml="link" href="#"><span data-wpml="label" data-wpml-label-type="native"></span></a></li></ul></li></ul></div></div><!-- /wp:wpml/language-switcher -->
+```
+
+The hover behaviour is the block's OWN front-end CSS (injected by
+`Loader::frontendPrintStyleIfBlockIsUsed` whenever the block renders), NOT the
+legacy-dropdown template CSS. It hides the sub-menu by default
+(`.wpml-language-switcher-block .wpml-ls-dropdown .has-child .wp-block-navigation__submenu-container{display:none}`)
+and reveals it on hover
+(`.wpml-language-switcher-block .wpml-ls-dropdown .has-child:not(.open-on-click):hover > .wp-block-navigation__submenu-container{...visible}`).
+Because the reveal selector is a *descendant* chain, `wpml-language-switcher-block`
+must be an ANCESTOR of `wpml-ls-dropdown`, not the same node — hence the two
+nested wrapper `<div>`s. The `current-language-item` (in the toggle) and the
+`language-item` (in the sub-menu `<ul>`) are siblings, so Parser finds both.
+
+**Render evidence** (live WPML env, `do_blocks()` on the string above, styles
+stripped), current language `de` — toggle = current (Deutsch), sub-menu = other
+(English):
+
+```html
+<div class="wpml-language-switcher-block wpml-ls"><div class="wpml-ls-dropdown open-on-hover-click"><ul class="wp-block-navigation__container"><li class="wp-block-navigation-item has-child wp-block-navigation-submenu open-on-hover-click"><div class="wp-block-navigation-item__content wp-block-navigation-submenu__toggle" aria-expanded="false" aria-haspopup="true" aria-controls="wpml-ls-submenu-default" tabindex="0"><span data-wpml="current-language-item" class="wpml-ls-item wpml-ls-current-language current-language-item"><a data-wpml="link" href="http://localhost:8920/de/" aria-label="Switch to Deutsch"><span data-wpml="label" data-wpml-label-type="native">Deutsch</span></a></span></div><ul id="wpml-ls-submenu-default" class="wp-block-navigation__submenu-container"><li data-wpml="language-item" class="wpml-ls-item wp-block-navigation-item"><a data-wpml="link" href="http://localhost:8920/" aria-label="Switch to English"><span data-wpml="label" data-wpml-label-type="native">English</span></a></li></ul></li></ul></div></div>
+```
+
+Rendering with the current language `en` mirrors it: toggle = English, sub-menu =
+Deutsch. No fatal; real per-language URLs; current language in the toggle. The
+same holds inside a `core/navigation` (the seeded header).
+
+#### Opt-out: flat horizontal list
+
+`['dropdown' => false]` emits the original flat list instead (all languages
+shown inline):
 
 ```html
 <!-- wp:wpml/language-switcher --><div class="wpml-ls wpml-ls-legacy-list-horizontal"><ul><li data-wpml="current-language-item" class="wpml-ls-item wpml-ls-current-language"><a data-wpml="link" href="#"><span data-wpml="label" data-wpml-label-type="native"></span></a></li><li data-wpml="language-item" class="wpml-ls-item"><a data-wpml="link" href="#"><span data-wpml="label" data-wpml-label-type="native"></span></a></li></ul></div><!-- /wp:wpml/language-switcher -->
 ```
 
-`Parser` needs at least one `data-wpml="current-language-item"` and one
-`data-wpml="language-item"`, each inside a container (the `<ul>`), each holding a
-`data-wpml="link"` and a labelled `data-wpml="label"` (the `data-wpml-label-type="native"`
-attr makes `Render` fill in the native language name). The placeholder `href="#"`
-is overwritten per language at render time.
-
-**Render evidence** (live WPML env, `do_blocks()` on the string above, styles
-stripped), current language `de`:
-
-```html
-<div class="wpml-ls wpml-ls-legacy-list-horizontal"><ul><li data-wpml="language-item" class="wpml-ls-item"><a data-wpml="link" href="http://localhost:8920/about/" aria-label="Wechseln zu English"><span data-wpml="label" data-wpml-label-type="native">English</span></a></li><li data-wpml="current-language-item" class="wpml-ls-item wpml-ls-current-language"><a data-wpml="link" href="http://localhost:8920/de/ueber-uns/" aria-label="Wechseln zu Deutsch"><span data-wpml="label" data-wpml-label-type="native">Deutsch</span></a></li></ul></div>
-```
-
-No fatal; real per-language URLs; current language marked. The same holds inside
-a `core/navigation` (the seeded header): the switcher renders as a nav sibling
-with the English/Deutsch links.
+`true`, any truthy non-array config, `['dropdown' => true]`, and any array
+without a `dropdown` key all emit the dropdown; only `['dropdown' => false]`
+selects this list.
 
 ### Why NOT the shortcode block (option (b) rejected)
 
