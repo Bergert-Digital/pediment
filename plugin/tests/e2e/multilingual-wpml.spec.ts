@@ -178,24 +178,47 @@ test.describe( 'multilingual seeding (WPML)', () => {
 		).toHaveCount( 1 );
 	} );
 
-	// KNOWN DEFECT #1 (see task-11-report.md, "Concerns"). WpmlProvider::
-	// languageSwitcherBlock() emits a bare `<!-- wp:wpml/language-switcher /-->`.
+	// FIXED (was KNOWN DEFECT #1, task-11-report.md). WpmlProvider::
+	// languageSwitcherBlock() used to emit a bare `<!-- wp:wpml/language-switcher /-->`.
 	// WPML's Parser::parse() returns null for a block with empty saved HTML, and
-	// Render.php:39 then fatals (`getCurrentLanguageItemTemplate() on null`) with
-	// two active languages. So the switcher block, as emitted, cannot render on
-	// the front end. The fixture seeds no switcher, so the live site is
-	// unaffected — but any manifest that adds a `language_switcher` item would
-	// crash the front end. Unblock this once Task 6's WpmlProvider emits the
-	// switcher's saved template markup instead of the bare comment.
-	test.fixme(
-		'the seeded WPML language-switcher block renders language links on the front end',
-		async ( { page } ) => {
-			await page.goto( '/de/ueber-uns/' );
+	// Render.php:39 then fataled (`getCurrentLanguageItemTemplate() on null`), so
+	// any manifest that added a `language_switcher` item crashed the WPML front
+	// end. The provider now emits the block WITH the `data-wpml` item template
+	// WPML clones per active language, so it renders. This test proves it end to
+	// end: seed a manifest that DOES carry a `language_switcher` nav item (the
+	// exact case that used to fatal), then assert the header responds 200, does
+	// not fatal, and shows a working switcher control with a real language link.
+	test.describe( 'language switcher renders', () => {
+		test.beforeAll( () => {
+			// Re-seed with a `language_switcher` appended to the primary nav,
+			// through the real engine (Runner + the pediment_seed_manifest filter),
+			// so the header the browser loads is the one the seeder actually wrote.
+			wp(
+				`eval 'add_filter("pediment_seed_manifest", function($m){ $m["navs"]["primary"]["items"][] = ["language_switcher"=>true]; return $m; }); (new \\Pediment\\Seeder\\Runner())->run();'`
+			);
+		} );
+
+		test( 'the seeded WPML language-switcher block renders language links on the front end', async ( {
+			page,
+		} ) => {
+			const response = await page.goto( '/de/ueber-uns/' );
+
+			// The header renders — no fatal (the old bare-comment form 500'd here).
+			expect( response?.status() ).toBe( 200 );
+			await expect( page.locator( 'body' ) ).not.toContainText(
+				/Fatal error|critical error/i
+			);
+
+			// A working switcher control is present in the header, with the real
+			// per-language link WPML filled into the saved template (the German
+			// page shows an "English" alternative pointing at the English page).
+			const switcher = page.locator( 'header .wpml-ls' ).first();
+			await expect( switcher ).toBeVisible();
 			await expect(
-				page.locator( 'header .wpml-ls, header .wpml-language-switcher' )
-			).toBeVisible();
-		}
-	);
+				switcher.getByRole( 'link', { name: 'English' } )
+			).toHaveAttribute( 'href', /\/about\/?$/ );
+		} );
+	} );
 
 	// KNOWN DEFECT #2 (see task-11-report.md, "Concerns"). NavSeeder::linkAttrs()
 	// stores `get_permalink( $germanPostId )` resolved in the DEFAULT-language

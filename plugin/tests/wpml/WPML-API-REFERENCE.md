@@ -18,46 +18,88 @@ WPML ships a **native block-editor block**. Two, in fact:
 Registered server-side in
 `classes/block-editor/Blocks/LanguageSwitcher.php` via
 `register_block_type( 'wpml/language-switcher', [ 'api_version' => '3',
-'render_callback' => [ Render, 'render_block' ] ] )`. It is a **dynamic block**:
-`supports.html = false`, no `save`, no server-side attribute schema. The plain
-`wpml/language-switcher` block has **no block attributes at all** — its
-appearance is driven by WPML's own Language-Switcher settings, not by block
-attrs. (The navigation variant does declare three attrs, all with defaults:
-`navigationLsHasSubMenuInSameBlock=false`, `layoutOpenOnClick=false`,
-`layoutShowArrow=true`.)
+'render_callback' => [ Render, 'render_block' ] ] )`. It is a **dynamic block**
+with no server-side attribute schema on the plain variant. (The navigation
+variant declares three attrs, all with defaults: `navigationLsHasSubMenuInSameBlock=false`,
+`layoutOpenOnClick=false`, `layoutShowArrow=true`.)
 
-Because there are no attributes, a default insert serializes to a bare
-self-closing block comment. Confirmed by round-tripping through core's
-`serialize_blocks()` in the container:
+### The bare self-closing comment FATALS — do not emit it (corrects the Task-3 note)
 
+An earlier revision of this file claimed a default insert serializes to a bare
+`<!-- wp:wpml/language-switcher /-->` and that "the dynamic render_callback
+still renders it on the front end." **That was wrong** and Task 11's e2e proved
+it. WPML's `render_callback` is a *template filler*, not a generator:
+
+- `Render::render_block()` calls `Parser::parse( $attrs, $savedHTML, ... )`.
+- `Parser::parse()` **returns `null` the moment `$savedHTML` is empty**
+  (`Parser.php:37`).
+- `Render.php:39` then dereferences that null
+  (`$languageSwitcherTemplate->getCurrentLanguageItemTemplate()`) → **Fatal
+  error: Call to a member function getCurrentLanguageItemTemplate() on null**.
+
+So the bare comment crashes the WPML front end wherever it renders (the block IS
+registered and rendered on the front end — confirmed below, contradicting the
+old "not registered on the front end" note too). Reproduced on the live WPML env
+(WordPress 6.9, WPML 4.9.7) by publishing a page whose content was the bare
+comment and requesting it over HTTP: HTTP body carried the fatal above, thrown
+from `Render.php:39`.
+
+### The renderable form: the native block WITH its saved `data-wpml` template
+
+The block only renders when its **saved HTML carries the `data-wpml` item
+template** that `Render` clones once per active language, filling in each
+language's `href`, native name and `aria-label` from WPML's own Repository. That
+template is language- and settings-agnostic — two languages or ten, en+de or any
+pair, the same markup renders the live switcher. So `WpmlProvider::languageSwitcherBlock()`
+emits:
+
+```html
+<!-- wp:wpml/language-switcher --><div class="wpml-ls wpml-ls-legacy-list-horizontal"><ul><li data-wpml="current-language-item" class="wpml-ls-item wpml-ls-current-language"><a data-wpml="link" href="#"><span data-wpml="label" data-wpml-label-type="native"></span></a></li><li data-wpml="language-item" class="wpml-ls-item"><a data-wpml="link" href="#"><span data-wpml="label" data-wpml-label-type="native"></span></a></li></ul></div><!-- /wp:wpml/language-switcher -->
 ```
-<!-- wp:wpml/language-switcher /-->
+
+`Parser` needs at least one `data-wpml="current-language-item"` and one
+`data-wpml="language-item"`, each inside a container (the `<ul>`), each holding a
+`data-wpml="link"` and a labelled `data-wpml="label"` (the `data-wpml-label-type="native"`
+attr makes `Render` fill in the native language name). The placeholder `href="#"`
+is overwritten per language at render time.
+
+**Render evidence** (live WPML env, `do_blocks()` on the string above, styles
+stripped), current language `de`:
+
+```html
+<div class="wpml-ls wpml-ls-legacy-list-horizontal"><ul><li data-wpml="language-item" class="wpml-ls-item"><a data-wpml="link" href="http://localhost:8920/about/" aria-label="Wechseln zu English"><span data-wpml="label" data-wpml-label-type="native">English</span></a></li><li data-wpml="current-language-item" class="wpml-ls-item wpml-ls-current-language"><a data-wpml="link" href="http://localhost:8920/de/ueber-uns/" aria-label="Wechseln zu Deutsch"><span data-wpml="label" data-wpml-label-type="native">Deutsch</span></a></li></ul></div>
 ```
 
-That is exactly the markup Task 6 must emit for the default switcher. (With any
-non-default attribute the comment would carry a JSON payload, e.g.
-`<!-- wp:wpml/navigation-language-switcher {"layoutShowArrow":false} /-->`, but
-the plain switcher never does.)
+No fatal; real per-language URLs; current language marked. The same holds inside
+a `core/navigation` (the seeded header): the switcher renders as a nav sibling
+with the English/Deutsch links.
 
-### How this was found
-- Block name / registration: `grep -rn "register_block_type" ` and reading
-  `classes/block-editor/Blocks/LanguageSwitcher.php` (const
-  `BLOCK_LANGUAGE_SWITCHER = 'wpml/language-switcher'`).
-- No attributes: the compiled editor bundle `dist/js/blocks/app.js` contains
-  zero `attributes:{` for this block, and its transform inserts it as
-  `createBlock("wpml/language-switcher", {})`.
-- Serialized markup: `wp eval 'serialize_blocks([...])'` in the `cli`
-  container returned `<!-- wp:wpml/language-switcher /-->`.
+### Why NOT the shortcode block (option (b) rejected)
 
-### Registration context (relevant to Task 6)
-The blocks are registered by `WPML\BlockEditor\Loader`, which is an
-`IWPML_Backend_Action` / `IWPML_REST_Action`, on the `init` hook, gated by
-`WPML_Block_Editor_Helper::is_active()`. So the block type is only *registered*
-in admin / block-editor / REST requests — it is **not** registered on a plain
-front-end or WP-CLI load (a bare `wp eval` shows it as unregistered). The
-dynamic `render_callback` still renders it on the front end. Serializing the
-markup does not require the block to be registered, so Task 6 can emit the
-comment string directly without depending on editor context.
+WPML registers a `wpml_language_switcher` shortcode
+(`WPML_LS_Shortcodes::LS`, gated by `setup_complete`) that expands to a full
+`.wpml-ls` switcher. But `<!-- wp:shortcode -->[wpml_language_switcher]<!-- /wp:shortcode -->`
+is **not viable in our placement**. The seeder puts the switcher inside a
+`wp_navigation` referenced by the header **template part**, which renders via
+`do_blocks()` — the core/shortcode block only runs `wpautop` on its content;
+shortcode *expansion* happens in the separate `the_content` → `do_shortcode`
+(priority 11) pass, which does NOT run over template-part / navigation output.
+Verified: `do_blocks( "<!-- wp:navigation --><!-- wp:shortcode -->[wpml_language_switcher]<!-- /wp:shortcode --><!-- /wp:navigation -->" )`
+returns the literal `[wpml_language_switcher]` text, unexpanded. It only expands
+when placed in post content (where `the_content` applies `do_shortcode`), which
+is not where the switcher lives. The native-block-with-template form has no such
+dependency, so it is the chosen form.
+
+### How this was verified
+- Fatal: published a page with the bare comment, `curl` the permalink → HTTP
+  body shows `Fatal error … getCurrentLanguageItemTemplate() on null … Render.php:39`.
+- Render: `wp eval 'echo do_blocks( "<!-- wp:wpml/language-switcher -->…template…<!-- /wp:wpml/language-switcher -->" );'`
+  in the `cli` container returned the populated `.wpml-ls` markup above.
+- Shortcode-in-nav literal: `do_blocks()` of the nav+shortcode string returned
+  the raw `[wpml_language_switcher]` text.
+- Block registration on the front end: confirmed via the fatal stack trace,
+  which runs through `WP_Block->render()` → `Render::render_block()` on a plain
+  front-end request.
 
 ## Headless language activation
 

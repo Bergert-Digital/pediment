@@ -190,14 +190,42 @@ final class WpmlProvider implements LanguageProvider {
 	}
 
 	/**
-	 * WPML's native language-switcher block is dynamic and takes no attributes
-	 * (captured in tests/wpml/WPML-API-REFERENCE.md, WPML 4.9.7), so the
-	 * manifest's `language_switcher` override — if any — has nothing to apply
-	 * to; every truthy config emits the same bare block.
+	 * WPML's native `wpml/language-switcher` block is dynamic (server-rendered by
+	 * WPML\BlockEditor\Blocks\LanguageSwitcher\Render), but its render callback is
+	 * a *template filler*, not a generator: Parser::parse() returns null the
+	 * moment the block's saved HTML is empty, and Render.php then fatals with
+	 * "getCurrentLanguageItemTemplate() on null". A bare `<!-- wp:wpml/language-switcher /-->`
+	 * therefore crashes the front end wherever it renders (confirmed on WPML 4.9.7;
+	 * see tests/wpml/WPML-API-REFERENCE.md). The block only renders when its saved
+	 * HTML carries the `data-wpml` item template Render clones per active language.
+	 *
+	 * So we emit the block WITH that saved template markup. WPML fills in each
+	 * language's href, native name and aria-label at render time from its own
+	 * Repository, so this markup is language- and settings-agnostic: two active
+	 * languages or ten, en+de or any other pair, the same template renders the
+	 * live switcher. A shortcode block (`[wpml_language_switcher]`) is not an
+	 * option here — the switcher is seeded INSIDE a core/navigation (a template
+	 * part), which renders via do_blocks() without the the_content do_shortcode
+	 * pass, so the shortcode would survive as literal text.
+	 *
+	 * The block takes no meaningful per-instance attributes for our purposes, so
+	 * the manifest's `language_switcher` override — if any — has nothing to apply
+	 * to; every truthy config emits the same working switcher.
 	 *
 	 * @param bool|array<string,mixed> $config
 	 */
 	public function languageSwitcherBlock( $config ): string {
-		return '<!-- wp:wpml/language-switcher /-->';
+		$template = '<div class="wpml-ls wpml-ls-legacy-list-horizontal">'
+			. '<ul>'
+			. '<li data-wpml="current-language-item" class="wpml-ls-item wpml-ls-current-language">'
+			. '<a data-wpml="link" href="#"><span data-wpml="label" data-wpml-label-type="native"></span></a>'
+			. '</li>'
+			. '<li data-wpml="language-item" class="wpml-ls-item">'
+			. '<a data-wpml="link" href="#"><span data-wpml="label" data-wpml-label-type="native"></span></a>'
+			. '</li>'
+			. '</ul>'
+			. '</div>';
+
+		return '<!-- wp:wpml/language-switcher -->' . $template . '<!-- /wp:wpml/language-switcher -->';
 	}
 }
