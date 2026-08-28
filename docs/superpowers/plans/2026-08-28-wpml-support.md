@@ -1641,7 +1641,11 @@ Understand how the Polylang e2e activates the plugin, seeds, and asserts per-lan
 
 - [ ] **Step 2: Write the WPML spec**
 
-Port it: activate WPML, configure en+de (`wp eval` the same `icl_sitepress_settings` write from Task 3), run `wp pediment languages` + `wp pediment seed`, then assert the front page renders the en menu at `/` and the de menu at `/de/`, and that the switcher block renders. Use `wpml_set_element_language_details` / `wpml_object_id` via `wp eval` where the Polylang spec used `pll_*`.
+Port it: activate WPML and configure en+de using the **confirmed WPML setup API** from Task 3 (`wpml_get_setup_instance()->finish_step1('en')` / `set_active_languages(['en','de'])` / `finish_installation()` — the raw `icl_sitepress_settings` write does NOT activate languages), or simply run `wp pediment languages` (which now routes to `WpmlSetup`). Then run `wp pediment seed`, and assert per-language rendering.
+
+**MANDATORY production-chain assertion (carried from the Task 14 review — this is the whole reason the e2e exists):** the e2e must prove the full runtime chain that the unit tests can only stub — `wpml-compat.php`'s `wpml_config_array` filter → WPML actually treats `wp_navigation` as translatable → `NavSeeder::linkTranslations` builds the nav group → the binding resolves per language. Concretely: after seeding, assert that the header navigation at `/` (English) and at `/de/` (German) render **DISTINCT** menus (different, language-appropriate nav items) — not the same menu on both. If they are identical, the production chain is broken (WPML never made `wp_navigation` translatable at runtime, so `translationOf` fell back to the default menu) — that is a real defect to surface, NOT something to stub around. Do NOT hand-set `custom_posts_sync_option` in the e2e; the point is to prove WPML consumes the filter on its own. If WPML only parses `wpml_config_array` on a specific trigger (plugin (re)activation, admin visit, cache flush), invoke that trigger the way a real deploy would and document it — but the wp_navigation-translatable state must arrive through WPML's real config path, not a test write.
+
+Also assert the switcher block renders. Use `wpml_object_id` / the WPML setup API via `wp eval` where the Polylang spec used `pll_*`.
 
 - [ ] **Step 3: Run it**
 
