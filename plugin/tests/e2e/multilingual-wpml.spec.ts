@@ -15,9 +15,10 @@ import { execSync } from 'node:child_process';
 //   PLAYWRIGHT_BASE_URL=http://localhost:8920 \
 //   npx playwright test tests/e2e/multilingual-wpml.spec.ts
 //
-// global-setup.ts detects the WPML env and configures languages, triggers
-// WPML's config parse, and seeds (see setupWpml there). Where the Polylang spec
-// used pll_*, this one uses WPML's `wpml_*` filters via `wp eval`.
+// global-setup.ts detects the WPML env, runs `wp pediment languages` (whose
+// WpmlSetup now also fires WPML's config parse — the headless-deploy path this
+// suite proves), then seeds (see setupWpml there). Where the Polylang spec used
+// pll_*, this one uses WPML's `wpml_*` filters via `wp eval`.
 
 const WP_ENV_CWD = process.env.WP_ENV_CWD || process.cwd();
 const wp = ( cmd: string ) =>
@@ -58,8 +59,9 @@ test.describe( 'multilingual seeding (WPML)', () => {
 		// parsed inc/wpml-compat.php's `wpml_config_array` filter, every nav
 		// translation lookup collapses to the default language, and the two
 		// languages render the same header (the outage this feature prevents).
-		// It is made translatable through WPML's real config path in
-		// global-setup (WPML_Config::load_config_run()), never a hand-set option.
+		// It is made translatable through WPML's real config path fired by
+		// `wp pediment languages` (WpmlSetup::configure -> load_config_run),
+		// never a manual call in global-setup and never a hand-set option.
 		const translated = wp(
 			`eval 'global $sitepress; echo $sitepress->is_translated_post_type( "wp_navigation" ) ? "yes" : "no";'`
 		);
