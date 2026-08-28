@@ -19,7 +19,8 @@
 - **Detection precedence:** Polylang → WPML → Null. Polylang wins if both are somehow active.
 - **`LanguageSetup::configure` signature is frozen** to today's `PolylangSetup::configure`:
   `configure( array $languages, string $default, bool $dryRun = false ): array` returning `array{changes:string[],errors:string[]}`, where `$languages` is `array<string,\Pediment\Seeder\LanguageSpec>`.
-- **WPML-env tasks (3–12) require the WPML license zip.** Provided to CI as the `WPML_ZIP_URL` (authenticated download) or `WPML_ZIP_B64` secret; provided locally as `plugin/.wpml/sitepress-multilingual-cms.zip` (git-ignored). When absent, the WPML suites **skip**, never fail.
+- **WPML-env tasks (3–12) require the WPML license zip.** It is present locally at `plugin/wpml/wpml.zip` (inner dir `sitepress-multilingual-cms/`, entry `sitepress.php`); `plugin/wpml/` is git-ignored (licensed, never commit). CI supplies it via the `WPML_ZIP_B64` secret decoded to the same path. When absent, the WPML suites **skip**, never fail.
+- **wp-env layout (verified):** the wp-env project root is the **repo root** (`.wp-env.json` lives there; commands run with `--env-cwd=wp-content/plugins/pediment-ai`). wp-env 10.39 has **no `--config` flag** — the WPML world is provisioned by copying the committed `.wp-env.wpml.json` to `.wp-env.override.json` at the repo root and running `wp-env start`. All paths inside these configs are **repo-root-relative** (`./plugin/...`). This workspace has **one** wp-env instance: the Polylang env and the WPML env cannot be up at the same time; the runner switches between them (restore Polylang by removing the override and re-running `wp-env start`). Always start with `WP_ENV_PORT=8920 WP_ENV_TESTS_PORT=8921`.
 - **Work on the current branch** (`honolulu`); commit after every task. Never push automatically.
 - **Lockfiles** (if touched) must be authored by npm 10.
 
@@ -440,30 +441,44 @@ git commit -m "refactor(language): route current-language + switcher block throu
 **Requires the WPML zip.** Stands up a WPML-only wp-env world and a PHPUnit bootstrap, gets a trivial harness test green, and captures the two genuinely-WPML-specific facts (exact switcher block markup; the working language-activation write) into a committed reference the later tasks consume.
 
 **Files:**
-- Create: `plugin/.wp-env.wpml.json` (WPML-provisioning override)
+- Create: `.wp-env.wpml.json` (repo root — the committed WPML env config)
 - Create: `plugin/tests/wpml/bootstrap.php`
 - Create: `plugin/tests/wpml/language-definitions.php`
 - Create: `plugin/tests/wpml/WpmlTestCase.php`
 - Create: `plugin/tests/wpml/HarnessTest.php`
 - Create: `plugin/tests/wpml/WPML-API-REFERENCE.md` (captured ground truth)
 - Create: `plugin/phpunit-wpml.xml.dist`
-- Modify: `.gitignore` (add `plugin/.wpml/`)
+- Modify: `.gitignore` (add `.wp-env.override.json`; `plugin/wpml/` is already ignored)
+
+**How the WPML env is run (no `--config` flag exists in wp-env 10.39):**
+```bash
+# from repo root — switch this workspace's single wp-env instance to WPML:
+cp .wp-env.wpml.json .wp-env.override.json
+WP_ENV_PORT=8920 WP_ENV_TESTS_PORT=8921 npx wp-env start
+# run the WPML suite:
+WP_ENV_PORT=8920 WP_ENV_TESTS_PORT=8921 npx wp-env run tests-wordpress \
+  --env-cwd=wp-content/plugins/pediment-ai ./vendor/bin/phpunit -c phpunit-wpml.xml.dist
+# restore the Polylang env when done:
+rm .wp-env.override.json
+WP_ENV_PORT=8920 WP_ENV_TESTS_PORT=8921 npx wp-env start
+```
+`.wp-env.override.json` deep-merges over `.wp-env.json`; arrays like `plugins` are **replaced**, not appended — so the override's single WPML plugin swaps out Polylang. **Verify** this at Step 7 with `wp plugin list` (Polylang must be inactive/absent); if it lingers, deactivate it in the bootstrap.
 
 **Interfaces:**
 - Produces: a runnable command `./vendor/bin/phpunit -c phpunit-wpml.xml.dist` inside a WPML-provisioned tests-wordpress container.
 - Produces: `pediment_wpml_test_languages(): string[]` and `pediment_wpml_test_language_definitions()`.
 - Produces: `WPML-API-REFERENCE.md` recording (a) the serialized markup WPML's native `wpml/language-switcher` block saves, captured from a real editor insert, and (b) the exact call/option WPML requires to activate a language headlessly.
 
-- [ ] **Step 1: WPML provisioning config**
+- [ ] **Step 1: WPML provisioning config (repo root)**
 
-`plugin/.wp-env.wpml.json` — a wp-env config that swaps Polylang for a local WPML zip. WPML is not on wordpress.org; it is supplied at `plugin/.wpml/sitepress-multilingual-cms.zip` (git-ignored, populated by the CI step in Task 12 or by a developer's local copy):
+`.wp-env.wpml.json` at the **repo root** — identical to `.wp-env.json` except `plugins` swaps Polylang for the local WPML zip. Paths are repo-root-relative. Mirror the base config's `mappings`/`config` exactly so nothing the fixture theme or plugin relies on is lost; drop the `lifecycleScripts.afterStart` only if `tools/dev-bootstrap.mjs` assumes Polylang (check it — if it is language-agnostic, keep it):
 
 ```json
 {
   "core": "WordPress/WordPress#6.9",
   "phpVersion": "8.1",
   "themes": [],
-  "plugins": [ "./.wpml/sitepress-multilingual-cms.zip" ],
+  "plugins": [ "./plugin/wpml/wpml.zip" ],
   "config": {
     "WP_DEBUG": true,
     "WP_DEBUG_LOG": true,
@@ -480,7 +495,7 @@ git commit -m "refactor(language): route current-language + switcher block throu
 }
 ```
 
-Add `plugin/.wpml/` to `.gitignore`.
+Add `.wp-env.override.json` to the repo-root `.gitignore` (`plugin/wpml/` is already ignored). Confirm the actual `mappings`/`config`/`lifecycleScripts` against the live `.wp-env.json` before writing — copy them verbatim.
 
 - [ ] **Step 2: Language definitions**
 
@@ -650,12 +665,15 @@ class HarnessTest extends WpmlTestCase {
 
 - [ ] **Step 7: Start the WPML env and run the harness — iterate the bootstrap until green**
 
-Place a WPML zip at `plugin/.wpml/sitepress-multilingual-cms.zip`, then:
+The zip is already at `plugin/wpml/wpml.zip`. From the **repo root**:
 ```bash
-cd plugin && npx wp-env start --config .wp-env.wpml.json
-npx wp-env run tests-wordpress --env-cwd=wp-content/plugins/pediment-ai ./vendor/bin/phpunit -c phpunit-wpml.xml.dist --filter HarnessTest
+cp .wp-env.wpml.json .wp-env.override.json
+WP_ENV_PORT=8920 WP_ENV_TESTS_PORT=8921 npx wp-env start
+# Confirm WPML is installed and Polylang is NOT active, and learn the real plugin dir name:
+WP_ENV_PORT=8920 WP_ENV_TESTS_PORT=8921 npx wp-env run tests-wordpress wp plugin list
+WP_ENV_PORT=8920 WP_ENV_TESTS_PORT=8921 npx wp-env run tests-wordpress --env-cwd=wp-content/plugins/pediment-ai ./vendor/bin/phpunit -c phpunit-wpml.xml.dist --filter HarnessTest
 ```
-Expected: PASS. If `test_two_languages_are_active` fails, the option-only activation is insufficient — add the confirmed step (row inserts / `SitePress::set_active_languages()`) to `bootstrap.php` Step 4 and re-run until green. **The confirmed working sequence is the deliverable.**
+Adjust the `require` path in `bootstrap.php` (Step 4) to the plugin dir name `wp plugin list` actually reports (it may be `sitepress-multilingual-cms` or `wpml`). Expected: PASS. If `test_two_languages_are_active` fails, the option-only activation is insufficient — add the confirmed step (row inserts / `SitePress::set_active_languages()`) to `bootstrap.php` Step 4 and re-run until green. If Polylang is still active in `wp plugin list`, the override did not replace it — deactivate Polylang in the bootstrap. **The confirmed working sequence is the deliverable.**
 
 - [ ] **Step 8: Capture ground truth into the reference file**
 
@@ -680,7 +698,7 @@ The confirmed-working activation used by tests/wpml/bootstrap.php:
 - [ ] **Step 9: Commit**
 
 ```bash
-git add plugin/.wp-env.wpml.json plugin/phpunit-wpml.xml.dist plugin/tests/wpml/ .gitignore
+git add .wp-env.wpml.json plugin/phpunit-wpml.xml.dist plugin/tests/wpml/ .gitignore
 git commit -m "test(wpml): stand up WPML env, bootstrap, and captured API reference"
 ```
 
