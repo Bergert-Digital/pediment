@@ -212,45 +212,44 @@ test.describe( 'multilingual seeding (WPML)', () => {
 			);
 
 			// A working switcher control is present in the header, rendered as a
-			// hover-to-reveal dropdown: the toggle shows the CURRENT language
-			// (Deutsch on the German page), and the OTHER language lives in the
-			// sub-menu, hidden until hover.
+			// hover-to-reveal dropdown that lists EVERY language: the CURRENT
+			// language (Deutsch on the German page) is the always-visible toggle,
+			// and the whole list — Deutsch AND English — is revealed on hover.
 			const switcher = page.locator( 'header .wpml-ls' ).first();
 			await expect( switcher ).toBeVisible();
 
 			// It is the dropdown variant, not the flat list.
 			await expect( switcher.locator( '.wpml-ls-dropdown' ) ).toHaveCount( 1 );
 
-			// The toggle is the current language and is visible.
-			const toggle = switcher.locator(
-				'.wp-block-navigation-submenu__toggle'
-			);
-			await expect( toggle ).toBeVisible();
-			await expect( toggle ).toContainText( 'Deutsch' );
+			// The current language is the always-visible toggle.
+			const currentToggle = switcher.locator( '.wpml-ls-current-language' );
+			await expect( currentToggle ).toBeVisible();
+			await expect( currentToggle ).toContainText( 'Deutsch' );
 
-			// The sub-menu carries the real per-language link WPML filled into the
-			// saved template (English -> the English page). It is present in the DOM
-			// but hidden by default (revealed on hover), so reference it with
-			// includeHidden.
-			const subMenu = switcher.locator(
-				'.wp-block-navigation__submenu-container'
-			);
-			await expect( subMenu ).toHaveCount( 1 );
-			const englishLink = subMenu.getByRole( 'link', {
+			// Both languages are present in the list, each with the real
+			// per-language href WPML filled in (German page -> /de/…, English
+			// alternative -> the English page). Reference with includeHidden since
+			// the non-current one is hidden until hover.
+			const german = switcher.getByRole( 'link', {
+				name: 'Deutsch',
+				includeHidden: true,
+			} );
+			const english = switcher.getByRole( 'link', {
 				name: 'English',
 				includeHidden: true,
 			} );
-			await expect( englishLink ).toHaveAttribute( 'href', /\/about\/?$/ );
+			await expect( german ).toHaveAttribute( 'href', /\/de\// );
+			await expect( english ).toHaveAttribute( 'href', /\/about\/?$/ );
 
-			// HOVER-TO-REVEAL — the feature the user asked for. The sub-menu link is
-			// hidden until the toggle is hovered, then it is shown. This proves the
-			// state CHANGES on hover (the block's own
-			// `.has-child:not(.open-on-click):hover > .wp-block-navigation__submenu-container`
-			// CSS reaching the seeded markup), not merely that it starts hidden.
-			await expect( englishLink ).toBeHidden();
-			await toggle.hover();
-			await expect( englishLink ).toBeVisible();
-			await expect( englishLink ).toHaveAttribute( 'href', /\/about\/?$/ );
+			// HOVER-TO-REVEAL — the feature the user asked for. The other language
+			// is hidden until the toggle is hovered; then the OPEN dropdown lists
+			// ALL languages (Deutsch AND English both visible). This proves the
+			// state CHANGES on hover, not merely that it starts hidden.
+			await expect( english ).toBeHidden();
+			await currentToggle.hover();
+			await expect( german ).toBeVisible();
+			await expect( english ).toBeVisible();
+			await expect( english ).toHaveAttribute( 'href', /\/about\/?$/ );
 		} );
 	} );
 
