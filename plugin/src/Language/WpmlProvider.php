@@ -184,8 +184,15 @@ final class WpmlProvider implements LanguageProvider {
 		}
 	}
 
-	/** @param bool|array<string,mixed> $config */
+	/**
+	 * WPML's native language-switcher block is dynamic and takes no attributes
+	 * (captured in tests/wpml/WPML-API-REFERENCE.md, WPML 4.9.7), so the
+	 * manifest's `language_switcher` override — if any — has nothing to apply
+	 * to; every truthy config emits the same bare block.
+	 *
+	 * @param bool|array<string,mixed> $config
+	 */
 	public function languageSwitcherBlock( $config ): string {
-		return '';
+		return '<!-- wp:wpml/language-switcher /-->';
 	}
 }
