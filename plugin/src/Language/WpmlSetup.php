@@ -77,6 +77,23 @@ final class WpmlSetup implements LanguageSetup {
 			wpml_reload_active_languages_setting( true );
 		}
 
+		// Trigger WPML's config parse so a headless `wp pediment languages`
+		// deploy actually makes `wp_navigation` translatable. WPML consumes
+		// `inc/wpml-compat.php`'s `wpml_config_array` filter and persists the
+		// result to `custom_posts_sync_option` only via
+		// `WPML_Config::load_config_run()`, which normally fires on an is_admin()
+		// visit to a whitelisted admin page or the setup wizard's FinishStep —
+		// never from WP-CLI. Without this, both languages stay collapsed to the
+		// English header until someone opens wp-admin (see task-17-brief.md /
+		// Finding 3). The static call re-parses through WPML's real config path
+		// (nothing is hand-set) and is idempotent: WPML's own `$has_run` guard
+		// makes it a no-op if already parsed this request, and re-running on an
+		// already-configured site is harmless. Guarded so it no-ops when WPML is
+		// absent (the ICL_SITEPRESS_VERSION check above already gates this path).
+		if ( class_exists( 'WPML_Config' ) && method_exists( 'WPML_Config', 'load_config_run' ) ) {
+			\WPML_Config::load_config_run();
+		}
+
 		return [ 'changes' => $changes, 'errors' => $errors ];
 	}
 }
