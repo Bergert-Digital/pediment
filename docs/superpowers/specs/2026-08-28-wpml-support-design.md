@@ -84,9 +84,21 @@ implement; `NullProvider` returns safe empties):
   hardcoding the string.
 
 **New `LanguageSetup` interface** — extracted from the concrete
-`PolylangSetup`. One method: `configure(Manifest $manifest): void`,
-matching the current signature. `PolylangSetup` implements it unchanged;
-`WpmlSetup` is the new implementation.
+`PolylangSetup`, matching its **exact current signature** (verified
+against the source):
+
+```php
+/**
+ * @param array<string,LanguageSpec> $languages Declaration order, default first.
+ * @return array{changes:string[],errors:string[]}
+ */
+public function configure( array $languages, string $default, bool $dryRun = false ): array;
+```
+
+`PolylangSetup` implements it unchanged; `WpmlSetup` is the new
+implementation. (Note: `LanguagesCommand` already passes
+`$manifest->languages(), $manifest->defaultLanguage(), $dryRun` — the
+interface keeps that call site working verbatim.)
 
 **`LanguageRegistry` gains `setup(): LanguageSetup`** — resolves the setup
 class the same way `provider()` resolves the provider, with a parallel
@@ -148,7 +160,12 @@ Reconciles WPML's own settings to the manifest:
   alongside `polylang-compat.php` from `plugin.php`, no-ops when WPML is
   inactive. Registers the `wpml_config_array` filter so `wp_navigation`
   is translatable and `wp_template_part` is shared at runtime (parity
-  with `polylang-compat.php`'s two `pll_get_post_types` filters).
+  with `polylang-compat.php`'s two `pll_get_post_types` filters). This is
+  a **runtime** analogue and is deliberately separate from the existing
+  `plugin/wpml-config.xml` (see "Pre-existing, out of scope" below) —
+  built-in post types (`wp_navigation`, `wp_template_part`) are the same
+  UI-unconfigurable case the Polylang side solves with a runtime filter,
+  so we mirror that rather than rely on static config for them.
 - **`plugin/inc/nav-language.php`** — replace the inline
   `pll_current_language()` / `pll_default_language()` lookups with
   `LanguageRegistry::provider()->currentLanguage()` /
@@ -219,6 +236,26 @@ Modified:
 - `plugin/wp-cli/LanguagesCommand.php` (resolve setup via registry)
 - `plugin/plugin.php` (load `wpml-compat.php`)
 - `plugin/tests/phpunit/Language/LanguageProviderTest.php` (run vs WPML)
+
+## Pre-existing, out of scope (do NOT duplicate)
+
+The repo already ships, CI-gated, a **block-attribute translation config**
+that is orthogonal to this runtime work and must not be touched by it:
+
+- `tools/generate-wpml-config.mjs` — generates `plugin/wpml-config.xml`
+  from every `plugin/src/blocks/*/block.json`, declaring which block
+  *attributes* are translatable prose (`<gutenberg-blocks>`). `--check`
+  is the CI drift gate (`ci.yml` line 36); `npm run gen:wpml` regenerates.
+- `plugin/wpml-config.xml` — the generated artifact ("Do not edit by
+  hand"). WPML and Polylang Pro both read it for block-attribute
+  translation.
+
+This is a *different layer* from the runtime adapter: it tells WPML how to
+translate the **contents** of blocks; the adapter tells the seeding engine
+how to **assign languages and link translations of posts**. The plan does
+not re-create the generator, the `gen:wpml` script, or the CI `--check`
+step. If new blocks need translatable attributes, that is handled by
+extending the generator's heuristics — separately from this feature.
 
 ## Non-goals
 
