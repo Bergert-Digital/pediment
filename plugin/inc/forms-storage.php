@@ -100,7 +100,9 @@ function pediment_form_persist_submission( array $submission, $request ): void {
 		return;
 	}
 
-	update_post_meta( $new_id, '_fields', wp_json_encode( $sanitized_fields ) );
+	// update_post_meta() unslashes; without wp_slash() the JSON loses its
+	// backslashes (\u00f6 → u00f6, \n → n, \" → " which breaks decoding).
+	update_post_meta( $new_id, '_fields', wp_slash( wp_json_encode( $sanitized_fields ) ) );
 	update_post_meta( $new_id, '_source_post_id', $post_id );
 	update_post_meta( $new_id, '_destination', sanitize_text_field( $destination ) );
 	update_post_meta( $new_id, '_delivery_status', 'pending' );

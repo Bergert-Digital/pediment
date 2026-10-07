@@ -69,6 +69,37 @@ class StorageTest extends \WP_UnitTestCase {
 		wp_delete_post( $id, true );
 	}
 
+	public function test_stored_fields_survive_unicode_quotes_and_line_breaks() {
+		do_action( 'init' );
+		$value = "Größe \"XL\"\nzweite Zeile";
+		do_action(
+			'pediment_form_submitted',
+			array(
+				'post_id' => 0,
+				'fields'  => array(
+					'message' => array(
+						'label' => 'Nachricht',
+						'value' => $value,
+					),
+				),
+			),
+			null
+		);
+		$posts = get_posts(
+			array(
+				'post_type'   => PEDIMENT_FORM_CPT,
+				'post_status' => 'any',
+			)
+		);
+		$id    = $posts[0]->ID;
+
+		$stored = json_decode( (string) get_post_meta( $id, '_fields', true ), true );
+		$this->assertIsArray( $stored );
+		$this->assertSame( $value, $stored['message']['value'] );
+		$this->assertSame( $value, pediment_form_build_context( $id )['fields']['message'] );
+		$this->assertMatchesRegularExpression( '#Größe &quot;XL&quot;<br\s*/?>\s*zweite Zeile#', $this->render_box( $id ) );
+	}
+
 	public function test_fields_summary_is_empty_without_stored_fields() {
 		$id = self::factory()->post->create( array( 'post_type' => PEDIMENT_FORM_CPT ) );
 		$this->assertSame( '', pediment_form_fields_summary( $id ) );
