@@ -34,6 +34,7 @@ add_action(
 					'name'          => __( 'Form submissions', 'pediment' ),
 					'singular_name' => __( 'Form submission', 'pediment' ),
 					'menu_name'     => __( 'Form submissions', 'pediment' ),
+					'edit_item'     => __( 'Form submission', 'pediment' ),
 				),
 				'public'              => false,
 				'exclude_from_search' => true,
@@ -151,6 +152,29 @@ function pediment_form_fields_summary( int $post_id ): string {
 	return implode( ' · ', $parts );
 }
 
+/**
+ * Human-readable delivery status of a submission, with the HTTP status appended
+ * when delivery did not succeed.
+ *
+ * @param int $post_id The form_submission post ID.
+ * @return string Plain-text label (unescaped).
+ */
+function pediment_form_delivery_label( int $post_id ): string {
+	$status = (string) get_post_meta( $post_id, '_delivery_status', true );
+	$http   = (string) get_post_meta( $post_id, '_delivery_http_status', true );
+	$labels = array(
+		'sent'           => __( 'Sent', 'pediment' ),
+		'failed'         => __( 'Failed', 'pediment' ),
+		'pending'        => __( 'Pending', 'pediment' ),
+		'no_destination' => __( 'No destination', 'pediment' ),
+	);
+	$text   = $labels[ $status ] ?? ( '' !== $status ? $status : __( 'Pending', 'pediment' ) );
+	if ( '' !== $http && 'sent' !== $status ) {
+		$text .= ' (' . $http . ')';
+	}
+	return $text;
+}
+
 add_action(
 	'manage_' . PEDIMENT_FORM_CPT . '_posts_custom_column',
 	function ( $col, $post_id ) {
@@ -161,24 +185,110 @@ add_action(
 			$summary = pediment_form_fields_summary( (int) $post_id );
 			echo esc_html( '' !== $summary ? $summary : __( '—', 'pediment' ) );
 		} elseif ( 'delivery' === $col ) {
-			$status = (string) get_post_meta( $post_id, '_delivery_status', true );
-			$http   = (string) get_post_meta( $post_id, '_delivery_http_status', true );
-			$labels = array(
-				'sent'           => __( 'Sent', 'pediment' ),
-				'failed'         => __( 'Failed', 'pediment' ),
-				'pending'        => __( 'Pending', 'pediment' ),
-				'no_destination' => __( 'No destination', 'pediment' ),
-			);
-			$text   = $labels[ $status ] ?? ( '' !== $status ? $status : __( 'Pending', 'pediment' ) );
-			if ( '' !== $http && 'sent' !== $status ) {
-				$text .= ' (' . $http . ')';
-			}
-			echo esc_html( $text );
+			echo esc_html( pediment_form_delivery_label( (int) $post_id ) );
 		}
 	},
 	10,
 	2
 );
+
+add_action(
+	'add_meta_boxes_' . PEDIMENT_FORM_CPT,
+	function () {
+		add_meta_box(
+			'pediment-submission-details',
+			__( 'Submission details', 'pediment' ),
+			'pediment_form_render_submission_box',
+			PEDIMENT_FORM_CPT,
+			'normal',
+			'high'
+		);
+	}
+);
+
+/**
+ * Escape a submitted value for display: line breaks kept, email addresses
+ * linked.
+ *
+ * @param string $value Raw stored value.
+ * @return string Escaped HTML.
+ */
+function pediment_form_format_value( string $value ): string {
+	$value = trim( $value );
+	if ( '' === $value ) {
+		return esc_html__( '—', 'pediment' );
+	}
+	if ( is_email( $value ) ) {
+		return sprintf( '<a href="%s">%s</a>', esc_url( 'mailto:' . $value ), esc_html( $value ) );
+	}
+	return nl2br( esc_html( $value ) );
+}
+
+/**
+ * Read-only "Submission details" meta box: every stored field, then the
+ * source page, destination, delivery status, and submission date.
+ *
+ * @param WP_Post $post The form_submission post.
+ */
+function pediment_form_render_submission_box( WP_Post $post ): void {
+	$decoded = json_decode( (string) get_post_meta( $post->ID, '_fields', true ), true );
+
+	echo '<table class="widefat striped" style="margin-bottom:1em"><tbody>';
+	if ( is_array( $decoded ) ) {
+		foreach ( $decoded as $key => $row ) {
+			if ( ! is_array( $row ) ) {
+				continue;
+			}
+			$label = trim( (string) ( $row['label'] ?? '' ) );
+			printf(
+				'<tr><th scope="row" style="width:25%%">%s</th><td>%s</td></tr>',
+				esc_html( '' !== $label ? $label : (string) $key ),
+				pediment_form_format_value( (string) ( $row['value'] ?? '' ) ) // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escaped by pediment_form_format_value().
+			);
+		}
+	} else {
+		printf(
+			'<tr><td>%s</td></tr>',
+			pediment_form_format_value( (string) $post->post_content ) // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escaped by pediment_form_format_value().
+		);
+	}
+	echo '</tbody></table>';
+
+	$source_id = (int) get_post_meta( $post->ID, '_source_post_id', true );
+	$source    = esc_html__( '—', 'pediment' );
+	if ( $source_id > 0 ) {
+		$source_post = get_post( $source_id );
+		if ( $source_post instanceof WP_Post ) {
+			$title  = get_the_title( $source_post );
+			$title  = '' !== $title ? $title : '#' . $source_id;
+			$link   = get_edit_post_link( $source_post, 'raw' );
+			$source = $link
+				? sprintf( '<a href="%s">%s</a>', esc_url( $link ), esc_html( $title ) )
+				: esc_html( $title );
+		} else {
+			/* translators: %d: ID of the deleted source page. */
+			$source = esc_html( sprintf( __( 'Deleted page (#%d)', 'pediment' ), $source_id ) );
+		}
+	}
+
+	$destination = (string) get_post_meta( $post->ID, '_destination', true );
+	$rows        = array(
+		__( 'Source page', 'pediment' ) => $source,
+		__( 'Destination', 'pediment' ) => esc_html( '' !== $destination ? $destination : __( '(default)', 'pediment' ) ),
+		__( 'Delivery', 'pediment' )    => esc_html( pediment_form_delivery_label( $post->ID ) ),
+		__( 'Submitted', 'pediment' )   => esc_html( get_the_date( get_option( 'date_format' ) . ' ' . get_option( 'time_format' ), $post ) ),
+	);
+
+	echo '<table class="widefat striped"><tbody>';
+	foreach ( $rows as $label => $html ) {
+		printf(
+			'<tr><th scope="row" style="width:25%%">%s</th><td>%s</td></tr>',
+			esc_html( $label ),
+			$html // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escaped above.
+		);
+	}
+	echo '</tbody></table>';
+}
 
 add_action( PEDIMENT_FORM_CRON_HOOK, 'pediment_form_cleanup' );
 
