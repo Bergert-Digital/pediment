@@ -1,5 +1,18 @@
 # Changelog
 
+## [3.10.0](https://github.com/Bergert-Digital/pediment/compare/v3.9.0...v3.10.0) (2026-10-07)
+
+
+### Features
+
+* **forms:** show submission details on the edit screen ([4cf9ebb](https://github.com/Bergert-Digital/pediment/commit/4cf9ebb6c9fbb57ece3331f98d1910123f6c1826))
+* **forms:** show submission details; keep stored fields intact ([#110](https://github.com/Bergert-Digital/pediment/issues/110)) ([a1e35c3](https://github.com/Bergert-Digital/pediment/commit/a1e35c34aa970c2e22c3eb08bd1b5f064aaab985))
+
+
+### Bug Fixes
+
+* **forms:** keep umlauts, quotes and line breaks in fields ([598a831](https://github.com/Bergert-Digital/pediment/commit/598a8310b6431086171324a347dd6a0156a03533))
+
 ## [3.9.0](https://github.com/Bergert-Digital/pediment/compare/v3.8.0...v3.9.0) (2026-08-28)
 
 
