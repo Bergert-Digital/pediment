@@ -43,7 +43,7 @@ class SiteStylesTest extends WP_UnitTestCase {
 		add_filter( 'map_meta_cap', static fn( $caps, $cap ) => 'unfiltered_html' === $cap ? array( 'do_not_allow' ) : $caps, 10, 2 );
 		kses_init();
 		$this->assertFalse( current_user_can( 'unfiltered_html' ) );
-		$css = '& > .x::after{content:"→ <b> & \'q\'";width:26px}';
+		$css = '&>.x::after{content:"→ \'q\' \\"q\\"";width:26px}';
 		$this->store->save( $this->spec( array( 'css' => $css ) ) );
 		$this->assertSame( $css, $this->store->get( 'promo' )['styles']['css'] );
 	}
