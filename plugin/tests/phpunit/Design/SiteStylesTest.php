@@ -48,6 +48,15 @@ class SiteStylesTest extends WP_UnitTestCase {
 		$this->assertSame( $css, $this->store->get( 'promo' )['styles']['css'] );
 	}
 
+	public function test_unencodable_spec_is_not_stored(): void {
+		// wp_json_encode() repairs invalid UTF-8 but returns false for INF.
+		$result = $this->store->save( $this->spec( array( 'typography' => array( 'lineHeight' => INF ) ) ) );
+		$this->assertWPError( $result );
+		$this->assertSame( 'pediment_style_encode_failed', $result->get_error_code() );
+		$this->assertNull( $this->store->get( 'promo' ) );
+		$this->assertSame( array(), get_posts( array( 'post_type' => SiteStyles::POST_TYPE, 'post_status' => 'any' ) ) );
+	}
+
 	public function test_saving_the_same_slug_updates_and_adds_a_revision(): void {
 		$first  = $this->store->save( $this->spec() );
 		$second = $this->store->save( $this->spec( array( 'shadow' => 'var:preset|shadow|subtle' ) ) );

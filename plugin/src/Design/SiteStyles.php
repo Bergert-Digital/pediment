@@ -74,13 +74,18 @@ final class SiteStyles {
 			'styles'     => $spec['styles'],
 		);
 
-		$post     = $this->find( $spec['slug'] );
-		$postarr  = array(
+		$json = wp_json_encode( $payload, self::JSON_FLAGS );
+		if ( false === $json ) {
+			return new \WP_Error( 'pediment_style_encode_failed', __( 'The style could not be encoded as JSON.', 'pediment' ) );
+		}
+
+		$post    = $this->find( $spec['slug'] );
+		$postarr = array(
 			'post_type'    => self::POST_TYPE,
 			'post_status'  => 'publish',
 			'post_name'    => $spec['slug'],
 			'post_title'   => $spec['label'],
-			'post_content' => wp_slash( (string) wp_json_encode( $payload, self::JSON_FLAGS ) ),
+			'post_content' => wp_slash( $json ),
 		);
 		if ( null !== $post ) {
 			$postarr['ID'] = $post->ID;
