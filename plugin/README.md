@@ -1,28 +1,20 @@
 # Pediment
 
-WordPress site engine with shared Gutenberg blocks, templates, patterns, tokens,
-forms, and AI-powered authoring: compose a page from a prompt, edit an existing
-page, or refine a single block.
+WordPress site engine with shared Gutenberg blocks, templates, patterns, design
+tokens, forms and seeding.
 
 ## Requirements
 
 - WordPress 6.9+, PHP 8.1+
 - A standalone client block theme
-- Anthropic API key
 
 ## Install
 
 Upload `pediment-plugin.zip` from the latest [GitHub Release](https://github.com/Bergert-Digital/pediment/releases) via **Plugins → Add New → Upload Plugin**, then activate. It installs as `pediment`; after the first install, updates arrive through the normal wp-admin Updates screen.
 
-Define `ANTHROPIC_API_KEY` in `wp-config.php` — the plugin reads the constant when set; otherwise it falls back to the key in Settings → Pediment AI, where it is stored encrypted.
+Upgrading from 3.x removes the retired AI chat's tables and settings on the first request.
 
-## Three flows
-
-- **Compose.** Document sidebar → "Compose with AI" → prompt + page type → fresh page generated from registered blocks.
-- **Edit.** Document sidebar → "Edit with AI" → instruction → page content replaced (use Undo to revert).
-- **Refine.** Select any Pediment block → Inspector → "AI refine" → quick actions or custom instruction → attributes update.
-
-The editor and PHP runtime use the `pediment/v1` REST namespace.
+The REST API uses the `pediment/v1` namespace.
 
 ## Seeding
 
@@ -36,25 +28,6 @@ that section before the first seed, and `wp pediment adopt <key> --language=de` 
 one language's translation. See [docs/seeding.md](../docs/seeding.md) for the full
 manifest reference, the arbitration rules, the languages section, and how to read a
 dry-run plan.
-
-## Web fetch
-
-The model has access to Anthropic's `web_fetch_20250910` server tool during Compose and Edit. It may fetch URLs the user mentions or that it decides are relevant. Fetched URLs appear as pills in the editor.
-
-## Models
-
-Defaults (configurable in Settings):
-
-- Compose / Edit: `claude-sonnet-4-6`
-- Refine: `claude-haiku-4-5`
-
-## Rate limits
-
-Per-user, per-hour defaults (configurable in Settings):
-
-- Compose: 30
-- Edit: 30
-- Refine: 200
 
 ## Local dev
 
@@ -106,7 +79,7 @@ cd plugin && npm run start
 npx wp-env run tests-wordpress --env-cwd=wp-content/plugins/pediment-ai ./vendor/bin/phpunit
 
 # Filter a single test class
-npx wp-env run tests-wordpress --env-cwd=wp-content/plugins/pediment-ai ./vendor/bin/phpunit --filter ComposeJobTest
+npx wp-env run tests-wordpress --env-cwd=wp-content/plugins/pediment-ai ./vendor/bin/phpunit --filter SmokeTest
 
 # Run Playwright E2E (needs wp-env running, from plugin/)
 cd plugin && npm run e2e
@@ -115,7 +88,3 @@ cd plugin && npm run e2e
 composer lint
 composer lint:fix
 ```
-
-Mock mode is on by default in `.wp-env.json` (`PEDIMENT_AI_MOCK=true`), so the plugin returns fixture responses instead of calling Anthropic. Toggle off in plugin settings to test against real Anthropic.
-
-See [docs/prompts.md](docs/prompts.md) for prompt tuning and [docs/privacy.md](docs/privacy.md) for data-handling disclosures clients should include in their privacy policies.

@@ -30,7 +30,7 @@ on every block change, not just new blocks.
 ## Tests
 
 - **PHPUnit:** every block has `plugin/tests/phpunit/BlockRender/<Name>Test.php` covering valid +
-  edge-case (empty) attributes. Forms, patterns, templates, and AI have suites.
+  edge-case (empty) attributes. Forms, patterns, and templates have suites.
   Run: `npx wp-env run tests-wordpress --env-cwd=wp-content/plugins/pediment-ai ./vendor/bin/phpunit`
 - **Seeding:** a manifest-format, applier, differ, or verifier change needs a test in
   `plugin/tests/phpunit/Seeder/` (see `docs/seeding.md`). `wp pediment seed --dry-run`
@@ -42,7 +42,7 @@ on every block change, not just new blocks.
   Polylang-specific change needs a test in `plugin/tests/polylang/` (its own PHPUnit
   config, `plugin/phpunit-polylang.xml.dist`), and everything Polylang-specific stays
   behind the `LanguageProvider` seam (`plugin/src/Language/`).
-- **Playwright:** editor block insertion, front-page render, forms, and AI flows.
+- **Playwright:** editor block insertion, front-page render, and forms.
   Run: `cd plugin && npm run e2e` (requires `npm run env:start`).
 - A feature or fix is not done until its test passes and the relevant screenshot looks right.
 

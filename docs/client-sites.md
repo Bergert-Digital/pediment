@@ -8,7 +8,7 @@ two plugins have different runtimes: WordPress installs `pediment-plugin.zip`; d
 ## The three units
 
 - **The Pediment WordPress plugin** — the product. It supplies blocks, templates, tokens, forms,
-  seeding, and AI features to WordPress and ships as `pediment-plugin.zip`.
+  and seeding to WordPress and ships as `pediment-plugin.zip`.
 - **The Pediment client kit** — the Claude Code tooling under `client-kit/`. It carries
   `/pediment:start`, `/pediment:port-page`, and `scripts/scaffold.mjs`. It is installed globally in
   Claude Code and is never copied into a client theme.
@@ -44,7 +44,7 @@ below), languages (defaults to one), a pre-checked sitemap (Home / About / Servi
 plus optional Blog), an accent colour (the rest of the palette derives from it), and an optional
 logo file path. The skill states this plainly when it asks: `docs/brief.md` is for you and future
 agents to read; **nothing in the plugin reads it programmatically**. Typing a considered tone
-into that question does not make the AI editor use it — see "What a scaffolded repo contains"
+into that question does not change the plugin's behaviour — see "What a scaffolded repo contains"
 below.
 
 **Porting an existing site** asks a different five: the source URL, brand (extracted from the
@@ -84,9 +84,8 @@ It reports the local URL (`http://localhost:8888`) and the wp-admin URL when don
   seed/manifest.php       Structure: pages, nav, media, languages
   seed/media/             Logo and other seeded media files
   docs/brief.md           What the business does, for whom, in what tone —
-                          read by humans and agents, read by nothing in the
-                          plugin: it does not feed the AI editor or anything
-                          else programmatically
+                          read by humans and agents; nothing in the
+                          plugin reads it programmatically
   AGENTS.md               The client repo's own hard rules for working here
                           (never `wp post create`/`update`, `seed:plan` before
                           `seed`, `adopt -- <key>` to capture editor edits)

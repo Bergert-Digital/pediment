@@ -77,7 +77,7 @@ asking. Open with the branching question:
 1. **Business name.** Derive the repo slug and theme name; show for confirmation.
 2. **What they do, and for whom** — and, in the same question, the tone they want. State plainly:
    *"This goes into `docs/brief.md` for you and future agents to read. Nothing in the plugin reads
-   it programmatically yet."* Do not imply the AI features will pick it up.
+   it programmatically yet."*
 3. **Languages.** Default first. Most sites are one language — offer that as the default answer.
 4. **Sitemap.** Offer Home / About / Services / Contact pre-checked, plus an optional Blog.
 5. **Accent colour.** A single hex. Everything else in the palette derives from it.

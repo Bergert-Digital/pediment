@@ -5,7 +5,7 @@ Read `docs/STANDARDS.md` before changing code.
 ## Project
 
 This repository ships one WordPress plugin: Pediment. It owns the shared
-blocks, templates, patterns, tokens, forms, assets, and AI editor experience.
+blocks, templates, patterns, tokens, forms, assets, and seeding.
 Client sites pair the plugin with a standalone client theme; the root fixture
 theme exists only for wp-env and integration tests.
 
