@@ -102,6 +102,10 @@ own selector.
    plugin registers active entries at `init` with `register_block_style()`, so
    they render on the front end and in the editor, and clients see them by
    label in the Styles panel.
+   The plugin applies site styles through the `wp_theme_json_data_theme` filter
+   (after core adds plugin and theme styles), because the post editor never
+   sees user-origin filter data; Site Editor edits by a person therefore still
+   override site styles.
 
 **Style rules** (`Pediment\Design\StyleValidator`, applied to every layer on
 registration and to the site layer on save):
@@ -111,10 +115,16 @@ registration and to the site layer on save):
   `var(--wp--preset--…)` or `var(--wp--custom--…)`. `0`, `inherit`,
   `currentColor`, `transparent` and percentages are allowed.
 - Other values (line widths, aspect ratios, transforms, transitions) are free.
-- No `!important`.
+- In `css`: no `!important`, no literal colours (hex, rgb()/hsl()/color-mix()…,
+  named colours, or colour fallbacks inside `var()`), and only `@media`,
+  `@container`, `@supports` and `@layer` at-rules. Spacing, radius and font
+  sizes inside `css` are not checked; `css` is the escape hatch for what
+  theme.json cannot express.
 - `css` selectors must start with `&` (the style itself or its descendants).
-- Invalid plugin/theme styles are skipped with a `_doing_it_wrong` notice; an
-  invalid site-layer write is rejected with an error list.
+- Invalid plugin styles are skipped with a `_doing_it_wrong` notice. Invalid
+  theme styles still load (dropping them could change live sites whose themes
+  predate the rules) and are reported as warnings in the vocabulary and the
+  Design tab. An invalid site-layer write is rejected with an error list.
 
 **Export.** An admin button (Pediment settings) and `wp pediment design export`
 write every active site-layer style as a client-theme JSON file. After the
