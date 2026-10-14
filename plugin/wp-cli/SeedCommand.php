@@ -51,8 +51,7 @@ final class SeedCommand {
 		$result = ( new Runner() )->run( [ 'dry_run' => isset( $assocArgs['dry-run'] ) ] );
 		$output = self::render( $result, 'json' === ( $assocArgs['format'] ?? 'text' ) );
 
-		// Guarded like DumpSchemaCommand so the rendering is unit-testable
-		// without WP-CLI loaded.
+		// Guarded so the rendering is unit-testable without WP-CLI loaded.
 		if ( class_exists( '\WP_CLI' ) ) {
 			\WP_CLI::line( $output );
 
