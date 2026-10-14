@@ -77,11 +77,97 @@ class SiteLayerTest extends WP_UnitTestCase {
 				'styles'     => array( 'color' => array( 'background' => 'var:preset|color|accent' ) ),
 			)
 		);
-		$this->assertSame( array( 'promo' ), $this->layer->promoteShippedStyles( array( 'promo', 'unrelated' ) ) );
+		$theme = array(
+			'promo'     => array(
+				'blockTypes' => array( 'core/group', 'core/column' ),
+				'styles'     => array(
+					'color'   => array( 'background' => 'var:preset|color|accent' ),
+					'spacing' => array( 'padding' => array( 'top' => 'var:preset|spacing|50' ) ),
+				),
+			),
+			'unrelated' => array( 'blockTypes' => array( 'core/group' ), 'styles' => array() ),
+		);
+		$this->assertSame( array( 'promo' ), $this->layer->promoteShippedStyles( $theme ) );
 		$this->assertSame( SiteStyles::STATE_PROMOTED, $this->store->get( 'promo' )['state'] );
 
 		$data = $this->layer->injectSiteData( new WP_Theme_JSON_Data( array( 'version' => 3 ), 'theme' ) );
 		$this->assertArrayNotHasKey( 'blocks', $data->get_data()['styles'] ?? array() );
+	}
+
+	public function test_site_override_that_differs_from_the_theme_stays_active(): void {
+		$this->store->save(
+			array(
+				'slug'       => 'promo',
+				'label'      => 'Promo',
+				'blockTypes' => array( 'core/group' ),
+				'styles'     => array( 'color' => array( 'background' => 'var:preset|color|accent' ) ),
+			)
+		);
+		$this->store->save(
+			array(
+				'slug'       => 'wide',
+				'label'      => 'Wide',
+				'blockTypes' => array( 'core/group', 'core/columns' ),
+				'styles'     => array( 'color' => array( 'background' => 'var:preset|color|accent' ) ),
+			)
+		);
+		$theme = array(
+			'promo' => array(
+				'blockTypes' => array( 'core/group' ),
+				'styles'     => array( 'color' => array( 'background' => 'var:preset|color|surface' ) ),
+			),
+			'wide'  => array(
+				'blockTypes' => array( 'core/group' ),
+				'styles'     => array( 'color' => array( 'background' => 'var:preset|color|accent' ) ),
+			),
+		);
+
+		$this->assertSame( array(), $this->layer->promoteShippedStyles( $theme ) );
+		$this->assertSame( SiteStyles::STATE_ACTIVE, $this->store->get( 'promo' )['state'] );
+		$this->assertSame( SiteStyles::STATE_ACTIVE, $this->store->get( 'wide' )['state'] );
+	}
+
+	public function test_theme_variations_read_the_active_theme_partials_by_slug(): void {
+		$dir = get_temp_dir() . 'pediment-theme-' . wp_rand();
+		wp_mkdir_p( $dir . '/styles/blocks' );
+		$partial = array(
+			'version'    => 3,
+			'title'      => 'Panel',
+			'slug'       => 'panel',
+			'blockTypes' => array( 'core/group' ),
+			'styles'     => array( 'color' => array( 'background' => 'var:preset|color|accent' ) ),
+		);
+		file_put_contents( $dir . '/styles/blocks/panel.json', wp_json_encode( $partial ) ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents
+		$to_dir = static fn(): string => $dir;
+		add_filter( 'stylesheet_directory', $to_dir );
+		add_filter( 'template_directory', $to_dir );
+
+		try {
+			$this->assertSame(
+				array(
+					'panel' => array(
+						'blockTypes' => array( 'core/group' ),
+						// Core resolves preset references when it reads a partial.
+						'styles'     => array( 'color' => array( 'background' => 'var(--wp--preset--color--accent)' ) ),
+					),
+				),
+				SiteLayer::themeVariations()
+			);
+
+			$this->store->save(
+				array(
+					'slug'       => 'panel',
+					'label'      => 'Panel',
+					'blockTypes' => array( 'core/group' ),
+					'styles'     => array( 'color' => array( 'background' => 'var:preset|color|accent' ) ),
+				)
+			);
+			$this->assertSame( array( 'panel' ), $this->layer->promoteShippedStyles() );
+		} finally {
+			remove_filter( 'stylesheet_directory', $to_dir );
+			remove_filter( 'template_directory', $to_dir );
+			wp_delete_file( $dir . '/styles/blocks/panel.json' );
+		}
 	}
 
 	public function test_admin_init_hook_tolerates_wordpress_hook_arguments(): void {
