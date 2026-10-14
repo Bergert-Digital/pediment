@@ -28,5 +28,8 @@ final class Bootstrap {
 		\Pediment\Design\DefaultStyles::register();
 		\Pediment\Seeder\PostTypes::register();
 		add_action( 'init', array( \Pediment\Design\SiteStyles::class, 'registerPostType' ) );
+		\Pediment\Design\SiteLayer::register(
+			new \Pediment\Design\SiteLayer( new \Pediment\Design\SiteStyles( new \Pediment\Design\StyleValidator() ) )
+		);
 	}
 }
