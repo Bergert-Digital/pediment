@@ -40,11 +40,20 @@ final class SiteLayer {
 	/**
 	 * Registers each active site style's name so theme.json keeps its data and
 	 * the Styles panel lists it. Names already registered (plugin defaults)
-	 * are left alone; the user origin overrides their data.
+	 * are left alone; the site layer's theme-data injection overrides their data.
 	 */
 	public function registerNames(): void {
+		$this->registerNamesFor( $this->store->all( SiteStyles::STATE_ACTIVE ) );
+	}
+
+	/**
+	 * Registers the not-yet-registered blockType/slug pairs of the given styles.
+	 *
+	 * @param list<array<string,mixed>> $styles Site style specs.
+	 */
+	private function registerNamesFor( array $styles ): void {
 		$registry = \WP_Block_Styles_Registry::get_instance();
-		foreach ( $this->store->all( SiteStyles::STATE_ACTIVE ) as $spec ) {
+		foreach ( $styles as $spec ) {
 			foreach ( $spec['blockTypes'] as $block_type ) {
 				if ( ! $registry->is_registered( $block_type, $spec['slug'] ) ) {
 					register_block_style(
@@ -68,12 +77,18 @@ final class SiteLayer {
 	 * through the theme global-styles REST endpoint, which a user-origin filter
 	 * never reached.
 	 *
+	 * Names are registered here too: sanitising drops variations whose name is
+	 * not in the registry, and data can be built after a same-request save or
+	 * between init 10 and 21.
+	 *
 	 * @param \WP_Theme_JSON_Data $data Theme-origin data.
 	 * @return \WP_Theme_JSON_Data
 	 */
 	public function injectSiteData( $data ) {
+		$styles = $this->store->all( SiteStyles::STATE_ACTIVE );
+		$this->registerNamesFor( $styles );
 		$blocks = array();
-		foreach ( $this->store->all( SiteStyles::STATE_ACTIVE ) as $spec ) {
+		foreach ( $styles as $spec ) {
 			foreach ( $spec['blockTypes'] as $block_type ) {
 				$blocks[ $block_type ]['variations'][ $spec['slug'] ] = $spec['styles'];
 			}
@@ -92,8 +107,13 @@ final class SiteLayer {
 	/**
 	 * Admin hook entry point. WordPress passes an empty string to admin_init
 	 * callbacks, which the typed promoteShippedStyles() parameter rejects.
+	 * Skips admin-ajax (heartbeat) and users who cannot edit theme options, so
+	 * they do not pay for reading every theme partial.
 	 */
 	public function onAdminInit(): void {
+		if ( wp_doing_ajax() || ! current_user_can( 'edit_theme_options' ) ) {
+			return;
+		}
 		$this->promoteShippedStyles();
 	}
 
