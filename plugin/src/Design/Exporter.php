@@ -15,15 +15,18 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 /**
  * Turns site styles into `styles/blocks/<slug>.json` files. Never deletes.
+ * When the theme already ships a partial with the same slug, the file keeps
+ * that partial's values and block types and layers the site values on top.
  */
 final class Exporter {
 
 	/**
 	 * Constructor.
 	 *
-	 * @param SiteStyles $store Store.
+	 * @param SiteStyles                                                          $store            Store.
+	 * @param array<string, array{blockTypes: list<string>, styles: array}>|null $theme_variations Theme partials by slug; read from the active theme when null.
 	 */
-	public function __construct( private SiteStyles $store ) {}
+	public function __construct( private SiteStyles $store, private ?array $theme_variations = null ) {}
 
 	/**
 	 * File name => JSON for every active site style.
@@ -31,15 +34,23 @@ final class Exporter {
 	 * @return array<string, string>
 	 */
 	public function files(): array {
-		$files = array();
+		$theme_variations = $this->theme_variations ?? SiteLayer::themeVariations();
+		$files            = array();
 		foreach ( $this->store->all( SiteStyles::STATE_ACTIVE ) as $spec ) {
+			$block_types = $spec['blockTypes'];
+			$styles      = $spec['styles'];
+			$theme       = $theme_variations[ $spec['slug'] ] ?? null;
+			if ( null !== $theme ) {
+				$block_types = array_values( array_unique( array_merge( $theme['blockTypes'], $block_types ) ) );
+				$styles      = array_replace_recursive( $theme['styles'], $styles );
+			}
 			$partial = array(
 				'$schema'    => 'https://schemas.wp.org/trunk/theme.json',
 				'version'    => 3,
 				'title'      => $spec['label'],
 				'slug'       => $spec['slug'],
-				'blockTypes' => $spec['blockTypes'],
-				'styles'     => $spec['styles'],
+				'blockTypes' => $block_types,
+				'styles'     => $styles,
 			);
 			$files[ $spec['slug'] . '.json' ] = (string) wp_json_encode( $partial, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE ) . "\n";
 		}

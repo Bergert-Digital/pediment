@@ -43,6 +43,33 @@ class ExporterTest extends WP_UnitTestCase {
 		$this->assertSame( '& > .x::after{content:"→"}', $data['styles']['css'] );
 	}
 
+	public function test_export_keeps_theme_properties_of_the_same_slug(): void {
+		$this->store->save(
+			array(
+				'slug'       => 'panel',
+				'label'      => 'Site panel',
+				'blockTypes' => array( 'core/group' ),
+				'styles'     => array( 'color' => array( 'background' => 'var:preset|color|accent' ) ),
+			)
+		);
+		$theme = array(
+			'panel' => array(
+				'blockTypes' => array( 'core/column' ),
+				'styles'     => array(
+					'color'   => array( 'background' => 'var:preset|color|surface' ),
+					'spacing' => array( 'padding' => array( 'top' => 'var:preset|spacing|50' ) ),
+				),
+			),
+		);
+
+		$data = json_decode( ( new Exporter( $this->store, $theme ) )->files()['panel.json'], true );
+
+		$this->assertSame( 'Site panel', $data['title'] );
+		$this->assertSame( array( 'core/column', 'core/group' ), $data['blockTypes'] );
+		$this->assertSame( 'var:preset|color|accent', $data['styles']['color']['background'] );
+		$this->assertSame( 'var:preset|spacing|50', $data['styles']['spacing']['padding']['top'] );
+	}
+
 	public function test_no_active_styles_exports_nothing_without_error(): void {
 		$exporter = new Exporter( $this->store );
 		$this->assertSame( array(), $exporter->files() );
