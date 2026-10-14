@@ -105,4 +105,111 @@ class StyleValidatorTest extends WP_UnitTestCase {
 		$this->assertStringContainsString( 'not registered', $unknown[0] );
 		$this->assertNotEmpty( $this->errors( array( 'slug' => 'card', 'label' => 'Card', 'blockTypes' => array( 'core/group' ) ) ) );
 	}
+
+	public function test_var_fallback_hides_literal_colour(): void {
+		$errors = $this->errors( $this->spec( array( 'css' => '&{color:var(--wp--preset--color--accent, #a9621f)}' ) ) );
+		$this->assertCount( 1, $errors );
+		$this->assertStringContainsString( 'colour', $errors[0] );
+	}
+
+	public function test_named_colours_in_css_are_rejected(): void {
+		$errors = $this->errors( $this->spec( array( 'css' => '&{color:white}' ) ) );
+		$this->assertCount( 1, $errors );
+		$this->assertStringContainsString( 'colour', $errors[0] );
+
+		$black = $this->errors( $this->spec( array( 'css' => '&{background:black}' ) ) );
+		$this->assertCount( 1, $black );
+
+		$red = $this->errors( $this->spec( array( 'css' => '&{box-shadow:0 1px 2px red}' ) ) );
+		$this->assertCount( 1, $red );
+	}
+
+	public function test_class_selectors_with_colour_names_are_allowed(): void {
+		$this->assertSame( array(), $this->errors( $this->spec( array( 'css' => '& .red{width:26px}' ) ) ) );
+	}
+
+	public function test_outline_colour_must_be_token(): void {
+		$errors = $this->errors( $this->spec( array( 'outline' => array( 'color' => '#fff' ) ) ) );
+		$this->assertCount( 1, $errors );
+		$this->assertStringContainsString( 'styles.outline.color', $errors[0] );
+	}
+
+	public function test_filter_duotone_must_be_token(): void {
+		$errors = $this->errors( $this->spec( array( 'filter' => array( 'duotone' => '#fff' ) ) ) );
+		$this->assertCount( 1, $errors );
+		$this->assertStringContainsString( 'styles.filter.duotone', $errors[0] );
+	}
+
+	public function test_variations_are_recursed(): void {
+		$errors = $this->errors(
+			$this->spec(
+				array(
+					'blocks' => array(
+						'core/button' => array(
+							'variations' => array(
+								'big' => array(
+									'color' => array( 'text' => '#fff' ),
+								),
+							),
+						),
+					),
+				)
+			)
+		);
+		$this->assertCount( 1, $errors );
+		$this->assertStringContainsString( 'variations.big.color.text', $errors[0] );
+	}
+
+	public function test_ref_objects_must_have_only_ref_key(): void {
+		$errors = $this->errors( $this->spec( array( 'spacing' => array( 'padding' => array( 'ref' => 'styles.x', 'top' => '78px' ) ) ) ) );
+		$this->assertCount( 1, $errors );
+		$this->assertStringContainsString( 'styles.spacing.padding.top', $errors[0] );
+	}
+
+	public function test_important_with_whitespace(): void {
+		$errors = $this->errors( $this->spec( array( 'css' => '&{color:var(--wp--preset--color--accent) ! important}' ) ) );
+		$this->assertCount( 1, $errors );
+		$this->assertStringContainsString( '!important', $errors[0] );
+	}
+
+	public function test_slug_with_newline(): void {
+		$errors = $this->errors( $this->spec( array(), array( 'slug' => "card\n" ) ) );
+		$this->assertCount( 1, $errors );
+		$this->assertStringContainsString( 'slug:', $errors[0] );
+	}
+
+	public function test_colour_functions_in_css(): void {
+		$errors = $this->errors( $this->spec( array( 'css' => '&{color:color(display-p3 1 0 0)}' ) ) );
+		$this->assertCount( 1, $errors );
+		$this->assertStringContainsString( 'colour', $errors[0] );
+
+		$mix = $this->errors( $this->spec( array( 'css' => '&{color:color-mix(in srgb, red, blue)}' ) ) );
+		$this->assertCount( 1, $mix );
+
+		$light = $this->errors( $this->spec( array( 'css' => '&{color:light-dark(white, black)}' ) ) );
+		$this->assertCount( 1, $light );
+	}
+
+	public function test_at_rule_restrictions(): void {
+		$scope = $this->errors( $this->spec( array( 'css' => '@scope (.site-header){display:none}' ) ) );
+		$this->assertCount( 1, $scope );
+		$this->assertStringContainsString( '@scope', $scope[0] );
+		$this->assertStringContainsString( 'not allowed', $scope[0] );
+
+		$import = $this->errors( $this->spec( array( 'css' => '@import url(x.css);' ) ) );
+		$this->assertCount( 1, $import );
+		$this->assertStringContainsString( '@import', $import[0] );
+
+		$allowed = $this->errors( $this->spec( array( 'css' => '@media (min-width:600px){&:hover{transform:translateY(-4px)}}' ) ) );
+		$this->assertEmpty( $allowed );
+
+		$container = $this->errors( $this->spec( array( 'css' => '@container (min-width:600px){&{display:block}}' ) ) );
+		$this->assertEmpty( $container );
+
+		$supports = $this->errors( $this->spec( array( 'css' => '@supports (display:grid){&{display:grid}}' ) ) );
+		$this->assertEmpty( $supports );
+
+		$layer = $this->errors( $this->spec( array( 'css' => '@layer utilities{&{color:var(--wp--preset--color--accent)}}' ) ) );
+		$this->assertEmpty( $layer );
+	}
 }

@@ -19,8 +19,8 @@ if ( ! defined( 'ABSPATH' ) ) {
  */
 final class StyleValidator {
 
-	private const SLUG_PATTERN  = '/^[a-z][a-z0-9-]{0,39}$/';
-	private const BLOCK_PATTERN = '/^[a-z0-9-]+\/[a-z0-9-]+$/';
+	private const SLUG_PATTERN  = '/^[a-z][a-z0-9-]{0,39}$/D';
+	private const BLOCK_PATTERN = '/^[a-z0-9-]+\/[a-z0-9-]+$/D';
 
 	/**
 	 * Style-node paths whose values must be tokens.
@@ -41,9 +41,36 @@ final class StyleValidator {
 		'border.bottom.color',
 		'border.left.color',
 		'shadow',
+		'outline.color',
+		'filter.duotone',
 	);
 
 	private const KEYWORDS = array( '0', 'none', 'inherit', 'initial', 'unset', 'transparent', 'currentcolor' );
+
+	/**
+	 * CSS Color 4 named colours (148 keywords).
+	 */
+	private const CSS_NAMED_COLOURS = array(
+		'aliceblue', 'antiquewhite', 'aqua', 'aquamarine', 'azure', 'beige', 'bisque', 'black', 'blanchedalmond',
+		'blue', 'blueviolet', 'brown', 'burlywood', 'cadetblue', 'chartreuse', 'chocolate', 'coral', 'cornflowerblue',
+		'cornsilk', 'crimson', 'cyan', 'darkblue', 'darkcyan', 'darkgoldenrod', 'darkgray', 'darkgrey', 'darkgreen',
+		'darkkhaki', 'darkmagenta', 'darkolivegreen', 'darkorange', 'darkorchid', 'darkred', 'darksalmon',
+		'darkseagreen', 'darkslateblue', 'darkslategray', 'darkslategrey', 'darkturquoise', 'darkviolet', 'deeppink',
+		'deepskyblue', 'dimgray', 'dimgrey', 'dodgerblue', 'firebrick', 'floralwhite', 'forestgreen', 'fuchsia',
+		'gainsboro', 'ghostwhite', 'gold', 'goldenrod', 'gray', 'grey', 'green', 'greenyellow', 'honeydew',
+		'hotpink', 'indianred', 'indigo', 'ivory', 'khaki', 'lavender', 'lavenderblush', 'lawngreen', 'lemonchiffon',
+		'lightblue', 'lightcoral', 'lightcyan', 'lightgoldenrodyellow', 'lightgray', 'lightgrey', 'lightgreen',
+		'lightpink', 'lightsalmon', 'lightseagreen', 'lightskyblue', 'lightslategray', 'lightslategrey',
+		'lightsteelblue', 'lightyellow', 'lime', 'limegreen', 'linen', 'magenta', 'maroon', 'mediumaquamarine',
+		'mediumblue', 'mediumorchid', 'mediumpurple', 'mediumseagreen', 'mediumslateblue', 'mediumspringgreen',
+		'mediumturquoise', 'mediumvioletred', 'midnightblue', 'mintcream', 'mistyrose', 'moccasin', 'navajowhite',
+		'navy', 'oldlace', 'olive', 'olivedrab', 'orange', 'orangered', 'orchid', 'palegoldenrod', 'palegreen',
+		'paleturquoise', 'palevioletred', 'papayawhip', 'peachpuff', 'peru', 'pink', 'plum', 'powderblue',
+		'purple', 'rebeccapurple', 'red', 'rosybrown', 'royalblue', 'saddlebrown', 'salmon', 'sandybrown',
+		'seagreen', 'seashell', 'sienna', 'silver', 'skyblue', 'slateblue', 'slategray', 'slategrey', 'snow',
+		'springgreen', 'steelblue', 'tan', 'teal', 'thistle', 'tomato', 'turquoise', 'violet', 'wheat', 'white',
+		'whitesmoke', 'yellow', 'yellowgreen',
+	);
 
 	/**
 	 * Validates a spec.
@@ -112,7 +139,7 @@ final class StyleValidator {
 			$errors = array_merge( $errors, $this->validate_css( $node['css'], "{$path}.css" ) );
 		}
 
-		foreach ( array( 'elements', 'blocks' ) as $group ) {
+		foreach ( array( 'elements', 'blocks', 'variations' ) as $group ) {
 			$children = $node[ $group ] ?? array();
 			if ( ! is_array( $children ) ) {
 				continue;
@@ -144,11 +171,16 @@ final class StyleValidator {
 		if ( ! is_array( $value ) ) {
 			return array( $path => $value );
 		}
-		if ( array_key_exists( 'ref', $value ) ) {
+		// Pure ref object: skip validation entirely.
+		if ( array_keys( $value ) === array( 'ref' ) && is_string( $value['ref'] ) && '' !== trim( $value['ref'] ) ) {
 			return array();
 		}
 		$out = array();
 		foreach ( $value as $key => $child ) {
+			// Skip the 'ref' key itself if there are other keys (mixed object).
+			if ( 'ref' === $key && count( $value ) > 1 ) {
+				continue;
+			}
 			$out += $this->leaves( $child, "{$path}.{$key}" );
 		}
 		return $out;
@@ -193,14 +225,17 @@ final class StyleValidator {
 		$errors = array();
 		$clean  = (string) preg_replace( '#/\*.*?\*/#s', '', $css );
 
-		if ( false !== stripos( $clean, '!important' ) ) {
+		if ( 1 === preg_match( '/!\s*important/i', $clean ) ) {
 			$errors[] = "{$path}: !important is not allowed";
 		}
 
-		$without_vars = (string) preg_replace( '/var\([^()]*\)/', '', $clean );
-		if ( 1 === preg_match( '/#[0-9a-f]{3,8}\b|\b(?:rgba?|hsla?|hwb|lab|lch|oklab|oklch)\s*\(/i', $without_vars ) ) {
+		// Only strip var() calls with a single --wp--preset or --wp--custom token (no comma inside).
+		$without_safe_vars = (string) preg_replace( '/var\(\s*--wp--(preset|custom)--[a-z0-9-]+(--[a-z0-9-]+)*\s*\)/', '', $clean );
+		if ( $this->has_literal_colour( $without_safe_vars ) ) {
 			$errors[] = "{$path}: literal colour — use var(--wp--preset--color--…)";
 		}
+
+		$errors = array_merge( $errors, $this->validate_css_at_rules( $clean, $path ) );
 
 		foreach ( $this->selectors( $clean ) as $selector ) {
 			if ( ! str_starts_with( $selector, '&' ) ) {
@@ -208,6 +243,74 @@ final class StyleValidator {
 			}
 		}
 
+		return $errors;
+	}
+
+	/**
+	 * Checks if CSS contains literal colour values.
+	 *
+	 * @param string $css CSS (with safe vars removed).
+	 * @return bool
+	 */
+	private function has_literal_colour( string $css ): bool {
+		// Hex colours.
+		if ( 1 === preg_match( '/#[0-9a-f]{3,8}\b/i', $css ) ) {
+			return true;
+		}
+		// rgb/rgba/hsl/hsla/hwb/lab/lch/oklab/oklch functions.
+		if ( 1 === preg_match( '/\b(?:rgba?|hsla?|hwb|lab|lch|oklab|oklch)\s*\(/i', $css ) ) {
+			return true;
+		}
+		// color() / color-mix() / light-dark() functions.
+		if ( 1 === preg_match( '/\b(?:color|color-mix|light-dark)\s*\(/i', $css ) ) {
+			return true;
+		}
+		// Named colours in declaration values (after : and before ; or }).
+		return $this->has_named_colour_in_values( $css );
+	}
+
+	/**
+	 * Checks if CSS has named colours in declaration values.
+	 *
+	 * @param string $css CSS.
+	 * @return bool
+	 */
+	private function has_named_colour_in_values( string $css ): bool {
+		// Match declarations: prop: value; (or }) at any nesting depth.
+		if ( ! preg_match_all( '/:\s*([^:;{}]+?)(?:[;}]|$)/s', $css, $matches ) ) {
+			return false;
+		}
+		foreach ( $matches[1] as $value ) {
+			$value = trim( $value );
+			// Check if value contains a named colour as a whole word.
+			foreach ( self::CSS_NAMED_COLOURS as $colour ) {
+				if ( 1 === preg_match( '/\b' . preg_quote( $colour, '/' ) . '\b/i', $value ) ) {
+					return true;
+				}
+			}
+		}
+		return false;
+	}
+
+	/**
+	 * Validates at-rules in CSS.
+	 *
+	 * @param string $css  CSS.
+	 * @param string $path Path.
+	 * @return list<string>
+	 */
+	private function validate_css_at_rules( string $css, string $path ): array {
+		$allowed = array( 'media', 'container', 'supports', 'layer' );
+		$errors  = array();
+
+		if ( preg_match_all( '/@([a-z][a-z0-9-]*)/i', $css, $matches ) ) {
+			foreach ( $matches[1] as $name ) {
+				$name_lower = strtolower( $name );
+				if ( ! in_array( $name_lower, $allowed, true ) ) {
+					$errors[] = "{$path}: at-rule @{$name_lower} is not allowed";
+				}
+			}
+		}
 		return $errors;
 	}
 
@@ -243,16 +346,16 @@ final class StyleValidator {
 	/**
 	 * Splits a selector list on commas outside parentheses.
 	 *
-	 * @param string $list Selector list.
+	 * @param string $selector_list Selector list.
 	 * @return list<string>
 	 */
-	private function split_top_level_commas( string $list ): array {
+	private function split_top_level_commas( string $selector_list ): array {
 		$parts   = array();
 		$depth   = 0;
 		$current = '';
-		$length  = strlen( $list );
+		$length  = strlen( $selector_list );
 		for ( $i = 0; $i < $length; $i++ ) {
-			$ch = $list[ $i ];
+			$ch = $selector_list[ $i ];
 			if ( '(' === $ch ) {
 				++$depth;
 			} elseif ( ')' === $ch ) {
