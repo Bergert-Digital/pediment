@@ -35,6 +35,17 @@ class DefaultStylesTest extends WP_UnitTestCase {
 		$this->assertStringContainsString( 'border-radius: var(--wp--custom--radius--md)', $css );
 	}
 
+	public function test_pill_text_uses_the_surface_token(): void {
+		$pill = null;
+		foreach ( DefaultStyles::specs() as $spec ) {
+			if ( 'pill' === $spec['slug'] ) {
+				$pill = $spec;
+			}
+		}
+		$this->assertNotNull( $pill );
+		$this->assertSame( 'var:preset|color|surface', $pill['styles']['color']['text'] );
+	}
+
 	public function test_radius_tokens_exist(): void {
 		wp_clean_theme_json_cache();
 		$this->assertSame( '12px', wp_get_global_settings( array( 'custom', 'radius', 'md' ) ) );
