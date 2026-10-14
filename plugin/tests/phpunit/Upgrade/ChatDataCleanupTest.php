@@ -4,6 +4,19 @@ use Pediment\Upgrade\ChatDataCleanup;
 
 class ChatDataCleanupTest extends WP_UnitTestCase {
 
+	public function set_up(): void {
+		parent::set_up();
+		global $wpdb;
+		// WP test framework rewrites DROP TABLE to DROP TEMPORARY TABLE, so real
+		// leftover tables from prior test runs survive. Remove them before each test
+		// to ensure isolation. Temporarily disable the rewrite filter.
+		remove_filter( 'query', array( $this, '_drop_temporary_tables' ) );
+		foreach ( ChatDataCleanup::TABLES as $short ) {
+			$wpdb->query( "DROP TABLE IF EXISTS {$wpdb->prefix}{$short}" ); // phpcs:ignore WordPress.DB
+		}
+		add_filter( 'query', array( $this, '_drop_temporary_tables' ) );
+	}
+
 	private function table_exists( string $short ): bool {
 		global $wpdb;
 		$wpdb->suppress_errors( true );
