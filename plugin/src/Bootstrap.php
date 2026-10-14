@@ -25,6 +25,7 @@ final class Bootstrap {
 	public function register(): void {
 		\Pediment\Templates\Registrar::register();
 		\Pediment\Tokens\Injector::register();
+		\Pediment\Design\DefaultStyles::register();
 		\Pediment\Seeder\PostTypes::register();
 	}
 }

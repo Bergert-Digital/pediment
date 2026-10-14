@@ -1,0 +1,11 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/theme.json",
+	"version": 3,
+	"title": "Pill",
+	"slug": "pill",
+	"blockTypes": [ "core/button" ],
+	"styles": {
+		"color": { "background": "var:preset|color|accent", "text": "var:preset|color|foreground" },
+		"border": { "radius": "var(--wp--custom--radius--pill)" }
+	}
+}
