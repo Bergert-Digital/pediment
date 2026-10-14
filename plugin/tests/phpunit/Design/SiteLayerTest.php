@@ -85,9 +85,12 @@ class SiteLayerTest extends WP_UnitTestCase {
 	}
 
 	public function test_admin_init_hook_tolerates_wordpress_hook_arguments(): void {
+		// Core's own admin_init callbacks send headers; keep only ours.
+		remove_all_actions( 'admin_init' );
 		SiteLayer::register( $this->layer );
 		$this->assertNotFalse( has_action( 'admin_init', array( $this->layer, 'onAdminInit' ) ) );
 
+		wp_set_current_user( self::factory()->user->create( array( 'role' => 'administrator' ) ) );
 		$this->store->save(
 			array(
 				'slug'       => 'promo',
@@ -97,8 +100,22 @@ class SiteLayerTest extends WP_UnitTestCase {
 			)
 		);
 		// WordPress invokes admin_init callbacks with an empty string argument.
-		call_user_func_array( array( $this->layer, 'onAdminInit' ), array( '' ) );
+		do_action( 'admin_init' );
 		$this->assertSame( SiteStyles::STATE_ACTIVE, $this->store->get( 'promo' )['state'] );
+	}
+
+	public function test_style_saved_mid_request_applies_without_reregistering(): void {
+		$this->store->save(
+			array(
+				'slug'       => 'fresh',
+				'label'      => 'Fresh',
+				'blockTypes' => array( 'core/group' ),
+				'styles'     => array( 'color' => array( 'background' => 'var:preset|color|accent' ) ),
+			)
+		);
+
+		$css = $this->render_variation_css( '<!-- wp:group {"className":"is-style-fresh"} --><div class="wp-block-group is-style-fresh"><p>x</p></div><!-- /wp:group -->' );
+		$this->assertStringContainsString( 'background-color: var(--wp--preset--color--accent)', $css );
 	}
 
 	public function test_site_style_reaches_the_editor_via_the_theme_rest_endpoint(): void {
