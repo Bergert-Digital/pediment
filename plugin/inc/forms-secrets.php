@@ -3,7 +3,7 @@
  * Encrypted secret store for form destinations.
  *
  * Credential values referenced by destinations as {{ secret:NAME }} live here,
- * encrypted at rest with a wp_salt-derived key (mirrors pediment-ai OptionsStore).
+ * encrypted at rest with a wp_salt-derived key.
  *
  * @package Pediment
  */
