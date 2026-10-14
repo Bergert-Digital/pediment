@@ -69,7 +69,7 @@ npm run env:stop
 ### Day-to-day commands
 
 ```bash
-# Rebuild the editor bundle after JS/TS changes (from plugin/)
+# Rebuild the blocks after JS/TS changes (from plugin/)
 cd plugin && npm run build
 
 # Watch + rebuild on save (from plugin/)
