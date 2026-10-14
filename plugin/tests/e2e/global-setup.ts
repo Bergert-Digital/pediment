@@ -120,12 +120,5 @@ export default async function globalSetup(): Promise< void > {
 			`npx wp-env run cli wp user meta update ${ uid } wp_persisted_preferences '${ prefs }' --format=json`,
 			{ cwd: WP_ENV_CWD, stdio: 'pipe' }
 		);
-
-		// E2E runs share the persistent wp-env database. Reset the per-user
-		// transient counters so repeated local runs do not exhaust production
-		// rate limits before the mock-provider assertions execute.
-		for ( const kind of [ 'compose', 'edit', 'refine' ] ) {
-			wp( `transient delete pediment_ai_rl_${ uid }_${ kind }` );
-		}
 	}
 }
