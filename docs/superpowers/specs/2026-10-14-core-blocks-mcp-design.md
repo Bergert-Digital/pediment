@@ -99,7 +99,7 @@ own selector.
    `client-template/` ships the folder and one example.
 3. **Site layer** — post type `pediment_style` (not public, revisions on, REST
    off; only the abilities write it). Each post stores one style as JSON. The
-   plugin registers active entries at `init` with `register_block_style()`, so
+   plugin registers their style names at `init`, so
    they render on the front end and in the editor, and clients see them by
    label in the Styles panel.
    The plugin applies site styles through the `wp_theme_json_data_theme` filter
@@ -115,21 +115,27 @@ registration and to the site layer on save):
   `var(--wp--preset--…)` or `var(--wp--custom--…)`. `0`, `inherit`,
   `currentColor`, `transparent` and percentages are allowed.
 - Other values (line widths, aspect ratios, transforms, transitions) are free.
-- In `css`: no `!important`, no literal colours (hex, rgb()/hsl()/color-mix()…,
-  named colours, or colour fallbacks inside `var()`), and only `@media`,
-  `@container`, `@supports` and `@layer` at-rules. Spacing, radius and font
+- In `css`: no `!important` and no literal colours (hex, rgb()/hsl()/color-mix()…,
+  named colours, or colour fallbacks inside `var()`). Spacing, radius and font
   sizes inside `css` are not checked; `css` is the escape hatch for what
   theme.json cannot express.
-- `css` selectors must start with `&` (the style itself or its descendants).
+- `css` follows the grammar core's `process_blocks_custom_css()` renders:
+  optional bare declarations first, then rules `&<selector>{declarations}`
+  (the style itself or its descendants). One `&` rule per selector: no
+  at-rules, no nested rules, no selector lists, and no `&` except at the start
+  of a rule.
+- No `<` anywhere in `css` or in any style value.
 - Invalid plugin styles are skipped with a `_doing_it_wrong` notice. Invalid
   theme styles still load (dropping them could change live sites whose themes
   predate the rules) and are reported as warnings in the vocabulary and the
   Design tab. An invalid site-layer write is rejected with an error list.
 
 **Export.** An admin button (Pediment settings) and `wp pediment design export`
-write every active site-layer style as a client-theme JSON file. After the
-theme release ships the file, the site entry is marked `promoted` and stops
-loading (the theme layer now provides it). Export never deletes anything.
+write every active site-layer style as a client-theme JSON file, merged over
+the theme's partial of the same slug when one exists. After the theme release
+ships the file, the site entry is marked `promoted` and stops loading (the
+theme layer now provides it); a site entry whose values differ from the theme
+partial stays active. Export never deletes anything.
 
 ### 3. MCP tools and content rules
 
