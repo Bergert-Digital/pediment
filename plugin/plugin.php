@@ -6,7 +6,7 @@
  * x-release-please-start-version
  * Version:           3.10.0
  * x-release-please-end
- * Requires at least: 6.4
+ * Requires at least: 6.9
  * Requires PHP:      8.1
  * Author:            Jonas Bergert
  * Author URI:        https://bergert.digital

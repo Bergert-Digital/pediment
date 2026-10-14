@@ -16,7 +16,6 @@ phpunit.xml.dist
 phpunit-polylang.xml.dist
 composer.json
 composer.lock
-editor
 AGENTS.md
 docs
 .mcp.json

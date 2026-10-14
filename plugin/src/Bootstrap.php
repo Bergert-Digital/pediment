@@ -43,59 +43,6 @@ final class Bootstrap {
 
 		( new \Pediment\Settings\Page() )->register();
 
-		add_action( 'enqueue_block_editor_assets', static function () {
-			$asset_path = PEDIMENT_AI_PLUGIN_DIR . '/build/index.asset.php';
-			if ( ! file_exists( $asset_path ) ) {
-				return;
-			}
-			$asset = include $asset_path;
-			// Older WP installs don't register react-jsx-runtime; bundles built by @wordpress/scripts depend on it.
-			// Register our own shim so the dep resolves and the bundle's JSX runtime gets a working global.
-			if ( in_array( 'react-jsx-runtime', $asset['dependencies'] ?? [], true ) && ! wp_script_is( 'react-jsx-runtime', 'registered' ) ) {
-				wp_register_script(
-					'react-jsx-runtime',
-					PEDIMENT_AI_PLUGIN_URL . 'assets/react-jsx-runtime-shim.js',
-					[ 'react' ],
-					PEDIMENT_AI_VERSION,
-					true
-				);
-			}
-			wp_enqueue_script(
-				'pediment-editor',
-				PEDIMENT_AI_PLUGIN_URL . 'build/index.js',
-				$asset['dependencies'] ?? [],
-				$asset['version'] ?? PEDIMENT_AI_VERSION,
-				true
-			);
-			// Tell the chat sidebar whether the AI can actually answer, so mock
-			// mode and a missing API key surface as a notice instead of leaving
-			// the user to puzzle over canned or failing replies. Admins get a
-			// deep link to the AI tab of the settings hub (or the legacy
-			// standalone page when the hub is absent).
-			$settings_url = '';
-			if ( current_user_can( 'manage_options' ) ) {
-				$settings_url = function_exists( 'pediment_settings_page_url' )
-					? pediment_settings_page_url( 'ai' )
-					: admin_url( 'options-general.php?page=' . \Pediment\Settings\Page::SLUG );
-			}
-			wp_add_inline_script(
-				'pediment-editor',
-				'window.pedimentAiEditor = ' . wp_json_encode( [
-					'aiStatus'    => \Pediment\Anthropic\ProviderStatus::current(),
-					'settingsUrl' => $settings_url,
-				] ) . ';',
-				'before'
-			);
-			if ( file_exists( PEDIMENT_AI_PLUGIN_DIR . '/build/index.css' ) ) {
-				wp_enqueue_style(
-					'pediment-editor',
-					PEDIMENT_AI_PLUGIN_URL . 'build/index.css',
-					[],
-					$asset['version'] ?? PEDIMENT_AI_VERSION
-				);
-			}
-		} );
-
 		add_filter( 'pediment_ai_model_compose', static function ( $default ) {
 			$val = ( new \Pediment\Settings\OptionsStore() )->get( 'model_compose', '' );
 			return '' !== $val ? $val : $default;
