@@ -77,6 +77,9 @@ final class DesignCommand {
 	public function export( array $args, array $assocArgs ): void {
 		$dir   = $assocArgs['dir'] ?? get_stylesheet_directory() . '/styles/blocks';
 		$paths = ( new Exporter( new SiteStyles( new StyleValidator() ) ) )->writeTo( $dir );
+		if ( is_wp_error( $paths ) ) {
+			\WP_CLI::error( $paths->get_error_message() );
+		}
 		foreach ( $paths as $path ) {
 			\WP_CLI::log( $path );
 		}
