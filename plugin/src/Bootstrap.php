@@ -27,5 +27,6 @@ final class Bootstrap {
 		\Pediment\Tokens\Injector::register();
 		\Pediment\Design\DefaultStyles::register();
 		\Pediment\Seeder\PostTypes::register();
+		add_action( 'init', array( \Pediment\Design\SiteStyles::class, 'registerPostType' ) );
 	}
 }
