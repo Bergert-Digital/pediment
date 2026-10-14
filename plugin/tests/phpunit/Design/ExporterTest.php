@@ -65,4 +65,21 @@ class ExporterTest extends WP_UnitTestCase {
 		$this->assertNotFalse( $archive->locateName( 'styles/blocks/promo.json' ) );
 		$archive->close();
 	}
+
+	public function test_zip_without_active_styles_returns_an_error(): void {
+		$zip = ( new Exporter( $this->store ) )->zip();
+		$this->assertWPError( $zip );
+		$this->assertSame( 'pediment_nothing_to_export', $zip->get_error_code() );
+	}
+
+	public function test_write_to_an_unwritable_directory_returns_an_error(): void {
+		$this->save( 'promo' );
+		$file = wp_tempnam( 'pediment-export-file' );
+
+		$result = ( new Exporter( $this->store ) )->writeTo( $file . '/sub' );
+
+		$this->assertWPError( $result );
+		$this->assertSame( 'pediment_export_write_failed', $result->get_error_code() );
+		wp_delete_file( $file );
+	}
 }

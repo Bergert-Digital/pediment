@@ -50,18 +50,24 @@ final class Exporter {
 	 * Writes the files into a directory.
 	 *
 	 * @param string $dir Target directory.
-	 * @return list<string> Written paths.
+	 * @return list<string>|\WP_Error Written paths, or an error when a write fails.
 	 */
-	public function writeTo( string $dir ): array {
+	public function writeTo( string $dir ) {
 		$files = $this->files();
 		if ( array() === $files ) {
 			return array();
 		}
-		wp_mkdir_p( $dir );
+		if ( ! wp_mkdir_p( $dir ) ) {
+			/* translators: %s: directory path */
+			return new \WP_Error( 'pediment_export_write_failed', sprintf( __( 'Could not create the directory %s.', 'pediment' ), $dir ) );
+		}
 		$paths = array();
 		foreach ( $files as $name => $json ) {
 			$path = rtrim( $dir, '/' ) . '/' . $name;
-			file_put_contents( $path, $json ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents
+			if ( false === file_put_contents( $path, $json ) ) { // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents
+				/* translators: %s: file path */
+				return new \WP_Error( 'pediment_export_write_failed', sprintf( __( 'Could not write %s.', 'pediment' ), $path ) );
+			}
 			$paths[] = $path;
 		}
 		return $paths;
@@ -76,6 +82,10 @@ final class Exporter {
 		if ( ! class_exists( '\ZipArchive' ) ) {
 			return new \WP_Error( 'pediment_zip_unavailable', __( 'This server has no ZipArchive. Use `wp pediment design export` instead.', 'pediment' ) );
 		}
+		$files = $this->files();
+		if ( array() === $files ) {
+			return new \WP_Error( 'pediment_nothing_to_export', __( 'There are no active site styles to export.', 'pediment' ) );
+		}
 		if ( ! function_exists( 'wp_tempnam' ) ) {
 			require_once ABSPATH . 'wp-admin/includes/file.php';
 		}
@@ -84,7 +94,7 @@ final class Exporter {
 		if ( true !== $archive->open( $path, \ZipArchive::CREATE | \ZipArchive::OVERWRITE ) ) {
 			return new \WP_Error( 'pediment_zip_failed', __( 'Could not create the zip file.', 'pediment' ) );
 		}
-		foreach ( $this->files() as $name => $json ) {
+		foreach ( $files as $name => $json ) {
 			$archive->addFromString( 'styles/blocks/' . $name, $json );
 		}
 		$archive->close();
