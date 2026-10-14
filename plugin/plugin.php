@@ -90,6 +90,17 @@ if ( class_exists( \Pediment\Updater::class ) ) {
 	\Pediment\Updater::register( PEDIMENT_AI_PLUGIN_FILE );
 }
 
+// Pediment 4 removed the AI chat; drop its leftover data once per site.
+add_action(
+	'plugins_loaded',
+	static function () {
+		if ( \Pediment\Upgrade\ChatDataCleanup::needed() ) {
+			\Pediment\Upgrade\ChatDataCleanup::run();
+		}
+	},
+	5
+);
+
 if ( defined( 'WP_CLI' ) && WP_CLI ) {
 	require_once __DIR__ . '/wp-cli/SeedCommand.php';
 	\WP_CLI::add_command( 'pediment seed', \Pediment\Cli\SeedCommand::class );
