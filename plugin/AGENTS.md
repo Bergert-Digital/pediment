@@ -1,7 +1,7 @@
 # Agent instructions — Pediment
 
 Pediment is the shared WordPress site engine. It ships blocks, templates,
-patterns, tokens, forms, assets, and AI-assisted Gutenberg authoring as one
+patterns, tokens, forms, assets and seeding as one
 plugin artifact, `pediment-plugin.zip`.
 
 ## Local development
@@ -26,6 +26,6 @@ cd plugin && npm run e2e
 - Text domain and REST namespace are `pediment` and `pediment/v1`.
 - Blocks render server-side and use plugin token custom properties; see the
   root `AGENTS.md` and `docs/STANDARDS.md` for the full contract.
-- Do not reintroduce streaming, extra AI modals, or client-theme dependencies.
+- Do not add client-theme dependencies.
 
 Use conventional commits and do not push without explicit user approval.
