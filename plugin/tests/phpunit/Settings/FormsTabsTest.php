@@ -18,7 +18,8 @@ class FormsTabsTest extends WP_UnitTestCase {
 		// The seeding tab ships in the same plugin, so admin_menu also mounts
 		// 'seed' (priority 20, between 'general' and 'destinations').
 		$tabs = pediment_settings_get_tabs();
-		$this->assertSame( array( 'general', 'seed', 'destinations', 'secrets' ), array_keys( $tabs ) );
+		// 'design' comes from Pediment\Design\AdminTab (priority 40).
+		$this->assertSame( array( 'general', 'seed', 'destinations', 'secrets', 'design' ), array_keys( $tabs ) );
 	}
 
 	public function test_forms_tab_labels() {

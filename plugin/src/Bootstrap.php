@@ -31,5 +31,6 @@ final class Bootstrap {
 		\Pediment\Design\SiteLayer::register(
 			new \Pediment\Design\SiteLayer( new \Pediment\Design\SiteStyles( new \Pediment\Design\StyleValidator() ) )
 		);
+		\Pediment\Design\AdminTab::register();
 	}
 }
