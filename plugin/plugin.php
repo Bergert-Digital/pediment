@@ -93,11 +93,7 @@ if ( class_exists( \Pediment\Updater::class ) ) {
 // Pediment 4 removed the AI chat; drop its leftover data once per site.
 add_action(
 	'plugins_loaded',
-	static function () {
-		if ( \Pediment\Upgrade\ChatDataCleanup::needed() ) {
-			\Pediment\Upgrade\ChatDataCleanup::run();
-		}
-	},
+	array( \Pediment\Upgrade\ChatDataCleanup::class, 'maybeRun' ),
 	5
 );
 

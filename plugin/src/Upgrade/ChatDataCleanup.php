@@ -14,8 +14,10 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
- * Idempotent: `needed()` is true while any chat option remains, so the routine
- * runs once per site and never again.
+ * Idempotent: `needed()` is true while any chat option remains and the
+ * cleanup has not finished, so the routine runs once per site and never
+ * again. A finished cleanup sets an autoloaded flag, so later requests pay no
+ * option lookups.
  */
 final class ChatDataCleanup {
 
@@ -33,6 +35,8 @@ final class ChatDataCleanup {
 		'pediment_ai_db_version',
 	);
 
+	public const DONE_OPTION = 'pediment_chat_cleanup_done';
+
 	private const TRANSIENT_PREFIXES = array(
 		'pediment_ai_schema',
 		'pediment_ai_rl_',
@@ -41,9 +45,24 @@ final class ChatDataCleanup {
 	);
 
 	/**
-	 * Whether chat data is still present.
+	 * Runs the cleanup when chat data is present; otherwise records that the
+	 * site has nothing to clean, so the check stops running.
+	 */
+	public static function maybeRun(): void {
+		if ( self::needed() ) {
+			self::run();
+		} elseif ( '1' !== get_option( self::DONE_OPTION ) ) {
+			update_option( self::DONE_OPTION, '1', true );
+		}
+	}
+
+	/**
+	 * Whether chat data is still present and the cleanup has not finished.
 	 */
 	public static function needed(): bool {
+		if ( '1' === get_option( self::DONE_OPTION ) ) {
+			return false;
+		}
 		foreach ( self::OPTIONS as $option ) {
 			if ( false !== get_option( $option ) ) {
 				return true;
@@ -75,5 +94,7 @@ final class ChatDataCleanup {
 		foreach ( self::OPTIONS as $option ) {
 			delete_option( $option );
 		}
+
+		update_option( self::DONE_OPTION, '1', true );
 	}
 }
