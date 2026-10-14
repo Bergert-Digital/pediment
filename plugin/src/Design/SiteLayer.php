@@ -1,7 +1,7 @@
 <?php
 /**
  * Applies the site layer: registers style names and injects style data into
- * the user global-styles origin, which overrides plugin and theme layers.
+ * the theme global-styles origin, on top of plugin and theme styles.
  *
  * @package Pediment
  */
@@ -33,7 +33,7 @@ final class SiteLayer {
 	 */
 	public static function register( SiteLayer $layer ): void {
 		add_action( 'init', array( $layer, 'registerNames' ), 21 );
-		add_filter( 'wp_theme_json_data_user', array( $layer, 'injectUserData' ) );
+		add_filter( 'wp_theme_json_data_theme', array( $layer, 'injectSiteData' ) );
 		add_action( 'admin_init', array( $layer, 'onAdminInit' ) );
 	}
 
@@ -60,12 +60,18 @@ final class SiteLayer {
 	}
 
 	/**
-	 * Adds active site styles to the user origin.
+	 * Adds active site styles to the theme-origin data.
 	 *
-	 * @param \WP_Theme_JSON_Data $data User-origin data.
+	 * Core calls this filter after it has injected registry (plugin) styles and
+	 * theme styles/**.json partials into the theme data, so update_with() layers
+	 * site values on top: plugin < theme < site. The post editor reads this data
+	 * through the theme global-styles REST endpoint, which a user-origin filter
+	 * never reached.
+	 *
+	 * @param \WP_Theme_JSON_Data $data Theme-origin data.
 	 * @return \WP_Theme_JSON_Data
 	 */
-	public function injectUserData( $data ) {
+	public function injectSiteData( $data ) {
 		$blocks = array();
 		foreach ( $this->store->all( SiteStyles::STATE_ACTIVE ) as $spec ) {
 			foreach ( $spec['blockTypes'] as $block_type ) {

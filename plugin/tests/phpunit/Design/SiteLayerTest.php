@@ -14,11 +14,11 @@ class SiteLayerTest extends WP_UnitTestCase {
 		parent::set_up();
 		$this->store = new SiteStyles( new StyleValidator() );
 		$this->layer = new SiteLayer( $this->store );
-		add_filter( 'wp_theme_json_data_user', array( $this->layer, 'injectUserData' ) );
+		add_filter( 'wp_theme_json_data_theme', array( $this->layer, 'injectSiteData' ) );
 	}
 
 	public function tear_down(): void {
-		remove_filter( 'wp_theme_json_data_user', array( $this->layer, 'injectUserData' ) );
+		remove_filter( 'wp_theme_json_data_theme', array( $this->layer, 'injectSiteData' ) );
 		wp_clean_theme_json_cache();
 		parent::tear_down();
 	}
@@ -80,7 +80,7 @@ class SiteLayerTest extends WP_UnitTestCase {
 		$this->assertSame( array( 'promo' ), $this->layer->promoteShippedStyles( array( 'promo', 'unrelated' ) ) );
 		$this->assertSame( SiteStyles::STATE_PROMOTED, $this->store->get( 'promo' )['state'] );
 
-		$data = $this->layer->injectUserData( new WP_Theme_JSON_Data( array( 'version' => 3 ), 'custom' ) );
+		$data = $this->layer->injectSiteData( new WP_Theme_JSON_Data( array( 'version' => 3 ), 'theme' ) );
 		$this->assertArrayNotHasKey( 'blocks', $data->get_data()['styles'] ?? array() );
 	}
 
@@ -99,5 +99,27 @@ class SiteLayerTest extends WP_UnitTestCase {
 		// WordPress invokes admin_init callbacks with an empty string argument.
 		call_user_func_array( array( $this->layer, 'onAdminInit' ), array( '' ) );
 		$this->assertSame( SiteStyles::STATE_ACTIVE, $this->store->get( 'promo' )['state'] );
+	}
+
+	public function test_site_style_reaches_the_editor_via_the_theme_rest_endpoint(): void {
+		$this->store->save(
+			array(
+				'slug'       => 'promo',
+				'label'      => 'Promo',
+				'blockTypes' => array( 'core/group' ),
+				'styles'     => array( 'color' => array( 'background' => 'var:preset|color|accent' ) ),
+			)
+		);
+		$this->layer->registerNames();
+		wp_clean_theme_json_cache();
+		wp_set_current_user( self::factory()->user->create( array( 'role' => 'administrator' ) ) );
+
+		$response = rest_do_request( new WP_REST_Request( 'GET', '/wp/v2/global-styles/themes/' . get_stylesheet() ) );
+		$this->assertSame( 200, $response->get_status() );
+		$data = $response->get_data();
+		$this->assertContains(
+			$data['styles']['blocks']['core/group']['variations']['promo']['color']['background'] ?? null,
+			array( 'var(--wp--preset--color--accent)', 'var:preset|color|accent' )
+		);
 	}
 }
