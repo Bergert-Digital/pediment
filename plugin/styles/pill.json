@@ -5,7 +5,7 @@
 	"slug": "pill",
 	"blockTypes": [ "core/button" ],
 	"styles": {
-		"color": { "background": "var:preset|color|accent", "text": "var:preset|color|foreground" },
+		"color": { "background": "var:preset|color|accent", "text": "var:preset|color|surface" },
 		"border": { "radius": "var(--wp--custom--radius--pill)" }
 	}
 }

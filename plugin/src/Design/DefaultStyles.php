@@ -36,6 +36,7 @@ final class DefaultStyles {
 		foreach ( false === $files ? array() : $files as $file ) {
 			$data = json_decode( (string) file_get_contents( $file ), true );
 			if ( ! is_array( $data ) ) {
+				_doing_it_wrong( __METHOD__, esc_html( 'Pediment style file ' . basename( $file ) . ' is not valid JSON and was skipped.' ), '4.0.0' );
 				continue;
 			}
 			$specs[] = array(
