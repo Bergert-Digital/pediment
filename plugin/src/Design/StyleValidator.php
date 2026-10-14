@@ -23,6 +23,12 @@ final class StyleValidator {
 	private const BLOCK_PATTERN = '/^[a-z0-9-]+\/[a-z0-9-]+$/D';
 
 	/**
+	 * Slugs wp_unique_post_slug() always suffixes for flat post types (feeds
+	 * and embed), so a style stored under them could never be found again.
+	 */
+	private const RESERVED_SLUGS = array( 'feed', 'rss', 'rss2', 'rdf', 'atom', 'embed' );
+
+	/**
 	 * Style-node paths whose values must be tokens.
 	 */
 	private const TOKEN_PATHS = array(
@@ -84,6 +90,8 @@ final class StyleValidator {
 		$slug = $spec['slug'] ?? null;
 		if ( ! is_string( $slug ) || 1 !== preg_match( self::SLUG_PATTERN, $slug ) ) {
 			$errors[] = 'slug: must be lowercase letters, digits and dashes, starting with a letter (max 40)';
+		} elseif ( in_array( $slug, self::RESERVED_SLUGS, true ) ) {
+			$errors[] = "slug: {$slug} is reserved by WordPress — choose another";
 		}
 
 		$label = $spec['label'] ?? null;
@@ -110,7 +118,33 @@ final class StyleValidator {
 			return $errors;
 		}
 
+		foreach ( $this->strings( $styles, 'styles' ) as $leaf_path => $leaf ) {
+			if ( str_contains( $leaf, '<' ) ) {
+				$errors[] = "{$leaf_path}: \"<\" is not allowed";
+			}
+		}
+
 		return array_merge( $errors, $this->validate_node( $styles, 'styles' ) );
+	}
+
+	/**
+	 * Every string leaf of a tree, keyed by dotted path. Core prints style
+	 * values into inline `<style>` tags, so no value may open a tag.
+	 *
+	 * @param array  $tree Tree.
+	 * @param string $path Path.
+	 * @return array<string, string>
+	 */
+	private function strings( array $tree, string $path ): array {
+		$out = array();
+		foreach ( $tree as $key => $value ) {
+			if ( is_string( $value ) ) {
+				$out[ "{$path}.{$key}" ] = $value;
+			} elseif ( is_array( $value ) ) {
+				$out += $this->strings( $value, "{$path}.{$key}" );
+			}
+		}
+		return $out;
 	}
 
 	/**
@@ -212,7 +246,11 @@ final class StyleValidator {
 	}
 
 	/**
-	 * Validates a `css` string.
+	 * Validates a `css` string against the grammar core's
+	 * WP_Theme_JSON::process_blocks_custom_css() renders correctly: optional
+	 * bare declarations first, then rules `&<selector>{declarations}`. Core
+	 * splits on every `&` and keeps a rule only when it has exactly one `{`, so
+	 * at-rules, nesting, selector lists and stray `&` all render wrong.
 	 *
 	 * @param mixed  $css  CSS.
 	 * @param string $path Path.
@@ -235,14 +273,88 @@ final class StyleValidator {
 			$errors[] = "{$path}: literal colour — use var(--wp--preset--color--…)";
 		}
 
-		$errors = array_merge( $errors, $this->validate_css_at_rules( $clean, $path ) );
-
-		foreach ( $this->selectors( $clean ) as $selector ) {
-			if ( ! str_starts_with( $selector, '&' ) ) {
-				$errors[] = "{$path}: selector " . wp_json_encode( $selector ) . ' must start with &';
+		if ( preg_match_all( '/@([a-z][a-z0-9-]*)/i', $clean, $matches ) ) {
+			foreach ( array_unique( array_map( 'strtolower', $matches[1] ) ) as $name ) {
+				$errors[] = "{$path}: at-rule @{$name} is not allowed";
 			}
 		}
 
+		// Core does not strip comments, so the grammar applies to the raw string.
+		return array_merge( $errors, $this->validate_css_rules( $css, $path ) );
+	}
+
+	/**
+	 * Checks the rule structure core can render.
+	 *
+	 * @param string $css  CSS.
+	 * @param string $path Path.
+	 * @return list<string>
+	 */
+	private function validate_css_rules( string $css, string $path ): array {
+		$rules   = array();
+		$prelude = '';
+		$buffer  = '';
+		$open    = false;
+		$length  = strlen( $css );
+		for ( $i = 0; $i < $length; $i++ ) {
+			$ch = $css[ $i ];
+			if ( '{' === $ch ) {
+				if ( $open ) {
+					return array( "{$path}: nested rules are not allowed" );
+				}
+				$prelude = $buffer;
+				$buffer  = '';
+				$open    = true;
+			} elseif ( '}' === $ch ) {
+				if ( ! $open ) {
+					return array( "{$path}: unbalanced }" );
+				}
+				$rules[] = array( $prelude, $buffer );
+				$buffer  = '';
+				$open    = false;
+			} else {
+				$buffer .= $ch;
+			}
+		}
+		if ( $open ) {
+			return array( "{$path}: unbalanced {" );
+		}
+
+		$errors   = array();
+		$stray    = "{$path}: & may only start a rule";
+		$trailing = trim( $buffer );
+		if ( array() === $rules ) {
+			// Bare declarations only: they apply to the style itself.
+			return str_contains( $trailing, '&' ) ? array( $stray ) : array();
+		}
+		if ( '' !== $trailing ) {
+			$errors[] = "{$path}: declarations outside a rule must come before the first & rule";
+		}
+
+		foreach ( $rules as $index => list( $prelude, $declarations ) ) {
+			if ( str_starts_with( trim( $prelude ), '@' ) ) {
+				continue; // Reported as an at-rule.
+			}
+			$amp = strpos( $prelude, '&' );
+			if ( false === $amp ) {
+				$errors[] = "{$path}: selector " . wp_json_encode( trim( $prelude ) ) . ' must start with &';
+				continue;
+			}
+			$before = trim( substr( $prelude, 0, $amp ) );
+			// Only the first rule may follow root declarations, which end with `;`.
+			if ( '' !== $before && ( 0 !== $index || ! str_ends_with( $before, ';' ) ) ) {
+				$errors[] = "{$path}: selector " . wp_json_encode( trim( $prelude ) ) . ' must start with &';
+				continue;
+			}
+			$selector = substr( $prelude, $amp + 1 );
+			if ( str_contains( $selector, '&' ) || str_contains( $declarations, '&' ) ) {
+				$errors[] = $stray;
+				continue;
+			}
+			if ( count( $this->split_top_level_commas( $selector ) ) > 1 ) {
+				$errors[] = "{$path}: selector list " . wp_json_encode( '&' . trim( $selector ) ) . ' is not allowed — write one & rule per selector';
+			}
+		}
 		return $errors;
 	}
 
@@ -290,57 +402,6 @@ final class StyleValidator {
 			}
 		}
 		return false;
-	}
-
-	/**
-	 * Validates at-rules in CSS.
-	 *
-	 * @param string $css  CSS.
-	 * @param string $path Path.
-	 * @return list<string>
-	 */
-	private function validate_css_at_rules( string $css, string $path ): array {
-		$allowed = array( 'media', 'container', 'supports', 'layer' );
-		$errors  = array();
-
-		if ( preg_match_all( '/@([a-z][a-z0-9-]*)/i', $css, $matches ) ) {
-			foreach ( $matches[1] as $name ) {
-				$name_lower = strtolower( $name );
-				if ( ! in_array( $name_lower, $allowed, true ) ) {
-					$errors[] = "{$path}: at-rule @{$name_lower} is not allowed";
-				}
-			}
-		}
-		return $errors;
-	}
-
-	/**
-	 * Extracts rule selectors (not at-rule preludes) from CSS, at any nesting depth.
-	 *
-	 * @param string $css CSS without comments.
-	 * @return list<string>
-	 */
-	private function selectors( string $css ): array {
-		$out    = array();
-		$buffer = '';
-		$length = strlen( $css );
-		for ( $i = 0; $i < $length; $i++ ) {
-			$ch = $css[ $i ];
-			if ( '{' === $ch ) {
-				$prelude = trim( $buffer );
-				$buffer  = '';
-				if ( '' !== $prelude && '@' !== $prelude[0] ) {
-					foreach ( $this->split_top_level_commas( $prelude ) as $selector ) {
-						$out[] = $selector;
-					}
-				}
-			} elseif ( '}' === $ch || ';' === $ch ) {
-				$buffer = '';
-			} else {
-				$buffer .= $ch;
-			}
-		}
-		return $out;
 	}
 
 	/**
