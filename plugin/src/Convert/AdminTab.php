@@ -22,6 +22,13 @@ final class AdminTab {
 
 	public const ACTION = 'pediment_convert_legacy';
 
+	/**
+	 * Posts per preview and per run. Shared hosting limits request time
+	 * (about 30 s) and form fields (max_input_vars); filter with
+	 * `pediment_convert_batch_size`.
+	 */
+	public const BATCH = 25;
+
 	private const REPORT = 'pediment_convert_report_';
 
 	/**
@@ -46,6 +53,25 @@ final class AdminTab {
 	}
 
 	/**
+	 * Posts per batch.
+	 */
+	private static function batchSize(): int {
+		return max( 1, (int) apply_filters( 'pediment_convert_batch_size', self::BATCH ) );
+	}
+
+	/**
+	 * The nonce action for a set of previewed posts. It binds the confirm to
+	 * the preview: a changed id list fails the nonce check.
+	 *
+	 * @param list<int> $ids Post IDs of the batch.
+	 */
+	public static function nonceAction( array $ids ): string {
+		$ids = array_values( array_unique( array_map( 'intval', $ids ) ) );
+		sort( $ids );
+		return self::ACTION . ':' . md5( implode( ',', $ids ) );
+	}
+
+	/**
 	 * Renders the tab body: the last run's result (once), then the preview.
 	 */
 	public static function render(): void {
@@ -62,7 +88,9 @@ final class AdminTab {
 		}
 
 		$service = PostConverter::create();
-		$preview = $service->runMany( $service->candidates(), true );
+		$all     = $service->candidates();
+		$batch   = array_slice( $all, 0, self::batchSize() );
+		$preview = $service->runMany( $batch, true );
 		$ready   = array_values( array_filter( $preview['posts'], static fn( array $post ): bool => 'preview' === $post['status'] ) );
 		echo '<h2>' . esc_html__( 'Preview', 'pediment' ) . '</h2>';
 		echo '<p>' . esc_html__( 'Posts, pages, synced patterns and templates in every language that still use legacy Pediment blocks. Nothing changes until you press the button. Every converted post keeps a revision of its old content.', 'pediment' ) . '</p>';
@@ -71,13 +99,19 @@ final class AdminTab {
 			return;
 		}
 		self::table( $preview );
+		$more = count( $all ) - count( $batch );
+		echo '<p>' . esc_html( sprintf( /* translators: %d: number of posts */ _n( '%d post with legacy blocks in total.', '%d posts with legacy blocks in total.', count( $all ), 'pediment' ), count( $all ) ) );
+		if ( $more > 0 ) {
+			echo ' ' . esc_html( sprintf( /* translators: %d: number of posts */ _n( '%d more after this batch — run again after converting.', '%d more after this batch — run again after converting.', $more, 'pediment' ), $more ) );
+		}
+		echo '</p>';
 		?>
 		<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
 			<input type="hidden" name="action" value="<?php echo esc_attr( self::ACTION ); ?>" />
+			<?php wp_nonce_field( self::nonceAction( array_column( $ready, 'id' ) ) ); ?>
 			<?php foreach ( $ready as $post ) : ?>
 				<input type="hidden" name="ids[]" value="<?php echo esc_attr( (string) $post['id'] ); ?>" />
 			<?php endforeach; ?>
-			<?php wp_nonce_field( self::ACTION ); ?>
 			<?php
 			/* translators: %d: number of posts */
 			submit_button( sprintf( _n( 'Convert %d post', 'Convert %d posts', count( $ready ), 'pediment' ), count( $ready ) ), 'primary', 'submit', true, array() === $ready ? array( 'disabled' => 'disabled' ) : array() );
@@ -93,21 +127,21 @@ final class AdminTab {
 		if ( ! self::allowed() ) {
 			wp_die( esc_html__( 'You are not allowed to convert legacy blocks.', 'pediment' ), 403 );
 		}
-		check_admin_referer( self::ACTION );
-		$ids = array_map( 'absint', (array) wp_unslash( $_POST['ids'] ?? array() ) ); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- absint on every item.
-		self::process( array_values( array_filter( $ids ) ) );
+		$ids = array_values( array_filter( array_map( 'absint', (array) wp_unslash( $_POST['ids'] ?? array() ) ) ) ); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- absint on every item.
+		check_admin_referer( self::nonceAction( $ids ) );
+		self::process( $ids );
 		wp_safe_redirect( pediment_settings_page_url( 'convert' ) );
 		exit;
 	}
 
 	/**
-	 * Converts the posts and keeps the result for the next page load.
+	 * Converts the posts (at most one batch) and keeps the result for the next page load.
 	 *
 	 * @param list<int> $ids Post IDs from the confirmed preview.
 	 * @return array{dryRun:bool,posts:list<array>,summary:array<string,int>}
 	 */
 	public static function process( array $ids ): array {
-		$report = PostConverter::create()->runMany( $ids, false, static fn( int $id ): bool => current_user_can( 'edit_post', $id ) );
+		$report = PostConverter::create()->runMany( array_slice( array_values( $ids ), 0, self::batchSize() ), false, static fn( int $id ): bool => current_user_can( 'edit_post', $id ) );
 		set_transient( self::REPORT . get_current_user_id(), $report, 10 * MINUTE_IN_SECONDS );
 		return $report;
 	}
