@@ -84,6 +84,12 @@ final class WritePage extends Ability {
 		if ( ! $can ) {
 			return false;
 		}
+		// Linking rewrites the original's translation group, so the user must be able to edit it.
+		// An unknown id passes here; execute() answers with a named error.
+		$of = (int) ( $input['translation_of'] ?? 0 );
+		if ( $of > 0 && PageData::find( $of ) instanceof \WP_Post && ! current_user_can( 'edit_post', $of ) ) {
+			return false;
+		}
 		// Core's REST controller also gates `private` on publish rights.
 		return ! in_array( $input['status'] ?? '', array( 'publish', 'private' ), true ) || current_user_can( 'publish_pages' );
 	}
@@ -106,10 +112,17 @@ final class WritePage extends Ability {
 			if ( '' === $language ) {
 				return self::errorList( 'pediment_language_unknown', __( 'translation_of needs a language.', 'pediment' ), array( 'pass the language code of this translation together with translation_of' ) );
 			}
-			$original = PageData::find( (int) $input['translation_of'] );
-			if ( ! $original instanceof \WP_Post ) {
-				return $original;
+			$of = (int) $input['translation_of'];
+			if ( ! PageData::find( $of ) instanceof \WP_Post ) {
+				return self::errorList( 'pediment_page_not_found', __( 'translation_of is not a page.', 'pediment' ), array( "translation_of {$of} is not a page" ), 404 );
 			}
+			$taken = $provider->translationOf( $of, $language );
+			if ( $taken > 0 && $taken !== $id && ! current_user_can( 'edit_post', $taken ) ) {
+				return self::errorList( 'pediment_translation_locked', __( 'The translation group holds a page you cannot edit. Nothing was written.', 'pediment' ), array( "translation_of {$of}: the {$language} translation is page {$taken}, which you cannot edit" ), 403 );
+			}
+		}
+		if ( isset( $input['parent'] ) && (int) $input['parent'] > 0 && ! PageData::find( (int) $input['parent'] ) instanceof \WP_Post ) {
+			return self::errorList( 'pediment_page_not_found', __( 'parent is not a page.', 'pediment' ), array( "parent {$input['parent']} is not a page" ), 404 );
 		}
 
 		$check = $this->policy->check( (string) $input['markup'] );
