@@ -52,7 +52,8 @@
    stat block did). */
 .is-style-band-navy .is-style-stat > :first-child,
 .is-style-band-navy .is-style-stat > :nth-child(2){ color: var(--wp--preset--color--surface); }
-.is-style-band-navy .is-style-stat > :nth-child(3){ color: var(--wp--custom--color--text-on-dark); }
+.is-style-band-navy .is-style-stat > :nth-child(3),
+.is-style-band-navy .is-style-stat > .pediment-stat-context{ color: var(--wp--custom--color--text-on-dark); }
 
 /* Site shell: header → main → footer should butt against each other. WP's
    global block-gap (--wp--preset--spacing--40) otherwise inserts a visible

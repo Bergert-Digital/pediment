@@ -51,6 +51,23 @@ class HeroCtaMappersTest extends WP_UnitTestCase {
 		$this->assertFalse( $cover['attrs']['isDark'] );
 	}
 
+	public function test_stat_card_paragraphs_exist_only_when_set(): void {
+		$value_only = parse_blocks( $this->convert( '<!-- wp:pediment/hero {"variant":"stat-card","headline":"H","statValue":"98%"} /-->' )->markup )[0];
+		$stat       = $value_only['innerBlocks'][1]['innerBlocks'][0]['innerBlocks'][0]['innerBlocks'][0];
+		$this->assertSame( 'Stat', $stat['attrs']['metadata']['name'] );
+		$this->assertSame( array( '<p>98%</p>' ), array_map( static fn( array $block ): string => trim( $block['innerHTML'] ), $stat['innerBlocks'] ) );
+
+		$text_only = parse_blocks( $this->convert( '<!-- wp:pediment/hero {"variant":"stat-card","headline":"H","statText":"happy guests"} /-->' )->markup )[0];
+		$stat      = $text_only['innerBlocks'][1]['innerBlocks'][0]['innerBlocks'][0]['innerBlocks'][0];
+		$this->assertSame( array( '<p class="pediment-stat-label">happy guests</p>' ), array_map( static fn( array $block ): string => trim( $block['innerHTML'] ), $stat['innerBlocks'] ) );
+	}
+
+	public function test_an_empty_stat_card_hero_is_removed(): void {
+		$result = $this->convert( '<!-- wp:pediment/hero {"variant":"stat-card"} /-->' . '<!-- wp:pediment/hero {"variant":"stat-card","mediaId":4040} /-->' );
+		$this->assertSame( '', $result->markup );
+		$this->assertContains( 'pediment/hero: rendered nothing, removed (2 times)', $result->notes );
+	}
+
 	public function test_media_background_uses_the_full_image_with_an_overlay(): void {
 		$cover = parse_blocks( $this->convert( '<!-- wp:pediment/hero {"variant":"media-bg","mediaId":77,"headline":"H"} /-->' )->markup )[0];
 		$this->assertSame( 'https://site.test/wp-content/uploads/2026/10/photo-77-full.jpg', $cover['attrs']['url'] );
