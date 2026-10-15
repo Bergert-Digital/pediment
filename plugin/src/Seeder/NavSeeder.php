@@ -583,9 +583,11 @@ final class NavSeeder {
 				$this->lang->unscopedQuery(
 					[
 						'post_type'      => 'wp_navigation',
-						// Trashed entities still hold their seed key: ignoring them
-						// would create a second nav under one identity.
-						'post_status'    => [ 'publish', 'draft', 'trash' ],
+						// Every status a person can give a menu (private, pending,
+						// future, …) plus the trash, which `any` leaves out: a
+						// menu missed here is planned as a create, and the seed
+						// writes a second published nav under one identity.
+						'post_status'    => [ 'any', 'trash' ],
 						'posts_per_page' => -1,
 						'no_found_rows'  => true,
 						'orderby'        => 'ID',

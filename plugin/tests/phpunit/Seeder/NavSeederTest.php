@@ -147,6 +147,38 @@ class NavSeederTest extends WP_UnitTestCase {
 		$this->assertSame( 'draft', get_post( $navIds['primary|'] )->post_status );
 	}
 
+	/**
+	 * @dataProvider personStatuses
+	 */
+	public function test_a_menu_in_any_status_is_found_and_never_duplicated( string $status ) {
+		$seeder = new NavSeeder( new NullProvider() );
+		$m      = $this->manifest( [ [ 'entry' => 'home' ] ] );
+		$ids    = [ 'home|' => self::factory()->post->create( [ 'post_type' => 'page' ] ) ];
+		$navIds = $seeder->apply( $seeder->plan( $m ), $m, $ids );
+		$change = [ 'ID' => $navIds['primary|'], 'post_status' => $status ];
+		if ( 'future' === $status ) {
+			$change['post_date']     = gmdate( 'Y-m-d H:i:s', time() + DAY_IN_SECONDS );
+			$change['post_date_gmt'] = $change['post_date'];
+		}
+		wp_update_post( $change );
+		$this->assertSame( $status, get_post_status( $navIds['primary|'] ), 'Precondition: the person set the status.' );
+
+		$plan  = $seeder->plan( $m );
+		$again = $seeder->apply( $plan, $m, $ids );
+
+		$this->assertSame( [], $plan->byAction( PlanItem::CREATE ), 'a menu a person set to ' . $status . ' is still the seeded menu' );
+		$this->assertSame( $navIds['primary|'], $again['primary|'] );
+		$this->assertCount( 1, get_posts( [ 'post_type' => 'wp_navigation', 'post_status' => 'any', 'posts_per_page' => -1, 'fields' => 'ids' ] ) );
+	}
+
+	public static function personStatuses(): array {
+		return [
+			'private' => [ 'private' ],
+			'pending' => [ 'pending' ],
+			'future'  => [ 'future' ],
+		];
+	}
+
 	public function test_two_entities_under_one_key_are_reported() {
 		$seeder = new NavSeeder( new NullProvider() );
 		$m      = $this->manifest( [ [ 'entry' => 'home' ] ] );
