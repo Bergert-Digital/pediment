@@ -57,6 +57,8 @@ final class Converter {
 				new Mappers\FaqMapper(),
 				new Mappers\TestimonialGridMapper(),
 				new Mappers\LogoCloudMapper(),
+				new Mappers\HeroMapper(),
+				new Mappers\CtaMapper(),
 			)
 		);
 	}
