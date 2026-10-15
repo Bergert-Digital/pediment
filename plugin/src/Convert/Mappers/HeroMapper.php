@@ -139,12 +139,12 @@ final class HeroMapper implements Mapper {
 	}
 
 	/**
-	 * The stat-card variant.
+	 * The stat-card variant; null when it has no copy, no stat and no image.
 	 *
 	 * @param array   $block   Legacy block.
 	 * @param Context $context Run.
 	 */
-	private function statCard( array $block, Context $context ): array {
+	private function statCard( array $block, Context $context ): ?array {
 		$attrs   = (array) ( $block['attrs'] ?? array() );
 		$left    = array();
 		$eyebrow = Attrs::rich( $attrs, 'eyebrow' );
@@ -174,11 +174,15 @@ final class HeroMapper implements Mapper {
 			$left[] = Build::bulletList( $ticks );
 		}
 
+		$figure = $this->figure( $attrs, $context );
+		if ( array() === $left && array() === $figure['innerBlocks'] && ! isset( $figure['attrs']['url'] ) ) {
+			return null;
+		}
 		$columns = Attrs::put( array(), 'align', $context->align( $block ) );
 		$columns = Attrs::put( $columns, 'className', $context->className( $block, 'core/columns' ) );
 		return Build::columns(
 			$columns + $context->carry( $block, 'Hero' ),
-			array( Build::column( '52%', $left ), Build::column( '48%', array( $this->figure( $attrs, $context ) ) ) )
+			array( Build::column( '52%', $left ), Build::column( '48%', array( $figure ) ) )
 		);
 	}
 
@@ -215,7 +219,7 @@ final class HeroMapper implements Mapper {
 						'layout'    => array( 'type' => 'constrained' ),
 						'metadata'  => array( 'name' => 'Stat' ),
 					),
-					array( Build::paragraph( $value ), Build::paragraph( $text ) )
+					Build::statParagraphs( $value, $text )
 				),
 			);
 			if ( array() !== $metrics ) {

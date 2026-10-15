@@ -95,6 +95,32 @@ final class Build {
 	}
 
 	/**
+	 * The paragraphs of an is-style-stat group: value, label, context — only
+	 * the ones that are set. The stat style styles the children by position
+	 * (number, label, context); a label or context that is not in its
+	 * position carries its role class (pediment-stat-label,
+	 * pediment-stat-context), which the style reads too.
+	 *
+	 * @param string $value   Escaped value.
+	 * @param string $label   Escaped label.
+	 * @param string $context Escaped context.
+	 * @return list<array>
+	 */
+	public static function statParagraphs( string $value, string $label, string $context = '' ): array {
+		$out = array();
+		if ( '' !== $value ) {
+			$out[] = self::paragraph( $value );
+		}
+		if ( '' !== $label ) {
+			$out[] = self::paragraph( $label, '' === $value ? array( 'className' => 'pediment-stat-label' ) : array() );
+		}
+		if ( '' !== $context ) {
+			$out[] = self::paragraph( $context, 2 === count( $out ) ? array() : array( 'className' => 'pediment-stat-context' ) );
+		}
+		return $out;
+	}
+
+	/**
 	 * Builds core/heading. Level 2 is core's default and is not stored.
 	 *
 	 * @param int    $level Heading level.

@@ -20,8 +20,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 /**
  * Grid (one column per stat up to four, fewer on narrow screens) of group.is-style-stat → value, label, context
- * paragraphs. The stat style targets children by position, so value and
- * label are always emitted.
+ * paragraphs, the ones that are set (see Build::statParagraphs()).
  */
 final class StatGridMapper implements Mapper {
 
@@ -56,11 +55,7 @@ final class StatGridMapper implements Mapper {
 		if ( '' === $value && '' === $label ) {
 			return null;
 		}
-		$inner = array( Build::paragraph( $value ), Build::paragraph( $label ) );
-		$extra = Attrs::rich( $attrs, 'context' );
-		if ( '' !== $extra ) {
-			$inner[] = Build::paragraph( $extra );
-		}
+		$inner = Build::statParagraphs( $value, $label, Attrs::rich( $attrs, 'context' ) );
 		$group = array(
 			'className' => $context->className( $block, 'core/group', 'is-style-stat' ),
 			'layout'    => array( 'type' => 'constrained' ),

@@ -72,9 +72,37 @@ class GridMappersTest extends WP_UnitTestCase {
 		$this->assertSame( array(), $with->notes, 'no icon note when an image replaces the icon' );
 	}
 
-	public function test_stat_always_has_value_and_label_paragraphs(): void {
-		$group = parse_blocks( $this->convert( '<!-- wp:pediment/stat {"label":"Only label"} /-->' )->markup )[0];
-		$this->assertCount( 2, $group['innerBlocks'] );
-		$this->assertStringContainsString( '<p></p>', $group['innerBlocks'][0]['innerHTML'] );
+	/**
+	 * @return array<string,array{string,list<string>}>
+	 */
+	public function stats(): array {
+		return array(
+			'all three'          => array( '{"value":"40","label":"Guests","context":"since 2020"}', array( '<p>40</p>', '<p>Guests</p>', '<p>since 2020</p>' ) ),
+			'value only'         => array( '{"value":"40"}', array( '<p>40</p>' ) ),
+			'value and context'  => array( '{"value":"40","context":"since 2020"}', array( '<p>40</p>', '<p class="pediment-stat-context">since 2020</p>' ) ),
+			'label only'         => array( '{"label":"Guests"}', array( '<p class="pediment-stat-label">Guests</p>' ) ),
+			'label and context'  => array( '{"label":"Guests","context":"since 2020"}', array( '<p class="pediment-stat-label">Guests</p>', '<p class="pediment-stat-context">since 2020</p>' ) ),
+		);
+	}
+
+	/**
+	 * The stat style styles children by position (value, label, context);
+	 * a paragraph that is not in its position carries its role class.
+	 *
+	 * @dataProvider stats
+	 */
+	public function test_stat_paragraphs_exist_only_when_set_and_keep_their_role( string $attrs, array $paragraphs ): void {
+		$markup = $this->convert( "<!-- wp:pediment/stat {$attrs} /-->" )->markup;
+		$group  = parse_blocks( $markup )[0];
+		$this->assertSame( $paragraphs, array_map( static fn( array $block ): string => trim( $block['innerHTML'] ), $group['innerBlocks'] ) );
+		$this->assertStringNotContainsString( '<p></p>', $markup );
+	}
+
+	public function test_the_stat_style_styles_role_classes_like_their_position(): void {
+		$css = json_decode( (string) file_get_contents( dirname( __DIR__, 3 ) . '/styles/stat.json' ), true )['styles']['css'];
+		$this->assertStringContainsString( '&>:first-child:not(.pediment-stat-label){', $css, 'a lone label is not styled as the number' );
+		$this->assertStringContainsString( '&>:nth-child(2):not(.pediment-stat-context){font-weight:600}', $css );
+		$this->assertStringContainsString( '&>.pediment-stat-label{font-weight:600}', $css );
+		$this->assertMatchesRegularExpression( '/&>\.pediment-stat-context\{font-size:var\(--wp--preset--font-size--sm\);color:var\(--wp--preset--color--foreground-muted\)\}/', $css );
 	}
 }
