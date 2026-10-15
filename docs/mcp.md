@@ -1,6 +1,6 @@
 # Building pages with AI through MCP
 
-Pediment exposes eight tools to AI agents through the WordPress MCP Adapter.
+Pediment exposes nine tools to AI agents through the WordPress MCP Adapter.
 Agents build and change pages on the live site; Pediment enforces the content
 and design rules on the server, so a page that breaks a rule is never written.
 
@@ -30,7 +30,7 @@ URL with `npx wp-env run cli wp option get siteurl` (the port differs per
 workspace) and create a password with
 `npx wp-env run cli wp user application-password create admin claude --porcelain`.
 `node tools/mcp-smoke.mjs` runs the whole path against the running wp-env: it
-lists the tools, writes and checks a page, and confirms that a write breaking
+lists the tools, writes and checks a page, converts a legacy page, and confirms that a write breaking
 two rules comes back as one tool error that names both.
 
 ## Tools
@@ -45,10 +45,11 @@ two rules comes back as one tool error that names both.
 | `pediment-rollback-page` | Restore one of the page's own revisions. |
 | `pediment-upsert-style` | Create or change a site-layer style (see [design-layer.md](design-layer.md)). |
 | `pediment-delete-style` | Delete a site-layer style. |
+| `pediment-convert-legacy` | Replace legacy Pediment blocks with core blocks and named styles in the given posts (`ids`) or everywhere (`all: true`). Dry run unless `dry_run` is false; the dry run returns a diff per post. See [convert.md](convert.md). |
 
 ### Permissions
 
-The tool list is fixed: the server exposes these eight abilities and nothing
+The tool list is fixed: the server exposes these nine abilities and nothing
 else. Each tool checks WordPress capabilities on every call.
 
 - Page tools need `edit_pages`. A tool that takes a page `id` also needs
@@ -59,6 +60,9 @@ else. Each tool checks WordPress capabilities on every call.
   any page already in the target language slot of the translation group that
   the write would replace. Otherwise nothing is written.
 - Style tools need `edit_theme_options`.
+- `pediment-convert-legacy` needs `edit_pages` and `edit_post` on every given
+  post, and `edit_theme_options` for templates and template parts. With
+  `all: true` it skips the posts the user cannot edit.
 - `pediment-rollback-page` refuses a revision that belongs to another page.
 
 ### Revisions
@@ -88,9 +92,8 @@ with the result.
   registers. `core/html` is never allowed, even if the
   `pediment_allowed_blocks` filter returns it. Text outside a block is an
   error, and so is a block comment whose JSON does not parse.
-- The 18 legacy Pediment blocks only produce a warning, because the converter
-  in a later release replaces them with core blocks. Do not use them in new
-  pages.
+- The 18 legacy Pediment blocks only produce a warning. Do not use them in new
+  pages: `pediment-convert-legacy` replaces them with core blocks.
 - No literal design values in block attributes. Every value under
   `attrs.style.color` and `attrs.style.spacing` must be a token, and so must
   font size, font family, border radius and shadow. Use presets
