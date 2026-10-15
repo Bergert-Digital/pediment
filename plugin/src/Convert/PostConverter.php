@@ -48,6 +48,13 @@ final class PostConverter {
 	public const TEMPLATE_TYPES = array( 'wp_template', 'wp_template_part' );
 
 	/**
+	 * Posts per batch of the wp-admin tab and of the ability's `all` run.
+	 * Shared hosting limits request time (about 30 s) and form fields
+	 * (max_input_vars); filter with `pediment_convert_batch_size`.
+	 */
+	public const BATCH = 25;
+
+	/**
 	 * Posts whose content candidates() reads per query.
 	 */
 	private const CHUNK = 100;
@@ -110,6 +117,13 @@ final class PostConverter {
 			}
 		}
 		return $out;
+	}
+
+	/**
+	 * Posts per batch (BATCH, filtered by `pediment_convert_batch_size`).
+	 */
+	public static function batchSize(): int {
+		return max( 1, (int) apply_filters( 'pediment_convert_batch_size', self::BATCH ) );
 	}
 
 	/**

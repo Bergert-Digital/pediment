@@ -76,6 +76,56 @@ class ConvertLegacyTest extends AbilityTestCase {
 		$this->assertSame( self::LEGACY, get_post_field( 'post_content', $other ) );
 	}
 
+	public function test_all_works_in_batches_of_25_and_reports_what_remains(): void {
+		$editor = $this->user( 'editor' );
+		$ids    = array();
+		for ( $i = 0; $i < 27; $i++ ) {
+			$ids[] = $this->page( $editor );
+		}
+		$first = $this->run_as( $editor, 'pediment/convert-legacy', array( 'all' => true ) );
+		$this->assertCount( 25, $first['posts'] );
+		$this->assertSame( array_slice( $ids, 0, 25 ), array_column( $first['posts'], 'id' ) );
+		$this->assertSame( 2, $first['remaining'] );
+
+		$next = $this->run_as(
+			$editor,
+			'pediment/convert-legacy',
+			array(
+				'all'   => true,
+				'after' => $ids[24],
+			)
+		);
+		$this->assertSame( array_slice( $ids, 25 ), array_column( $next['posts'], 'id' ) );
+		$this->assertSame( 0, $next['remaining'] );
+
+		$real = $this->run_as(
+			$editor,
+			'pediment/convert-legacy',
+			array(
+				'all'     => true,
+				'dry_run' => false,
+			)
+		);
+		$this->assertSame( 25, $real['summary']['converted'] );
+		$this->assertSame( 2, $real['remaining'] );
+		$rest = $this->run_as(
+			$editor,
+			'pediment/convert-legacy',
+			array(
+				'all'     => true,
+				'dry_run' => false,
+			)
+		);
+		$this->assertSame( array_slice( $ids, 25 ), array_column( $rest['posts'], 'id' ), 'converted posts drop out of the next call' );
+		$this->assertSame( 0, $rest['remaining'] );
+	}
+
+	public function test_ids_are_not_batched_and_nothing_remains(): void {
+		$editor = $this->user( 'editor' );
+		$result = $this->run_as( $editor, 'pediment/convert-legacy', array( 'ids' => array( $this->page( $editor ) ) ) );
+		$this->assertSame( 0, $result['remaining'] );
+	}
+
 	public function test_ids_the_user_cannot_edit_are_refused_before_anything_runs(): void {
 		$admin  = $this->user( 'administrator' );
 		$author = $this->user( 'author' );

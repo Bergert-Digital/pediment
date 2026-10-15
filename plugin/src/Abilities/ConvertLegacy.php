@@ -36,7 +36,7 @@ final class ConvertLegacy extends Ability {
 	}
 
 	protected function description(): string {
-		return __( 'Replaces the 18 legacy Pediment blocks (hero, cta, feature-grid, faq, …) with core blocks and named styles. Pass ids (pages, posts, synced patterns, templates) or all: true (every post in every language that holds a legacy block). dry_run defaults to true and returns a diff per post without writing; run again with dry_run false to write. Every written post keeps a revision first (restoreRevision; use rollback-page to undo a page). A post whose conversion would add a content-rule error is not written (status failed). notes lists what changed beyond the swap, such as dropped icons or styles.', 'pediment' );
+		return __( 'Replaces the 18 legacy Pediment blocks (hero, cta, feature-grid, faq, …) with core blocks and named styles. Pass ids (pages, posts, synced patterns, templates) or all: true (the posts in every language that hold a legacy block, at most 25 per call; remaining says how many come after this batch; pass after: <last id> to move on past posts that failed). dry_run defaults to true and returns a diff per post without writing; run again with dry_run false to write. Every written post keeps a revision first (restoreRevision; use rollback-page to undo a page). A post that cannot be converted safely is not written (status failed, errors says why). notes lists what changed beyond the swap, such as dropped icons or styles.', 'pediment' );
 	}
 
 	protected function inputSchema(): array {
@@ -52,6 +52,10 @@ final class ConvertLegacy extends Ability {
 					'minItems' => 1,
 				),
 				'all'     => array( 'type' => 'boolean' ),
+				'after'   => array(
+					'type'    => 'integer',
+					'minimum' => 0,
+				),
 				'dry_run' => array(
 					'type'    => 'boolean',
 					'default' => true,
@@ -70,8 +74,8 @@ final class ConvertLegacy extends Ability {
 		return array(
 			'type'       => 'object',
 			'properties' => array(
-				'dryRun'  => array( 'type' => 'boolean' ),
-				'posts'   => array(
+				'dryRun'    => array( 'type' => 'boolean' ),
+				'posts'     => array(
 					'type'  => 'array',
 					'items' => array(
 						'type'       => 'object',
@@ -97,12 +101,13 @@ final class ConvertLegacy extends Ability {
 						'required'   => array( 'id', 'type', 'title', 'language', 'status', 'converted', 'blocks', 'unmapped', 'notes', 'errors', 'existingErrors', 'diff', 'revision', 'restoreRevision' ),
 					),
 				),
-				'summary' => array(
+				'summary'   => array(
 					'type'       => 'object',
 					'properties' => array_fill_keys( array( 'posts', 'blocks', 'converted', 'preview', 'unchanged', 'failed', 'skipped' ), array( 'type' => 'integer' ) ),
 				),
+				'remaining' => array( 'type' => 'integer' ),
 			),
-			'required'   => array( 'dryRun', 'posts', 'summary' ),
+			'required'   => array( 'dryRun', 'posts', 'summary', 'remaining' ),
 		);
 	}
 
@@ -148,6 +153,13 @@ final class ConvertLegacy extends Ability {
 				&& current_user_can( 'edit_post', $id )
 				&& ( ! in_array( $post->post_type, PostConverter::TEMPLATE_TYPES, true ) || current_user_can( 'edit_theme_options' ) );
 		};
-		return $this->converter->runMany( $all ? $this->converter->candidates() : $ids, $dry_run, $can );
+		if ( ! $all ) {
+			return $this->converter->runMany( $ids, $dry_run, $can ) + array( 'remaining' => 0 );
+		}
+		// Shared hosting limits request time: one batch per call, like the wp-admin tab.
+		$after = absint( $input['after'] ?? 0 );
+		$rest  = array_values( array_filter( $this->converter->candidates(), static fn( int $id ): bool => $id > $after ) );
+		$batch = array_slice( $rest, 0, PostConverter::batchSize() );
+		return $this->converter->runMany( $batch, $dry_run, $can ) + array( 'remaining' => count( $rest ) - count( $batch ) );
 	}
 }
