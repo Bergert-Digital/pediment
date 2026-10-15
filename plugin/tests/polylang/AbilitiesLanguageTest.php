@@ -44,4 +44,26 @@ class AbilitiesLanguageTest extends PolylangTestCase {
 		$page = wp_get_ability( 'pediment/read-page' )->execute( [ 'id' => $en ] );
 		$this->assertSame( [ 'de' => $de ], (array) $page['translations'] );
 	}
+
+	public function test_language_filter_applies_before_the_limit() {
+		$provider = \Pediment\Language\LanguageRegistry::provider();
+		// Untagged filler pages, inserted in one query: the factory runs every
+		// Polylang save hook per page and takes about 20 seconds for 500.
+		global $wpdb;
+		$now  = current_time( 'mysql', true );
+		$rows = array_fill( 0, \Pediment\Abilities\ListPages::LIMIT, $wpdb->prepare( "('Aa other', 'page', 'publish', %s, %s, '', '', '', '', '')", $now, $now ) );
+		$wpdb->query( "INSERT INTO {$wpdb->posts} (post_title, post_type, post_status, post_date_gmt, post_modified_gmt, post_content, post_excerpt, to_ping, pinged, post_content_filtered) VALUES " . implode( ',', $rows ) ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- rows are prepared above.
+		// Sorted after every English page, so a cap applied first would cut it.
+		$de = self::factory()->post->create( [ 'post_type' => 'page', 'post_title' => 'Zz de' ] );
+		$provider->setLanguage( $de, 'de' );
+
+		wp_set_current_user( self::factory()->user->create( [ 'role' => 'editor' ] ) );
+		$german = wp_get_ability( 'pediment/list-pages' )->execute( [ 'language' => 'de' ] );
+		$this->assertSame( [ $de ], array_column( $german['pages'], 'id' ) );
+		$this->assertFalse( $german['truncated'] );
+
+		$all = wp_get_ability( 'pediment/list-pages' )->execute( [] );
+		$this->assertTrue( $all['truncated'] );
+		$this->assertNotContains( $de, array_column( $all['pages'], 'id' ) );
+	}
 }

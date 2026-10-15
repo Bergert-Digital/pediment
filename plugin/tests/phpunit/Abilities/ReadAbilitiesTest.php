@@ -2,6 +2,7 @@
 
 require_once __DIR__ . '/AbilityTestCase.php';
 
+use Pediment\Abilities\ListPages;
 use Pediment\Abilities\Registrar;
 use Pediment\Content\InvalidBlockLog;
 
@@ -45,6 +46,7 @@ class ReadAbilitiesTest extends AbilityTestCase {
 
 		$all = $this->run_as( $editor, 'pediment/list-pages', array() );
 		$this->assertEqualsCanonicalizing( array( $parent, $child ), array_column( $all['pages'], 'id' ) );
+		$this->assertFalse( $all['truncated'] );
 
 		$children = $this->run_as( $editor, 'pediment/list-pages', array( 'parent' => $parent ) );
 		$this->assertSame( array( $child ), array_column( $children['pages'], 'id' ) );
@@ -108,6 +110,15 @@ class ReadAbilitiesTest extends AbilityTestCase {
 
 		$this->assertEqualsCanonicalizing( array( $public, $private ), $ids );
 		$this->assertNotContains( $secret, $ids );
+	}
+
+	public function test_list_pages_says_when_the_limit_cut_the_list(): void {
+		self::factory()->post->create_many( ListPages::LIMIT + 1, array( 'post_type' => 'page', 'post_status' => 'draft' ) );
+
+		$result = $this->run_as( $this->user( 'editor' ), 'pediment/list-pages', array() );
+
+		$this->assertCount( ListPages::LIMIT, $result['pages'] );
+		$this->assertTrue( $result['truncated'] );
 	}
 
 	public function test_check_page_reports_rules_invalid_blocks_and_legacy_blocks(): void {
