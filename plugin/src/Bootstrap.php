@@ -32,5 +32,6 @@ final class Bootstrap {
 			new \Pediment\Design\SiteLayer( new \Pediment\Design\SiteStyles( new \Pediment\Design\StyleValidator() ) )
 		);
 		\Pediment\Design\AdminTab::register();
+		\Pediment\Content\InvalidBlockLog::register();
 	}
 }
