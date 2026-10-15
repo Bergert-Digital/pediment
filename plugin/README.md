@@ -12,7 +12,7 @@ tokens, forms and seeding.
 
 Upload `pediment-plugin.zip` from the latest [GitHub Release](https://github.com/Bergert-Digital/pediment/releases) via **Plugins → Add New → Upload Plugin**, then activate. It installs as `pediment`; after the first install, updates arrive through the normal wp-admin Updates screen.
 
-Upgrading from 3.x removes the retired AI chat's tables and settings on the first request.
+Upgrading from 3.x: read [Upgrade to 4.0](../docs/client-sites.md#upgrade-to-40) first.
 
 The REST API uses the `pediment/v1` namespace.
 

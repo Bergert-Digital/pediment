@@ -195,6 +195,39 @@ through wp-admin, a new theme release only reaches production when someone uploa
 hand. This is a deliberate step-5 decision, not an oversight — revisit only if it turns out to
 hurt in practice.
 
+## Upgrade to 4.0
+
+Pediment 4.0 is a breaking release. On each site, in this order:
+
+1. **Update the plugin.** wp-admin → Plugins → update Pediment (or upload
+   `pediment-plugin.zip`). WordPress 6.9 or later is required. The first
+   request after the update removes the retired AI chat's tables and settings;
+   the first admin request removes the 3.x seeder's content hashes
+   (`_pediment_seed_hash`, `_pediment_seed_source`, `_pediment_seed_mega_hash`).
+   Pages, menus and media do not change.
+2. **Install the MCP Adapter plugin** (`mcp-adapter` 0.7.0) if AI agents
+   should build pages on the site. [mcp.md](mcp.md) has the application
+   password and the `claude mcp add` line.
+3. **Convert legacy blocks.** Add client-theme styles for the new blocks first
+   (where the theme styled a legacy block), then go to Settings → Pediment
+   Theme → Convert legacy blocks. The tab works in batches of 25 posts. Run
+   the preview first and read the per-page diff, then convert. Revisions must
+   be enabled (at least 2 per post): every page gets a backup revision first,
+   and the result table links each converted page to a **Restore** link. The
+   legacy `pediment/*` presentation blocks still render in 4.0, but the
+   inserter hides them, and 5.0 deletes them. [convert.md](convert.md) has the
+   full order for a production site.
+4. **Know what changed in seeding.** `wp pediment seed` and "Apply plan" are
+   bootstrap-only now: they create what is missing and never change a page,
+   menu, reading setting or logo that exists. A deploy that used to push
+   pattern edits to live pages through a re-seed no longer does. Change live
+   pages in the editor or through the MCP tools ([seeding.md](seeding.md),
+   "Bootstrap only"). The plan summary reads `N to write, N orphan,
+   N unchanged.` (no `protected` count), and `--format=json` drops
+   `protected` from each item and from `counts`.
+5. **The AI chat is gone.** The editor sidebar, its REST routes and the AI
+   settings tab were removed. The MCP tools replace them.
+
 ## Moving an existing site onto Pediment
 
 A site that already exists — built on the parent theme, a page builder, or
