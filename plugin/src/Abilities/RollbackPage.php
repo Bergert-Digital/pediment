@@ -80,11 +80,10 @@ final class RollbackPage extends Ability {
 			return new \WP_Error( 'pediment_rollback_failed', __( 'The revision could not be restored.', 'pediment' ), array( 'status' => 500 ) );
 		}
 		InvalidBlockLog::clear( $id );
-		$revisions = wp_get_post_revisions( $id, array( 'posts_per_page' => 1, 'fields' => 'ids' ) );
 		return array(
 			'id'               => $id,
 			'restoredRevision' => $revision->ID,
-			'revision'         => (int) ( reset( $revisions ) ?: 0 ),
+			'revision'         => PageData::latestRevision( $id ),
 		);
 	}
 }

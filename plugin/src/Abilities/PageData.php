@@ -65,6 +65,22 @@ final class PageData {
 	}
 
 	/**
+	 * ID of the page's newest revision, skipping autosaves: an autosave holds
+	 * unsaved editor work, so it is never offered as a rollback target.
+	 *
+	 * @param int $id Page ID.
+	 * @return int Revision ID, 0 when there is none.
+	 */
+	public static function latestRevision( int $id ): int {
+		foreach ( wp_get_post_revisions( $id, array( 'fields' => 'ids' ) ) as $revision ) {
+			if ( ! wp_is_post_autosave( $revision ) ) {
+				return (int) $revision;
+			}
+		}
+		return 0;
+	}
+
+	/**
 	 * The page for an ID, or a 404 WP_Error when the ID is not a page.
 	 *
 	 * @param int $id Post ID.

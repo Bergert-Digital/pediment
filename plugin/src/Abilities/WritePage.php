@@ -185,13 +185,12 @@ final class WritePage extends Ability {
 		}
 
 		InvalidBlockLog::clear( $id );
-		$revisions = wp_get_post_revisions( $id, array( 'posts_per_page' => 1, 'fields' => 'ids' ) );
 
 		return array(
 			'id'       => $id,
 			'status'   => (string) get_post_status( $id ),
 			'url'      => (string) get_permalink( $id ),
-			'revision' => (int) ( reset( $revisions ) ?: 0 ),
+			'revision' => PageData::latestRevision( $id ),
 			'warnings' => $check['warnings'],
 		);
 	}

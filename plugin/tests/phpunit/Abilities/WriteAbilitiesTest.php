@@ -156,6 +156,27 @@ class WriteAbilitiesTest extends AbilityTestCase {
 		$this->assertSame( 0, (int) ( new WP_Query( array( 'post_type' => 'page', 'post_status' => 'any' ) ) )->found_posts );
 	}
 
+	public function test_returned_revision_is_never_an_autosave(): void {
+		$admin = $this->user( 'administrator' );
+		$page  = $this->run_as( $admin, 'pediment/write-page', array( 'title' => 'Auto', 'markup' => $this->para( 'Saved' ) ) );
+
+		// A person's unsaved editor work, newer than every revision.
+		wp_set_current_user( $admin );
+		$autosave = wp_create_post_autosave( array( 'post_ID' => $page['id'], 'post_type' => 'page', 'post_title' => 'Auto', 'content' => $this->para( 'Unsaved' ), 'excerpt' => '' ) );
+		$this->assertIsInt( $autosave );
+		$this->assertSame( $autosave, (int) current( wp_get_post_revisions( $page['id'], array( 'fields' => 'ids' ) ) ), 'the autosave is the newest row' );
+
+		// Unchanged content: WordPress saves no new revision.
+		$same = $this->run_as( $admin, 'pediment/write-page', array( 'id' => $page['id'], 'title' => 'Auto', 'markup' => $this->para( 'Saved' ) ) );
+		$this->assertSame( $page['revision'], $same['revision'] );
+		$this->assertFalse( wp_is_post_autosave( $same['revision'] ) );
+
+		$back = $this->run_as( $admin, 'pediment/rollback-page', array( 'id' => $page['id'], 'revision' => $page['revision'] ) );
+		$this->assertNotSame( $autosave, $back['revision'] );
+		$this->assertFalse( wp_is_post_autosave( $back['revision'] ) );
+		$this->assertSame( $page['id'], wp_get_post_parent_id( $back['revision'] ) );
+	}
+
 	public function test_edit_pages_without_edit_others_pages_cannot_overwrite_someone_elses_page(): void {
 		$page   = self::factory()->post->create( array( 'post_type' => 'page', 'post_author' => $this->user( 'administrator' ), 'post_title' => 'Theirs', 'post_content' => self::GOOD ) );
 		$author = $this->page_author();
