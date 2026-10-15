@@ -157,6 +157,18 @@ final class Build {
 	}
 
 	/**
+	 * Builds core/details: a summary line and the inner blocks shown when open.
+	 *
+	 * @param string $summary Escaped summary.
+	 * @param array  $inner   Inner blocks.
+	 * @param array  $attrs   Attributes (className).
+	 */
+	public static function details( string $summary, array $inner, array $attrs ): array {
+		$class = self::classes( 'wp-block-details', (string) ( $attrs['className'] ?? '' ) );
+		return self::container( 'core/details', $attrs, "<details class=\"{$class}\"><summary>{$summary}</summary>", $inner, '</details>' );
+	}
+
+	/**
 	 * The class attribute value from class names; empty names are skipped.
 	 *
 	 * @param string ...$names Class names.

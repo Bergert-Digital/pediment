@@ -54,6 +54,9 @@ final class Converter {
 				new Mappers\FeatureGridMapper(),
 				new Mappers\StatGridMapper(),
 				new Mappers\StepsMapper(),
+				new Mappers\FaqMapper(),
+				new Mappers\TestimonialGridMapper(),
+				new Mappers\LogoCloudMapper(),
 			)
 		);
 	}
