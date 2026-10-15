@@ -32,6 +32,11 @@ final class AdminTab {
 	private const REPORT = 'pediment_convert_report_';
 
 	/**
+	 * The docs section on the order of a site conversion.
+	 */
+	public const DOCS_URL = 'https://github.com/Bergert-Digital/pediment/blob/main/docs/convert.md#before-you-convert-production';
+
+	/**
 	 * Registers the tab and the form handler.
 	 */
 	public static function register(): void {
@@ -99,10 +104,11 @@ final class AdminTab {
 		$all     = $service->candidates();
 		$rest    = array_values( array_filter( $all, static fn( int $id ): bool => $id > $after ) );
 		$batch   = array_slice( $rest, 0, self::batchSize() );
-		$preview = $service->runMany( $batch, true );
+		$preview = $service->runMany( $batch, true, array( self::class, 'canEdit' ) );
 		$start   = $after > 0 ? ' <a href="' . esc_url( pediment_settings_page_url( 'convert' ) ) . '">' . esc_html__( 'Start from the beginning', 'pediment' ) . '</a>' : '';
 		$ready   = array_values( array_filter( $preview['posts'], static fn( array $post ): bool => 'preview' === $post['status'] ) );
 		echo '<h2>' . esc_html__( 'Preview', 'pediment' ) . '</h2>';
+		echo '<div class="notice notice-warning inline"><p>' . esc_html__( 'Convert production only after your client theme has styles for the looks your theme gave the legacy blocks; check the converted pages in a dev copy first.', 'pediment' ) . ' <a href="' . esc_url( self::DOCS_URL ) . '">' . esc_html__( 'Before you convert production', 'pediment' ) . '</a></p></div>';
 		echo '<p>' . esc_html__( 'Posts, pages, synced patterns and templates in every language that still use legacy Pediment blocks. Nothing changes until you press the button. Every converted post keeps a revision of its old content.', 'pediment' ) . '</p>';
 		if ( array() === $preview['posts'] ) {
 			if ( $after > 0 && array() !== $all ) {
@@ -158,13 +164,23 @@ final class AdminTab {
 	 * @return array{dryRun:bool,posts:list<array>,summary:array<string,int>}
 	 */
 	public static function process( array $ids ): array {
-		$report = PostConverter::create()->runMany( array_slice( array_values( $ids ), 0, self::batchSize() ), false, static fn( int $id ): bool => current_user_can( 'edit_post', $id ) );
+		$report = PostConverter::create()->runMany( array_slice( array_values( $ids ), 0, self::batchSize() ), false, array( self::class, 'canEdit' ) );
 		set_transient( self::REPORT . get_current_user_id(), $report, 10 * MINUTE_IN_SECONDS );
 		return $report;
 	}
 
 	/**
-	 * One table of post reports.
+	 * Whether the current user may convert this post.
+	 *
+	 * @param int $id Post ID.
+	 */
+	public static function canEdit( int $id ): bool {
+		return current_user_can( 'edit_post', $id );
+	}
+
+	/**
+	 * One table of post reports. A post the user may not edit shows no title;
+	 * a converted post links to the revision that restores its old content.
 	 *
 	 * @param array $report runMany() result.
 	 */
@@ -182,10 +198,18 @@ final class AdminTab {
 			<tbody>
 			<?php foreach ( $report['posts'] as $post ) : ?>
 				<tr>
-					<td><a href="<?php echo esc_url( (string) get_edit_post_link( $post['id'] ) ); ?>"><?php echo esc_html( '' !== $post['title'] ? $post['title'] : '#' . $post['id'] ); ?></a></td>
+					<?php if ( self::canEdit( $post['id'] ) ) : ?>
+						<td><a href="<?php echo esc_url( (string) get_edit_post_link( $post['id'] ) ); ?>"><?php echo esc_html( '' !== $post['title'] ? $post['title'] : '#' . $post['id'] ); ?></a></td>
+					<?php else : ?>
+						<td><?php esc_html_e( '(no access)', 'pediment' ); ?></td>
+					<?php endif; ?>
 					<td><?php echo esc_html( $post['type'] ); ?></td>
 					<td><?php echo esc_html( $post['language'] ); ?></td>
-					<td><?php echo esc_html( $post['status'] ); ?></td>
+					<?php if ( 'converted' === $post['status'] && $post['restoreRevision'] > 0 ) : ?>
+						<td><?php echo esc_html( $post['status'] ); ?> · <a href="<?php echo esc_url( admin_url( 'revision.php?revision=' . (int) $post['restoreRevision'] ) ); ?>"><?php esc_html_e( 'Restore', 'pediment' ); ?></a></td>
+					<?php else : ?>
+						<td><?php echo esc_html( $post['status'] ); ?></td>
+					<?php endif; ?>
 					<td><?php echo esc_html( implode( ', ', array_merge( $post['converted'], $post['unmapped'] ) ) ); ?></td>
 					<td>
 						<?php echo esc_html( implode( ' · ', array_merge( $post['errors'], $post['notes'] ) ) ); ?>

@@ -200,6 +200,41 @@ class ConvertAdminTabTest extends WP_UnitTestCase {
 		$this->assertSame( self::LEGACY, get_post_field( 'post_content', $b ) );
 	}
 
+	public function test_the_preview_warns_to_style_the_new_blocks_before_converting_production(): void {
+		$this->admin();
+		self::factory()->post->create( array( 'post_type' => 'page', 'post_content' => self::LEGACY ) );
+		$html = $this->renderTab();
+		$this->assertStringContainsString( 'Convert production only after your client theme has styles for the looks your theme gave the legacy blocks', $html );
+		$this->assertStringContainsString( 'href="https://github.com/Bergert-Digital/pediment/blob/main/docs/convert.md#before-you-convert-production"', $html );
+		$this->assertLessThan( strpos( $html, '<table' ), strpos( $html, 'Convert production only after' ), 'the warning sits above the preview' );
+	}
+
+	public function test_the_result_links_each_converted_post_to_its_restore_revision(): void {
+		$this->admin();
+		$id     = self::factory()->post->create( array( 'post_type' => 'page', 'post_content' => self::LEGACY ) );
+		$report = AdminTab::process( array( $id ) );
+		$html   = $this->renderTab();
+		$this->assertStringContainsString( '<a href="' . esc_url( admin_url( 'revision.php?revision=' . $report['posts'][0]['restoreRevision'] ) ) . '">Restore</a>', $html );
+	}
+
+	public function test_the_result_hides_the_title_of_a_post_the_user_cannot_edit(): void {
+		$this->admin();
+		list( $a, $b ) = $this->legacyPages( 2 );
+		wp_update_post( array( 'ID' => $b, 'post_title' => 'Secret page' ) );
+		add_filter(
+			'map_meta_cap',
+			static function ( array $caps, string $cap, int $user, array $args ) use ( $b ): array {
+				return 'edit_post' === $cap && ( $args[0] ?? 0 ) === $b ? array( 'do_not_allow' ) : $caps;
+			},
+			10,
+			4
+		);
+		AdminTab::process( array( $a, $b ) );
+		$html = $this->renderTab();
+		$this->assertStringNotContainsString( 'Secret page', $html );
+		$this->assertStringContainsString( '(no access)', $html );
+	}
+
 	public function test_handler_refuses_editors_and_missing_nonces(): void {
 		$id = self::factory()->post->create( array( 'post_type' => 'page', 'post_content' => self::LEGACY ) );
 		wp_set_current_user( self::factory()->user->create( array( 'role' => 'editor' ) ) );
