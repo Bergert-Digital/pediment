@@ -14,8 +14,9 @@
  *     case, where a page predates this seeder's language tagging.
  *     repairLanguage() tags it if and only if it is currently untagged; it
  *     never re-tags or moves a post that already carries one. That and the
- *     translation-group link are the only things the seeder does to a row it
- *     did not create in this run.
+ *     translation-group link (only for a key where this run created or
+ *     tagged a row) are the only things the seeder does to a row it did not
+ *     create in this run.
  *
  * @package Pediment
  */
@@ -76,9 +77,9 @@ final class Applier {
 			Kses::restore( $kses );
 		}
 
-		$this->repairLanguage( $plan, $desired, $ids );
+		$repaired = $this->repairLanguage( $plan, $desired, $ids );
 
-		$this->linkTranslationGroups( $ids );
+		$this->linkTranslationGroups( $ids, array_merge( $created, $repaired ) );
 
 		$this->applyReadingOptions( $desired, $ids );
 
@@ -191,7 +192,8 @@ final class Applier {
 	}
 
 	/**
-	 * Put every language of a seed key into one translation group.
+	 * Put every language of a seed key into one translation group — but only
+	 * for a key where this run created or language-tagged at least one row.
 	 *
 	 * Runs after the write loop, not inside it: a group is only meaningful once
 	 * every language exists, and pll_save_post_translations() REPLACES the
@@ -199,9 +201,12 @@ final class Applier {
 	 * the ones written before it. Invisible with two languages, silent data
 	 * loss with five.
 	 *
-	 * Passing the full map every run is also what repairs a group an editor
-	 * broke by hand, and what links a language added later to the ones that
-	 * were already there.
+	 * A key whose rows all existed and kept their language is left alone: its
+	 * group belongs to the people who edit the site, and a person (or
+	 * pediment-write-page with translation_of) may have linked a different
+	 * page as a translation. Relinking the seeded rows would undo that. A
+	 * language added later still joins its group, because its new row was
+	 * created in this run.
 	 *
 	 * Known consequence, not a bug fixed here: $ids excludes ORPHAN items
 	 * (mapKeys the current manifest no longer generates) even when their
@@ -209,14 +214,15 @@ final class Applier {
 	 * every configured language. So dropping a language from both the
 	 * manifest and Polylang's own config in the same run — passing the
 	 * Runner's gate because the two sets still match — turns every post in
-	 * that language into an ORPHAN everywhere at once, drops it out of every
-	 * key's map here, and pll_save_post_translations() then unlinks it from
-	 * its group site-wide, even though the plan reports those posts as left
-	 * in place. See docs/BACKLOG.md (Medium, step-4 Task 10 review).
+	 * that language into an ORPHAN everywhere at once and drops it out of
+	 * every key's map here. For any key this run then links (it created or
+	 * tagged a row), pll_save_post_translations() unlinks the orphan from its
+	 * group, even though the plan reports those posts as left in place. See docs/BACKLOG.md (Medium, step-4 Task 10 review).
 	 *
-	 * @param array<string,int> $ids mapKey => post ID
+	 * @param array<string,int> $ids     mapKey => post ID
+	 * @param string[]          $touched mapKeys this run created or tagged.
 	 */
-	private function linkTranslationGroups( array $ids ): void {
+	private function linkTranslationGroups( array $ids, array $touched ): void {
 		$languages = $this->lang->languages();
 		if ( count( $languages ) < 2 ) {
 			return;
@@ -239,7 +245,15 @@ final class Applier {
 			$byKey[ $key ][ $language ] = $postId;
 		}
 
-		foreach ( $byKey as $map ) {
+		$touchedKeys = [];
+		foreach ( $touched as $mapKey ) {
+			$touchedKeys[ explode( '|', (string) $mapKey )[0] ] = true;
+		}
+
+		foreach ( $byKey as $key => $map ) {
+			if ( ! isset( $touchedKeys[ $key ] ) ) {
+				continue;
+			}
 			// A map missing even one configured language must never reach
 			// linkTranslations(): pll_save_post_translations() REPLACES the
 			// whole group, so Polylang's own save_translations() diffs this
@@ -274,8 +288,10 @@ final class Applier {
 	 *
 	 * @param array<string,DesiredEntry> $desired
 	 * @param array<string,int>          $ids
+	 * @return string[] mapKeys of the rows it tagged.
 	 */
-	private function repairLanguage( Plan $plan, array $desired, array $ids ): void {
+	private function repairLanguage( Plan $plan, array $desired, array $ids ): array {
+		$repaired = [];
 		foreach ( $plan->byKind( PlanItem::KIND_ENTRY ) as $item ) {
 			if ( PlanItem::CREATE === $item->action || PlanItem::ORPHAN === $item->action ) {
 				continue;
@@ -290,8 +306,10 @@ final class Applier {
 			}
 			if ( ! $this->lang->hasLanguage( $postId ) ) {
 				$this->lang->setLanguage( $postId, $entry->language );
+				$repaired[] = $item->mapKey();
 			}
 		}
+		return $repaired;
 	}
 
 	/**

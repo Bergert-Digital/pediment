@@ -149,8 +149,8 @@ final class NavSeeder {
 				$this->created[]        = $item->mapKey();
 			}
 
-			$this->repairLanguage( $plan, $ids );
-			$this->linkTranslationGroups( $ids );
+			$repaired = $this->repairLanguage( $plan, $ids );
+			$this->linkTranslationGroups( $ids, array_merge( $this->created, $repaired ) );
 
 			return $ids;
 		} finally {
@@ -377,10 +377,14 @@ final class NavSeeder {
 	}
 
 	/**
-	 * Put every language of a nav key into one translation group.
+	 * Put every language of a nav key into one translation group — but only
+	 * for a key where this run created or language-tagged at least one menu.
 	 *
 	 * Same rule as entries: pll_save_post_translations() replaces the whole
 	 * group, so this runs once with the full map after every entity is written.
+	 * A key whose menus all existed and kept their language is left alone, so a
+	 * menu translation a person linked by hand stays linked; a language added
+	 * later still joins, because its new menu was created in this run.
 	 *
 	 * Without it, a translated menu is invisible to pll_get_post(), the header's
 	 * per-language lookup falls back to whichever nav was saved last, and every
@@ -398,7 +402,8 @@ final class NavSeeder {
 	 * (`'' === $language`) then excludes it from every map handed to
 	 * linkTranslations(). Its row is untouched, still carrying the dropped
 	 * language in Polylang's own post-language term, but the still-configured
-	 * siblings under the same key get relinked here on every run, and
+	 * siblings under the same key get relinked here on any run that creates
+	 * or tags one of them, and
 	 * pll_save_post_translations() REPLACES the whole group: Polylang's own
 	 * save_translations() diffs the new map against the group's current
 	 * membership and deletes anything absent from it, so the dropped-language
@@ -408,9 +413,10 @@ final class NavSeeder {
 	 * here by a different route (an empty-language bucket, not a plan
 	 * action). See docs/BACKLOG.md (Medium, step-4 Task 10 review).
 	 *
-	 * @param array<string,int> $ids navKey|language => post ID
+	 * @param array<string,int> $ids     navKey|language => post ID
+	 * @param string[]          $touched navKey|language map keys this run created or tagged.
 	 */
-	private function linkTranslationGroups( array $ids ): void {
+	private function linkTranslationGroups( array $ids, array $touched ): void {
 		$languages = $this->lang->languages();
 		if ( count( $languages ) < 2 ) {
 			return;
@@ -432,7 +438,15 @@ final class NavSeeder {
 			$byKey[ $key ][ $language ] = $postId;
 		}
 
-		foreach ( $byKey as $map ) {
+		$touchedKeys = [];
+		foreach ( $touched as $mapKey ) {
+			$touchedKeys[ explode( '|', (string) $mapKey )[0] ] = true;
+		}
+
+		foreach ( $byKey as $key => $map ) {
+			if ( ! isset( $touchedKeys[ $key ] ) ) {
+				continue;
+			}
 			// Same fix as Applier::linkTranslationGroups(), applied here
 			// separately by explicit decision (see this class's own top
 			// docblock): a map missing even one configured language must
@@ -660,8 +674,10 @@ final class NavSeeder {
 	 * true.
 	 *
 	 * @param array<string,int> $ids navKey|language => post ID
+	 * @return string[] navKey|language map keys of the menus it tagged.
 	 */
-	private function repairLanguage( Plan $plan, array $ids ): void {
+	private function repairLanguage( Plan $plan, array $ids ): array {
+		$repaired = [];
 		foreach ( $plan->byKind( PlanItem::KIND_NAV ) as $item ) {
 			if ( PlanItem::CREATE === $item->action || '' === $item->language ) {
 				continue;
@@ -672,7 +688,9 @@ final class NavSeeder {
 			}
 			if ( ! $this->lang->hasLanguage( $postId ) ) {
 				$this->lang->setLanguage( $postId, $item->language );
+				$repaired[] = $item->mapKey();
 			}
 		}
+		return $repaired;
 	}
 }

@@ -85,6 +85,25 @@ class ApplierTranslationTest extends PolylangTestCase {
 		$this->assertSame( $applied->ids['guide|de'], $lang->translationOf( $applied->ids['guide|en'], 'de' ) );
 	}
 
+	/**
+	 * A person (or pediment-write-page with translation_of) linked their own
+	 * German page to the English one. The seeded German page is still there,
+	 * but a re-seed that creates nothing for this key leaves the group alone.
+	 */
+	public function test_a_translation_a_person_relinked_is_left_alone_by_a_reseed() {
+		[ $applied, $lang ] = $this->seed();
+		$en     = $applied->ids['guide|en'];
+		$theirs = self::factory()->post->create( [ 'post_type' => 'page', 'post_title' => 'Unsere Anleitung' ] );
+		$lang->setLanguage( $theirs, 'de' );
+		$lang->linkTranslations( [ 'en' => $en, 'de' => $theirs ] );
+		$this->assertSame( $theirs, $lang->translationOf( $en, 'de' ), 'Precondition: the person linked their own page.' );
+
+		$this->seed();
+
+		$this->assertSame( $theirs, $lang->translationOf( $en, 'de' ), 'the translation a person linked stays' );
+		$this->assertSame( $en, $lang->translationOf( $theirs, 'en' ) );
+	}
+
 	public function test_a_trashed_page_is_not_linked_into_a_new_translation_group() {
 		[ $applied ] = $this->seed();
 		$en = $applied->ids['guide|en'];

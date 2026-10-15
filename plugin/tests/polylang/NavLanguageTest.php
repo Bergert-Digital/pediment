@@ -95,6 +95,53 @@ class NavLanguageTest extends PolylangTestCase {
 		$this->assertStringNotContainsString( '"id":' . $en, get_post( $ids['primary|de'] )->post_content );
 	}
 
+	public function test_a_menu_translation_a_person_relinked_is_left_alone_by_a_reseed() {
+		$manifest = $this->manifest();
+		$lang     = new PolylangProvider();
+		$seeder   = new NavSeeder( $lang );
+		$entryIds = [ 'about|en' => $this->page( 'en' ), 'about|de' => $this->page( 'de' ) ];
+		$ids      = $seeder->apply( $seeder->plan( $manifest ), $manifest, $entryIds );
+		$theirs   = self::factory()->post->create( [ 'post_type' => 'wp_navigation', 'post_status' => 'publish', 'post_title' => 'Hauptmenü' ] );
+		$lang->setLanguage( $theirs, 'de' );
+		$lang->linkTranslations( [ 'en' => $ids['primary|en'], 'de' => $theirs ] );
+		$this->assertSame( $theirs, $lang->translationOf( $ids['primary|en'], 'de' ), 'Precondition: the person linked their own menu.' );
+
+		$seeder->apply( $seeder->plan( $manifest ), $manifest, $entryIds );
+
+		$this->assertSame( [], $seeder->created() );
+		$this->assertSame( $theirs, $lang->translationOf( $ids['primary|en'], 'de' ), 'the menu translation a person linked stays' );
+	}
+
+	public function test_a_language_added_later_links_its_new_menu_into_the_existing_group() {
+		$lang     = new PolylangProvider();
+		$entryIds = [ 'about|en' => $this->page( 'en' ), 'about|de' => $this->page( 'de' ) ];
+		$first    = ( new NavSeeder( $lang ) )->apply( ( new NavSeeder( $lang ) )->plan( $this->manifest() ), $this->manifest(), $entryIds );
+
+		$fr                    = PLL()->model->add_language( [ 'slug' => 'fr', 'name' => 'Français', 'locale' => 'fr_FR', 'flag' => 'fr', 'rtl' => 0, 'term_group' => 2 ] );
+		$this->addedLanguageId = $fr instanceof WP_Error ? null : (int) $fr->term_id;
+		PLL()->model->clean_languages_cache();
+
+		$three = Manifest::fromArray(
+			[
+				'languages' => [
+					'en' => [ 'name' => 'English', 'locale' => 'en_US', 'default' => true ],
+					'de' => [ 'name' => 'Deutsch', 'locale' => 'de_DE' ],
+					'fr' => [ 'name' => 'Français', 'locale' => 'fr_FR' ],
+				],
+				'pages'     => [ 'about' => [ 'title' => 'About', 'content' => '' ] ],
+				'navs'      => [ 'primary' => [ 'title' => 'Primary', 'items' => [ [ 'entry' => 'about' ] ] ] ],
+			],
+			get_stylesheet_directory()
+		);
+		$lang   = new PolylangProvider();
+		$seeder = new NavSeeder( $lang );
+		$ids    = $seeder->apply( $seeder->plan( $three ), $three, $entryIds + [ 'about|fr' => $this->page( 'fr' ) ] );
+
+		$this->assertSame( [ 'primary|fr' ], $seeder->created() );
+		$this->assertSame( $ids['primary|fr'], $lang->translationOf( $first['primary|en'], 'fr' ), 'the new language joins the existing group' );
+		$this->assertSame( $first['primary|de'], $lang->translationOf( $first['primary|en'], 'de' ) );
+	}
+
 	/**
 	 * NavSeeder::linkTranslationGroups() has the same partial-map guard as
 	 * Applier's, fixed for the same reason, in its own method by explicit
