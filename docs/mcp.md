@@ -45,7 +45,7 @@ two rules comes back as one tool error that names both.
 | `pediment-rollback-page` | Restore one of the page's own revisions. |
 | `pediment-upsert-style` | Create or change a site-layer style (see [design-layer.md](design-layer.md)). |
 | `pediment-delete-style` | Delete a site-layer style. |
-| `pediment-convert-legacy` | Replace legacy Pediment blocks with core blocks and named styles in the given posts (`ids`) or everywhere (`all: true`). Dry run unless `dry_run` is false; the dry run returns a diff per post. See [convert.md](convert.md). |
+| `pediment-convert-legacy` | Replace legacy Pediment blocks with core blocks and named styles in the given posts (`ids`) or everywhere (`all: true`, 25 posts per call). Dry run unless `dry_run` is false; the dry run returns a diff per post. See [convert.md](convert.md). |
 
 ### Permissions
 
@@ -67,8 +67,24 @@ else. Each tool checks WordPress capabilities on every call.
 
 ### Converting legacy blocks
 
+With `all: true`, one call handles at most 25 posts (the
+`pediment_convert_batch_size` filter changes the number), because shared
+hosting stops long requests. `remaining` says how many posts with legacy
+blocks come after this batch. After a real run, call again: the converted
+posts drop out. To move past posts that failed, or to page through a dry run,
+pass `after` with the last post id of the previous call. With `ids`, every
+given post is handled and `remaining` is 0.
+
 `pediment-convert-legacy` refuses a post (status `failed`, nothing written,
 also in a dry run) in these cases, so a dry run shows them before a real run:
+
+- A legacy container (prose, FAQ, feature grid, media & text, …) holds HTML
+  outside its inner blocks. The converter would drop it. Edit the HTML into
+  blocks first.
+- A FAQ answer or a testimonial quote holds block HTML other than paragraphs
+  (a list, a heading, …). Paragraphs are split into paragraph blocks; other
+  block HTML must be edited by hand first.
+- A legacy block comment does not parse, so the block would stay legacy.
 
 - Revisions are disabled for the post or limited to fewer than 2. The tool
   needs a backup revision first.

@@ -23,11 +23,9 @@ final class AdminTab {
 	public const ACTION = 'pediment_convert_legacy';
 
 	/**
-	 * Posts per preview and per run. Shared hosting limits request time
-	 * (about 30 s) and form fields (max_input_vars); filter with
-	 * `pediment_convert_batch_size`.
+	 * Posts per preview and per run (see PostConverter::BATCH).
 	 */
-	public const BATCH = 25;
+	public const BATCH = PostConverter::BATCH;
 
 	private const REPORT = 'pediment_convert_report_';
 
@@ -55,13 +53,6 @@ final class AdminTab {
 	 */
 	public static function allowed(): bool {
 		return current_user_can( 'manage_options' ) && current_user_can( 'edit_theme_options' );
-	}
-
-	/**
-	 * Posts per batch.
-	 */
-	private static function batchSize(): int {
-		return max( 1, (int) apply_filters( 'pediment_convert_batch_size', self::BATCH ) );
 	}
 
 	/**
@@ -103,7 +94,7 @@ final class AdminTab {
 		$after   = self::cursor();
 		$all     = $service->candidates();
 		$rest    = array_values( array_filter( $all, static fn( int $id ): bool => $id > $after ) );
-		$batch   = array_slice( $rest, 0, self::batchSize() );
+		$batch   = array_slice( $rest, 0, PostConverter::batchSize() );
 		$preview = $service->runMany( $batch, true, array( self::class, 'canEdit' ) );
 		$start   = $after > 0 ? ' <a href="' . esc_url( pediment_settings_page_url( 'convert' ) ) . '">' . esc_html__( 'Start from the beginning', 'pediment' ) . '</a>' : '';
 		$ready   = array_values( array_filter( $preview['posts'], static fn( array $post ): bool => 'preview' === $post['status'] ) );
@@ -164,7 +155,7 @@ final class AdminTab {
 	 * @return array{dryRun:bool,posts:list<array>,summary:array<string,int>}
 	 */
 	public static function process( array $ids ): array {
-		$report = PostConverter::create()->runMany( array_slice( array_values( $ids ), 0, self::batchSize() ), false, array( self::class, 'canEdit' ) );
+		$report = PostConverter::create()->runMany( array_slice( array_values( $ids ), 0, PostConverter::batchSize() ), false, array( self::class, 'canEdit' ) );
 		set_transient( self::REPORT . get_current_user_id(), $report, 10 * MINUTE_IN_SECONDS );
 		return $report;
 	}
