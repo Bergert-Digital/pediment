@@ -465,6 +465,26 @@ final class Policy {
 	}
 
 	/**
+	 * Style names registered for a block type: block style variations from the
+	 * registry plus the styles the block type declares itself.
+	 *
+	 * @param string $block Block name.
+	 * @return list<string>
+	 */
+	public static function registeredStyleNames( string $block ): array {
+		$known = array_map( 'strval', array_keys( \WP_Block_Styles_Registry::get_instance()->get_registered_styles_for_block( $block ) ) );
+		$type  = \WP_Block_Type_Registry::get_instance()->get_registered( $block );
+		if ( $type && is_array( $type->styles ) ) {
+			foreach ( $type->styles as $style ) {
+				if ( isset( $style['name'] ) ) {
+					$known[] = (string) $style['name'];
+				}
+			}
+		}
+		return array_values( array_unique( $known ) );
+	}
+
+	/**
 	 * `is-style-*` slugs in a class list that are not registered for the block.
 	 *
 	 * @param string $block      Block name.
@@ -475,15 +495,7 @@ final class Policy {
 		if ( ! preg_match_all( '/(?:^|\s)is-style-([a-z0-9-]+)/', $class_name, $matches ) ) {
 			return array();
 		}
-		$known = array_keys( \WP_Block_Styles_Registry::get_instance()->get_registered_styles_for_block( $block ) );
-		$type  = \WP_Block_Type_Registry::get_instance()->get_registered( $block );
-		if ( $type && is_array( $type->styles ) ) {
-			foreach ( $type->styles as $style ) {
-				if ( isset( $style['name'] ) ) {
-					$known[] = (string) $style['name'];
-				}
-			}
-		}
+		$known   = self::registeredStyleNames( $block );
 		$known[] = 'default';
 		return array_values( array_diff( $matches[1], $known ) );
 	}
