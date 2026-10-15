@@ -118,10 +118,11 @@ final class MediaSeeder {
 
 		// The site logo follows the same rule as the reading settings: set it
 		// when its attachment was created in this run, or while the site has
-		// none. A logo a person chose later in the Site Editor stays.
+		// none. A logo a person chose later in the Site Editor stays, and a
+		// trashed attachment is never made the logo.
 		$logoKey = $manifest->siteLogo();
 		$logoId  = '' === $logoKey ? 0 : $map->id( $logoKey );
-		if ( $logoId > 0 && ( in_array( $logoKey, $created, true ) || 0 === (int) get_theme_mod( 'custom_logo' ) ) ) {
+		if ( $logoId > 0 && 'trash' !== get_post_status( $logoId ) && ( in_array( $logoKey, $created, true ) || 0 === (int) get_theme_mod( 'custom_logo' ) ) ) {
 			set_theme_mod( 'custom_logo', $logoId );
 		}
 
