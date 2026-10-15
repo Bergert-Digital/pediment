@@ -93,7 +93,7 @@ class PolicyTest extends WP_UnitTestCase {
 
 	public function test_javascript_urls_are_errors(): void {
 		$result = $this->check( '<!-- wp:paragraph --><p><a href=" JaVa&#x09;script:alert(1)">x</a></p><!-- /wp:paragraph -->' );
-		$this->assertTrue( $this->has( $result['errors'], 'core/paragraph: javascript: URL in href is not allowed' ), wp_json_encode( $result['errors'] ) );
+		$this->assertTrue( $this->has( $result['errors'], 'core/paragraph: javascript: URL is not allowed in block markup' ), wp_json_encode( $result['errors'] ) );
 	}
 
 	public function test_inline_literal_styles_are_errors_and_presets_pass(): void {
@@ -133,6 +133,63 @@ class PolicyTest extends WP_UnitTestCase {
 		$this->assertContains( 'core/paragraph', $allowed );
 		$result = $this->check( '<!-- wp:html --><p>x</p><!-- /wp:html -->' );
 		$this->assertTrue( $this->has( $result['errors'], 'core/html: block is not allowed' ) );
+	}
+
+	public function test_unterminated_trailing_tag_cannot_hide_an_event_handler(): void {
+		$result = $this->check( '<!-- wp:paragraph --><p>x</p><img src=x onerror=alert(1) <!-- /wp:paragraph --><!-- wp:paragraph --><p>y</p><!-- /wp:paragraph -->' );
+		$this->assertTrue( $this->has( $result['errors'], 'core/paragraph: onerror attribute is not allowed' ), wp_json_encode( $result['errors'] ) );
+	}
+
+	public function test_noscript_parsing_differential_is_an_error(): void {
+		$result = $this->check( '<!-- wp:paragraph --><noscript><p title="</noscript><img src=x onerror=alert(1)>"></p></noscript><!-- /wp:paragraph -->' );
+		$this->assertTrue( $this->has( $result['errors'], '<noscript> is not allowed' ), wp_json_encode( $result['errors'] ) );
+		$this->assertTrue( $this->has( $result['errors'], 'onerror attribute is not allowed' ), wp_json_encode( $result['errors'] ) );
+	}
+
+	public function test_javascript_in_any_attribute_is_an_error(): void {
+		$payloads = array(
+			'<a xlink:href="javascript:alert(1)">x</a>',
+			'<a action=" &#106;avascript&colon;alert(1)">x</a>',
+			'<button formaction="java&NewLine;script:alert(1)">x</button>',
+		);
+		foreach ( $payloads as $payload ) {
+			$result = $this->check( "<!-- wp:paragraph --><p>{$payload}</p><!-- /wp:paragraph -->" );
+			$this->assertTrue( $this->has( $result['errors'], 'javascript: URL is not allowed' ), $payload );
+		}
+	}
+
+	public function test_form_svg_and_other_active_tags_are_errors(): void {
+		foreach ( array( 'svg', 'math', 'form', 'base', 'meta', 'link', 'template', 'frame', 'frameset', 'applet', 'noscript' ) as $tag ) {
+			$result = $this->check( "<!-- wp:paragraph --><p>x</p><{$tag}><!-- /wp:paragraph -->" );
+			$this->assertTrue( $this->has( $result['errors'], "<{$tag}> is not allowed" ), $tag );
+		}
+		$result = $this->check( '<!-- wp:paragraph --><svg><animate attributeName=href values=javascript:alert(1) /><set attributeName=onclick to=alert(1) /></svg><!-- /wp:paragraph -->' );
+		$this->assertTrue( $this->has( $result['errors'], '<svg> is not allowed' ) );
+		$this->assertTrue( $this->has( $result['errors'], 'javascript: URL is not allowed' ) );
+	}
+
+	public function test_unterminated_trailing_tag_cannot_hide_a_literal_inline_style(): void {
+		$result = $this->check( '<!-- wp:paragraph --><p>x</p><img src=x style="color:#ff0000;font-size:78px <!-- /wp:paragraph -->' );
+		$this->assertTrue( $this->has( $result['errors'], 'inline style color:#ff0000' ), wp_json_encode( $result['errors'] ) );
+		$result = $this->check( '<!-- wp:paragraph --><p style=padding:9px>x</p><!-- /wp:paragraph -->' );
+		$this->assertTrue( $this->has( $result['errors'], 'inline style padding:9px' ), wp_json_encode( $result['errors'] ) );
+		$result = $this->check( '<!-- wp:paragraph --><p style="color:&#35;f00">x</p><!-- /wp:paragraph -->' );
+		$this->assertTrue( $this->has( $result['errors'], 'inline style color:#f00' ), wp_json_encode( $result['errors'] ) );
+	}
+
+	public function test_normal_core_markup_with_presets_has_no_false_positives(): void {
+		$result = $this->check(
+			'<!-- wp:group {"metadata":{"name":"Hero"},"className":"is-style-band","style":{"spacing":{"padding":{"top":"var:preset|spacing|50"}},"color":{"background":"var:preset|color|base"}}} -->'
+			. '<div class="wp-block-group is-style-band has-background" style="background-color:var(--wp--preset--color--base);padding-top:var(--wp--preset--spacing--50)">'
+			. '<!-- wp:cover {"url":"/wp-content/uploads/a.jpg","dimRatio":50,"metadata":{"name":"Cover"}} --><div class="wp-block-cover"><span aria-hidden="true" class="wp-block-cover__background has-background-dim"></span><img class="wp-block-cover__image-background" alt="" src="/wp-content/uploads/a.jpg" data-object-fit="cover"/><div class="wp-block-cover__inner-container">'
+			. '<!-- wp:paragraph {"style":{"typography":{"fontSize":"var:preset|font-size|large"}}} --><p style="font-size:var(--wp--preset--font-size--large)">Welcome online. Style it.</p><!-- /wp:paragraph -->'
+			. '</div></div><!-- /wp:cover -->'
+			. '<!-- wp:buttons --><div class="wp-block-buttons"><!-- wp:button --><div class="wp-block-button"><a class="wp-block-button__link wp-element-button" href="https://example.com/?a=1&amp;online=1">Go</a></div><!-- /wp:button --></div><!-- /wp:buttons -->'
+			. '<!-- wp:image {"id":3} --><figure class="wp-block-image"><img src="/wp-content/uploads/b.jpg" alt="B" class="wp-image-3"/></figure><!-- /wp:image -->'
+			. '</div><!-- /wp:group -->'
+		);
+		$this->assertSame( array(), $result['errors'] );
+		$this->assertSame( array(), $result['warnings'] );
 	}
 
 	public function test_legacy_blocks_in_markup(): void {
