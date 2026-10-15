@@ -2,13 +2,15 @@
 /**
  * Phase 3: desired state x actual state -> a plan.
  *
- * The whole arbitration rule lives here and nowhere else:
+ * The seeder bootstraps a site; it never maintains one. Per desired entry:
  *
- *   1. no actual row                                  -> create
- *   2. stored hash absent / foreign / != current hash -> the client edited it:
- *      never touch title or content, enforce structure only
- *   3. otherwise                                      -> write content when the
- *      source hash shows git changed, else leave it
+ *   1. no actual row  -> create
+ *   2. a row exists   -> unchanged, whatever a person or an MCP tool did to
+ *                        its title, content, slug, parent, menu order or
+ *                        status (a trashed row stays in the trash, with a note)
+ *
+ * Rows the manifest no longer declares are reported as orphans and left in
+ * place. Duplicate identities and post_type mismatches block the whole run.
  *
  * @package Pediment
  */
@@ -75,87 +77,19 @@ final class Differ {
 				continue;
 			}
 
-			$edited    = ! ContentHash::matches( $have->storedHash, $have->currentHash );
-			$changes   = [];
-			$protected = [];
-
-			if ( $edited ) {
-				if ( $have->title !== $want->title ) {
-					$protected['title'] = [ 'from' => $have->title, 'to' => $want->title ];
-				}
-				if ( $want->sourceHash !== $have->sourceHash ) {
-					$protected['content'] = [ 'from' => '(database)', 'to' => '(manifest)' ];
-				}
-			} elseif ( '' === $have->sourceHash || $have->sourceHash !== $want->sourceHash ) {
-				// Untouched by the client and git moved (or provenance is
-				// unknown but nobody edited it, so writing is safe).
-				if ( $have->title !== $want->title ) {
-					$changes['title'] = [ 'from' => $have->title, 'to' => $want->title ];
-				}
-				$changes['content'] = [ 'from' => '(database)', 'to' => $want->content ];
-			}
-
-			if ( $have->slug !== $want->slug ) {
-				$changes['slug'] = [ 'from' => $have->slug, 'to' => $want->slug ];
-			}
-			if ( $have->menuOrder !== $want->menuOrder ) {
-				$changes['menu_order'] = [ 'from' => $have->menuOrder, 'to' => $want->menuOrder ];
-			}
-
-			$wantParentId = null;
-			if ( null !== $want->parentKey ) {
-				$parentActual = $actual[ $want->parentKey . '|' . $want->language ] ?? null;
-				$wantParentId = $parentActual instanceof ActualEntry ? $parentActual->id : null;
-			}
-			$parentDiffers = ( null === $want->parentKey && 0 !== $have->parentId )
-				|| ( null !== $want->parentKey && ( null === $wantParentId || $have->parentId !== $wantParentId ) );
-			if ( $parentDiffers ) {
-				// Named `parent_key`, not `parent`, because the values are a seed
-				// key and a post ID — descriptive, not directly writable. The
-				// applier resolves the real post_parent from the desired entry.
-				$changes['parent_key'] = [ 'from' => $have->parentId, 'to' => $want->parentKey ];
-			}
-
-			// Only `trash` is restored. `draft` and `pending` are editorial states
-			// — a client taking a page offline or holding a revision for review
-			// must not be overruled by the next seed run.
-			$restoring = 'trash' === $have->status;
-			if ( $restoring ) {
-				$changes['status'] = [ 'from' => $have->status, 'to' => 'publish' ];
-			}
-
-			$action = PlanItem::UNCHANGED;
-			$note   = '';
-			if ( $restoring ) {
-				$action = PlanItem::RESTORE;
-			} elseif ( [] !== $changes ) {
-				$action = PlanItem::UPDATE;
-			} elseif ( [] !== $protected ) {
-				$action = PlanItem::PROTECTED;
-			}
-			if ( [] !== $protected ) {
-				// Three different situations reach rule 2, and telling an operator
-				// "the client edited this" about a database the seeder has simply
-				// never stamped is the difference between running `wp pediment
-				// adopt` and concluding the whole site was hand-edited.
-				if ( '' === $have->storedHash ) {
-					$note = 'never seeded by this engine — content left alone; run `wp pediment adopt` to take it into git';
-				} elseif ( ! str_starts_with( $have->storedHash, ContentHash::VERSION . ':' ) ) {
-					$note = 'seeded by an older hash version — content left alone; re-adopt to refresh it';
-				} else {
-					$note = 'edited in the editor — content and title left alone';
-				}
-			}
-
+			// Restoring a trashed row would be a write to a row that exists;
+			// creating a second one would duplicate its identity. Neither: say
+			// where it is and what makes the next seed create it again.
 			$items[] = new PlanItem(
-				$action,
+				PlanItem::UNCHANGED,
 				PlanItem::KIND_ENTRY,
 				$want->key,
 				$want->language,
 				$have->id,
-				$changes,
-				$protected,
-				$note
+				[],
+				'trash' === $have->status
+					? 'in the trash — left alone; restore it in the editor, or empty the trash and the next seed creates it again'
+					: ''
 			);
 		}
 
@@ -169,7 +103,6 @@ final class Differ {
 				$have->key,
 				$have->language,
 				$have->id,
-				[],
 				[],
 				sprintf( '"%s" (ID %d) carries a seed key the manifest no longer declares — left in place', $have->title, $have->id )
 			);

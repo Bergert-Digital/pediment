@@ -11,9 +11,9 @@ class ClaimReporterTest extends WP_UnitTestCase {
 	public function test_a_dry_run_names_every_outcome_and_says_nothing_was_written() {
 		$plan = new Plan(
 			[
-				new PlanItem( PlanItem::CLAIM, PlanItem::KIND_ENTRY, 'home', '', 12, [ 'seed_key' => [ 'from' => null, 'to' => 'home' ] ], [], 'page "home" (ID 12)' ),
-				new PlanItem( PlanItem::NO_MATCH, PlanItem::KIND_ENTRY, 'about', '', 0, [], [], 'no unclaimed page with slug "about" — the next seed will create it.' ),
-				new PlanItem( PlanItem::AMBIGUOUS, PlanItem::KIND_NAV, 'primary', '', 0, [], [], '2 unclaimed navigation entities (IDs 7, 9)' ),
+				new PlanItem( PlanItem::CLAIM, PlanItem::KIND_ENTRY, 'home', '', 12, [ 'seed_key' => [ 'from' => null, 'to' => 'home' ] ], 'page "home" (ID 12)' ),
+				new PlanItem( PlanItem::NO_MATCH, PlanItem::KIND_ENTRY, 'about', '', 0, [], 'no unclaimed page with slug "about" — the next seed will create it.' ),
+				new PlanItem( PlanItem::AMBIGUOUS, PlanItem::KIND_NAV, 'primary', '', 0, [], '2 unclaimed navigation entities (IDs 7, 9)' ),
 			]
 		);
 
@@ -36,7 +36,7 @@ class ClaimReporterTest extends WP_UnitTestCase {
 	public function test_a_language_specific_item_shows_its_language_code_after_the_key() {
 		$plan = new Plan(
 			[
-				new PlanItem( PlanItem::CLAIM, PlanItem::KIND_ENTRY, 'home', 'fr', 14, [ 'seed_key' => [ 'from' => null, 'to' => 'home' ] ], [], 'page "home" (ID 14)' ),
+				new PlanItem( PlanItem::CLAIM, PlanItem::KIND_ENTRY, 'home', 'fr', 14, [ 'seed_key' => [ 'from' => null, 'to' => 'home' ] ], 'page "home" (ID 14)' ),
 			]
 		);
 

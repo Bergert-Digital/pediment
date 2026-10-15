@@ -92,9 +92,10 @@ class SeedingBehaviorTest extends WpmlTestCase {
 		);
 
 		$lang    = new WpmlProvider();
-		$desired = ( new DesiredState( $lang, new ContentResolver( new MediaMap( [] ) ) ) )->build( $manifest );
 		$reader  = new StateReader( $lang );
-		$plan    = ( new Differ() )->diff( $desired, $reader->read(), $reader->duplicates() );
+		$actual  = $reader->read();
+		$desired = ( new DesiredState( $lang, new ContentResolver( new MediaMap( [] ) ) ) )->build( $manifest, $actual );
+		$plan    = ( new Differ() )->diff( $desired, $actual, $reader->duplicates() );
 
 		return [ ( new Applier( $lang ) )->apply( $plan, $desired ), $lang ];
 	}
@@ -172,7 +173,7 @@ class SeedingBehaviorTest extends WpmlTestCase {
 
 		$entry   = new \Pediment\Seeder\DesiredEntry( 'about', 'en', 'page', 'About', 'about', null, '<p>x</p>', false, false, 0, [], ContentHash::compute( 'About', '<p>x</p>' ) );
 		$desired = [ 'about|en' => $entry ];
-		$item    = new PlanItem( PlanItem::UPDATE, PlanItem::KIND_ENTRY, 'about', 'en', $postId, [ 'menu_order' => [ 'from' => 1, 'to' => 0 ] ] );
+		$item    = new PlanItem( PlanItem::UNCHANGED, PlanItem::KIND_ENTRY, 'about', 'en', $postId );
 		$plan    = new \Pediment\Seeder\Plan( [ $item ], [] );
 
 		( new Applier( $lang ) )->apply( $plan, $desired );
