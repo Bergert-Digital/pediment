@@ -170,6 +170,33 @@ class ApplierTest extends WP_UnitTestCase {
 		$this->assertSame( $ids['home|'], (int) get_option( 'page_on_front' ) );
 	}
 
+	public function test_a_trashed_front_page_is_not_set_again() {
+		// Core resets the reading settings when the front page is trashed. The
+		// trashed row is still in the id map, but pointing the option at it
+		// would serve visitors a trashed page and overrule the person who did it.
+		$m   = $this->manifest( [ 'home' => [ 'title' => 'Home', 'content' => '', 'front_page' => true ] ] );
+		$ids = $this->seed( $m );
+		wp_trash_post( $ids['home|'] );
+		$this->assertSame( 'posts', get_option( 'show_on_front' ) );
+		$this->assertSame( 0, (int) get_option( 'page_on_front' ) );
+
+		$this->seed( $m );
+
+		$this->assertSame( 'posts', get_option( 'show_on_front' ) );
+		$this->assertSame( 0, (int) get_option( 'page_on_front' ) );
+	}
+
+	public function test_a_trashed_posts_page_is_not_set_again() {
+		$m   = $this->manifest( [ 'blog' => [ 'title' => 'Blog', 'content' => '', 'posts_page' => true ] ] );
+		$ids = $this->seed( $m );
+		wp_trash_post( $ids['blog|'] );
+		$this->assertSame( 0, (int) get_option( 'page_for_posts' ) );
+
+		$this->seed( $m );
+
+		$this->assertSame( 0, (int) get_option( 'page_for_posts' ) );
+	}
+
 	public function test_a_new_child_finds_its_existing_parent() {
 		$first = $this->seed( $this->manifest( [ 'guide' => [ 'title' => 'Guide', 'content' => '' ] ] ) );
 
