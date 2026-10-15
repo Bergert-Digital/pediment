@@ -24,13 +24,31 @@ class GridMappersTest extends WP_UnitTestCase {
 		$this->assertCount( 6, $result->converted );
 	}
 
-	public function test_grid_columns_follow_the_card_count(): void {
-		$card  = '<!-- wp:pediment/feature {"title":"T"} /-->';
-		$three = parse_blocks( $this->convert( '<!-- wp:pediment/feature-grid -->' . str_repeat( $card, 3 ) . '<!-- /wp:pediment/feature-grid -->' )->markup )[0];
-		$four  = parse_blocks( $this->convert( '<!-- wp:pediment/feature-grid -->' . str_repeat( $card, 4 ) . '<!-- /wp:pediment/feature-grid -->' )->markup )[0];
-		$this->assertSame( 3, $three['attrs']['layout']['columnCount'] );
-		$this->assertSame( 2, $four['attrs']['layout']['columnCount'] );
-		$this->assertSame( '16rem', $four['attrs']['layout']['minimumColumnWidth'] );
+	/**
+	 * Core ignores minimumColumnWidth when columnCount is set and never
+	 * collapses such a grid, so grids carry minimumColumnWidth alone:
+	 * max(floor, share of the width).
+	 */
+	public function test_grids_cap_the_columns_and_collapse_on_narrow_screens(): void {
+		$feature = '<!-- wp:pediment/feature {"title":"T"} /-->';
+		$stat    = '<!-- wp:pediment/stat {"value":"1","label":"L"} /-->';
+		$step    = '<!-- wp:pediment/step {"title":"S"} /-->';
+		$cases   = array(
+			array( 'feature-grid', $feature, 3, 'max(16rem, 30%)' ),
+			array( 'feature-grid', $feature, 4, 'max(16rem, 45%)' ),
+			array( 'stat-grid', $stat, 2, 'max(10rem, 45%)' ),
+			array( 'stat-grid', $stat, 4, 'max(10rem, 22%)' ),
+			array( 'stat-grid', $stat, 6, 'max(10rem, 22%)' ),
+			array( 'steps', $step, 3, 'max(12.5rem, 30%)' ),
+			array( 'steps', $step, 4, 'max(12.5rem, 45%)' ),
+		);
+		foreach ( $cases as list( $grid, $child, $count, $expected ) ) {
+			$block  = parse_blocks( $this->convert( "<!-- wp:pediment/{$grid} -->" . str_repeat( $child, $count ) . "<!-- /wp:pediment/{$grid} -->" )->markup )[0];
+			$layout = $block['attrs']['layout'];
+			$this->assertSame( 'grid', $layout['type'] );
+			$this->assertArrayNotHasKey( 'columnCount', $layout, "{$grid} x {$count}" );
+			$this->assertSame( $expected, $layout['minimumColumnWidth'], "{$grid} x {$count}" );
+		}
 	}
 
 	public function test_lone_children_convert_without_their_parent(): void {

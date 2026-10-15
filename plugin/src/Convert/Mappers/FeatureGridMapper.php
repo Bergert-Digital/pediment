@@ -19,7 +19,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
- * Grid (3 columns, 2 for exactly four cards, min 16rem) of group.is-style-card
+ * Grid (at most 3 columns, 2 for exactly four cards, one on phones) of group.is-style-card
  * → image (when set), h3, text, link paragraph. The icon has no core
  * equivalent and is dropped (noted).
  */
@@ -47,11 +47,7 @@ final class FeatureGridMapper implements Mapper {
 		$group           = array( 'tagName' => 'section' );
 		$group           = Attrs::put( $group, 'align', $context->align( $block ) );
 		$group           = Attrs::put( $group, 'className', $context->className( $block, 'core/group' ) );
-		$group['layout'] = array(
-			'type'               => 'grid',
-			'columnCount'        => 4 === count( $cards ) ? 2 : 3,
-			'minimumColumnWidth' => '16rem',
-		);
+		$group['layout'] = Build::gridLayout( 4 === count( $cards ) ? 2 : 3, '16rem' );
 		return Build::group( $group + $context->carry( $block, 'Features' ), $cards );
 	}
 
