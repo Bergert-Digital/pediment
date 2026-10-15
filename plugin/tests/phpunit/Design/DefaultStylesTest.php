@@ -15,7 +15,7 @@ class DefaultStylesTest extends WP_UnitTestCase {
 
 	public function test_every_default_style_passes_the_validator(): void {
 		$specs = DefaultStyles::specs();
-		$this->assertCount( 7, $specs );
+		$this->assertCount( 18, $specs );
 		foreach ( $specs as $spec ) {
 			$this->assertSame( array(), ( new StyleValidator() )->validate( $spec ), $spec['slug'] );
 		}
@@ -33,6 +33,43 @@ class DefaultStylesTest extends WP_UnitTestCase {
 		$css = $this->render_variation_css( '<!-- wp:group {"className":"is-style-card"} --><div class="wp-block-group is-style-card"><p>x</p></div><!-- /wp:group -->' );
 		$this->assertStringContainsString( 'is-style-card--', $css );
 		$this->assertStringContainsString( 'border-radius: var(--wp--custom--radius--md)', $css );
+	}
+
+	public function test_converter_styles_are_registered_for_their_blocks(): void {
+		DefaultStyles::registerAll();
+		$registry = WP_Block_Styles_Registry::get_instance();
+		$expected = array(
+			'core/group'      => array( 'stat', 'steps', 'panel', 'quote-card', 'logos', 'prose' ),
+			'core/cover'      => array( 'media-card' ),
+			'core/details'    => array( 'accordion' ),
+			'core/media-text' => array( 'media-row' ),
+			'core/quote'      => array( 'pull-quote' ),
+			'core/image'      => array( 'framed' ),
+		);
+		foreach ( $expected as $block => $slugs ) {
+			foreach ( $slugs as $slug ) {
+				$this->assertArrayHasKey( $slug, $registry->get_registered_styles_for_block( $block ), "{$slug} on {$block}" );
+			}
+		}
+	}
+
+	public function test_media_row_css_reaches_the_media_text_image(): void {
+		DefaultStyles::registerAll();
+		$css = $this->render_variation_css( '<!-- wp:media-text {"className":"is-style-media-row"} --><div class="wp-block-media-text is-stacked-on-mobile is-style-media-row"><figure class="wp-block-media-text__media"></figure><div class="wp-block-media-text__content"></div></div><!-- /wp:media-text -->' );
+		$this->assertMatchesRegularExpression( '/\.wp-block-media-text\.is-style-media-row--\d+>\.wp-block-media-text__media img\)\{border-radius:var\(--wp--custom--radius--md\)/', $css );
+	}
+
+	public function test_accordion_styles_the_open_details(): void {
+		DefaultStyles::registerAll();
+		$css = $this->render_variation_css( '<!-- wp:details {"className":"is-style-accordion"} --><details class="wp-block-details is-style-accordion"><summary>Q</summary></details><!-- /wp:details -->' );
+		$this->assertStringContainsString( 'background-color: var(--wp--preset--color--surface-elevated)', $css );
+		$this->assertMatchesRegularExpression( '/is-style-accordion--\d+\[open\]\)\{border-color:var\(--wp--preset--color--border-strong\)/', $css );
+	}
+
+	public function test_framed_puts_radius_and_shadow_on_the_img(): void {
+		DefaultStyles::registerAll();
+		$css = $this->render_variation_css( '<!-- wp:image {"className":"is-style-framed"} --><figure class="wp-block-image is-style-framed"><img src="x.jpg" alt=""/></figure><!-- /wp:image -->' );
+		$this->assertMatchesRegularExpression( '/\.wp-block-image\.is-style-framed--\d+ img,[^{]*\)\{border-radius: var\(--wp--custom--radius--md\);box-shadow: var\(--wp--preset--shadow--medium\);/', $css );
 	}
 
 	public function test_pill_text_uses_the_surface_token(): void {

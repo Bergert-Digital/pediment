@@ -1,0 +1,10 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/theme.json",
+	"version": 3,
+	"title": "Numbered steps",
+	"slug": "steps",
+	"blockTypes": [ "core/group" ],
+	"styles": {
+		"css": "counter-reset:pediment-step;&>*{counter-increment:pediment-step;text-align:center}&>*::before{content:counter(pediment-step,decimal-leading-zero);display:flex;align-items:center;justify-content:center;width:36px;height:36px;margin:0 auto var(--wp--preset--spacing--30);border:1px solid var(--wp--preset--color--border);border-radius:var(--wp--custom--radius--sm);background:var(--wp--preset--color--surface);font-size:13px;font-weight:800;color:var(--wp--preset--color--accent)}"
+	}
+}
