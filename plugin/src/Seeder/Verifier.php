@@ -27,7 +27,9 @@ final class Verifier {
 	 * Everything a person may change after the seeder created a row — slug,
 	 * parent, trash, the reading settings, a menu's links and status — is
 	 * checked only for the rows this run created: on an existing row it is
-	 * that person's decision, and the seeder never reverts it.
+	 * that person's decision, and the seeder never reverts it. For a reading
+	 * setting only "it is set" is checked: one that names another live page
+	 * is a person's choice the seeder kept.
 	 *
 	 * @param array<string,DesiredEntry> $desired
 	 * @param array<string,int>          $ids
@@ -96,13 +98,18 @@ final class Verifier {
 				$problems[] = sprintf( '%s: parent is %d, expected %d.', $mapKey, $post->post_parent, $expectedParent );
 			}
 
+			// The Applier fills a reading setting only while it is unset. One
+			// that names another live page is a person's choice and stays, even
+			// when this run created the declared page again — so that is not a
+			// problem. A setting still unset after the run is.
 			if ( $entry->frontPage && $entry->language === $this->lang->defaultLanguage() ) {
-				if ( 'page' !== get_option( 'show_on_front' ) || (int) get_option( 'page_on_front' ) !== $postId ) {
-					$problems[] = sprintf( '%s: is declared front page but the front page setting points elsewhere.', $mapKey );
+				$front = (int) get_option( 'page_on_front' );
+				if ( SiteSetting::isUnset( $front ) || ( $front === $postId && 'page' !== get_option( 'show_on_front' ) ) ) {
+					$problems[] = sprintf( '%s: is declared front page but the front page setting was not set.', $mapKey );
 				}
 			}
-			if ( $entry->postsPage && $entry->language === $this->lang->defaultLanguage() && (int) get_option( 'page_for_posts' ) !== $postId ) {
-				$problems[] = sprintf( '%s: is declared posts page but page_for_posts points elsewhere.', $mapKey );
+			if ( $entry->postsPage && $entry->language === $this->lang->defaultLanguage() && SiteSetting::isUnset( (int) get_option( 'page_for_posts' ) ) ) {
+				$problems[] = sprintf( '%s: is declared posts page but page_for_posts was not set.', $mapKey );
 			}
 		}
 

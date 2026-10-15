@@ -80,7 +80,7 @@ final class Applier {
 
 		$this->linkTranslationGroups( $ids );
 
-		$this->applyReadingOptions( $desired, $ids, $created );
+		$this->applyReadingOptions( $desired, $ids );
 
 		return new ApplyResult( $ids, $errors, $created );
 	}
@@ -295,16 +295,16 @@ final class Applier {
 	}
 
 	/**
-	 * Point the front page and the posts page at their entries — only when the
-	 * entry was created in this run, or while the site has no such page yet
-	 * (option 0). A choice a person made later in Settings → Reading is never
-	 * reverted, and a trashed page is never chosen.
+	 * Point the front page and the posts page at their entries — only while
+	 * the setting is unset (SiteSetting::isUnset()). A choice a person made in
+	 * Settings → Reading is never reverted, not even when the seeded page was
+	 * deleted for good and this run created it again, and a trashed page is
+	 * never chosen.
 	 *
 	 * @param array<string,DesiredEntry> $desired
 	 * @param array<string,int>          $ids
-	 * @param string[]                   $created Map keys created in this run.
 	 */
-	private function applyReadingOptions( array $desired, array $ids, array $created ): void {
+	private function applyReadingOptions( array $desired, array $ids ): void {
 		$default = $this->lang->defaultLanguage();
 
 		foreach ( $desired as $mapKey => $entry ) {
@@ -318,13 +318,11 @@ final class Applier {
 			if ( 'trash' === get_post_status( $ids[ $mapKey ] ) ) {
 				continue;
 			}
-			$isNew = in_array( $mapKey, $created, true );
-
-			if ( $entry->frontPage && ( $isNew || 0 === (int) get_option( 'page_on_front' ) ) ) {
+			if ( $entry->frontPage && SiteSetting::isUnset( (int) get_option( 'page_on_front' ) ) ) {
 				update_option( 'show_on_front', 'page' );
 				update_option( 'page_on_front', $ids[ $mapKey ] );
 			}
-			if ( $entry->postsPage && ( $isNew || 0 === (int) get_option( 'page_for_posts' ) ) ) {
+			if ( $entry->postsPage && SiteSetting::isUnset( (int) get_option( 'page_for_posts' ) ) ) {
 				update_option( 'page_for_posts', $ids[ $mapKey ] );
 			}
 		}

@@ -99,8 +99,7 @@ final class MediaSeeder {
 			return $this->map( $manifest );
 		}
 
-		$ids     = array_intersect_key( $this->existing(), $manifest->media() );
-		$created = [];
+		$ids = array_intersect_key( $this->existing(), $manifest->media() );
 
 		foreach ( $plan->byAction( PlanItem::CREATE ) as $item ) {
 			$spec = $manifest->media()[ $item->key ] ?? null;
@@ -110,19 +109,19 @@ final class MediaSeeder {
 			$id = $this->sideload( $spec );
 			if ( $id > 0 ) {
 				$ids[ $item->key ] = $id;
-				$created[]         = $item->key;
 			}
 		}
 
 		$map = new MediaMap( $ids );
 
 		// The site logo follows the same rule as the reading settings: set it
-		// when its attachment was created in this run, or while the site has
-		// none. A logo a person chose later in the Site Editor stays, and a
-		// trashed attachment is never made the logo.
+		// only while the site has none (SiteSetting::isUnset()). A logo a
+		// person chose in the Site Editor stays, even when the seeded logo was
+		// deleted for good and this run uploaded it again, and a trashed
+		// attachment is never made the logo.
 		$logoKey = $manifest->siteLogo();
 		$logoId  = '' === $logoKey ? 0 : $map->id( $logoKey );
-		if ( $logoId > 0 && 'trash' !== get_post_status( $logoId ) && ( in_array( $logoKey, $created, true ) || 0 === (int) get_theme_mod( 'custom_logo' ) ) ) {
+		if ( $logoId > 0 && 'trash' !== get_post_status( $logoId ) && SiteSetting::isUnset( (int) get_theme_mod( 'custom_logo' ) ) ) {
 			set_theme_mod( 'custom_logo', $logoId );
 		}
 

@@ -100,6 +100,18 @@ class RunnerTest extends WP_UnitTestCase {
 		$this->assertStringContainsString( '0 to write,', \Pediment\Seeder\Reporter::summaryLine( $third ) );
 	}
 
+	public function test_a_front_page_a_person_chose_stays_when_the_seeded_home_comes_back() {
+		$first = ( new Runner() )->run();
+		update_option( 'page_on_front', $first->ids['about|'] );
+		wp_delete_post( $first->ids['home|'], true );
+
+		$second = ( new Runner() )->run();
+
+		$this->assertTrue( $second->ok(), implode( "\n", array_merge( $second->errors, $second->problems ) ) );
+		$this->assertNotSame( $first->ids['home|'], $second->ids['home|'], 'Precondition: home is created again.' );
+		$this->assertSame( $first->ids['about|'], (int) get_option( 'page_on_front' ) );
+	}
+
 	public function test_a_new_menu_leaves_out_a_page_in_the_trash_without_failing_the_run() {
 		$first = ( new Runner() )->run();
 		wp_trash_post( $first->ids['about|'] );

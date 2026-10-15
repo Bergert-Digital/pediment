@@ -155,6 +155,59 @@ class ApplierTest extends WP_UnitTestCase {
 		$this->assertSame( $ids['about|'], (int) get_option( 'page_on_front' ) );
 	}
 
+	public function test_a_front_page_a_person_chose_survives_a_recreated_home() {
+		// A person picks About as the front page, then deletes the seeded home
+		// for good. The next seed recreates home; the choice still stands.
+		$m   = $this->manifest(
+			[
+				'home'  => [ 'title' => 'Home', 'content' => '', 'front_page' => true ],
+				'about' => [ 'title' => 'About', 'content' => '' ],
+			]
+		);
+		$ids = $this->seed( $m );
+		update_option( 'page_on_front', $ids['about|'] );
+		wp_delete_post( $ids['home|'], true );
+
+		$again = $this->seed( $m );
+
+		$this->assertNotSame( $ids['home|'], $again['home|'], 'Precondition: home is created again.' );
+		$this->assertSame( $ids['about|'], (int) get_option( 'page_on_front' ) );
+	}
+
+	public function test_a_posts_page_a_person_chose_survives_a_recreated_blog() {
+		$m   = $this->manifest(
+			[
+				'blog' => [ 'title' => 'Blog', 'content' => '', 'posts_page' => true ],
+				'news' => [ 'title' => 'News', 'content' => '' ],
+			]
+		);
+		$ids = $this->seed( $m );
+		update_option( 'page_for_posts', $ids['news|'] );
+		wp_delete_post( $ids['blog|'], true );
+
+		$again = $this->seed( $m );
+
+		$this->assertNotSame( $ids['blog|'], $again['blog|'], 'Precondition: blog is created again.' );
+		$this->assertSame( $ids['news|'], (int) get_option( 'page_for_posts' ) );
+	}
+
+	public function test_a_reading_setting_that_names_a_missing_post_is_set() {
+		$m   = $this->manifest(
+			[
+				'home' => [ 'title' => 'Home', 'content' => '', 'front_page' => true ],
+				'blog' => [ 'title' => 'Blog', 'content' => '', 'posts_page' => true ],
+			]
+		);
+		$ids = $this->seed( $m );
+		update_option( 'page_on_front', 999999 );
+		update_option( 'page_for_posts', 999998 );
+
+		$this->seed( $m );
+
+		$this->assertSame( $ids['home|'], (int) get_option( 'page_on_front' ) );
+		$this->assertSame( $ids['blog|'], (int) get_option( 'page_for_posts' ) );
+	}
+
 	public function test_an_unset_front_page_is_set_for_an_existing_page() {
 		// A claimed legacy site: the home page exists, but no static front page
 		// was ever chosen. Filling an empty setting is not overruling anyone.

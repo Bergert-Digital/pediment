@@ -267,8 +267,9 @@ reports this (see below), it doesn't fail silently.
 ```
 
 Names a `media` key; must already be declared there. That attachment becomes
-the site's custom logo (`theme_mod: custom_logo`) when the seeder uploads it,
-or while the site has no logo. A logo a person chose later stays.
+the site's custom logo (`theme_mod: custom_logo`) while the site has no logo
+(`0`, or a file that no longer exists or is in the trash). A logo a person
+chose later stays, even when the seeder uploads the seeded logo again.
 
 ## Languages
 
@@ -493,10 +494,12 @@ they are identity, not content:
   trash is never linked into a group, and a group short of one configured
   language is left as it is.
 - **Empty settings.** The front page, the posts page and the site logo are set
-  when their entry or attachment is created in this run, or while the site
-  has none (`page_on_front`, `page_for_posts` or `custom_logo` is `0`). A
-  choice a person made stays. A page in the trash is never made the front page
-  or the posts page, and an attachment in the trash is never made the logo.
+  only while the site has none: `page_on_front`, `page_for_posts` or
+  `custom_logo` is `0`, or names a post or file that no longer exists or is in
+  the trash. A choice a person made stays, even when they deleted the seeded
+  page or logo for good and the next seed creates it again. A page in the
+  trash is never made the front page or the posts page, and an attachment in
+  the trash is never made the logo.
 
 The header template part is not part of the seeder: plugin activation and a
 theme switch create it once (`plugin/inc/bootstrap.php`), and `wp pediment
@@ -909,7 +912,8 @@ section names the specific problem per entry (keys are printed in the
 `key|language` form, so a multilingual site can tell its five copies of a menu
 apart), e.g.:
 
-- `home: is declared front page but the front page setting points elsewhere.`
+- `home: is declared front page but the front page setting was not set.`
+  (A front page a person chose stays, and is not a problem.)
 - `about: slug is "about-2" but the manifest says "about" (WordPress
   uniquifies colliding slugs).` — see below.
 - `guide/pricing: parent "guide" has no post — this entry landed at the site
@@ -991,8 +995,7 @@ other claim re-run (see "Re-running claim" above).
   If your theme or a plugin displays "by {author}", account for a `0` author
   on seeded content.
 - **A dry-run plan is silent about the reading settings and the logo.** They
-  are set only when their entry or attachment is created in the same run, or
-  while the site has none, and neither produces a plan item.
+  are set only while the site has none, and neither produces a plan item.
 - **A dry-run plan is silent about term drift too.** Terms are create-only
   (above), so a manifest-side term change on an existing entry never produces
   a plan item and never gets applied.
