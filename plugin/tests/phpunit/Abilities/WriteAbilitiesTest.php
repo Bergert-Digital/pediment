@@ -330,6 +330,8 @@ class WriteAbilitiesTest extends AbilityTestCase {
 			)
 		);
 		$this->assertSame( 'promo', $saved['slug'] );
+		$this->assertGreaterThan( 0, $saved['revision'], 'creating a style saves a first revision' );
+		$this->assertSame( 'revision', get_post_type( $saved['revision'] ) );
 		$this->assertNotNull( ( new SiteStyles( new StyleValidator() ) )->get( 'promo' ) );
 
 		$bad = $this->run_as( $admin, 'pediment/upsert-style', array( 'slug' => 'bad', 'label' => 'Bad', 'blockTypes' => array( 'core/group' ), 'styles' => array( 'border' => array( 'radius' => '22px' ) ) ) );

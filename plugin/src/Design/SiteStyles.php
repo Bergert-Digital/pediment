@@ -96,6 +96,11 @@ final class SiteStyles {
 			return $id;
 		}
 
+		if ( null === $post ) {
+			// WordPress saves no revision when it creates a post; keep the first version restorable.
+			wp_save_post_revision( (int) $id );
+		}
+
 		update_post_meta( (int) $id, self::STATE_META, self::STATE_ACTIVE );
 		wp_clean_theme_json_cache();
 

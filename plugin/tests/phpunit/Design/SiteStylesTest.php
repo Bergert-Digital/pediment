@@ -57,6 +57,13 @@ class SiteStylesTest extends WP_UnitTestCase {
 		$this->assertSame( array(), get_posts( array( 'post_type' => SiteStyles::POST_TYPE, 'post_status' => 'any' ) ) );
 	}
 
+	public function test_creating_a_style_saves_a_first_revision(): void {
+		$first = $this->store->save( $this->spec() );
+		$this->assertGreaterThan( 0, $first['revision'] );
+		$this->assertSame( 'revision', get_post_type( $first['revision'] ) );
+		$this->assertSame( $first['id'], wp_get_post_parent_id( $first['revision'] ) );
+	}
+
 	public function test_saving_the_same_slug_updates_and_adds_a_revision(): void {
 		$first  = $this->store->save( $this->spec() );
 		$second = $this->store->save( $this->spec( array( 'shadow' => 'var:preset|shadow|subtle' ) ) );
