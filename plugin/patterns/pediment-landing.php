@@ -81,7 +81,7 @@
 
 <!-- wp:group {"align":"full","className":"starter-band is-style-band-surface","style":{"spacing":{"margin":{"top":"0","bottom":"0"}}},"layout":{"type":"constrained"}} -->
 <div class="wp-block-group alignfull starter-band is-style-band-surface is-layout-constrained wp-block-group-is-layout-constrained" style="margin-top:0;margin-bottom:0">
-<!-- wp:group {"align":"wide","style":{"spacing":{"margin":{"bottom":"var:preset|spacing|60"}}},"layout":{"type":"constrained"},"metadata":{"name":"Section head"}} -->
+<!-- wp:group {"align":"wide","style":{"spacing":{"margin":{"bottom":"var:preset|spacing|60"}}},"layout":{"type":"constrained","justifyContent":"left"},"metadata":{"name":"Section head"}} -->
 <div class="wp-block-group alignwide" style="margin-bottom:var(--wp--preset--spacing--60)"><!-- wp:paragraph {"className":"is-style-eyebrow"} -->
 <p class="is-style-eyebrow">What we do</p>
 <!-- /wp:paragraph -->
@@ -94,7 +94,7 @@
 <p class="is-style-lead">One sentence describing how your services fit together and the outcome you deliver.</p>
 <!-- /wp:paragraph --></div>
 <!-- /wp:group -->
-<!-- wp:group {"tagName":"section","align":"wide","layout":{"type":"grid","columnCount":3,"minimumColumnWidth":"16rem"},"metadata":{"name":"Features"}} -->
+<!-- wp:group {"tagName":"section","align":"wide","layout":{"type":"grid","minimumColumnWidth":"max(16rem, 30%)"},"metadata":{"name":"Features"}} -->
 <section class="wp-block-group alignwide"><!-- wp:group {"className":"is-style-card","layout":{"type":"constrained"},"metadata":{"name":"Feature"}} -->
 <div class="wp-block-group is-style-card"><!-- wp:heading {"textAlign":"center","level":3} -->
 <h3 class="wp-block-heading has-text-align-center">First service</h3>
@@ -146,7 +146,7 @@
 <div class="wp-block-columns alignwide are-vertically-aligned-center starter-approach">
 <!-- wp:column {"verticalAlignment":"center"} -->
 <div class="wp-block-column is-vertically-aligned-center">
-<!-- wp:group {"style":{"spacing":{"margin":{"bottom":"var:preset|spacing|60"}}},"layout":{"type":"constrained"},"metadata":{"name":"Section head"}} -->
+<!-- wp:group {"style":{"spacing":{"margin":{"bottom":"var:preset|spacing|60"}}},"layout":{"type":"constrained","justifyContent":"left"},"metadata":{"name":"Section head"}} -->
 <div class="wp-block-group" style="margin-bottom:var(--wp--preset--spacing--60)"><!-- wp:paragraph {"className":"is-style-eyebrow"} -->
 <p class="is-style-eyebrow">How we work</p>
 <!-- /wp:paragraph -->
@@ -155,7 +155,7 @@
 <h2 class="wp-block-heading">A method built around outcomes, not slides</h2>
 <!-- /wp:heading --></div>
 <!-- /wp:group -->
-<!-- wp:group {"className":"is-style-steps","layout":{"type":"grid","minimumColumnWidth":"12.5rem"},"metadata":{"name":"Steps"}} -->
+<!-- wp:group {"className":"is-style-steps","layout":{"type":"grid","minimumColumnWidth":"max(12.5rem, 45%)"},"metadata":{"name":"Steps"}} -->
 <div class="wp-block-group is-style-steps"><!-- wp:group {"layout":{"type":"constrained"},"metadata":{"name":"Step"}} -->
 <div class="wp-block-group"><!-- wp:heading {"level":3} -->
 <h3 class="wp-block-heading">Discover</h3>
@@ -212,7 +212,7 @@
 
 <!-- wp:group {"align":"full","className":"starter-band is-style-band-navy","style":{"spacing":{"margin":{"top":"0","bottom":"0"}}},"layout":{"type":"constrained"}} -->
 <div class="wp-block-group alignfull starter-band is-style-band-navy is-layout-constrained wp-block-group-is-layout-constrained" style="margin-top:0;margin-bottom:0">
-<!-- wp:group {"align":"wide","layout":{"type":"grid","minimumColumnWidth":"10rem"},"metadata":{"name":"Stats"}} -->
+<!-- wp:group {"align":"wide","layout":{"type":"grid","minimumColumnWidth":"max(10rem, 22%)"},"metadata":{"name":"Stats"}} -->
 <div class="wp-block-group alignwide"><!-- wp:group {"className":"is-style-stat","layout":{"type":"constrained"},"metadata":{"name":"Stat"}} -->
 <div class="wp-block-group is-style-stat"><!-- wp:paragraph -->
 <p>120+</p>
@@ -258,7 +258,7 @@
 
 <!-- wp:group {"align":"full","className":"starter-band is-style-band-surface","style":{"spacing":{"margin":{"top":"0","bottom":"0"}}},"layout":{"type":"constrained"}} -->
 <div class="wp-block-group alignfull starter-band is-style-band-surface is-layout-constrained wp-block-group-is-layout-constrained" style="margin-top:0;margin-bottom:0">
-<!-- wp:group {"tagName":"section","align":"wide","layout":{"type":"grid","columnCount":2,"minimumColumnWidth":"20rem"},"metadata":{"name":"Testimonials"}} -->
+<!-- wp:group {"tagName":"section","align":"wide","layout":{"type":"grid","minimumColumnWidth":"max(20rem, 45%)"},"metadata":{"name":"Testimonials"}} -->
 <section class="wp-block-group alignwide"><!-- wp:group {"className":"is-style-quote-card","layout":{"type":"constrained"},"metadata":{"name":"Testimonial"}} -->
 <div class="wp-block-group is-style-quote-card"><!-- wp:quote -->
 <blockquote class="wp-block-quote"><!-- wp:paragraph -->
