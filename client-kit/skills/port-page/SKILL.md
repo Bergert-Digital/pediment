@@ -1,6 +1,7 @@
 ---
 name: port-page
 description: Rebuild one existing page as native Pediment blocks in a scaffolded client theme, iterating under an independent fidelity critic until it matches the source, then adopt it back into git. Use after /pediment:start has scaffolded and seeded the site.
+allowed-tools: Bash(node ${CLAUDE_SKILL_DIR}/../../scripts/validate-blocks.mjs:*)
 ---
 
 # Port one page to Pediment
@@ -97,21 +98,39 @@ sizes or spacing — the brand is in `theme.json` and hardcoding defeats it.
 
 ---
 
-## 5. Iterate under the critic
+## 5. Validate the pattern
+
+Validate the pattern before seeding it with real content. The editor rejects a static block whose
+markup does not match what it generates, and the page then opens as "invalid content".
+
+```bash
+node "<skill-dir>/../../scripts/validate-blocks.mjs" --file patterns/<key>.php
+```
+
+Fix every INVALID, STALE, LOOSE and JSON line and re-run until it exits 0. Blocks listed under
+"not checked" are Pediment or theme blocks the validator does not know; that is expected. The first
+run installs a pinned WordPress runtime (about 700 MB, once) into `~/.cache/pediment/validator`, so
+tell the user why it is slow. Pass `--wp <version>` when the site does not run WordPress 6.9. Exit
+code 2 means the tool itself failed (for example no network on the first run), not that the page
+is invalid.
+
+---
+
+## 6. Iterate under the critic
 
 Screenshot the rebuilt page at the same two widths. Read
 `<skill-dir>/../../shared/fidelity-critic-prompt.md`. Before dispatch, replace its
 `{{RUBRIC_PATH}}` placeholder with the resolved absolute path of
 `<skill-dir>/../../shared/visual-qa.md`, fill the remaining placeholders, and send the resulting
 prompt verbatim to an independent critic with the source and rebuilt screenshots. Fix what it
-names, re-seed, re-screenshot, re-run. Stop when it reports no material differences, or after four
-rounds — then report honestly what still differs and why.
+names, re-validate (step 5), re-seed, re-screenshot, re-run. Stop when it reports no material
+differences, or after four rounds — then report honestly what still differs and why.
 
 Run the checks in `<skill-dir>/../../shared/visual-qa.md` before declaring the page done.
 
 ---
 
-## 6. Persist
+## 7. Persist
 
 If the page was built in the editor, adopt it now:
 
@@ -119,8 +138,8 @@ If the page was built in the editor, adopt it now:
 npm run adopt -- <key>
 ```
 
-Read the diff before committing — `adopt` does not convert sized image variants or `srcset` URLs to
-placeholders, so a page with responsive images can carry environment-specific URLs into git.
+Re-run the validator from step 5 on the adopted file. Read the diff before committing — `adopt`
+does not convert sized image variants or `srcset` URLs to placeholders, so a page with responsive images can carry environment-specific URLs into git.
 
 Commit `seed/manifest.php` and `patterns/<key>.php` together.
 

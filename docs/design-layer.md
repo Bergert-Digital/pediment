@@ -20,6 +20,8 @@ The site layer is not in the user origin. The plugin injects it through the
 theme `styles/**.json` partials, so precedence is plugin < theme < site. A
 person's own Site Editor (user-origin) edits sit above all three.
 
+AI agents change the site layer with the `pediment-upsert-style` tool — see [mcp.md](mcp.md).
+
 ## Rules (checked on every layer)
 
 - Colours, font sizes, font families, padding, margin, gap, border radius and

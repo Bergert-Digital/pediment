@@ -29,6 +29,12 @@ one language's translation. See [docs/seeding.md](../docs/seeding.md) for the fu
 manifest reference, the arbitration rules, the languages section, and how to read a
 dry-run plan.
 
+## AI tools (MCP)
+
+With the MCP Adapter plugin active, Pediment serves an MCP server at
+`/wp-json/pediment/v1/mcp` with eight tools to read and write pages and
+design styles under Pediment's rules. See [docs/mcp.md](../docs/mcp.md).
+
 ## Local dev
 
 This plugin is part of the `pediment` monorepo and shares its **one root wp-env** — there is
