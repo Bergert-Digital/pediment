@@ -134,6 +134,20 @@ class VerifierTest extends WP_UnitTestCase {
 		$this->assertStringContainsString( 'logo', implode( "\n", $problems ) );
 	}
 
+	public function test_a_trashed_attachment_is_not_a_problem() {
+		$dir = get_temp_dir() . 'pediment-verify-test';
+		wp_mkdir_p( $dir . '/seed/media' );
+		file_put_contents( $dir . '/seed/media/logo.svg', '<svg xmlns="http://www.w3.org/2000/svg"/>' );
+		$m  = Manifest::fromArray( [ 'media' => [ 'logo' => [ 'file' => 'seed/media/logo.svg' ] ] ], $dir );
+		$id = self::factory()->attachment->create_object( [ 'file' => 'logo.svg', 'post_mime_type' => 'image/svg+xml' ] );
+		update_post_meta( $id, Meta::KEY, 'logo' );
+		wp_trash_post( $id );
+
+		$problems = ( new Verifier( new NullProvider(), new NavSeeder( new NullProvider() ) ) )->verify( $m, [], [], new MediaMap( [ 'logo' => $id ] ) );
+
+		$this->assertSame( [], $problems, 'the plan reports the trash; the seeder leaves it there' );
+	}
+
 	private function navManifest(): Manifest {
 		return Manifest::fromArray(
 			[ 'navs' => [ 'primary' => [ 'title' => 'Primary', 'items' => [ [ 'url' => '/features/', 'label' => 'Features' ] ] ] ] ],

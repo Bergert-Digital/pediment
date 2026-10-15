@@ -114,10 +114,11 @@ final class Verifier {
 			}
 
 			// Re-read rather than trusting the map: the ID could name a row that
-			// no longer exists.
+			// no longer exists. A trashed attachment is a person's decision; the
+			// plan says so, and the seeder leaves it there.
 			$attachment = get_post( $attachmentId );
-			if ( ! $attachment instanceof \WP_Post || 'attachment' !== $attachment->post_type || 'trash' === $attachment->post_status ) {
-				$problems[] = sprintf( 'media.%s: attachment %d is missing or trashed.', $key, $attachmentId );
+			if ( ! $attachment instanceof \WP_Post || 'attachment' !== $attachment->post_type ) {
+				$problems[] = sprintf( 'media.%s: attachment %d is missing.', $key, $attachmentId );
 			}
 		}
 

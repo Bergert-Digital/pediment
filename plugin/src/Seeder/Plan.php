@@ -55,7 +55,7 @@ final class Plan {
 	/** @return array<string,int> Every action, including the ones with no items. */
 	public function counts(): array {
 		$counts = array_fill_keys(
-			[ PlanItem::CREATE, PlanItem::RESTORE, PlanItem::UNCHANGED, PlanItem::ORPHAN ],
+			[ PlanItem::CREATE, PlanItem::UNCHANGED, PlanItem::ORPHAN ],
 			0
 		);
 		foreach ( $this->items as $item ) {

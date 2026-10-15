@@ -265,6 +265,25 @@ class RunnerTest extends WP_UnitTestCase {
 		$this->assertStringContainsString( 'does not render', $second->plan->byKind( PlanItem::KIND_NAV )[0]->note );
 	}
 
+	public function test_a_seed_run_never_touches_the_header_part() {
+		// The header part is created once, by plugin activation or a theme
+		// switch (inc/bootstrap.php). A seed run neither creates a second one
+		// nor rewrites the one a person edited in the Site Editor.
+		pediment_bootstrap_header_template_part();
+		$query = [ 'post_type' => 'wp_template_part', 'post_name__in' => [ 'header' ], 'post_status' => 'publish', 'numberposts' => -1 ];
+		$parts = get_posts( $query );
+		$this->assertCount( 1, $parts );
+		wp_update_post( [ 'ID' => $parts[0]->ID, 'post_content' => '<!-- wp:paragraph --><p>Edited header</p><!-- /wp:paragraph -->' ] );
+		$before = get_post( $parts[0]->ID )->post_content;
+
+		( new Runner() )->run();
+		( new Runner() )->run();
+
+		$after = get_posts( $query );
+		$this->assertCount( 1, $after );
+		$this->assertSame( $before, $after[0]->post_content );
+	}
+
 	public function test_a_typoed_media_key_is_reported_when_the_page_is_created() {
 		// Nothing else notices: the media plan has no such key and the Verifier
 		// only walks declared media, so the literal sentinel lands in the new
