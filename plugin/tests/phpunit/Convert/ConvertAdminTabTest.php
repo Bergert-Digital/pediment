@@ -90,6 +90,79 @@ class ConvertAdminTabTest extends WP_UnitTestCase {
 		$this->assertStringContainsString( 'conversion needs a backup revision', $html );
 	}
 
+	private function legacyPages( int $count ): array {
+		$ids = array();
+		for ( $i = 1; $i <= $count; $i++ ) {
+			$ids[] = self::factory()->post->create( array( 'post_type' => 'page', 'post_title' => "Batch page $i", 'post_content' => self::LEGACY ) );
+		}
+		return $ids;
+	}
+
+	private function renderTab(): string {
+		ob_start();
+		AdminTab::render();
+		return (string) ob_get_clean();
+	}
+
+	public function test_the_preview_and_the_run_work_in_batches(): void {
+		$this->admin();
+		add_filter( 'pediment_convert_batch_size', static fn(): int => 2 );
+		list( $a, $b, $c ) = $this->legacyPages( 3 );
+
+		$first = $this->renderTab();
+		$this->assertStringContainsString( 'Batch page 1', $first );
+		$this->assertStringContainsString( 'Batch page 2', $first );
+		$this->assertStringNotContainsString( 'Batch page 3', $first );
+		$this->assertStringContainsString( 'Convert 2 posts', $first );
+		$this->assertStringContainsString( '3 posts with legacy blocks in total', $first );
+		$this->assertStringContainsString( '1 more after this batch', $first );
+		$this->assertLessThan( strpos( $first, 'name="ids[]"' ), strpos( $first, 'name="_wpnonce"' ), 'the nonce comes before the ids so max_input_vars cannot drop it' );
+
+		$report = AdminTab::process( array( $a, $b, $c ) );
+		$this->assertCount( 2, $report['posts'], 'extra ids beyond the batch size are ignored' );
+		$this->assertSame( self::LEGACY, get_post_field( 'post_content', $c ) );
+
+		$next = $this->renderTab();
+		$this->assertStringContainsString( '<h2>Result</h2>', $next );
+		$this->assertStringContainsString( 'name="ids[]" value="' . $c . '"', $next );
+		$this->assertStringContainsString( 'Convert 1 post', $next );
+		$this->assertStringNotContainsString( 'more after this batch', $next );
+	}
+
+	public function test_a_tampered_id_list_fails_the_nonce_check(): void {
+		$this->admin();
+		list( $a, $b ) = $this->legacyPages( 2 );
+		$_REQUEST['_wpnonce'] = wp_create_nonce( AdminTab::nonceAction( array( $a ) ) );
+		$_POST['ids']         = array( (string) $a, (string) $b );
+		try {
+			AdminTab::handle();
+			$this->fail( 'an id that was not previewed must be refused' );
+		} catch ( WPDieException $e ) {
+			$this->assertSame( self::LEGACY, get_post_field( 'post_content', $a ) );
+			$this->assertSame( self::LEGACY, get_post_field( 'post_content', $b ) );
+		}
+		$this->assertSame( AdminTab::nonceAction( array( $a, $b ) ), AdminTab::nonceAction( array( $b, $a ) ), 'the order of ids does not matter' );
+		$this->assertNotSame( AdminTab::nonceAction( array( $a ) ), AdminTab::nonceAction( array( $a, $b ) ) );
+	}
+
+	public function test_process_skips_a_post_the_user_cannot_edit(): void {
+		$this->admin();
+		list( $a, $b ) = $this->legacyPages( 2 );
+		add_filter(
+			'map_meta_cap',
+			static function ( array $caps, string $cap, int $user, array $args ) use ( $b ): array {
+				return 'edit_post' === $cap && ( $args[0] ?? 0 ) === $b ? array( 'do_not_allow' ) : $caps;
+			},
+			10,
+			4
+		);
+		$report = AdminTab::process( array( $a, $b ) );
+		$this->assertSame( 'converted', $report['posts'][0]['status'] );
+		$this->assertSame( 'skipped', $report['posts'][1]['status'] );
+		$this->assertContains( 'you cannot edit this post', $report['posts'][1]['notes'] );
+		$this->assertSame( self::LEGACY, get_post_field( 'post_content', $b ) );
+	}
+
 	public function test_handler_refuses_editors_and_missing_nonces(): void {
 		$id = self::factory()->post->create( array( 'post_type' => 'page', 'post_content' => self::LEGACY ) );
 		wp_set_current_user( self::factory()->user->create( array( 'role' => 'editor' ) ) );
