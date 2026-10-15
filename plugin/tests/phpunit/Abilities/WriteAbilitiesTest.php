@@ -25,9 +25,9 @@ class WriteAbilitiesTest extends AbilityTestCase {
 		return $user;
 	}
 
-	public function test_all_eight_abilities_are_registered(): void {
+	public function test_all_nine_abilities_are_registered(): void {
 		$this->assertSame(
-			array( 'pediment/get-vocabulary', 'pediment/list-pages', 'pediment/read-page', 'pediment/check-page', 'pediment/write-page', 'pediment/rollback-page', 'pediment/upsert-style', 'pediment/delete-style' ),
+			array( 'pediment/get-vocabulary', 'pediment/list-pages', 'pediment/read-page', 'pediment/check-page', 'pediment/write-page', 'pediment/rollback-page', 'pediment/upsert-style', 'pediment/delete-style', 'pediment/convert-legacy' ),
 			Registrar::names()
 		);
 		foreach ( Registrar::names() as $name ) {
@@ -123,6 +123,10 @@ class WriteAbilitiesTest extends AbilityTestCase {
 			'pediment/rollback-page'  => array( 'id' => $page, 'revision' => max( 1, $revision ) ),
 			'pediment/upsert-style'   => array( 'slug' => 'denied', 'label' => 'Denied', 'blockTypes' => array( 'core/group' ), 'styles' => array() ),
 			'pediment/delete-style'   => array( 'slug' => 'card' ),
+			'pediment/convert-legacy' => array(
+				'ids'     => array( $page ),
+				'dry_run' => false,
+			),
 		);
 		$this->assertSame( Registrar::names(), array_keys( $inputs ), 'every ability has an input here' );
 		$pages = (int) wp_count_posts( 'page' )->publish + (int) wp_count_posts( 'page' )->draft;

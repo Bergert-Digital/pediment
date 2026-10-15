@@ -25,6 +25,8 @@ class ServerTest extends WP_UnitTestCase {
 		$this->assertSame( 'WP\MCP\Infrastructure\ErrorHandling\ErrorLogMcpErrorHandler', $args[7] );
 		$this->assertSame( 'WP\MCP\Infrastructure\Observability\NullMcpObservabilityHandler', $args[8] );
 		$this->assertSame( Registrar::names(), $args[9] );
+		$this->assertContains( 'pediment/convert-legacy', $args[9] );
+		$this->assertCount( 9, $args[9] );
 	}
 
 	public function test_is_hooked_on_the_adapter_init(): void {

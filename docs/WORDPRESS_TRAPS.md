@@ -725,3 +725,22 @@ and `::test_skips_entries_with_empty_platform_or_url` — both regressed to a fu
 `links` array the one time `platform` briefly carried an `enum` during development; run
 the full PHPUnit suite after adding or changing any `items.properties` entry, not just a
 lint pass, since no linter in this repo checks block-attribute schemas for this hazard.
+
+## The Abilities REST route picks the HTTP method from the annotations
+
+**Symptom.** `POST …/wp-abilities/v1/abilities/<name>/run` answers 405 ("Abilities
+that perform destructive actions require DELETE method.") for an ability that works
+through MCP and through `wp_get_ability( $name )->execute()`.
+**Cause.** `WP_REST_Abilities_V1_Run_Controller` derives the method from the
+ability's annotations: `readonly` → GET, `destructive` and `idempotent` → DELETE,
+everything else → POST. GET and DELETE read the input from the `input` query
+parameter, so every value arrives as a string (`"false"`, `"12"`). The input schema
+check accepts those strings for `boolean` and `integer`, so the ability's `execute()`
+receives them unchanged.
+**Fix.** Call `pediment/convert-legacy` (destructive, idempotent) as
+`DELETE …/pediment/convert-legacy/run&input[ids][0]=12&input[dry_run]=false`, and read
+booleans in `execute()` with `rest_sanitize_boolean()`. A check such as
+`false !== $input['dry_run']` treats the string `"false"` as true and silently turns
+a real run into a dry run.
+**Catch it early.** `ConvertLegacyTest::test_string_booleans_from_the_rest_route_are_read_as_booleans`
+and `plugin/tests/e2e/convert-legacy.spec.ts`.
