@@ -123,6 +123,40 @@ final class Build {
 	}
 
 	/**
+	 * Builds core/image. Reads id, align, sizeSlug, width, height, aspectRatio,
+	 * scale, className and a style.border.radius token.
+	 *
+	 * @param array  $attrs   Attributes.
+	 * @param string $url     Image URL (unescaped).
+	 * @param string $alt     Alt text (unescaped).
+	 * @param string $caption Escaped caption, '' for none.
+	 */
+	public static function image( array $attrs, string $url, string $alt, string $caption = '' ): array {
+		$radius = (string) ( $attrs['style']['border']['radius'] ?? '' );
+		$class  = self::classes(
+			'wp-block-image',
+			self::align( $attrs ),
+			isset( $attrs['sizeSlug'] ) ? 'size-' . $attrs['sizeSlug'] : '',
+			isset( $attrs['width'] ) || isset( $attrs['height'] ) ? 'is-resized' : '',
+			'' !== $radius ? 'has-custom-border' : '',
+			(string) ( $attrs['className'] ?? '' )
+		);
+		$styles = array();
+		if ( '' !== $radius ) {
+			$styles[] = 'border-radius:' . $radius;
+		}
+		foreach ( array( 'aspectRatio' => 'aspect-ratio', 'scale' => 'object-fit', 'width' => 'width', 'height' => 'height' ) as $key => $property ) {
+			if ( isset( $attrs[ $key ] ) ) {
+				$styles[] = $property . ':' . $attrs[ $key ];
+			}
+		}
+		$style = array() === $styles ? '' : ' style="' . esc_attr( implode( ';', $styles ) ) . '"';
+		$img   = sprintf( '<img src="%s" alt="%s" class="wp-image-%d"%s/>', esc_url( $url ), esc_attr( $alt ), (int) ( $attrs['id'] ?? 0 ), $style );
+		$cap   = '' === $caption ? '' : '<figcaption class="wp-element-caption">' . $caption . '</figcaption>';
+		return self::leaf( 'core/image', $attrs, "<figure class=\"{$class}\">{$img}{$cap}</figure>" );
+	}
+
+	/**
 	 * The class attribute value from class names; empty names are skipped.
 	 *
 	 * @param string ...$names Class names.

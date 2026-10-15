@@ -51,6 +51,9 @@ final class Converter {
 				new Mappers\SectionHeadMapper(),
 				new Mappers\ProseMapper(),
 				new Mappers\PullQuoteMapper(),
+				new Mappers\FeatureGridMapper(),
+				new Mappers\StatGridMapper(),
+				new Mappers\StepsMapper(),
 			)
 		);
 	}
