@@ -125,14 +125,21 @@ final class WritePage extends Ability {
 			return self::errorList( 'pediment_page_not_found', __( 'parent is not a page.', 'pediment' ), array( "parent {$input['parent']} is not a page" ), 404 );
 		}
 
-		$check = $this->policy->check( (string) $input['markup'] );
-		if ( array() !== $check['errors'] ) {
-			return self::errorList( 'pediment_content_invalid', __( 'The page breaks the content rules. Nothing was written.', 'pediment' ), $check['errors'] );
+		$check  = $this->policy->check( (string) $input['markup'] );
+		$errors = $check['errors'];
+		// core/post-title prints the title unescaped and administrators bypass
+		// kses, so markup in a title would reach the front end as live HTML.
+		$title = (string) $input['title'];
+		if ( wp_strip_all_tags( $title ) !== trim( $title ) ) {
+			array_unshift( $errors, 'title: markup is not allowed in a page title — use plain text' );
+		}
+		if ( array() !== $errors ) {
+			return self::errorList( 'pediment_content_invalid', __( 'The page breaks the content rules. Nothing was written.', 'pediment' ), $errors );
 		}
 
 		$postarr = array(
 			'post_type'    => 'page',
-			'post_title'   => (string) $input['title'],
+			'post_title'   => $title,
 			'post_content' => (string) $input['markup'],
 		);
 		if ( isset( $input['slug'] ) ) {

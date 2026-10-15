@@ -90,6 +90,27 @@ class WriteAbilitiesTest extends AbilityTestCase {
 		}
 	}
 
+	public function test_admin_cannot_put_markup_in_a_page_title(): void {
+		$admin = $this->user( 'administrator' );
+		$this->assertTrue( user_can( $admin, 'unfiltered_html' ), 'kses does not filter this user' );
+
+		foreach ( array( '<img src=x onerror=alert(1)>', 'About <b>us</b>', '<script>alert(1)</script>About', 'About<!-- x -->' ) as $title ) {
+			$result = $this->run_as( $admin, 'pediment/write-page', array( 'title' => $title, 'markup' => self::GOOD ) );
+			$this->assertWPError( $result, $title );
+			$this->assertSame( 'pediment_content_invalid', $result->get_error_code(), $title );
+			$this->assertStringContainsString( 'title: markup is not allowed in a page title', $result->get_error_message(), $title );
+		}
+		$this->assertSame( 0, (int) ( new WP_Query( array( 'post_type' => 'page', 'post_status' => 'any' ) ) )->found_posts );
+
+		$page   = $this->run_as( $admin, 'pediment/write-page', array( 'title' => 'Fish & Chips < 5 €', 'markup' => self::GOOD ) );
+		$this->assertIsArray( $page, 'plain text with & and < is a title, not markup' );
+		$update = $this->run_as( $admin, 'pediment/write-page', array( 'id' => $page['id'], 'title' => '<svg onload=alert(1)>', 'markup' => '<!-- wp:html --><p>x</p><!-- /wp:html -->' ) );
+		$this->assertWPError( $update );
+		$this->assertStringContainsString( 'title: markup is not allowed in a page title', $update->get_error_message() );
+		$this->assertStringContainsString( 'core/html: block is not allowed', $update->get_error_message(), 'title and markup errors come in one message' );
+		$this->assertSame( 'Fish & Chips < 5 €', get_post( $page['id'] )->post_title );
+	}
+
 	public function test_edit_pages_without_edit_others_pages_cannot_overwrite_someone_elses_page(): void {
 		$page   = self::factory()->post->create( array( 'post_type' => 'page', 'post_author' => $this->user( 'administrator' ), 'post_title' => 'Theirs', 'post_content' => self::GOOD ) );
 		$author = $this->page_author();
