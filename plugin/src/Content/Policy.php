@@ -81,7 +81,7 @@ final class Policy {
 
 	private const CONTAINERS = array( 'core/group', 'core/columns', 'core/cover' );
 
-	private const FORBIDDEN_TAGS = array( 'script', 'style', 'iframe', 'object', 'embed' );
+	private const FORBIDDEN_TAGS = array( 'script', 'style', 'iframe', 'object', 'embed', 'noscript', 'svg', 'math', 'form', 'base', 'meta', 'link', 'template', 'frame', 'frameset', 'applet' );
 
 	/**
 	 * Inline CSS properties that carry design values and so must hold tokens.
@@ -251,9 +251,13 @@ final class Policy {
 	}
 
 	/**
-	 * Dangerous markup in one block's own HTML: script-like tags, event-handler
+	 * Dangerous markup in one block's own HTML: active tags, event-handler
 	 * attributes, javascript: URLs and literal design values in inline styles.
 	 * Administrators have unfiltered_html, so core's kses does not catch these.
+	 *
+	 * Raw-text checks on purpose: a tag parser reads differently from a browser
+	 * (unterminated trailing tags, noscript, foreign content), and a block's
+	 * unterminated tag closes at the next block's `>` once the page renders.
 	 *
 	 * @param string $here Block path for messages.
 	 * @param string $html The block's innerHTML (its own markup, not its inner blocks').
@@ -261,31 +265,47 @@ final class Policy {
 	 */
 	private function markup_errors( string $here, string $html ): array {
 		$errors = array();
-		// A regex, not the tag processor: it gives up on an unclosed <script> or <style>.
+
 		if ( preg_match_all( '/<\s*(' . implode( '|', self::FORBIDDEN_TAGS ) . ')\b/i', $html, $found ) ) {
 			foreach ( array_unique( array_map( 'strtolower', $found[1] ) ) as $tag ) {
 				$errors[] = "{$here}: <{$tag}> is not allowed in block markup";
 			}
 		}
-		$tags = new \WP_HTML_Tag_Processor( $html );
-		while ( $tags->next_tag() ) {
-			foreach ( (array) $tags->get_attribute_names_with_prefix( 'on' ) as $name ) {
+		if ( preg_match_all( '/[\s\/"\'`](on[a-z]+)\s*=/i', $html, $found ) ) {
+			foreach ( array_unique( array_map( 'strtolower', $found[1] ) ) as $name ) {
 				$errors[] = "{$here}: {$name} attribute is not allowed in block markup";
 			}
-			foreach ( array( 'href', 'src' ) as $url_attr ) {
-				$url = $tags->get_attribute( $url_attr );
-				if ( is_string( $url ) && 0 === stripos( (string) preg_replace( '/[\x00-\x20]+/', '', $url ), 'javascript:' ) ) {
-					$errors[] = "{$here}: javascript: URL in {$url_attr} is not allowed";
-				}
-			}
-			$inline = $tags->get_attribute( 'style' );
-			if ( is_string( $inline ) ) {
+		}
+		if ( false !== stripos( (string) preg_replace( '/[\x00-\x20]+/', '', $this->decode_entities( $html ) ), 'javascript:' ) ) {
+			$errors[] = "{$here}: javascript: URL is not allowed in block markup";
+		}
+		if ( preg_match_all( '/(?<![\w-])style\s*=\s*("[^"]*(?:"|$)|\'[^\']*(?:\'|$)|[^\s>]+)/i', $html, $found ) ) {
+			foreach ( $found[1] as $raw ) {
+				$inline = $this->decode_entities( trim( $raw, "\"'" ) );
 				foreach ( $this->inline_style_literals( $inline ) as list( $property, $value ) ) {
 					$errors[] = "{$here}: inline style {$property}:{$value} has a literal value — use a preset or a named style";
 				}
 			}
 		}
 		return $errors;
+	}
+
+	/**
+	 * Decodes named and numeric entities the way a browser does (the trailing
+	 * semicolon of a numeric entity is optional).
+	 *
+	 * @param string $text Text.
+	 */
+	private function decode_entities( string $text ): string {
+		$text = (string) preg_replace_callback(
+			'/&#(x[0-9a-f]+|[0-9]+);?/i',
+			static function ( array $m ): string {
+				$code = 'x' === strtolower( $m[1][0] ) ? hexdec( substr( $m[1], 1 ) ) : (int) $m[1];
+				return $code > 0 && $code <= 0x10FFFF ? mb_chr( (int) $code, 'UTF-8' ) : '';
+			},
+			$text
+		);
+		return html_entity_decode( $text, ENT_QUOTES | ENT_HTML5, 'UTF-8' );
 	}
 
 	/**
