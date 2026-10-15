@@ -71,12 +71,12 @@ class PolicyTest extends WP_UnitTestCase {
 
 	public function test_script_in_a_static_block_is_an_error(): void {
 		$result = $this->check( '<!-- wp:paragraph --><p>Hi<script>alert(1)</script></p><!-- /wp:paragraph -->' );
-		$this->assertTrue( $this->has( $result['errors'], 'core/paragraph: <script> is not allowed in block markup' ), wp_json_encode( $result['errors'] ) );
+		$this->assertTrue( $this->has( $result['errors'], '<script> is not allowed in block markup' ), wp_json_encode( $result['errors'] ) );
 	}
 
 	public function test_script_in_a_containers_own_markup_is_an_error(): void {
 		$result = $this->check( '<!-- wp:group {"metadata":{"name":"Intro"}} --><div class="wp-block-group"><SCRIPT>alert(1)</SCRIPT><!-- wp:paragraph --><p>x</p><!-- /wp:paragraph --></div><!-- /wp:group -->' );
-		$this->assertTrue( $this->has( $result['errors'], 'core/group: <script> is not allowed in block markup' ), wp_json_encode( $result['errors'] ) );
+		$this->assertTrue( $this->has( $result['errors'], '<script> is not allowed in block markup' ), wp_json_encode( $result['errors'] ) );
 	}
 
 	public function test_other_dangerous_tags_are_errors(): void {
@@ -88,17 +88,17 @@ class PolicyTest extends WP_UnitTestCase {
 
 	public function test_event_handler_attributes_are_errors(): void {
 		$result = $this->check( '<!-- wp:paragraph --><p onclick="steal()">x</p><!-- /wp:paragraph -->' );
-		$this->assertTrue( $this->has( $result['errors'], 'core/paragraph: onclick attribute is not allowed' ), wp_json_encode( $result['errors'] ) );
+		$this->assertTrue( $this->has( $result['errors'], 'onclick attribute is not allowed in block markup' ), wp_json_encode( $result['errors'] ) );
 	}
 
 	public function test_javascript_urls_are_errors(): void {
 		$result = $this->check( '<!-- wp:paragraph --><p><a href=" JaVa&#x09;script:alert(1)">x</a></p><!-- /wp:paragraph -->' );
-		$this->assertTrue( $this->has( $result['errors'], 'core/paragraph: javascript: URL is not allowed in block markup' ), wp_json_encode( $result['errors'] ) );
+		$this->assertTrue( $this->has( $result['errors'], 'javascript: URL is not allowed in block markup' ), wp_json_encode( $result['errors'] ) );
 	}
 
 	public function test_inline_literal_styles_are_errors_and_presets_pass(): void {
 		$bad = $this->check( '<!-- wp:paragraph --><p style="color:#ff0000;font-size:78px;display:block">Hi</p><!-- /wp:paragraph -->' );
-		$this->assertTrue( $this->has( $bad['errors'], 'core/paragraph: inline style color:#ff0000' ), wp_json_encode( $bad['errors'] ) );
+		$this->assertTrue( $this->has( $bad['errors'], 'inline style color:#ff0000' ), wp_json_encode( $bad['errors'] ) );
 		$this->assertTrue( $this->has( $bad['errors'], 'inline style font-size:78px' ), wp_json_encode( $bad['errors'] ) );
 		$this->assertFalse( $this->has( $bad['errors'], 'display' ) );
 
@@ -137,7 +137,7 @@ class PolicyTest extends WP_UnitTestCase {
 
 	public function test_unterminated_trailing_tag_cannot_hide_an_event_handler(): void {
 		$result = $this->check( '<!-- wp:paragraph --><p>x</p><img src=x onerror=alert(1) <!-- /wp:paragraph --><!-- wp:paragraph --><p>y</p><!-- /wp:paragraph -->' );
-		$this->assertTrue( $this->has( $result['errors'], 'core/paragraph: onerror attribute is not allowed' ), wp_json_encode( $result['errors'] ) );
+		$this->assertTrue( $this->has( $result['errors'], 'onerror attribute is not allowed in block markup' ), wp_json_encode( $result['errors'] ) );
 	}
 
 	public function test_noscript_parsing_differential_is_an_error(): void {
@@ -190,6 +190,40 @@ class PolicyTest extends WP_UnitTestCase {
 		);
 		$this->assertSame( array(), $result['errors'] );
 		$this->assertSame( array(), $result['warnings'] );
+	}
+
+	public function test_event_handler_split_across_adjacent_blocks_is_an_error(): void {
+		$result = $this->check( '<!-- wp:paragraph --><p>x</p><img src=x on<!-- /wp:paragraph --><!-- wp:paragraph -->error=alert(1)><!-- /wp:paragraph -->' );
+		$this->assertTrue( $this->has( $result['errors'], 'onerror attribute is not allowed in block markup' ), wp_json_encode( $result['errors'] ) );
+	}
+
+	public function test_javascript_url_split_across_adjacent_blocks_is_an_error(): void {
+		foreach ( array( '', "\n" ) as $between ) {
+			$result = $this->check( '<!-- wp:paragraph --><p><a href="java<!-- /wp:paragraph -->' . $between . '<!-- wp:paragraph -->script:alert(1)">x</a></p><!-- /wp:paragraph -->' );
+			$this->assertTrue( $this->has( $result['errors'], 'javascript: URL is not allowed in block markup' ), wp_json_encode( $between ) . wp_json_encode( $result['errors'] ) );
+		}
+	}
+
+	public function test_handler_at_the_start_of_the_next_block_is_an_error(): void {
+		$result = $this->check( '<!-- wp:paragraph --><p>x</p><img src=x <!-- /wp:paragraph --><!-- wp:paragraph -->onerror=alert(1)//<p>y</p><!-- /wp:paragraph -->' );
+		$this->assertTrue( $this->has( $result['errors'], 'onerror attribute is not allowed in block markup' ), wp_json_encode( $result['errors'] ) );
+	}
+
+	public function test_a_fake_block_comment_cannot_hide_markup_from_the_scan(): void {
+		$result = $this->check( '<!-- wp:paragraph {"a":1 --><script>alert(1)</script><!-- } --><p>x</p><!-- /wp:paragraph -->' );
+		$this->assertTrue( $this->has( $result['errors'], '<script> is not allowed in block markup' ), wp_json_encode( $result['errors'] ) );
+	}
+
+	public function test_markup_errors_carry_a_short_excerpt(): void {
+		$result = $this->check( '<!-- wp:paragraph --><p onclick="' . str_repeat( 'a', 100 ) . '">x</p><!-- /wp:paragraph -->' );
+		foreach ( $result['errors'] as $message ) {
+			if ( str_contains( $message, 'onclick attribute' ) ) {
+				$this->assertStringContainsString( 'near "onclick=\\"aaa', $message );
+				$this->assertLessThan( 140, strlen( $message ) );
+				return;
+			}
+		}
+		$this->fail( wp_json_encode( $result['errors'] ) );
 	}
 
 	public function test_legacy_blocks_in_markup(): void {
