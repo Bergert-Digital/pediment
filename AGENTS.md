@@ -33,6 +33,8 @@ scaffolder). See [docs/client-sites.md](docs/client-sites.md).
 - Languages are declared in the manifest's `languages` section and configured
   with `wp pediment languages` before seeding, never after — see
   [docs/seeding.md#languages](docs/seeding.md#languages).
+- AI page and style changes on a live site go through the Pediment MCP tools (see
+  [docs/mcp.md](docs/mcp.md)); validate markup with client-kit's validate-blocks before writing.
 - Page content never carries literal design values. Looks come from named
   block styles in the design layer — see [docs/design-layer.md](docs/design-layer.md).
 
