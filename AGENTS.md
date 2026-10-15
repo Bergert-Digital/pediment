@@ -25,11 +25,13 @@ scaffolder). See [docs/client-sites.md](docs/client-sites.md).
   `style.scss`, plus PHPUnit coverage for valid and empty attributes.
 - Client themes extend through normal WordPress theme facilities. Never depend
   on editing plugin files for client-specific behavior.
-- Content seeding is declarative now (see `docs/seeding.md`): edit the client
-  theme's `seed/manifest.php` and its `patterns/*.php` files, then run
-  `wp pediment seed`. Never write pages with `wp post create` / `wp post update`
-  — the seeder owns identity (`_pediment_seed_key`) and the content-arbitration
-  hashes, and a hand-written post bypasses both.
+- Seeding is bootstrap-only (see `docs/seeding.md`): `wp pediment seed`
+  creates what the client theme's `seed/manifest.php` and `patterns/*.php`
+  declare and the site lacks, and never changes a page, menu or setting that
+  exists. Never write pages with `wp post create` / `wp post update` — the
+  seeder owns identity (`_pediment_seed_key`), a hand-written post has none,
+  and the next seed creates a duplicate. Change an existing page through the
+  Pediment MCP tools.
 - Languages are declared in the manifest's `languages` section and configured
   with `wp pediment languages` before seeding, never after — see
   [docs/seeding.md#languages](docs/seeding.md#languages).

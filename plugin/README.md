@@ -20,14 +20,15 @@ The REST API uses the `pediment/v1` namespace.
 
 Client themes declare their pages, posts, media, navigation, and custom post types in a
 `seed/manifest.php` file; content itself lives in the theme's `patterns/` directory.
-`wp pediment seed` makes the database match the manifest without ever overwriting
-content a client has edited, and `wp pediment adopt <key>` exports a live page's edited
-markup back into its pattern file. A manifest that declares a `languages` section makes
-the site multilingual (via Polylang); `wp pediment languages` configures Polylang from
-that section before the first seed, and `wp pediment adopt <key> --language=de` adopts
-one language's translation. See [docs/seeding.md](../docs/seeding.md) for the full
-manifest reference, the arbitration rules, the languages section, and how to read a
-dry-run plan.
+`wp pediment seed` bootstraps a site: it creates what the manifest declares and the site
+does not have yet, and never changes a page, menu or setting that exists. Live pages
+change in the editor or through the MCP tools; `wp pediment adopt <key>` exports a live
+page's markup into its pattern file so new environments match. A manifest that declares a
+`languages` section makes the site multilingual (via Polylang); `wp pediment languages`
+configures Polylang from that section before the first seed, and
+`wp pediment adopt <key> --language=de` adopts one language's translation. See
+[docs/seeding.md](../docs/seeding.md) for the full manifest reference, what a seed does
+on a site that is already seeded, the languages section, and how to read a dry-run plan.
 
 ## AI tools (MCP)
 
