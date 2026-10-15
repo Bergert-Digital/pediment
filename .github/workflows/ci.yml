@@ -35,6 +35,19 @@ jobs:
       - run: npm run test:kit
       - run: node tools/generate-wpml-config.mjs --check
 
+  validator:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - uses: actions/cache@v4
+        with:
+          path: ~/.cache/pediment/validator
+          key: validator-${{ hashFiles('client-kit/validator/**/package-lock.json') }}
+      - run: PEDIMENT_VALIDATOR_E2E=1 node --test client-kit/tests/validate-blocks.test.mjs
+
   phpunit:
     runs-on: ubuntu-latest
     steps:

@@ -1,0 +1,18 @@
+{
+  "name": "pediment-block-validator-wp-7.0",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@wordpress/block-library": "9.40.2",
+    "@wordpress/blocks": "15.13.1",
+    "jsdom": "26.1.0",
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
+    "@wordpress/element": "6.46.0"
+  },
+  "overrides": {
+    "@wordpress/blocks": "$@wordpress/blocks",
+    "@wordpress/element": "$@wordpress/element"
+  }
+}
