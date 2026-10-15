@@ -44,7 +44,7 @@ class WriteAbilitiesTest extends AbilityTestCase {
 		$this->assertIsArray( $new );
 		$this->assertSame( 'draft', get_post_status( $new['id'] ) );
 		$this->assertGreaterThan( 0, $new['revision'], 'the first content has a revision' );
-		$this->assertSame( array( 'revision' ), array_unique( array_map( 'get_post_type', array( $new['revision'] ) ) ) );
+		$this->assertSame( 'revision', get_post_type( $new['revision'] ) );
 
 		InvalidBlockLog::record( $new['id'], array( 'core/group' ) );
 		$updated = $this->run_as( $editor, 'pediment/write-page', array( 'id' => $new['id'], 'title' => 'About us', 'markup' => $this->para( 'Changed' ) ) );
@@ -131,6 +131,41 @@ class WriteAbilitiesTest extends AbilityTestCase {
 		$this->assertWPError( $result );
 		$this->assertSame( 'pediment_language_unknown', $result->get_error_code() );
 		$this->assertSame( 0, (int) ( new WP_Query( array( 'post_type' => 'page', 'title' => 'Lang', 'post_status' => 'any' ) ) )->found_posts );
+	}
+
+	public function test_translation_of_needs_a_language(): void {
+		$page   = self::factory()->post->create( array( 'post_type' => 'page' ) );
+		$result = $this->run_as( $this->user( 'editor' ), 'pediment/write-page', array( 'title' => 'T', 'markup' => self::GOOD, 'translation_of' => $page ) );
+		$this->assertWPError( $result );
+		$this->assertSame( 'pediment_language_unknown', $result->get_error_code() );
+		$this->assertStringContainsString( 'translation_of', $result->get_error_message() );
+	}
+
+	public function test_bad_parent_is_a_named_error(): void {
+		$post   = self::factory()->post->create( array( 'post_title' => 'A post' ) );
+		$editor = $this->user( 'editor' );
+		foreach ( array( $post, 987654 ) as $value ) {
+			$result = $this->run_as( $editor, 'pediment/write-page', array( 'title' => 'Child', 'markup' => self::GOOD, 'parent' => $value ) );
+			$this->assertWPError( $result, (string) $value );
+			$this->assertSame( 'pediment_page_not_found', $result->get_error_code() );
+			$this->assertStringContainsString( "parent {$value}", $result->get_error_message() );
+		}
+		$this->assertSame( 0, (int) ( new WP_Query( array( 'post_type' => 'page', 'title' => 'Child', 'post_status' => 'any' ) ) )->found_posts );
+
+		$parent = self::factory()->post->create( array( 'post_type' => 'page' ) );
+		$ok     = $this->run_as( $editor, 'pediment/write-page', array( 'title' => 'Child', 'markup' => self::GOOD, 'parent' => $parent ) );
+		$this->assertSame( $parent, (int) get_post( $ok['id'] )->post_parent );
+	}
+
+	public function test_translation_of_a_page_the_user_cannot_edit_is_refused(): void {
+		$admins = self::factory()->post->create( array( 'post_type' => 'page', 'post_author' => $this->user( 'administrator' ), 'post_status' => 'publish' ) );
+		$author = $this->page_author();
+		$this->assertFalse( user_can( $author, 'edit_post', $admins ) );
+
+		$result = $this->run_as( $author, 'pediment/write-page', array( 'title' => 'T', 'markup' => self::GOOD, 'language' => 'de', 'translation_of' => $admins ) );
+		$this->assertWPError( $result );
+		$this->assertSame( 'ability_invalid_permissions', $result->get_error_code() );
+		$this->assertSame( 0, (int) ( new WP_Query( array( 'post_type' => 'page', 'title' => 'T', 'post_status' => 'any' ) ) )->found_posts );
 	}
 
 	public function test_write_page_refuses_an_id_that_is_not_a_page(): void {
