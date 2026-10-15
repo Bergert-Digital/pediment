@@ -31,6 +31,10 @@ class ReadAbilitiesTest extends AbilityTestCase {
 		$this->assertNotEmpty( $result['tokens']['colors'] );
 		$this->assertSame( '12px', $result['tokens']['radius']['md'] );
 		$this->assertNotEmpty( $result['rules'] );
+		$rules = implode( "\n", $result['rules'] );
+		foreach ( array( 'script', 'iframe', 'on*= event handlers', '"javascript:" is rejected anywhere, even in prose' ) as $needle ) {
+			$this->assertStringContainsString( $needle, $rules, 'agents learn the markup scan before they write' );
+		}
 	}
 
 	public function test_subscriber_cannot_read(): void {

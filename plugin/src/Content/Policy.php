@@ -75,6 +75,7 @@ final class Policy {
 		'Use only the blocks in allowedBlocks. core/html and content outside blocks are not allowed.',
 		'Never put literal colours, font sizes, font families, spacing, radius or shadows in block attributes. Use presets (var:preset|…) or a named style (className is-style-<slug>).',
 		'Every is-style-<slug> class must name a style registered for that block (see styles).',
+		'No active markup anywhere in the markup, including comments, attribute values and shortcodes: script, style, iframe, object, embed, noscript, svg, math, form, base, meta, link, template, frame, frameset and applet tags and on*= event handlers are rejected. The text "javascript:" is rejected anywhere, even in prose ("Learn JavaScript: …" fails; write "JavaScript –" or rephrase). Use pediment/form for forms.',
 		'Give container blocks (group, columns, cover) a readable metadata.name.',
 		'Static blocks must match their save() output: run the client-kit validate-blocks tool before writing.',
 	);
