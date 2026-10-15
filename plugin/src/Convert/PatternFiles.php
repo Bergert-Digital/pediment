@@ -109,7 +109,9 @@ final class PatternFiles implements Media {
 	 * Converts the text of one pattern file.
 	 *
 	 * Status: preview (would change; `text` holds the new file), unchanged,
-	 * failed (`errors` says why; `text` is the old file), skipped (not a pattern
+	 * failed (the converter refuses the markup, see Result::$problems, or the
+	 * conversion would add a content-rule error or lose inline PHP; `errors`
+	 * says why; `text` is the old file), skipped (not a pattern
 	 * file: no PHP header with Title/Slug).
 	 *
 	 * @param string $text File contents.
@@ -168,6 +170,11 @@ final class PatternFiles implements Media {
 		$report['blocks']    = count( $result->converted );
 		$report['unmapped']  = $result->unmapped;
 		$report['notes']     = $notes;
+		if ( array() !== $result->problems ) {
+			$report['status'] = 'failed';
+			$report['errors'] = array_map( static fn( string $problem ): string => strtr( $problem, $php ), $result->problems );
+			return $report;
+		}
 		if ( ! $result->changed() ) {
 			return $report;
 		}

@@ -76,4 +76,70 @@ class ConverterTest extends WP_UnitTestCase {
 		$this->assertSame( array( 'pediment/pull-quote: rendered nothing, removed (3 times)' ), $result->notes );
 		$this->assertSame( '', $result->markup );
 	}
+
+	/**
+	 * Every legacy container whose render.php printed $content, with one inner block.
+	 *
+	 * @return array<string,array{string,string}>
+	 */
+	public function containers(): array {
+		$out = array();
+		$inner = array(
+			'pediment/prose'            => "<!-- wp:paragraph -->\n<p>Block text</p>\n<!-- /wp:paragraph -->",
+			'pediment/media-text'       => "<!-- wp:paragraph -->\n<p>Block text</p>\n<!-- /wp:paragraph -->",
+			'pediment/logo-cloud'       => "<!-- wp:paragraph -->\n<p>Block text</p>\n<!-- /wp:paragraph -->",
+			'pediment/faq'              => '<!-- wp:pediment/faq-item {"question":"Q","answer":"A"} /-->',
+			'pediment/feature-grid'     => '<!-- wp:pediment/feature {"title":"T"} /-->',
+			'pediment/stat-grid'        => '<!-- wp:pediment/stat {"value":"1","label":"L"} /-->',
+			'pediment/steps'            => '<!-- wp:pediment/step {"title":"T"} /-->',
+			'pediment/testimonial-grid' => '<!-- wp:pediment/testimonial {"quote":"Q"} /-->',
+		);
+		foreach ( $inner as $name => $child ) {
+			$out[ "{$name} raw only" ] = array( $name, "<!-- wp:{$name} -->\n<p>Raw paragraph</p>\n<!-- /wp:{$name} -->" );
+			$out[ "{$name} mixed" ]    = array( $name, "<!-- wp:{$name} -->\n{$child}\n<p>Raw tail</p>\n<!-- /wp:{$name} -->" );
+		}
+		return $out;
+	}
+
+	/**
+	 * @dataProvider containers
+	 */
+	public function test_raw_html_in_a_legacy_container_refuses_the_conversion( string $name, string $markup ): void {
+		$page   = "<!-- wp:paragraph -->\n<p>Before</p>\n<!-- /wp:paragraph -->\n\n{$markup}";
+		$result = $this->convert( $page );
+		$this->assertCount( 1, $result->problems );
+		$this->assertStringStartsWith( "{$name} holds HTML outside blocks; edit it into blocks first", $result->problems[0] );
+		$this->assertStringContainsString( 'Raw', $result->problems[0], 'the problem quotes the HTML' );
+		$this->assertSame( $page, $result->markup, 'a refused conversion returns the input unchanged' );
+		foreach ( $result->notes as $note ) {
+			$this->assertStringNotContainsString( 'rendered nothing', $note );
+		}
+	}
+
+	public function test_whitespace_between_raw_blocks_is_not_raw_html(): void {
+		$result = $this->convert( "<!-- wp:pediment/prose -->\n\n\t<!-- wp:paragraph -->\n<p>x</p>\n<!-- /wp:paragraph -->\n \n<!-- /wp:pediment/prose -->" );
+		$this->assertSame( array(), $result->problems );
+		$this->assertTrue( $result->changed() );
+	}
+
+	public function test_a_delimiter_with_other_whitespace_still_converts(): void {
+		$result = $this->convert( "<!--\n\twp:pediment/pull-quote {\"quote\":\"Q\"} /-->" );
+		$this->assertSame( array( 'pediment/pull-quote' ), $result->converted );
+		$this->assertStringContainsString( 'is-style-pull-quote', $result->markup );
+	}
+
+	public function test_a_mapped_legacy_block_left_in_the_output_is_a_problem(): void {
+		$markup = '<!-- wp:pediment/pull-quote __PEDIMENT_PHP_0__ /-->';
+		$result = $this->convert( $markup );
+		$this->assertSame( array( 'pediment/pull-quote is still in the markup after conversion (its block comment does not parse); convert it by hand' ), $result->problems );
+		$this->assertSame( $markup, $result->markup );
+	}
+
+	public function test_a_legacy_block_without_a_mapper_is_not_a_problem(): void {
+		$converter = new Converter( array( new PullQuoteMapper() ) );
+		$result    = $converter->convert( "<!-- wp:pediment/prose -->\n<!-- wp:pediment/pull-quote {\"quote\":\"Q\"} /-->\n<!-- /wp:pediment/prose -->", new FakeMedia() );
+		$this->assertSame( array(), $result->problems );
+		$this->assertSame( array( 'pediment/prose' ), $result->unmapped );
+	}
+
 }

@@ -88,7 +88,9 @@ final class PostConverter {
 		global $wpdb;
 		$types    = self::TYPES;
 		$statuses = self::STATUSES;
-		$like     = '%' . $wpdb->esc_like( '<!-- wp:pediment/' ) . '%';
+		// Coarse pre-filter: the block parser accepts any whitespace after `<!--`
+		// (Converter::LEGACY_DELIMITER); the parse below decides.
+		$like     = '%' . $wpdb->esc_like( '<!--' ) . '%' . $wpdb->esc_like( 'wp:pediment/' ) . '%';
 		// A direct query is not scoped to the request language, so every translation is found.
 		$ids = $wpdb->get_col( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 			$wpdb->prepare(
@@ -136,8 +138,10 @@ final class PostConverter {
 	 * Converts (or previews) one post.
 	 *
 	 * Status: preview (dry run, would convert), converted, unchanged (nothing
-	 * to convert), failed (conversion would add content-rule errors, the
-	 * revision or kses guards refuse it, or the save failed; nothing written —
+	 * to convert), failed (the converter refuses the markup — raw HTML in a
+	 * legacy container, block HTML in a paragraph attribute, a legacy block
+	 * left over —, conversion would add content-rule errors, the revision or
+	 * kses guards refuse it, or the save failed; nothing written —
 	 * except when the revision limit pruned the backup after the write: then
 	 * the content is converted but the backup is gone, and the error says so),
 	 * skipped (not a convertible post).
@@ -158,6 +162,11 @@ final class PostConverter {
 		$before = $post->post_content;
 		$result = $this->converter->convert( $before, $this->media );
 		$report = $this->report( $post, $result );
+		if ( array() !== $result->problems ) {
+			$report['status'] = 'failed';
+			$report['errors'] = $result->problems;
+			return $report;
+		}
 		if ( ! $result->changed() ) {
 			return $report;
 		}
