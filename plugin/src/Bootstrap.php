@@ -33,5 +33,6 @@ final class Bootstrap {
 		);
 		\Pediment\Design\AdminTab::register();
 		\Pediment\Content\InvalidBlockLog::register();
+		\Pediment\Abilities\Registrar::register();
 	}
 }
