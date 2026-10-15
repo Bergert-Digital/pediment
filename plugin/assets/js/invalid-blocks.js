@@ -3,21 +3,27 @@
  * POST /pediment/v1/invalid-blocks/<id>, once per editor load, so AI agents
  * see them through the pediment/check-page ability. An empty list is sent
  * too: it replaces an earlier report once the page is fixed.
+ *
+ * @param {Object} wp The WordPress globals (window.wp).
  */
 ( function ( wp ) {
 	if ( ! wp || ! wp.data || ! wp.apiFetch ) {
 		return;
 	}
-	var done = false;
-	var unsubscribe = wp.data.subscribe( function () {
+	let done = false;
+	const unsubscribe = wp.data.subscribe( function () {
 		if ( done ) {
 			return;
 		}
-		var editor = wp.data.select( 'core/editor' );
-		if ( ! editor || ! editor.__unstableIsEditorReady || ! editor.__unstableIsEditorReady() ) {
+		const editor = wp.data.select( 'core/editor' );
+		if (
+			! editor ||
+			! editor.__unstableIsEditorReady ||
+			! editor.__unstableIsEditorReady()
+		) {
 			return;
 		}
-		var id = editor.getCurrentPostId();
+		const id = editor.getCurrentPostId();
 		if ( ! id || 'page' !== editor.getCurrentPostType() ) {
 			done = true;
 			unsubscribe();
@@ -25,17 +31,17 @@
 		}
 		// The ready flag turns true before the editor parses the content, so
 		// wait for blocks unless the page has no content at all.
-		var blocks = wp.data.select( 'core/block-editor' ).getBlocks();
-		var post = editor.getCurrentPost();
-		var empty = post && post.content && '' === post.content.raw;
+		const blocks = wp.data.select( 'core/block-editor' ).getBlocks();
+		const post = editor.getCurrentPost();
+		const empty = post && post.content && '' === post.content.raw;
 		if ( ! blocks.length && ! empty ) {
 			return;
 		}
 		done = true;
 		unsubscribe();
-		var invalid = [];
-		( function walk( blocks ) {
-			blocks.forEach( function ( block ) {
+		const invalid = [];
+		( function walk( list ) {
+			list.forEach( function ( block ) {
 				if ( false === block.isValid ) {
 					invalid.push( block.name );
 				}
