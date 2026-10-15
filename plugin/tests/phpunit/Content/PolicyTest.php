@@ -69,6 +69,72 @@ class PolicyTest extends WP_UnitTestCase {
 		$this->assertNotContains( 'pediment/hero', $allowed );
 	}
 
+	public function test_script_in_a_static_block_is_an_error(): void {
+		$result = $this->check( '<!-- wp:paragraph --><p>Hi<script>alert(1)</script></p><!-- /wp:paragraph -->' );
+		$this->assertTrue( $this->has( $result['errors'], 'core/paragraph: <script> is not allowed in block markup' ), wp_json_encode( $result['errors'] ) );
+	}
+
+	public function test_script_in_a_containers_own_markup_is_an_error(): void {
+		$result = $this->check( '<!-- wp:group {"metadata":{"name":"Intro"}} --><div class="wp-block-group"><SCRIPT>alert(1)</SCRIPT><!-- wp:paragraph --><p>x</p><!-- /wp:paragraph --></div><!-- /wp:group -->' );
+		$this->assertTrue( $this->has( $result['errors'], 'core/group: <script> is not allowed in block markup' ), wp_json_encode( $result['errors'] ) );
+	}
+
+	public function test_other_dangerous_tags_are_errors(): void {
+		foreach ( array( 'style', 'iframe', 'object', 'embed' ) as $tag ) {
+			$result = $this->check( "<!-- wp:paragraph --><p>x</p><{$tag} src=\"https://x.test\"><!-- /wp:paragraph -->" );
+			$this->assertTrue( $this->has( $result['errors'], "<{$tag}> is not allowed" ), $tag );
+		}
+	}
+
+	public function test_event_handler_attributes_are_errors(): void {
+		$result = $this->check( '<!-- wp:paragraph --><p onclick="steal()">x</p><!-- /wp:paragraph -->' );
+		$this->assertTrue( $this->has( $result['errors'], 'core/paragraph: onclick attribute is not allowed' ), wp_json_encode( $result['errors'] ) );
+	}
+
+	public function test_javascript_urls_are_errors(): void {
+		$result = $this->check( '<!-- wp:paragraph --><p><a href=" JaVa&#x09;script:alert(1)">x</a></p><!-- /wp:paragraph -->' );
+		$this->assertTrue( $this->has( $result['errors'], 'core/paragraph: javascript: URL in href is not allowed' ), wp_json_encode( $result['errors'] ) );
+	}
+
+	public function test_inline_literal_styles_are_errors_and_presets_pass(): void {
+		$bad = $this->check( '<!-- wp:paragraph --><p style="color:#ff0000;font-size:78px;display:block">Hi</p><!-- /wp:paragraph -->' );
+		$this->assertTrue( $this->has( $bad['errors'], 'core/paragraph: inline style color:#ff0000' ), wp_json_encode( $bad['errors'] ) );
+		$this->assertTrue( $this->has( $bad['errors'], 'inline style font-size:78px' ), wp_json_encode( $bad['errors'] ) );
+		$this->assertFalse( $this->has( $bad['errors'], 'display' ) );
+
+		$ok = $this->check( '<!-- wp:paragraph --><p style="color:var(--wp--preset--color--accent);font-size:var(--wp--preset--font-size--large);padding:var(--wp--preset--spacing--30) 0;background-image:url(data:image/png;base64,AAA);border-radius:50%">Hi</p><!-- /wp:paragraph -->' );
+		$this->assertSame( array(), $ok['errors'] );
+	}
+
+	public function test_inline_literal_gradient_and_shadow_are_errors(): void {
+		$result = $this->check( '<!-- wp:group {"metadata":{"name":"X"}} --><div class="wp-block-group" style="background:linear-gradient(135deg,#fff,#000);box-shadow:0 0 4px red"></div><!-- /wp:group -->' );
+		$this->assertTrue( $this->has( $result['errors'], 'inline style background:linear-gradient' ), wp_json_encode( $result['errors'] ) );
+		$this->assertTrue( $this->has( $result['errors'], 'inline style box-shadow:0 0 4px red' ), wp_json_encode( $result['errors'] ) );
+	}
+
+	public function test_literal_duotone_is_an_error_and_a_preset_passes(): void {
+		$bad = $this->check( '<!-- wp:group {"metadata":{"name":"X"},"style":{"color":{"duotone":["#000000","#ffffff"]}}} --><div class="wp-block-group"></div><!-- /wp:group -->' );
+		$this->assertTrue( $this->has( $bad['errors'], 'style.color.duotone' ), wp_json_encode( $bad['errors'] ) );
+
+		$ok = $this->check( '<!-- wp:group {"metadata":{"name":"X"},"style":{"color":{"duotone":"var:preset|duotone|dark-grayscale"}}} --><div class="wp-block-group"></div><!-- /wp:group -->' );
+		$this->assertSame( array(), $ok['errors'] );
+	}
+
+	public function test_unknown_style_color_and_spacing_keys_are_checked(): void {
+		$result = $this->check( '<!-- wp:group {"metadata":{"name":"X"},"style":{"color":{"made-up":"#123456"},"spacing":{"made-up":"9px"}}} --><div class="wp-block-group"></div><!-- /wp:group -->' );
+		$this->assertTrue( $this->has( $result['errors'], 'style.color.made-up' ) );
+		$this->assertTrue( $this->has( $result['errors'], 'style.spacing.made-up' ) );
+	}
+
+	public function test_filter_cannot_allow_core_html_or_non_strings(): void {
+		add_filter( 'pediment_allowed_blocks', static fn( array $core ): array => array_merge( $core, array( 'core/html', array( 'core/table' ), 12 ) ) );
+		$allowed = Policy::allowedBlocks();
+		$this->assertNotContains( 'core/html', $allowed );
+		$this->assertContains( 'core/paragraph', $allowed );
+		$result = $this->check( '<!-- wp:html --><p>x</p><!-- /wp:html -->' );
+		$this->assertTrue( $this->has( $result['errors'], 'core/html: block is not allowed' ) );
+	}
+
 	public function test_legacy_blocks_in_markup(): void {
 		$this->assertSame(
 			array( 'pediment/faq', 'pediment/hero' ),

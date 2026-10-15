@@ -81,17 +81,26 @@ final class Policy {
 
 	private const CONTAINERS = array( 'core/group', 'core/columns', 'core/cover' );
 
+	private const FORBIDDEN_TAGS = array( 'script', 'style', 'iframe', 'object', 'embed' );
+
+	/**
+	 * Inline CSS properties that carry design values and so must hold tokens.
+	 */
+	private const DESIGN_PROPERTY = '/^(color|background(-color|-image)?|font-size|font-family|padding(-[a-z]+)*|margin(-[a-z]+)*|gap|row-gap|column-gap|border(-[a-z]+)*-radius|border(-(top|right|bottom|left))?-color|box-shadow)$/';
+
 	private const BLOCK_COMMENT = '/<!--\s+(\/)?wp:([a-z][a-z0-9_-]*(?:\/[a-z][a-z0-9_-]*)?)(?:\s+(\{.*?\}))?\s+(\/)?-->/s';
 
 	/**
 	 * Blocks a page may use: the (filterable) core list, Pediment's functional
 	 * blocks, and every registered block outside the core and pediment
-	 * namespaces (client-theme and plugin blocks).
+	 * namespaces (client-theme and plugin blocks). core/html is never allowed,
+	 * whatever the filter returns.
 	 *
 	 * @return list<string>
 	 */
 	public static function allowedBlocks(): array {
-		$core  = (array) apply_filters( 'pediment_allowed_blocks', self::ALLOWED_CORE );
+		$core  = apply_filters( 'pediment_allowed_blocks', self::ALLOWED_CORE );
+		$core  = is_array( $core ) ? array_filter( $core, 'is_string' ) : self::ALLOWED_CORE;
 		$other = array();
 		foreach ( array_keys( \WP_Block_Type_Registry::get_instance()->get_all_registered() ) as $name ) {
 			$namespace = strstr( $name, '/', true );
@@ -99,7 +108,7 @@ final class Policy {
 				$other[] = $name;
 			}
 		}
-		$list = array_values( array_unique( array_map( 'strval', array_merge( $core, self::FUNCTIONAL, $other ) ) ) );
+		$list = array_values( array_diff( array_unique( array_merge( $core, self::FUNCTIONAL, $other ) ), array( 'core/html' ) ) );
 		sort( $list );
 		return $list;
 	}
@@ -164,6 +173,7 @@ final class Policy {
 			if ( null === $name ) {
 				if ( '' !== trim( (string) $block['innerHTML'] ) ) {
 					$errors[] = "{$path}[{$i}]: content outside a block — wrap it in a block";
+					array_push( $errors, ...$this->markup_errors( "{$path}[{$i}]", (string) $block['innerHTML'] ) );
 				}
 				continue;
 			}
@@ -176,6 +186,8 @@ final class Policy {
 					? "{$here}: block is not allowed"
 					: "{$here}: block type is not registered";
 			}
+
+			array_push( $errors, ...$this->markup_errors( $here, (string) $block['innerHTML'] ) );
 
 			$attrs = is_array( $block['attrs'] ?? null ) ? $block['attrs'] : array();
 			foreach ( $this->literal_values( $attrs['style'] ?? array(), 'style' ) as list( $attr_path, $value ) ) {
@@ -204,12 +216,20 @@ final class Policy {
 			return array();
 		}
 		$out = array();
+		// Every leaf under style.color and style.spacing must be a token (spec §3),
+		// whatever its key; the other token paths are checked by name.
+		$subtrees = array( 'color', 'spacing' );
 		foreach ( TokenValue::PATHS as $token_path ) {
-			$value = _wp_array_get( $style, explode( '.', $token_path ), null );
+			if ( ! in_array( strstr( $token_path, '.', true ), $subtrees, true ) ) {
+				$subtrees[] = $token_path;
+			}
+		}
+		foreach ( $subtrees as $subtree ) {
+			$value = _wp_array_get( $style, explode( '.', $subtree ), null );
 			if ( null === $value ) {
 				continue;
 			}
-			foreach ( TokenValue::leaves( $value, "{$path}.{$token_path}" ) as list( $leaf_path, $leaf ) ) {
+			foreach ( TokenValue::leaves( $value, "{$path}.{$subtree}" ) as list( $leaf_path, $leaf ) ) {
 				if ( ! TokenValue::isToken( $leaf ) ) {
 					$out[] = array( $leaf_path, $leaf );
 				}
@@ -228,6 +248,113 @@ final class Policy {
 			}
 		}
 		return $out;
+	}
+
+	/**
+	 * Dangerous markup in one block's own HTML: script-like tags, event-handler
+	 * attributes, javascript: URLs and literal design values in inline styles.
+	 * Administrators have unfiltered_html, so core's kses does not catch these.
+	 *
+	 * @param string $here Block path for messages.
+	 * @param string $html The block's innerHTML (its own markup, not its inner blocks').
+	 * @return list<string>
+	 */
+	private function markup_errors( string $here, string $html ): array {
+		$errors = array();
+		// A regex, not the tag processor: it gives up on an unclosed <script> or <style>.
+		if ( preg_match_all( '/<\s*(' . implode( '|', self::FORBIDDEN_TAGS ) . ')\b/i', $html, $found ) ) {
+			foreach ( array_unique( array_map( 'strtolower', $found[1] ) ) as $tag ) {
+				$errors[] = "{$here}: <{$tag}> is not allowed in block markup";
+			}
+		}
+		$tags = new \WP_HTML_Tag_Processor( $html );
+		while ( $tags->next_tag() ) {
+			foreach ( (array) $tags->get_attribute_names_with_prefix( 'on' ) as $name ) {
+				$errors[] = "{$here}: {$name} attribute is not allowed in block markup";
+			}
+			foreach ( array( 'href', 'src' ) as $url_attr ) {
+				$url = $tags->get_attribute( $url_attr );
+				if ( is_string( $url ) && 0 === stripos( (string) preg_replace( '/[\x00-\x20]+/', '', $url ), 'javascript:' ) ) {
+					$errors[] = "{$here}: javascript: URL in {$url_attr} is not allowed";
+				}
+			}
+			$inline = $tags->get_attribute( 'style' );
+			if ( is_string( $inline ) ) {
+				foreach ( $this->inline_style_literals( $inline ) as list( $property, $value ) ) {
+					$errors[] = "{$here}: inline style {$property}:{$value} has a literal value — use a preset or a named style";
+				}
+			}
+		}
+		return $errors;
+	}
+
+	/**
+	 * Design declarations of an inline style attribute whose value is not made of tokens.
+	 *
+	 * @param string $style The style attribute.
+	 * @return list<array{0:string,1:string}> [property, value] pairs.
+	 */
+	private function inline_style_literals( string $style ): array {
+		$out = array();
+		foreach ( $this->split_top_level( $style, ';' ) as $declaration ) {
+			$colon = strpos( $declaration, ':' );
+			if ( false === $colon ) {
+				continue;
+			}
+			$property = strtolower( trim( substr( $declaration, 0, $colon ) ) );
+			$value    = trim( (string) preg_replace( '/\s*!\s*important\s*$/i', '', substr( $declaration, $colon + 1 ) ) );
+			if ( 1 !== preg_match( self::DESIGN_PROPERTY, $property ) || '' === $value ) {
+				continue;
+			}
+			// A background image URL is content, not a design value.
+			if ( 1 === preg_match( '/^background(-image)?$/', $property ) ) {
+				$value = trim( (string) preg_replace( '/\burl\((?:[^()"\']|"[^"]*"|\'[^\']*\')*\)/i', '', $value ) );
+				if ( '' === $value ) {
+					continue;
+				}
+			}
+			foreach ( $this->split_top_level( $value, ' ,' ) as $part ) {
+				if ( ! TokenValue::isToken( $part ) ) {
+					$out[] = array( $property, $value );
+					break;
+				}
+			}
+		}
+		return $out;
+	}
+
+	/**
+	 * Splits on any of the given characters outside parentheses and quotes.
+	 *
+	 * @param string $text       Text.
+	 * @param string $separators Separator characters (a space also matches tabs and newlines).
+	 * @return list<string> Non-empty trimmed parts.
+	 */
+	private function split_top_level( string $text, string $separators ): array {
+		$parts   = array();
+		$current = '';
+		$depth   = 0;
+		$quote   = '';
+		$length  = strlen( $text );
+		for ( $i = 0; $i < $length; $i++ ) {
+			$ch = $text[ $i ];
+			if ( '' !== $quote ) {
+				$quote = $ch === $quote ? '' : $quote;
+			} elseif ( '"' === $ch || "'" === $ch ) {
+				$quote = $ch;
+			} elseif ( '(' === $ch ) {
+				++$depth;
+			} elseif ( ')' === $ch ) {
+				$depth = max( 0, $depth - 1 );
+			} elseif ( 0 === $depth && ( str_contains( $separators, $ch ) || ( 1 === preg_match( '/\s/', $ch ) && str_contains( $separators, ' ' ) ) ) ) {
+				$parts[] = trim( $current );
+				$current = '';
+				continue;
+			}
+			$current .= $ch;
+		}
+		$parts[] = trim( $current );
+		return array_values( array_filter( $parts, static fn( string $p ): bool => '' !== $p ) );
 	}
 
 	/**
