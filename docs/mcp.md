@@ -101,8 +101,9 @@ with the result.
 - The same rule applies to inline `style=""` attributes in the markup:
   colours, backgrounds, font size and family, padding, margin, gap, radius
   and shadow must hold tokens. A background image URL is content and passes.
-- The markup is scanned as it renders, which is what the browser receives.
-  Any `script`, `style`, `iframe`, `object`, `embed`, `noscript`, `svg`,
+- The saved markup is scanned the way WordPress outputs it for static blocks.
+  The server-side output of dynamic blocks (`render.php` of a plugin or theme
+  block) is not scanned; that code is trusted. Any `script`, `style`, `iframe`, `object`, `embed`, `noscript`, `svg`,
   `math`, `form`, `base`, `meta`, `link`, `template`, `frame`, `frameset` or
   `applet` tag and any `on…=` event handler is an error, wherever it appears
   (including inside comments and attribute values). Shortcode attributes are
@@ -178,4 +179,42 @@ styles, then apply three design changes (card radius, eyebrow style, section
 padding). Each change must take exactly one `pediment-upsert-style` call and
 zero page writes. Record the result in this file with the date.
 
-Result: not yet recorded.
+Result, 2026-10-15 (Workation clone, WordPress 7.0, Pediment from PR #117,
+MCP Adapter 0.7.0): **passed**.
+
+- Rebuild: one agent built the home page as a new page through the MCP tools
+  only. It took 3 rounds and about 16 minutes. The agent made 19 tool calls:
+  1 get-vocabulary, 14 upsert-style, 3 write-page, 1 check-page.
+- The page has 158 blocks: 157 core blocks and the theme's booking form block.
+  It has no `core/html`, no legacy block and no literal design values.
+  validate-blocks exits 0. check-page reports 0 errors and 1 warning (three
+  photos come from another host).
+- The agent estimates the visual match at about 9/10 at 1440 px and 8.5/10
+  at 390 px. The header is solid instead of transparent: the theme shows a
+  transparent header only above its own hero block.
+- The rebuild created 13 site styles. All looks live in named styles, so no
+  custom CSS goes into global styles. The 2026-10-14 experiment wrote 13.5 KB.
+- Design changes: each change took exactly one `pediment-upsert-style` call
+  and zero page writes. The page markup hash, modified date and revision
+  count did not change.
+
+| Change | Style | Calls |
+| --- | --- | --- |
+| Card radius lg → sm (13 cards) | `card` | 1 |
+| Eyebrow letter spacing and weight (8 eyebrows) | `eyebrow` | 1 |
+| Section padding 80 → 50 (8 sections) | `section` | 1 |
+
+The 2026-10-14 experiment needed 3 global CSS writes plus page edits for the
+same three changes on 2 pages. Section padding alone took 22 page edits.
+
+Lessons for agents and authors:
+
+- `pediment-upsert-style` replaces the whole `styles` object of a site
+  style. To change one property, send the style's other properties too. Read
+  them from `pediment-get-vocabulary` first.
+- A block has one `is-style-*` class. To change a look in one call, let one
+  style own it (for example section padding), and use presets on the blocks
+  for what varies (for example the band colour).
+- WordPress puts style `css` selectors inside `:where()`, so they have low
+  specificity. A theme rule or a core rule can win over them. A style cannot
+  reliably restyle a nested block that has its own style.
