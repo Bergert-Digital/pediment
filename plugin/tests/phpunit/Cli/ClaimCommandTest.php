@@ -10,7 +10,7 @@ class ClaimCommandTest extends WP_UnitTestCase {
 
 	public function test_render_prints_the_claim_report() {
 		$plan = new Plan(
-			[ new PlanItem( PlanItem::CLAIM, PlanItem::KIND_ENTRY, 'home', '', 12, [ 'seed_key' => [ 'from' => null, 'to' => 'home' ] ], [], 'page "home" (ID 12)' ) ]
+			[ new PlanItem( PlanItem::CLAIM, PlanItem::KIND_ENTRY, 'home', '', 12, [ 'seed_key' => [ 'from' => null, 'to' => 'home' ] ], 'page "home" (ID 12)' ) ]
 		);
 
 		$out = ClaimCommand::render( new ClaimResult( $plan, false, '/srv/theme/seed/manifest.php', [] ) );

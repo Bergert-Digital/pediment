@@ -94,7 +94,6 @@ final class NavSeeder {
 								'to'   => self::countLinks( $spec->items ),
 							],
 						],
-						[],
 						self::hasMega( $spec )
 							? 'membership is git-owned; mega menu content is kept once edited in the editor'
 							: 'membership is git-owned; editor changes to this menu are reverted'

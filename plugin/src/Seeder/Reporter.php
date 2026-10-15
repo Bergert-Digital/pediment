@@ -36,15 +36,7 @@ final class Reporter {
 			$lines[] = '';
 			$lines[] = $heading;
 			foreach ( $items as $item ) {
-				$described = self::describe( $item );
-				$lines[]   = sprintf( '  %-11s %-16s %s', $item->action, $item->key, $described );
-
-				// When describe() already fell back to the note, the fields line
-				// would repeat that same sentence once per protected field — three
-				// identical sentences for the commonest shape on a live site.
-				if ( [] !== $item->protectedFields && $described !== $item->note ) {
-					$lines[] = sprintf( '              ^ protected: %s (%s)', implode( ', ', array_keys( $item->protectedFields ) ), $item->note );
-				}
+				$lines[] = sprintf( '  %-11s %-16s %s', $item->action, $item->key, self::describe( $item ) );
 			}
 		}
 
@@ -146,20 +138,18 @@ final class Reporter {
 		return implode( "\n", $lines );
 	}
 
+	/**
+	 * "N to write," is a contract, not wording: the seed-check action and
+	 * client CI grep for "0 to write," to prove a seed converged. Keep both
+	 * the words and the comma.
+	 */
 	public static function summaryLine( RunResult $result ): string {
-		$counts    = $result->plan->counts();
-		$writes    = ( $counts[ PlanItem::CREATE ] ?? 0 ) + ( $counts[ PlanItem::UPDATE ] ?? 0 ) + ( $counts[ PlanItem::RESTORE ] ?? 0 );
-		$protected = 0;
-		foreach ( $result->plan->items() as $item ) {
-			if ( [] !== $item->protectedFields ) {
-				++$protected;
-			}
-		}
+		$counts = $result->plan->counts();
+		$writes = count( array_filter( $result->plan->items(), static fn( PlanItem $item ): bool => $item->writes() ) );
 
 		return sprintf(
-			'%d to write, %d protected, %d orphan, %d unchanged.',
+			'%d to write, %d orphan, %d unchanged.',
 			$writes,
-			$protected,
 			$counts[ PlanItem::ORPHAN ] ?? 0,
 			$counts[ PlanItem::UNCHANGED ] ?? 0
 		);

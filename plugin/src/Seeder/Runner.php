@@ -65,14 +65,15 @@ final class Runner {
 		// plan — media, entries and navs — is known before anything is written.
 		// Applying media first would mean an errored plan still left attachments
 		// and a changed site logo behind while reporting "nothing was applied".
+		$actual       = $reader->read();
 		$previewState = new DesiredState( $this->lang, new ContentResolver( $mediaSeeder->map( $manifest ) ) );
 		try {
-			$preview = $previewState->build( $manifest );
+			$preview = $previewState->build( $manifest, $actual );
 		} catch ( ManifestError $e ) {
 			return new RunResult( $mediaPlan, false, $manifest->path(), [ $e->getMessage() ] );
 		}
 
-		$entryPlan = ( new Differ() )->diff( $preview, $reader->read(), $reader->duplicates() );
+		$entryPlan = ( new Differ() )->diff( $preview, $actual, $reader->duplicates() );
 		$entryIds  = $this->resolvedIds( $entryPlan );
 		$plan      = Plan::merge( $mediaPlan, $entryPlan, $navSeeder->plan( $manifest, $entryIds ) );
 
@@ -86,14 +87,15 @@ final class Runner {
 		$mediaMap    = $mediaSeeder->apply( $mediaPlan, $manifest );
 		$mediaErrors = $mediaSeeder->errors();
 
-		$state = new DesiredState( $this->lang, new ContentResolver( $mediaMap ) );
+		$actual = $reader->read();
+		$state  = new DesiredState( $this->lang, new ContentResolver( $mediaMap ) );
 		try {
-			$desired = $state->build( $manifest );
+			$desired = $state->build( $manifest, $actual );
 		} catch ( ManifestError $e ) {
 			return new RunResult( $plan, true, $manifest->path(), array_merge( $mediaErrors, [ $e->getMessage() ] ) );
 		}
 
-		$entryPlan = ( new Differ() )->diff( $desired, $reader->read(), $reader->duplicates() );
+		$entryPlan = ( new Differ() )->diff( $desired, $actual, $reader->duplicates() );
 		$applied   = ( new Applier( $this->lang ) )->apply( $entryPlan, $desired );
 
 		// Nav links need the resolved page IDs, so nav is planned again against them.
@@ -116,7 +118,7 @@ final class Runner {
 		// Phase 5 runs even when something failed: an operator debugging a
 		// partial apply needs to know what actually landed.
 		$problems = array_merge(
-			( new Verifier( $this->lang, $navSeeder ) )->verify( $manifest, $desired, $applied->ids, $mediaMap, $navIds ),
+			( new Verifier( $this->lang, $navSeeder ) )->verify( $manifest, $desired, $applied->ids, $mediaMap, $navIds, $applied->created ),
 			$this->undeclaredMediaProblems( $state )
 		);
 		$errors   = array_values( array_unique( array_merge( $mediaErrors, $applied->errors, $navSeeder->errors() ) ) );
@@ -126,9 +128,10 @@ final class Runner {
 
 	/**
 	 * A pattern referencing a media key nobody declared resolves to a literal
-	 * sentinel (or a bare `0`) that gets written into a live page and hashed as
-	 * if it were correct. Nothing else in the engine notices: the media plan has
-	 * no such key and the Verifier only walks declared media.
+	 * sentinel (or a bare `0`) that gets written into the page this run
+	 * creates. Nothing else in the engine notices: the media plan has no such
+	 * key and the Verifier only walks declared media. Reported once, when the
+	 * page is created — the seeder never reads that pattern again.
 	 *
 	 * @return string[]
 	 */

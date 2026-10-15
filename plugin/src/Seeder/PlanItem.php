@@ -11,8 +11,7 @@ final class PlanItem {
 	public const CREATE    = 'create'; // No post carries this key yet.
 	public const RESTORE   = 'restore'; // Exists but trashed.
 	public const UPDATE    = 'update'; // At least one field will be written.
-	public const PROTECTED = 'protected'; // Client-edited: nothing will be written.
-	public const UNCHANGED = 'unchanged';
+	public const UNCHANGED = 'unchanged'; // Exists; the seeder never changes it.
 	public const ORPHAN    = 'orphan'; // Carries a seed key the manifest dropped.
 
 	public const CLAIM     = 'claim'; // An unkeyed row will receive this seed key.
@@ -25,7 +24,6 @@ final class PlanItem {
 
 	/**
 	 * @param array<string,array{from:mixed,to:mixed}> $changes
-	 * @param array<string,array{from:mixed,to:mixed}> $protectedFields
 	 */
 	public function __construct(
 		public readonly string $action,
@@ -34,7 +32,6 @@ final class PlanItem {
 		public readonly string $language,
 		public readonly int $postId,
 		public readonly array $changes = [],
-		public readonly array $protectedFields = [],
 		public readonly string $note = ''
 	) {}
 

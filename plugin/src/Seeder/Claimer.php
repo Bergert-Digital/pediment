@@ -124,7 +124,6 @@ final class Claimer {
 				$language,
 				0,
 				[],
-				[],
 				sprintf(
 					'%d unclaimed %s posts share the slug "%s" (IDs %s) — claim nothing until one is deleted or re-slugged.',
 					count( $candidates ),
@@ -144,13 +143,12 @@ final class Claimer {
 			$language,
 			$postId,
 			[ 'seed_key' => [ 'from' => null, 'to' => $spec->key ] ],
-			[],
 			sprintf( '%s "%s" (ID %d)', $spec->postType, $slug, $postId )
 		);
 	}
 
 	private function noMatch( EntrySpec $spec, string $language, string $note ): PlanItem {
-		return new PlanItem( PlanItem::NO_MATCH, PlanItem::KIND_ENTRY, $spec->key, $language, 0, [], [], $note );
+		return new PlanItem( PlanItem::NO_MATCH, PlanItem::KIND_ENTRY, $spec->key, $language, 0, [], $note );
 	}
 
 	/**
@@ -249,7 +247,6 @@ final class Claimer {
 				$language,
 				0,
 				[],
-				[],
 				'no unclaimed navigation entity — the next seed will create it.'
 			);
 		}
@@ -260,7 +257,6 @@ final class Claimer {
 			$spec->key,
 			$language,
 			0,
-			[],
 			[],
 			sprintf(
 				'%d unclaimed navigation entities (IDs %s) and none whose slug is "%s" — re-slug the right one, or claim it by hand.',
@@ -279,7 +275,6 @@ final class Claimer {
 			$language,
 			$postId,
 			[ 'seed_key' => [ 'from' => null, 'to' => $spec->key ] ],
-			[],
 			sprintf( 'navigation "%s" (ID %d)', (string) get_the_title( $postId ), $postId )
 		);
 	}

@@ -72,14 +72,13 @@ final class SeedCommand {
 		$items = [];
 		foreach ( $result->plan->items() as $item ) {
 			$items[] = [
-				'kind'      => $item->kind,
-				'action'    => $item->action,
-				'key'       => $item->key,
-				'language'  => $item->language,
-				'post_id'   => $item->postId,
-				'changes'   => array_keys( $item->changes ),
-				'protected' => array_keys( $item->protectedFields ),
-				'note'      => $item->note,
+				'kind'     => $item->kind,
+				'action'   => $item->action,
+				'key'      => $item->key,
+				'language' => $item->language,
+				'post_id'  => $item->postId,
+				'changes'  => array_keys( $item->changes ),
+				'note'     => $item->note,
 			];
 		}
 
@@ -89,8 +88,8 @@ final class SeedCommand {
 				'ok'       => $result->ok(),
 				'manifest' => $result->manifestPath,
 				'counts'   => $result->plan->counts(),
-				// Counts alone cannot answer "which pages are protected?", which
-				// is the question anyone scripting against --json is asking.
+				// Counts alone cannot answer "which pages will be created?",
+				// which is the question anyone scripting against --json asks.
 				'items'    => $items,
 				'errors'   => $result->errors,
 				'problems' => $result->problems,

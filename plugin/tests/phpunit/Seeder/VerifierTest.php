@@ -42,29 +42,45 @@ class VerifierTest extends WP_UnitTestCase {
 		$this->assertStringContainsString( 'home', $problems[0] );
 	}
 
-	public function test_a_uniquified_slug_is_a_problem() {
-		// WordPress appends -2 when a slug collides; silently accepting that is
-		// how seeded URLs drift from the manifest.
+	public function test_a_uniquified_slug_on_a_new_page_is_a_problem() {
+		// WordPress appends -2 when a slug collides; the page this run created
+		// did not get the URL the manifest declares.
 		$m  = $this->manifest();
 		$id = self::factory()->post->create( [ 'post_type' => 'page', 'post_name' => 'home-2', 'post_title' => 'Home' ] );
 		update_post_meta( $id, Meta::KEY, 'home' );
 		update_option( 'show_on_front', 'page' );
 		update_option( 'page_on_front', $id );
 
-		$problems = ( new Verifier( new NullProvider(), new NavSeeder( new NullProvider() ) ) )->verify( $m, $this->desired( $m ), [ 'home|' => $id ], new MediaMap( [] ) );
+		$problems = ( new Verifier( new NullProvider(), new NavSeeder( new NullProvider() ) ) )->verify( $m, $this->desired( $m ), [ 'home|' => $id ], new MediaMap( [] ), [], [ 'home|' ] );
 
 		$this->assertStringContainsString( 'home-2', implode( "\n", $problems ) );
 	}
 
-	public function test_a_front_page_option_pointing_elsewhere_is_a_problem() {
+	public function test_a_front_page_option_pointing_elsewhere_is_a_problem_for_a_new_page() {
 		$m  = $this->manifest();
 		$id = self::factory()->post->create( [ 'post_type' => 'page', 'post_name' => 'home', 'post_title' => 'Home' ] );
 		update_post_meta( $id, Meta::KEY, 'home' );
 		update_option( 'show_on_front', 'posts' );
 
-		$problems = ( new Verifier( new NullProvider(), new NavSeeder( new NullProvider() ) ) )->verify( $m, $this->desired( $m ), [ 'home|' => $id ], new MediaMap( [] ) );
+		$problems = ( new Verifier( new NullProvider(), new NavSeeder( new NullProvider() ) ) )->verify( $m, $this->desired( $m ), [ 'home|' => $id ], new MediaMap( [] ), [], [ 'home|' ] );
 
 		$this->assertStringContainsString( 'front page', implode( "\n", $problems ) );
+	}
+
+	public function test_drift_on_an_existing_page_is_not_a_problem() {
+		// A person renamed, moved and trashed the page and chose another front
+		// page. The seeder did not create it in this run, so none of that is
+		// its business.
+		$m      = $this->manifest();
+		$parent = self::factory()->post->create( [ 'post_type' => 'page' ] );
+		$id     = self::factory()->post->create( [ 'post_type' => 'page', 'post_name' => 'startseite', 'post_title' => 'Home', 'post_parent' => $parent ] );
+		update_post_meta( $id, Meta::KEY, 'home' );
+		wp_trash_post( $id );
+		update_option( 'show_on_front', 'posts' );
+
+		$problems = ( new Verifier( new NullProvider(), new NavSeeder( new NullProvider() ) ) )->verify( $m, $this->desired( $m ), [ 'home|' => $id ], new MediaMap( [] ) );
+
+		$this->assertSame( [], $problems );
 	}
 
 	public function test_a_child_whose_parent_has_no_post_is_a_problem() {
@@ -83,7 +99,7 @@ class VerifierTest extends WP_UnitTestCase {
 		$child = self::factory()->post->create( [ 'post_type' => 'page', 'post_name' => 'pricing', 'post_title' => 'Pricing', 'post_parent' => 0 ] );
 		update_post_meta( $child, Meta::KEY, 'guide/pricing' );
 
-		$problems = ( new Verifier( new NullProvider(), new NavSeeder( new NullProvider() ) ) )->verify( $m, $this->desired( $m ), [ 'guide/pricing|' => $child ], new MediaMap( [] ) );
+		$problems = ( new Verifier( new NullProvider(), new NavSeeder( new NullProvider() ) ) )->verify( $m, $this->desired( $m ), [ 'guide/pricing|' => $child ], new MediaMap( [] ), [], [ 'guide/pricing|' ] );
 
 		$this->assertStringContainsString( 'landed at the site root', implode( "\n", $problems ) );
 	}

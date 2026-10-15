@@ -1,6 +1,7 @@
 <?php
 /**
- * Phase 4: apply the plan.
+ * Phase 4: apply the plan. Creates missing entries; never writes to a row
+ * that exists (docs/seeding.md, "Bootstrap only").
  *
  * Rules that are not obvious and cost a lot when missed:
  *   - wp_slash() before every write: wp_insert_post/wp_update_post un-slash
@@ -9,13 +10,12 @@
  *     is active and mangles block comments. Seeded content is git-authored, not
  *     user input.
  *   - The language is set in the same write as creation, never after (8593c73).
- *   - A pre-existing post that reaches this class through any non-CREATE
- *     action (UPDATE, UNCHANGED, PROTECTED, RESTORE) may still have NO
- *     language at all — the migration case, where a page predates this
- *     seeder's language tagging. repairLanguage() tags it if and only if it
- *     is currently untagged; it never re-tags or moves a post that already
- *     carries one. Skipping this is what left existing-site pages invisible
- *     to every translation lookup after `wp pediment languages` + reseed.
+ *   - A row that exists may still have NO language at all — the migration
+ *     case, where a page predates this seeder's language tagging.
+ *     repairLanguage() tags it if and only if it is currently untagged; it
+ *     never re-tags or moves a post that already carries one. That and the
+ *     translation-group link are the only things the seeder does to a row it
+ *     did not create in this run.
  *   - _pediment_seed_hash comes from the PERSISTED row, _pediment_seed_source
  *     from the input.
  *
@@ -41,10 +41,11 @@ final class Applier {
 			return new ApplyResult( [], $plan->errors() );
 		}
 
-		$ids    = [];
-		$errors = [];
+		$ids     = [];
+		$errors  = [];
+		$created = [];
 
-		// Seed existing IDs first so parents resolve even when only a child changes.
+		// Existing rows first, so a new child resolves a parent that already exists.
 		foreach ( $plan->byKind( PlanItem::KIND_ENTRY ) as $item ) {
 			if ( $item->postId > 0 && PlanItem::ORPHAN !== $item->action ) {
 				$ids[ $item->mapKey() ] = $item->postId;
@@ -54,8 +55,10 @@ final class Applier {
 		$kses = Kses::suspend();
 
 		try {
-			foreach ( $plan->byKind( PlanItem::KIND_ENTRY ) as $item ) {
-				if ( in_array( $item->action, [ PlanItem::ORPHAN, PlanItem::UNCHANGED, PlanItem::PROTECTED ], true ) ) {
+			// Plan order is dependency order per language, so a parent created in
+			// this run exists before its children are inserted.
+			foreach ( $plan->byAction( PlanItem::CREATE ) as $item ) {
+				if ( PlanItem::KIND_ENTRY !== $item->kind ) {
 					continue;
 				}
 				$entry = $desired[ $item->mapKey() ] ?? null;
@@ -63,23 +66,11 @@ final class Applier {
 					continue;
 				}
 
-				$isCreate = PlanItem::CREATE === $item->action;
-				$postId   = $isCreate
-					? $this->create( $entry, $ids, $errors )
-					: $this->update( $item, $entry, $ids, $errors );
-
+				$postId = $this->create( $entry, $ids, $errors );
 				if ( $postId > 0 ) {
 					$ids[ $item->mapKey() ] = $postId;
-					// Terms are create-only. Re-applying them on a structure-only
-					// write would use wp_set_object_terms(), which REPLACES the
-					// taxonomy's assignments — a client who filed a seeded post
-					// under an extra category would lose it on an unrelated slug
-					// revert. The Differ does not diff terms, so a manifest-side
-					// term change is not enforced either; that is documented, not
-					// accidental (docs/seeding.md).
-					if ( $isCreate ) {
-						$this->applyTerms( $postId, $entry, $errors );
-					}
+					$created[]              = $item->mapKey();
+					$this->applyTerms( $postId, $entry, $errors );
 					$this->assertSlug( $postId, $entry, $errors );
 				}
 			}
@@ -91,9 +82,9 @@ final class Applier {
 
 		$this->linkTranslationGroups( $ids );
 
-		$this->applyReadingOptions( $desired, $ids );
+		$this->applyReadingOptions( $desired, $ids, $created );
 
-		return new ApplyResult( $ids, $errors );
+		return new ApplyResult( $ids, $errors, $created );
 	}
 
 	/** @param array<string,int> $ids @param string[] $errors */
@@ -143,58 +134,6 @@ final class Applier {
 		return $postId;
 	}
 
-	/** @param array<string,int> $ids @param string[] $errors */
-	private function update( PlanItem $item, DesiredEntry $entry, array $ids, array &$errors ): int {
-		$postarr = [ 'ID' => $item->postId ];
-
-		foreach ( $item->changes as $field => $change ) {
-			switch ( $field ) {
-				case 'title':
-					$postarr['post_title'] = $entry->title;
-					break;
-				case 'content':
-					$postarr['post_content'] = $entry->content;
-					break;
-				case 'slug':
-					$postarr['post_name'] = $entry->slug;
-					break;
-				case 'parent_key':
-					// The change record carries a seed key for display; the real
-					// post_parent is resolved here from the desired entry.
-					$postarr['post_parent'] = $this->parentId( $entry, $ids );
-					break;
-				case 'menu_order':
-					$postarr['menu_order'] = $entry->menuOrder;
-					break;
-				case 'status':
-					$postarr['post_status'] = 'publish';
-					break;
-			}
-		}
-
-		if ( isset( $postarr['post_status'] ) && 'trash' === $item->changes['status']['from'] ) {
-			Meta::clearTrashBookkeeping( $item->postId );
-		}
-
-		if ( 1 === count( $postarr ) ) {
-			return $item->postId;
-		}
-
-		$result = wp_update_post( wp_slash( $postarr ), true );
-		if ( is_wp_error( $result ) ) {
-			$errors[] = sprintf( '%s: %s', $entry->key, $result->get_error_message() );
-			return $item->postId;
-		}
-
-		// Only re-hash when this run actually wrote content; a structure-only
-		// update on a client-edited page must leave the arbitration hash alone.
-		if ( isset( $item->changes['content'] ) || isset( $item->changes['title'] ) ) {
-			$this->recordHashes( $item->postId, $entry );
-		}
-
-		return $item->postId;
-	}
-
 	private function recordHashes( int $postId, DesiredEntry $entry ): void {
 		update_post_meta( $postId, Meta::HASH, ContentHash::forPost( $postId ) );
 		update_post_meta( $postId, Meta::SOURCE, $entry->sourceHash );
@@ -241,8 +180,8 @@ final class Applier {
 
 	/**
 	 * WordPress uniquifies a colliding slug (`contact` -> `contact-2`) and reports
-	 * success. Left unreported, the Differ then sees a slug difference on EVERY
-	 * later run, rewrites the row, and never converges — silently, forever.
+	 * success. The seeder never touches the row again, so this run is the only
+	 * chance to say the new page did not get the URL the manifest declares.
 	 *
 	 * @param string[] $errors
 	 */
@@ -326,10 +265,9 @@ final class Applier {
 	/**
 	 * Tag a pre-existing post that has no language at all.
 	 *
-	 * Only entries that did NOT just go through create() reach here — a
-	 * CREATE already tags its post in the same write (see the class
-	 * docblock). Everything else (UPDATE, UNCHANGED, PROTECTED, RESTORE) may
-	 * be a post that predates this seeder's language tagging entirely: the
+	 * Only rows that exist reach here (UNCHANGED items) — a CREATE already
+	 * tags its post in the same write (see the class docblock). An existing
+	 * row may predate this seeder's language tagging entirely: the
 	 * existing-site migration case. hasLanguage() is the only check — a post
 	 * that already carries a (possibly different) language is left exactly
 	 * as it is, because re-tagging or moving it is an editorial decision,
@@ -361,25 +299,29 @@ final class Applier {
 	}
 
 	/**
+	 * Point the front page and the posts page at their entries — only when the
+	 * entry was created in this run, or while the site has no such page yet
+	 * (option 0). A choice a person made later in Settings → Reading is never
+	 * reverted.
+	 *
 	 * @param array<string,DesiredEntry> $desired
 	 * @param array<string,int>          $ids
+	 * @param string[]                   $created Map keys created in this run.
 	 */
-	private function applyReadingOptions( array $desired, array $ids ): void {
+	private function applyReadingOptions( array $desired, array $ids, array $created ): void {
 		$default = $this->lang->defaultLanguage();
 
 		foreach ( $desired as $mapKey => $entry ) {
 			if ( $entry->language !== $default || ! isset( $ids[ $mapKey ] ) ) {
 				continue;
 			}
-			if ( $entry->frontPage ) {
-				if ( 'page' !== get_option( 'show_on_front' ) ) {
-					update_option( 'show_on_front', 'page' );
-				}
-				if ( (int) get_option( 'page_on_front' ) !== $ids[ $mapKey ] ) {
-					update_option( 'page_on_front', $ids[ $mapKey ] );
-				}
+			$isNew = in_array( $mapKey, $created, true );
+
+			if ( $entry->frontPage && ( $isNew || 0 === (int) get_option( 'page_on_front' ) ) ) {
+				update_option( 'show_on_front', 'page' );
+				update_option( 'page_on_front', $ids[ $mapKey ] );
 			}
-			if ( $entry->postsPage && (int) get_option( 'page_for_posts' ) !== $ids[ $mapKey ] ) {
+			if ( $entry->postsPage && ( $isNew || 0 === (int) get_option( 'page_for_posts' ) ) ) {
 				update_option( 'page_for_posts', $ids[ $mapKey ] );
 			}
 		}

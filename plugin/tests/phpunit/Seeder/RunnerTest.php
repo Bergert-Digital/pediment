@@ -52,17 +52,64 @@ class RunnerTest extends WP_UnitTestCase {
 		$this->assertTrue( $second->ok() );
 	}
 
-	public function test_a_client_edit_survives_a_content_release() {
+	public function test_a_reseed_never_updates_an_existing_page() {
+		$first   = ( new Runner() )->run();
+		$aboutId = $first->ids['about|'];
+		$homeId  = $first->ids['home|'];
+
+		// A person edits the page and the reading settings in wp-admin.
+		wp_update_post( [ 'ID' => $aboutId, 'post_title' => 'About us', 'post_content' => '<p>written live</p>', 'post_name' => 'ueber-uns', 'menu_order' => 4 ] );
+		update_option( 'page_on_front', $aboutId );
+		$before    = get_post( $aboutId );
+		$revisions = count( wp_get_post_revisions( $aboutId ) );
+
+		// The manifest moves on: new copy, title and slug for about, and a new page.
+		$this->manifest['pages']['about'] = [ 'title' => 'About', 'content' => '<p>from git</p>', 'slug' => 'about-git' ];
+		$this->manifest['pages']['team']  = [ 'title' => 'Team', 'content' => '<p>team</p>' ];
+
+		$second = ( new Runner() )->run();
+
+		$this->assertTrue( $second->ok(), implode( "\n", array_merge( $second->errors, $second->problems ) ) );
+		$after = get_post( $aboutId );
+		$this->assertSame( $before->post_title, $after->post_title );
+		$this->assertSame( $before->post_content, $after->post_content );
+		$this->assertSame( 'ueber-uns', $after->post_name );
+		$this->assertSame( 4, $after->menu_order );
+		$this->assertCount( $revisions, wp_get_post_revisions( $aboutId ), 'no write, so no new revision' );
+		$this->assertSame( $aboutId, (int) get_option( 'page_on_front' ), 'the reading setting a person chose stays' );
+		$this->assertGreaterThan( 0, $second->ids['team|'] ?? 0, 'a page the manifest added is still created' );
+
+		$actions = [];
+		foreach ( $second->plan->byKind( PlanItem::KIND_ENTRY ) as $item ) {
+			$actions[ $item->key ] = $item->action;
+		}
+		$this->assertSame( [ 'home' => PlanItem::UNCHANGED, 'about' => PlanItem::UNCHANGED, 'team' => PlanItem::CREATE ], $actions );
+		$this->assertSame( $homeId, $second->ids['home|'] );
+	}
+
+	public function test_a_page_a_person_renamed_keeps_its_slug_and_the_seed_stays_green() {
 		$first = ( new Runner() )->run();
-		$id    = $first->ids['home|'];
-		wp_update_post( [ 'ID' => $id, 'post_content' => '<p>client copy</p>' ] );
+		wp_update_post( [ 'ID' => $first->ids['about|'], 'post_name' => 'ueber-uns' ] );
 
-		$this->manifest['pages']['home']['content'] = '<p>two</p>';
-		$result                                     = ( new Runner() )->run();
+		$second = ( new Runner() )->run();
 
-		$this->assertSame( '<p>client copy</p>', get_post( $id )->post_content );
-		$this->assertNotEmpty( $result->plan->byAction( PlanItem::PROTECTED ) );
-		$this->assertTrue( $result->ok(), 'protecting content is a success, not a failure' );
+		$this->assertTrue( $second->ok(), implode( "\n", array_merge( $second->errors, $second->problems ) ) );
+		$this->assertSame( 'ueber-uns', get_post( $first->ids['about|'] )->post_name );
+		$this->assertSame( [], array_values( array_filter( $second->plan->byKind( PlanItem::KIND_ENTRY ), static fn( PlanItem $i ): bool => $i->writes() ) ) );
+	}
+
+	public function test_a_missing_pattern_for_an_existing_page_is_not_an_error() {
+		register_block_pattern( 'acme/about', [ 'title' => 'About', 'content' => '<p>about</p>' ] );
+		$this->manifest['pages']['about'] = [ 'title' => 'About', 'pattern' => 'acme/about' ];
+		( new Runner() )->run();
+
+		// The theme drops the pattern file: the page now lives only on the site.
+		unregister_block_pattern( 'acme/about' );
+		$second = ( new Runner() )->run();
+
+		$this->assertTrue( $second->ok(), implode( "\n", array_merge( $second->errors, $second->problems ) ) );
+		$about = array_values( array_filter( $second->plan->byKind( PlanItem::KIND_ENTRY ), static fn( PlanItem $i ): bool => 'about' === $i->key ) );
+		$this->assertSame( PlanItem::UNCHANGED, $about[0]->action );
 	}
 
 	public function test_a_duplicate_seed_key_aborts_before_any_write() {
@@ -190,10 +237,11 @@ class RunnerTest extends WP_UnitTestCase {
 		$this->assertStringContainsString( 'navs.primary', implode( "\n", $second->problems ) );
 	}
 
-	public function test_a_typoed_media_key_is_reported_on_every_run() {
+	public function test_a_typoed_media_key_is_reported_when_the_page_is_created() {
 		// Nothing else notices: the media plan has no such key and the Verifier
-		// only walks declared media, so the literal sentinel lands in the page
-		// and is hashed as if it were correct.
+		// only walks declared media, so the literal sentinel lands in the new
+		// page. After that the seeder never reads the pattern again — fixing
+		// the live page is a job for the editor or the MCP tools.
 		$dir = get_temp_dir() . 'pediment-runner-typo';
 		wp_mkdir_p( $dir . '/seed/media' );
 		file_put_contents( $dir . '/seed/media/hero.svg', '<svg xmlns="http://www.w3.org/2000/svg"/>' );
@@ -206,9 +254,9 @@ class RunnerTest extends WP_UnitTestCase {
 
 		remove_all_filters( 'stylesheet_directory' );
 		$this->assertStringContainsString( 'hreo', implode( "\n", $first->problems ) );
+		$this->assertFalse( $first->ok() );
 		$this->assertTrue( $second->plan->isEmpty(), 'nothing changed, so nothing is planned' );
-		$this->assertStringContainsString( 'hreo', implode( "\n", $second->problems ), 'a key that can never resolve must not go quiet after the first run' );
-		$this->assertFalse( $second->ok() );
+		$this->assertStringNotContainsString( 'hreo', implode( "\n", $second->problems ), 'the page exists, so its pattern is not read again' );
 	}
 
 	public function test_a_declared_media_key_is_not_reported_as_a_typo_on_a_fresh_site() {

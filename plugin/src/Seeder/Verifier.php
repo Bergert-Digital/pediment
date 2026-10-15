@@ -23,12 +23,19 @@ final class Verifier {
 	public function __construct( private LanguageProvider $lang, private NavSeeder $navSeeder ) {}
 
 	/**
+	 * Identity, language, media and post types are checked for every row.
+	 * Everything a person may change after the seeder created a row — slug,
+	 * parent, trash, the reading settings — is checked only for the rows this
+	 * run created: on an existing row it is that person's decision, and the
+	 * seeder never reverts it.
+	 *
 	 * @param array<string,DesiredEntry> $desired
 	 * @param array<string,int>          $ids
-	 * @param array<string,int>          $navIds navKey|language => post ID
+	 * @param array<string,int>          $navIds         navKey|language => post ID
+	 * @param string[]                   $createdEntries Entry map keys created in this run.
 	 * @return string[]
 	 */
-	public function verify( Manifest $manifest, array $desired, array $ids, MediaMap $media, array $navIds = [] ): array {
+	public function verify( Manifest $manifest, array $desired, array $ids, MediaMap $media, array $navIds = [], array $createdEntries = [] ): array {
 		$problems = [];
 
 		foreach ( $desired as $mapKey => $entry ) {
@@ -42,19 +49,6 @@ final class Verifier {
 			if ( ! $post instanceof \WP_Post ) {
 				$problems[] = sprintf( '%s: post ID %d does not exist.', $mapKey, $postId );
 				continue;
-			}
-			// Only trash is a problem: `draft` and `pending` are editorial states
-			// a client is entitled to set, and the Differ deliberately leaves them.
-			if ( 'trash' === $post->post_status ) {
-				$problems[] = sprintf( '%s: post %d is in the trash.', $mapKey, $postId );
-			}
-			if ( $post->post_name !== $entry->slug ) {
-				$problems[] = sprintf(
-					'%s: slug is "%s" but the manifest says "%s" (WordPress uniquifies colliding slugs).',
-					$mapKey,
-					$post->post_name,
-					$entry->slug
-				);
 			}
 			if ( (string) get_post_meta( $postId, Meta::KEY, true ) !== $entry->key ) {
 				$problems[] = sprintf( '%s: post %d is missing its seed key.', $mapKey, $postId );
@@ -72,6 +66,22 @@ final class Verifier {
 					$mapKey,
 					$postId,
 					'' === $entry->language ? '(default)' : $entry->language
+				);
+			}
+
+			if ( ! in_array( $mapKey, $createdEntries, true ) ) {
+				continue;
+			}
+
+			if ( 'trash' === $post->post_status ) {
+				$problems[] = sprintf( '%s: post %d is in the trash.', $mapKey, $postId );
+			}
+			if ( $post->post_name !== $entry->slug ) {
+				$problems[] = sprintf(
+					'%s: slug is "%s" but the manifest says "%s" (WordPress uniquifies colliding slugs).',
+					$mapKey,
+					$post->post_name,
+					$entry->slug
 				);
 			}
 
