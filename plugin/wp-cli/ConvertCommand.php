@@ -53,6 +53,13 @@ final class ConvertCommand {
 	 *   - json
 	 * ---
 	 *
+	 * ## NOTES
+	 *
+	 * With --patterns, a file that fails (unreadable, unwritable, or inline PHP
+	 * that would not survive) does not stop the other files; the command
+	 * exits with an error at the end. Files without a pattern header and
+	 * symlinks that leave the directory are skipped.
+	 *
 	 * ## EXAMPLES
 	 *
 	 *     wp pediment convert --dry-run
@@ -67,9 +74,13 @@ final class ConvertCommand {
 		$json    = 'json' === ( $assocArgs['format'] ?? 'text' );
 
 		if ( isset( $assocArgs['patterns'] ) ) {
-			$dir = (string) $assocArgs['patterns'];
-			if ( ! is_dir( $dir ) ) {
-				\WP_CLI::error( "Not a directory: {$dir}" );
+			$given = (string) $assocArgs['patterns'];
+			$dir   = realpath( $given );
+			if ( false === $dir || ! is_dir( $dir ) ) {
+				\WP_CLI::error( "Not a directory: {$given}" );
+			}
+			if ( array() === (array) glob( $dir . '/*.php' ) ) {
+				\WP_CLI::warning( "No *.php files in {$dir}." );
 			}
 			$rows = ( new PatternFiles( Converter::withDefaults(), new Policy(), new AttachmentMedia() ) )->run( $dir, $dry_run );
 			\WP_CLI::log( self::renderPatterns( $rows, $json ) );
