@@ -169,6 +169,98 @@ final class Build {
 	}
 
 	/**
+	 * Builds core/buttons. A justifyContent layout adds no class to the saved HTML.
+	 *
+	 * @param array $buttons core/button blocks.
+	 * @param array $attrs   Attributes (layout).
+	 */
+	public static function buttons( array $buttons, array $attrs = array() ): array {
+		return self::container( 'core/buttons', $attrs, '<div class="wp-block-buttons">', $buttons, '</div>' );
+	}
+
+	/**
+	 * Builds core/button with a named style.
+	 *
+	 * @param string $html  Escaped label.
+	 * @param string $url   Escaped URL.
+	 * @param string $style Style slug, e.g. pill.
+	 */
+	public static function button( string $html, string $url, string $style ): array {
+		$class = 'is-style-' . $style;
+		return self::leaf( 'core/button', array( 'className' => $class ), "<div class=\"wp-block-button {$class}\"><a class=\"wp-block-button__link wp-element-button\" href=\"{$url}\">{$html}</a></div>" );
+	}
+
+	/**
+	 * Builds core/list (unordered) of core/list-item blocks.
+	 *
+	 * @param list<string> $items Escaped item contents.
+	 */
+	public static function bulletList( array $items ): array {
+		$children = array();
+		foreach ( $items as $html ) {
+			$children[] = self::leaf( 'core/list-item', array(), "<li>{$html}</li>" );
+		}
+		return self::container( 'core/list', array(), '<ul class="wp-block-list">', $children, '</ul>' );
+	}
+
+	/**
+	 * Builds core/columns. Reads align.
+	 *
+	 * @param array $attrs   Attributes.
+	 * @param array $columns core/column blocks.
+	 */
+	public static function columns( array $attrs, array $columns ): array {
+		$class = self::classes( 'wp-block-columns', self::align( $attrs ), (string) ( $attrs['className'] ?? '' ) );
+		return self::container( 'core/columns', $attrs, "<div class=\"{$class}\">", $columns, '</div>' );
+	}
+
+	/**
+	 * Builds core/column with a width such as 52%.
+	 *
+	 * @param string $width CSS width.
+	 * @param array  $inner Inner blocks.
+	 */
+	public static function column( string $width, array $inner ): array {
+		return self::container( 'core/column', array( 'width' => $width ), '<div class="wp-block-column" style="flex-basis:' . esc_attr( $width ) . '">', $inner, '</div>' );
+	}
+
+	/**
+	 * Builds core/cover. Reads url, id, alt, dimRatio (default 100), overlayColor,
+	 * contentPosition, isDark, tagName, align and className.
+	 *
+	 * @param array $attrs Attributes.
+	 * @param array $inner Inner blocks.
+	 */
+	public static function cover( array $attrs, array $inner ): array {
+		$tag      = (string) ( $attrs['tagName'] ?? 'div' );
+		$position = (string) ( $attrs['contentPosition'] ?? '' );
+		$class    = self::classes(
+			'wp-block-cover',
+			self::align( $attrs ),
+			false === ( $attrs['isDark'] ?? true ) ? 'is-light' : '',
+			'' !== $position ? 'has-custom-content-position is-position-' . str_replace( ' ', '-', $position ) : '',
+			(string) ( $attrs['className'] ?? '' )
+		);
+		$image = '';
+		if ( isset( $attrs['url'] ) ) {
+			$image = sprintf(
+				'<img class="wp-block-cover__image-background wp-image-%d" alt="%s" src="%s" data-object-fit="cover"/>',
+				(int) ( $attrs['id'] ?? 0 ),
+				esc_attr( (string) ( $attrs['alt'] ?? '' ) ),
+				esc_url( (string) $attrs['url'] )
+			);
+		}
+		$overlay = self::classes(
+			'wp-block-cover__background',
+			isset( $attrs['overlayColor'] ) ? 'has-' . $attrs['overlayColor'] . '-background-color' : '',
+			'has-background-dim-' . (int) ( $attrs['dimRatio'] ?? 100 ),
+			'has-background-dim'
+		);
+		$open = "<{$tag} class=\"{$class}\">{$image}<span aria-hidden=\"true\" class=\"{$overlay}\"></span><div class=\"wp-block-cover__inner-container\">";
+		return self::container( 'core/cover', $attrs, $open, $inner, "</div></{$tag}>" );
+	}
+
+	/**
 	 * The class attribute value from class names; empty names are skipped.
 	 *
 	 * @param string ...$names Class names.

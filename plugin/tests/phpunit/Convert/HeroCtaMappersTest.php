@@ -1,0 +1,60 @@
+<?php
+
+require_once __DIR__ . '/FakeMedia.php';
+
+use Pediment\Convert\Converter;
+use Pediment\Convert\Result;
+
+/**
+ * hero (four variants) and cta with valid and empty attributes.
+ */
+class HeroCtaMappersTest extends WP_UnitTestCase {
+
+	private function convert( string $markup ): Result {
+		return Converter::withDefaults()->convert( $markup, new FakeMedia() );
+	}
+
+	public function test_unknown_variant_falls_back_to_default(): void {
+		$block = parse_blocks( $this->convert( '<!-- wp:pediment/hero {"variant":"bogus","headline":"H"} /-->' )->markup )[0];
+		$this->assertSame( 'core/group', $block['blockName'] );
+		$this->assertSame( array( 'level' => 1 ), $block['innerBlocks'][0]['attrs'] );
+	}
+
+	public function test_a_site_variant_without_a_mapping_is_noted(): void {
+		$add = static fn( array $variants ): array => array_merge( $variants, array( 'split' ) );
+		add_filter( 'pediment_hero_variants', $add );
+		$result = $this->convert( '<!-- wp:pediment/hero {"variant":"split","headline":"H"} /-->' );
+		remove_filter( 'pediment_hero_variants', $add );
+		$this->assertSame( array( 'pediment/hero: variant split has no mapping, converted as default' ), $result->notes );
+		$this->assertStringContainsString( '<h1 class="wp-block-heading">H</h1>', $result->markup );
+	}
+
+	public function test_button_needs_text_and_a_safe_url(): void {
+		$markup = $this->convert( '<!-- wp:pediment/hero {"headline":"H","ctaText":"Go"} /--><!-- wp:pediment/cta {"title":"T","primaryText":"Go","primaryUrl":"javascript:alert(1)","secondaryText":"Read","secondaryUrl":"/read"} /-->' )->markup;
+		$this->assertSame( 1, substr_count( $markup, '<!-- wp:button ' ) );
+		$this->assertStringContainsString( 'is-style-pill-ghost', $markup );
+		$this->assertStringNotContainsString( 'javascript', $markup );
+	}
+
+	public function test_empty_hero_and_cta_are_removed(): void {
+		$result = $this->convert( '<!-- wp:pediment/hero /--><!-- wp:pediment/hero {"variant":"media-bg","mediaId":4040} /--><!-- wp:pediment/cta {"primaryText":"No URL"} /-->' );
+		$this->assertSame( '', $result->markup );
+		$this->assertContains( 'pediment/hero: image 4040 not found, left out', $result->notes );
+	}
+
+	public function test_stat_card_without_stats_has_an_empty_media_card(): void {
+		$columns = parse_blocks( $this->convert( '<!-- wp:pediment/hero {"variant":"stat-card","headline":"H","mediaId":77} /-->' )->markup )[0];
+		$cover   = $columns['innerBlocks'][1]['innerBlocks'][0];
+		$this->assertSame( 'core/cover', $cover['blockName'] );
+		$this->assertSame( array(), $cover['innerBlocks'] );
+		$this->assertSame( 'The team at work', $cover['attrs']['alt'] );
+		$this->assertFalse( $cover['attrs']['isDark'] );
+	}
+
+	public function test_media_background_uses_the_full_image_with_an_overlay(): void {
+		$cover = parse_blocks( $this->convert( '<!-- wp:pediment/hero {"variant":"media-bg","mediaId":77,"headline":"H"} /-->' )->markup )[0];
+		$this->assertSame( 'https://site.test/wp-content/uploads/2026/10/photo-77-full.jpg', $cover['attrs']['url'] );
+		$this->assertSame( 60, $cover['attrs']['dimRatio'] );
+		$this->assertSame( 'primary', $cover['attrs']['overlayColor'] );
+	}
+}
