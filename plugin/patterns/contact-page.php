@@ -9,11 +9,19 @@
  */
 // phpcs:ignoreFile -- block pattern content
 ?>
-<!-- wp:pediment/hero {"variant":"centered","headline":"Contact","subheadline":"Tell us about your project. We respond within one business day."} /-->
+<!-- wp:group {"tagName":"section","layout":{"type":"constrained"},"metadata":{"name":"Hero"}} -->
+<section class="wp-block-group"><!-- wp:heading {"textAlign":"center","level":1} -->
+<h1 class="wp-block-heading has-text-align-center">Contact</h1>
+<!-- /wp:heading -->
 
-<!-- wp:pediment/prose -->
-    <!-- wp:paragraph --><p>Prefer email? Reach us at <a href="mailto:hello@example.com">hello@example.com</a>.</p><!-- /wp:paragraph -->
-<!-- /wp:pediment/prose -->
+<!-- wp:paragraph {"align":"center","className":"is-style-lead"} -->
+<p class="has-text-align-center is-style-lead">Tell us about your project. We respond within one business day.</p>
+<!-- /wp:paragraph --></section>
+<!-- /wp:group -->
+
+<!-- wp:group {"className":"is-style-prose","layout":{"type":"constrained"},"metadata":{"name":"Prose"}} -->
+<div class="wp-block-group is-style-prose"><!-- wp:paragraph --><p>Prefer email? Reach us at <a href="mailto:hello@example.com">hello@example.com</a>.</p><!-- /wp:paragraph --></div>
+<!-- /wp:group -->
 
 <!-- wp:pediment/form {"successMessage":"Thanks — we'll be in touch shortly."} -->
 <!-- wp:pediment/form-field {"label":"Name","fieldName":"name","required":true} /-->

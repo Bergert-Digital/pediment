@@ -5,15 +5,15 @@ import { login } from './utils';
 /**
  * Edit/render parity contract.
  *
- * Every server-rendered block has two independent code paths — render.php for the
- * front-end, edit.tsx for the block-editor canvas. WordPress provides no auto-
- * derivation between them, so the DOM trees drift the moment one side changes
- * without the other (see docs/WORDPRESS_TRAPS.md).
+ * The home page is built from core blocks and named block styles. The editor
+ * canvas and the front end must both show the same named styles (is-style-*
+ * classes) and bands, or a style registration or a block's saved markup has
+ * drifted between the two (see docs/WORDPRESS_TRAPS.md).
  *
- * This spec pins the contract: for every block we ship on the home page, a
- * curated list of BEM selectors must appear in BOTH the editor canvas iframe
- * AND the rendered front-end HTML. A test failure means edit.tsx and render.php
- * have diverged on that block — fix whichever is wrong.
+ * This spec pins the contract: for every named style the landing pattern uses,
+ * a curated selector must appear in BOTH the editor canvas iframe AND the
+ * rendered front-end HTML. A failure means the editor and the front end
+ * disagree on that style — fix whichever is wrong.
  */
 
 type BlockContract = {
@@ -25,67 +25,46 @@ type BlockContract = {
 
 const CONTRACTS: BlockContract[] = [
 	{
-		name: 'pediment/hero (stat-card variant)',
+		name: 'hero (columns + media-card cover, eyebrow, lead, pill buttons)',
 		selectors: [
-			'.starter-hero',
-			'.starter-hero__col',
-			'.starter-hero__eyebrow',
-			'.starter-hero__headline',
-			'.starter-hero__subheadline',
-			'.starter-hero__fig',
-			'.starter-hero__glass',
-			'.starter-hero__stat-value',
-			'.starter-hero__stat-text',
-			'.starter-hero__metrics',
-			'.starter-hero__metric',
+			'.wp-block-columns',
+			'.wp-block-cover.is-style-media-card',
+			'.is-style-eyebrow',
+			'.is-style-lead',
+			'.wp-block-button.is-style-pill',
+			'.wp-block-button.is-style-pill-ghost',
 		],
 	},
 	{
-		name: 'pediment/section-head',
-		selectors: [
-			'.starter-section-head',
-			'.starter-section-head__inner',
-			'.starter-section-head__eyebrow',
-			'.starter-section-head__headline',
-		],
+		name: 'features (card groups in a grid)',
+		selectors: [ '.wp-block-group.is-style-card' ],
 	},
 	{
-		name: 'pediment/feature-grid + pediment/feature',
-		selectors: [
-			'.starter-feature-grid',
-			'.starter-feature',
-			'.starter-feature__ic',
-			'.starter-feature__title',
-			'.starter-feature__text',
-			'.starter-feature__more',
-		],
+		name: 'steps',
+		selectors: [ '.wp-block-group.is-style-steps' ],
 	},
 	{
-		name: 'pediment/steps + pediment/step',
-		selectors: [
-			'.starter-steps',
-			'.starter-step',
-			'.starter-step__num',
-			'.starter-step__title',
-			'.starter-step__text',
-		],
+		name: 'stats',
+		selectors: [ '.wp-block-group.is-style-stat' ],
 	},
 	{
-		name: 'pediment/cta',
-		selectors: [
-			'.starter-cta',
-			'.starter-cta__title',
-			'.starter-cta__body',
-			'.starter-cta__actions',
-			'.starter-cta__btn',
-		],
+		name: 'testimonials',
+		selectors: [ '.wp-block-group.is-style-quote-card' ],
 	},
 	{
-		name: 'pediment/testimonial-grid',
+		name: 'faq (details accordion)',
+		selectors: [ '.wp-block-details.is-style-accordion' ],
+	},
+	{
+		name: 'call to action (panel)',
+		selectors: [ '.wp-block-group.is-style-panel' ],
+	},
+	{
+		name: 'bands',
 		selectors: [
-			'.starter-testimonial-grid',
-			'.starter-testimonial',
-			'.starter-testimonial__quote',
+			'.wp-block-group.starter-band.is-style-band-surface',
+			'.wp-block-group.starter-band.is-style-band-elevated',
+			'.wp-block-group.starter-band.is-style-band-navy',
 		],
 	},
 ];
@@ -124,7 +103,7 @@ async function collectEditorSelectors(
 				f &&
 				f.contentDocument &&
 				f.contentDocument.body &&
-				f.contentDocument.querySelector( '.starter-hero' )
+				f.contentDocument.querySelector( '.is-style-media-card' )
 			);
 		},
 		undefined,
@@ -158,7 +137,7 @@ async function collectFrontSelectors(
 }
 
 test.describe( 'edit ↔ render parity', () => {
-	test( 'every contracted block selector is present in both the editor and the front-end', async ( {
+	test( 'every contracted style selector is present in both the editor and the front-end', async ( {
 		page,
 	} ) => {
 		await login( page );
