@@ -1,17 +1,18 @@
 import { test, expect } from '@playwright/test';
 
 test.describe( 'Pediment foundation', () => {
-	test( 'icons render inline (no sprite) on the front page', async ( {
+	test( 'front page renders its feature cards as core blocks, with no icon sprite', async ( {
 		page,
 	} ) => {
 		await page.goto( '/' );
-		// Icons are now inlined by pediment_icon() as <svg data-icon="…"> rather
-		// than referencing a sprite symbol. The seeded landing page renders a
-		// feature grid whose feature cards each carry an inline icon.
-		const inlineIcons = page.locator(
-			'.starter-feature-grid svg[data-icon]'
+		// The seeded landing page holds core blocks only. Its feature cards are
+		// is-style-card groups; they carry no inline icon (core blocks cannot
+		// show the icon set) and no legacy feature-grid wrapper.
+		const cards = page.locator( '.wp-block-group.is-style-card' );
+		await expect( cards.first() ).toBeVisible();
+		await expect( page.locator( '.starter-feature-grid' ) ).toHaveCount(
+			0
 		);
-		await expect( inlineIcons.first() ).toBeVisible();
 		// The old sprite approach must be fully gone.
 		await expect( page.locator( 'svg symbol[id^="ph-"]' ) ).toHaveCount(
 			0
