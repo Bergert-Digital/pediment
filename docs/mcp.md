@@ -248,9 +248,13 @@ Lessons for agents and authors:
 - `pediment-upsert-style` replaces the whole `styles` object of a site
   style. To change one property, send the style's other properties too. Read
   them from `pediment-get-vocabulary` first.
-- A block has one `is-style-*` class. To change a look in one call, let one
-  style own it (for example section padding), and use presets on the blocks
-  for what varies (for example the band colour).
+- Give a new block one `is-style-*` class. To change a look in one call, let
+  one style own it (for example section padding), and use presets on the
+  blocks for what varies (for example the band colour). A converted block can
+  carry two: the converter's style class and a legacy `is-style-*` class that
+  a theme registered for the new block (for example `is-style-card
+  is-style-align-center`). Keep both; removing either one loses part of the
+  look.
 - WordPress puts style `css` selectors inside `:where()`, so they have low
   specificity. A theme rule or a core rule can win over them. A style cannot
   reliably restyle a nested block that has its own style.

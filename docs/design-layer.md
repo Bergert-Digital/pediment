@@ -26,13 +26,13 @@ AI agents change the site layer with the `pediment-upsert-style` tool — see [m
 
 | Style | Block | Look |
 | --- | --- | --- |
-| `band`, `band-alt` | group | Full-width section with vertical padding |
+| `band`, `band-alt` | group | Section with a background (surface, or sunken for `band-alt`) and vertical padding |
 | `card` | group | Raised card with border, radius and padding |
 | `eyebrow` | paragraph | Small uppercase label with a short line before it |
 | `lead` | paragraph | Larger, muted intro text |
 | `pill`, `pill-ghost` | button | Rounded button, filled or outlined |
 | `media-card` | cover | Rounded cover with shadow and padding |
-| `stat` | group | Big number, label and context, centred |
+| `stat` | group | Big number, label and context, centred. Children are styled by position; a label or context out of its position carries `pediment-stat-label` or `pediment-stat-context` |
 | `steps` | group | Numbers its children 01, 02, … |
 | `panel` | group | Dark call-to-action panel |
 | `quote-card` | group | Testimonial card with a large quote mark |
