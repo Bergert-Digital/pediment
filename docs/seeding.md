@@ -488,11 +488,14 @@ they are identity, not content:
 - **Language repair.** A row with no language at all (a page that predates the
   site's languages) is tagged with the language it was found under. A row that
   already has a language is never moved.
-- **Translation groups.** Every language of a seed key is linked into one
-  translation group on every run, so a language the manifest adds later
-  creates its own pages and joins the groups that already exist. A row in the
-  trash is never linked into a group, and a group short of one configured
-  language is left as it is.
+- **Translation groups.** When a run creates or language-tags at least one row
+  of a seed key, it links every language of that key into one translation
+  group. So a language the manifest adds later creates its own pages and
+  joins the groups that already exist. A key whose rows all exist and keep
+  their language is left alone: a translation a person linked by hand (or
+  through `pediment-write-page` with `translation_of`) stays linked. A row in
+  the trash is never linked into a group, and a group short of one configured
+  language is left as it is. Menus follow the same rule.
 - **Empty settings.** The front page, the posts page and the site logo are set
   only while the site has none: `page_on_front`, `page_for_posts` or
   `custom_logo` is `0`, or names a post or file that no longer exists or is in
