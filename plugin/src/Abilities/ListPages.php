@@ -22,6 +22,11 @@ final class ListPages extends Ability {
 
 	private const STATUSES = array( 'publish', 'draft', 'pending', 'private', 'future' );
 
+	/**
+	 * Most pages one call returns; `truncated` says when more matched.
+	 */
+	public const LIMIT = 500;
+
 	public function name(): string {
 		return 'pediment/list-pages';
 	}
@@ -31,7 +36,8 @@ final class ListPages extends Ability {
 	}
 
 	protected function description(): string {
-		return __( 'Lists pages of every language with id, title, slug, parent, status, language and link. Optional filters: language code, parent page id, status (default any).', 'pediment' );
+		/* translators: %d: maximum number of pages returned. */
+		return sprintf( __( 'Lists pages of every language with id, title, slug, parent, status, language and link. Optional filters: language code, parent page id, status (default any). Returns at most %d pages; truncated is true when more pages matched, so narrow the filters before you conclude a page does not exist.', 'pediment' ), self::LIMIT );
 	}
 
 	protected function inputSchema(): array {
@@ -51,9 +57,10 @@ final class ListPages extends Ability {
 		return array(
 			'type'       => 'object',
 			'properties' => array(
-				'pages' => array( 'type' => 'array', 'items' => self::pageSummarySchema() ),
+				'pages'     => array( 'type' => 'array', 'items' => self::pageSummarySchema() ),
+				'truncated' => array( 'type' => 'boolean' ),
 			),
-			'required'   => array( 'pages' ),
+			'required'   => array( 'pages', 'truncated' ),
 		);
 	}
 
@@ -66,12 +73,17 @@ final class ListPages extends Ability {
 	}
 
 	public function execute( $input ) {
-		$input  = (array) $input;
-		$status = (string) ( $input['status'] ?? 'any' );
-		$args   = array(
+		$input    = (array) $input;
+		$status   = (string) ( $input['status'] ?? 'any' );
+		$language = isset( $input['language'] ) ? (string) $input['language'] : null;
+		$provider = LanguageRegistry::provider();
+		$args     = array(
 			'post_type'      => 'page',
 			'post_status'    => 'any' === $status ? self::STATUSES : $status,
-			'posts_per_page' => 500,
+			// One more than the limit tells whether the list was cut. The
+			// language filter runs on IDs below, so it needs every match.
+			'posts_per_page' => null === $language ? self::LIMIT + 1 : -1,
+			'fields'         => 'ids',
 			'orderby'        => 'menu_order title',
 			'order'          => 'ASC',
 			'no_found_rows'  => true,
@@ -80,10 +92,22 @@ final class ListPages extends Ability {
 		if ( isset( $input['parent'] ) ) {
 			$args['post_parent'] = (int) $input['parent'];
 		}
-		$pages = array_map( array( PageData::class, 'summary' ), get_posts( LanguageRegistry::provider()->unscopedQuery( $args ) ) );
-		if ( isset( $input['language'] ) ) {
-			$pages = array_values( array_filter( $pages, static fn( array $page ): bool => $page['language'] === $input['language'] ) );
+		$ids = array_map( 'intval', get_posts( $provider->unscopedQuery( $args ) ) );
+		if ( null !== $language ) {
+			$ids = array_values( array_filter( $ids, static fn( int $id ): bool => $provider->languageOf( $id ) === $language ) );
 		}
-		return array( 'pages' => $pages );
+		$slice = array_slice( $ids, 0, self::LIMIT );
+		_prime_post_caches( $slice, false, false );
+		$pages = array();
+		foreach ( $slice as $id ) {
+			$post = get_post( $id );
+			if ( $post instanceof \WP_Post ) {
+				$pages[] = PageData::summary( $post );
+			}
+		}
+		return array(
+			'pages'     => $pages,
+			'truncated' => count( $ids ) > self::LIMIT,
+		);
 	}
 }
