@@ -118,7 +118,7 @@ final class StyleValidator {
 			return $errors;
 		}
 
-		foreach ( $this->strings( $styles, 'styles' ) as $leaf_path => $leaf ) {
+		foreach ( $this->strings( $styles, 'styles' ) as list( $leaf_path, $leaf ) ) {
 			if ( str_contains( $leaf, '<' ) ) {
 				$errors[] = "{$leaf_path}: \"<\" is not allowed";
 			}
@@ -128,20 +128,26 @@ final class StyleValidator {
 	}
 
 	/**
-	 * Every string leaf of a tree, keyed by dotted path. Core prints style
-	 * values into inline `<style>` tags, so no value may open a tag.
+	 * Every string leaf (and every string key containing "<") of a tree, as
+	 * [path, value] pairs. A list, not a map keyed by path: keys may contain
+	 * dots, so a decoy key such as "typography.fontWeight" would otherwise
+	 * shadow the real nested leaf. Core prints style values into inline
+	 * `<style>` tags, so nothing may open a tag.
 	 *
 	 * @param array  $tree Tree.
 	 * @param string $path Path.
-	 * @return array<string, string>
+	 * @return list<array{0:string,1:string}>
 	 */
 	private function strings( array $tree, string $path ): array {
 		$out = array();
 		foreach ( $tree as $key => $value ) {
+			if ( is_string( $key ) && str_contains( $key, '<' ) ) {
+				$out[] = array( "{$path}.{$key}", $key );
+			}
 			if ( is_string( $value ) ) {
-				$out[ "{$path}.{$key}" ] = $value;
+				$out[] = array( "{$path}.{$key}", $value );
 			} elseif ( is_array( $value ) ) {
-				$out += $this->strings( $value, "{$path}.{$key}" );
+				array_push( $out, ...$this->strings( $value, "{$path}.{$key}" ) );
 			}
 		}
 		return $out;
@@ -162,7 +168,7 @@ final class StyleValidator {
 			if ( null === $value ) {
 				continue;
 			}
-			foreach ( $this->leaves( $value, "{$path}.{$token_path}" ) as $leaf_path => $leaf ) {
+			foreach ( $this->leaves( $value, "{$path}.{$token_path}" ) as list( $leaf_path, $leaf ) ) {
 				if ( ! $this->is_token_value( $leaf ) ) {
 					$errors[] = "{$leaf_path}: literal value " . wp_json_encode( $leaf ) . ' — use a preset or custom token';
 				}
@@ -195,27 +201,27 @@ final class StyleValidator {
 	}
 
 	/**
-	 * Flattens a value into path => scalar leaves. `{ref: …}` objects count as tokens.
+	 * Flattens a value into [path, scalar] pairs. A pure `{ref: "…"}` object
+	 * counts as a token; in a mixed object the `ref` key is skipped. A list,
+	 * not a map, for the same reason as strings().
 	 *
 	 * @param mixed  $value Value.
 	 * @param string $path  Path.
-	 * @return array<string, mixed>
+	 * @return list<array{0:string,1:mixed}>
 	 */
 	private function leaves( $value, string $path ): array {
 		if ( ! is_array( $value ) ) {
-			return array( $path => $value );
+			return array( array( $path, $value ) );
 		}
-		// Pure ref object: skip validation entirely.
 		if ( array_keys( $value ) === array( 'ref' ) && is_string( $value['ref'] ) && '' !== trim( $value['ref'] ) ) {
 			return array();
 		}
 		$out = array();
 		foreach ( $value as $key => $child ) {
-			// Skip the 'ref' key itself if there are other keys (mixed object).
 			if ( 'ref' === $key && count( $value ) > 1 ) {
 				continue;
 			}
-			$out += $this->leaves( $child, "{$path}.{$key}" );
+			array_push( $out, ...$this->leaves( $child, "{$path}.{$key}" ) );
 		}
 		return $out;
 	}

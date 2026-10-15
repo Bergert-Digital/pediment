@@ -83,4 +83,20 @@ class SiteStylesTest extends WP_UnitTestCase {
 		$this->assertNull( $this->store->get( 'promo' ) );
 		$this->assertFalse( $this->store->delete( 'missing' ) );
 	}
+
+	public function test_decoy_key_payload_is_not_stored(): void {
+		$result = $this->store->save(
+			array(
+				'slug'       => 'decoy',
+				'label'      => 'Decoy',
+				'blockTypes' => array( 'core/group' ),
+				'styles'     => array(
+					'typography.fontWeight' => '700',
+					'typography'            => array( 'fontWeight' => '700;}</style><script>alert(1)</script><style>' ),
+				),
+			)
+		);
+		$this->assertWPError( $result );
+		$this->assertNull( $this->store->get( 'decoy' ) );
+	}
 }
