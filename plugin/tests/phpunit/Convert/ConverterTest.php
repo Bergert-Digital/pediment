@@ -142,4 +142,8 @@ class ConverterTest extends WP_UnitTestCase {
 		$this->assertSame( array( 'pediment/prose' ), $result->unmapped );
 	}
 
+	public function test_attribute_html_is_balanced(): void {
+		$this->assertSame( '<strong>Bold</strong> text', Attrs::html( '<strong>Bold</strong></em> text' ) );
+		$this->assertSame( '<em>open</em>', Attrs::html( '<em>open' ) );
+	}
 }

@@ -102,6 +102,39 @@ final class Context {
 	}
 
 	/**
+	 * Paragraph blocks for a RichText value that the legacy block printed
+	 * inside a <div> or <blockquote>: a value of <p> elements becomes one
+	 * paragraph per element (text between them becomes its own paragraph), so
+	 * a <p> never sits inside a <p>. Other block-level HTML (lists, headings,
+	 * …) cannot become paragraphs: the run is refused.
+	 *
+	 * @param string $html Escaped value (Attrs::html()).
+	 * @param string $what Where the value comes from, for the report ("pediment/faq-item answer").
+	 * @return list<array>
+	 */
+	public function paragraphs( string $html, string $what ): array {
+		if ( 1 === preg_match( '#<(ul|ol|dl|div|h[1-6]|blockquote|table|figure|pre|hr|section|article|aside|header|footer|nav|address|details|form|fieldset)[\s/>]#i', $html, $match ) ) {
+			$this->refuse( sprintf( '%s holds block HTML (<%s>); edit it by hand first', $what, strtolower( $match[1] ) ) );
+			return array( Build::paragraph( $html ) );
+		}
+		if ( 1 !== preg_match( '#<p[\s>]#i', $html ) ) {
+			return array( Build::paragraph( $html ) );
+		}
+		if ( 1 === preg_match( '#<p\s[^>]*[^\s>]#i', $html ) ) {
+			$this->note( "{$what}: attributes of a <p> dropped" );
+		}
+		$out   = array();
+		$parts = preg_split( '#<p(?:\s[^>]*)?>(.*?)</p>#is', $html, -1, PREG_SPLIT_DELIM_CAPTURE );
+		foreach ( false === $parts ? array() : $parts as $part ) {
+			$part = trim( $part );
+			if ( '' !== trim( (string) preg_replace( '#<br\s*/?>#i', '', $part ) ) ) {
+				$out[] = Build::paragraph( $part );
+			}
+		}
+		return $out;
+	}
+
+	/**
 	 * The className of a converted root block: the legacy block's plain classes,
 	 * then $own (the mapper's style class), then each legacy is-style-* class
 	 * that is registered for $target. Unregistered style classes are dropped

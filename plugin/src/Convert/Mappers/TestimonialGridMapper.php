@@ -65,7 +65,7 @@ final class TestimonialGridMapper implements Mapper {
 			$context->note( "pediment/testimonial: avatar {$id} not found, left out" );
 		}
 
-		$inner = array( Build::quote( array(), array( Build::paragraph( $quote ) ), '' === $url ? $byline : '' ) );
+		$inner = array( Build::quote( array(), $context->paragraphs( $quote, 'pediment/testimonial quote' ), '' === $url ? $byline : '' ) );
 		if ( '' !== $url ) {
 			$person = array(
 				Build::image(

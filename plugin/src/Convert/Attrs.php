@@ -44,7 +44,8 @@ final class Attrs {
 
 	/**
 	 * A RichText attribute as the HTML a core block stores: post-allowed tags
-	 * only (the legacy render.php printed it through wp_kses_post() too) and
+	 * only (the legacy render.php printed it through wp_kses_post() too),
+	 * balanced tags (a stray closing tag would make the core block invalid) and
 	 * no block delimiter, so attribute text can never open a block.
 	 *
 	 * @param array  $attrs Attributes.
@@ -60,7 +61,7 @@ final class Attrs {
 	 * @param string $value Value.
 	 */
 	public static function html( string $value ): string {
-		return str_replace( '<!--', '&lt;!--', wp_kses_post( $value ) );
+		return str_replace( '<!--', '&lt;!--', force_balance_tags( wp_kses_post( $value ) ) );
 	}
 
 	/**

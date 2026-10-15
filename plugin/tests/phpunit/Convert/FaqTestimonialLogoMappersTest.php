@@ -53,4 +53,45 @@ class FaqTestimonialLogoMappersTest extends WP_UnitTestCase {
 		$this->assertSame( array( 'core/paragraph' ), array_column( $group['innerBlocks'], 'blockName' ) );
 		$this->assertSame( 'is-style-logos', $group['attrs']['className'] );
 	}
+
+	public function test_an_answer_of_paragraphs_becomes_several_paragraph_blocks(): void {
+		$attrs  = serialize_block_attributes(
+			array(
+				'question' => 'Q',
+				'answer'   => 'Intro <p class="x">One</p><p>Two <a href="/x">link</a></p><p></p><p>Three',
+			)
+		);
+		$result = $this->convert( "<!-- wp:pediment/faq-item {$attrs} /-->" );
+		$inner  = parse_blocks( $result->markup )[0]['innerBlocks'];
+		$this->assertSame( array( 'core/paragraph', 'core/paragraph', 'core/paragraph', 'core/paragraph' ), array_column( $inner, 'blockName' ) );
+		$this->assertSame(
+			array( '<p>Intro</p>', '<p>One</p>', '<p>Two <a href="/x">link</a></p>', '<p>Three</p>' ),
+			array_map( static fn( array $block ): string => trim( $block['innerHTML'] ), $inner )
+		);
+		$this->assertStringNotContainsString( '<p><p>', $result->markup );
+		$this->assertContains( 'pediment/faq-item answer: attributes of a <p> dropped', $result->notes );
+		$this->assertSame( array(), $result->problems );
+	}
+
+	public function test_a_quote_of_paragraphs_becomes_several_paragraph_blocks(): void {
+		$result = $this->convert( '<!-- wp:pediment/testimonial {"quote":"<p>One</p><p>Two</p>","authorName":"Ann"} /-->' );
+		$quote  = parse_blocks( $result->markup )[0]['innerBlocks'][0];
+		$this->assertSame( 'core/quote', $quote['blockName'] );
+		$this->assertSame( array( '<p>One</p>', '<p>Two</p>' ), array_map( static fn( array $block ): string => trim( $block['innerHTML'] ), $quote['innerBlocks'] ) );
+		$this->assertSame( array(), $result->problems );
+	}
+
+	public function test_block_html_other_than_paragraphs_refuses_the_conversion(): void {
+		$answer = '<!-- wp:pediment/faq-item {"question":"Q","answer":"<ul><li>A</li></ul>"} /-->';
+		$quote  = '<!-- wp:pediment/testimonial {"quote":"<h3>Wow</h3>"} /-->';
+		$result = $this->convert( $answer . "\n" . $quote );
+		$this->assertSame(
+			array(
+				'pediment/faq-item answer holds block HTML (<ul>); edit it by hand first',
+				'pediment/testimonial quote holds block HTML (<h3>); edit it by hand first',
+			),
+			$result->problems
+		);
+		$this->assertSame( $answer . "\n" . $quote, $result->markup );
+	}
 }
