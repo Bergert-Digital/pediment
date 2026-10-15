@@ -47,6 +47,7 @@ jobs:
           path: ~/.cache/pediment/validator
           key: validator-${{ hashFiles('client-kit/validator/**/package-lock.json') }}
       - run: PEDIMENT_VALIDATOR_E2E=1 node --test client-kit/tests/validate-blocks.test.mjs
+      - run: node tools/validate-convert-fixtures.mjs
 
   phpunit:
     runs-on: ubuntu-latest
