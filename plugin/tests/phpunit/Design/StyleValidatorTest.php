@@ -294,4 +294,37 @@ class StyleValidatorTest extends WP_UnitTestCase {
 			$this->assertStringContainsString( 'not allowed', $errors[0], $css );
 		}
 	}
+
+	public function test_dotted_decoy_key_cannot_hide_a_tag(): void {
+		$errors = $this->errors(
+			$this->spec(
+				array(
+					'typography.fontWeight' => '700',
+					'typography'            => array( 'fontWeight' => '700;}</style><script>alert(1)</script><style>' ),
+				)
+			)
+		);
+		$this->assertNotEmpty( array_filter( $errors, static fn( string $e ): bool => str_contains( $e, 'styles.typography.fontWeight: "<" is not allowed' ) ) );
+	}
+
+	public function test_dotted_decoy_key_cannot_hide_a_literal_value(): void {
+		$errors = $this->errors(
+			$this->spec(
+				array(
+					'spacing' => array(
+						'padding' => array(
+							'top.left' => 'var:preset|spacing|50',
+							'top'      => array( 'left' => '78px' ),
+						),
+					),
+				)
+			)
+		);
+		$this->assertNotEmpty( array_filter( $errors, static fn( string $e ): bool => str_contains( $e, '78px' ) ) );
+	}
+
+	public function test_a_tag_in_a_key_is_rejected(): void {
+		$errors = $this->errors( $this->spec( array( 'elements' => array( '</style><script>' => array( 'color' => array( 'text' => 'currentColor' ) ) ) ) ) );
+		$this->assertNotEmpty( array_filter( $errors, static fn( string $e ): bool => str_contains( $e, '"<" is not allowed' ) ) );
+	}
 }
