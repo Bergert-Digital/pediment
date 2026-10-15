@@ -56,15 +56,31 @@ class VerifierTest extends WP_UnitTestCase {
 		$this->assertStringContainsString( 'home-2', implode( "\n", $problems ) );
 	}
 
-	public function test_a_front_page_option_pointing_elsewhere_is_a_problem_for_a_new_page() {
+	public function test_an_unset_front_page_option_is_a_problem_for_a_new_page() {
 		$m  = $this->manifest();
 		$id = self::factory()->post->create( [ 'post_type' => 'page', 'post_name' => 'home', 'post_title' => 'Home' ] );
 		update_post_meta( $id, Meta::KEY, 'home' );
 		update_option( 'show_on_front', 'posts' );
+		update_option( 'page_on_front', 0 );
 
 		$problems = ( new Verifier( new NullProvider(), new NavSeeder( new NullProvider() ) ) )->verify( $m, $this->desired( $m ), [ 'home|' => $id ], new MediaMap( [] ), [], [ 'home|' ] );
 
 		$this->assertStringContainsString( 'front page', implode( "\n", $problems ) );
+	}
+
+	public function test_a_front_page_a_person_chose_is_not_a_problem_for_a_new_page() {
+		// The seeded home was deleted for good and this run created it again;
+		// the front page a person chose meanwhile stays, and the run is green.
+		$m      = $this->manifest();
+		$id     = self::factory()->post->create( [ 'post_type' => 'page', 'post_name' => 'home', 'post_title' => 'Home' ] );
+		$theirs = self::factory()->post->create( [ 'post_type' => 'page', 'post_name' => 'start', 'post_title' => 'Start' ] );
+		update_post_meta( $id, Meta::KEY, 'home' );
+		update_option( 'show_on_front', 'page' );
+		update_option( 'page_on_front', $theirs );
+
+		$problems = ( new Verifier( new NullProvider(), new NavSeeder( new NullProvider() ) ) )->verify( $m, $this->desired( $m ), [ 'home|' => $id ], new MediaMap( [] ), [], [ 'home|' ] );
+
+		$this->assertSame( [], $problems );
 	}
 
 	public function test_drift_on_an_existing_page_is_not_a_problem() {

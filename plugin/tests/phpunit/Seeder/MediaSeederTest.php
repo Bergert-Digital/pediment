@@ -110,6 +110,35 @@ class MediaSeederTest extends WP_UnitTestCase {
 		$this->assertSame( $first->id( 'hero' ), (int) get_theme_mod( 'custom_logo' ) );
 	}
 
+	public function test_a_logo_a_person_chose_survives_a_recreated_seeded_logo() {
+		// The person sets their own logo, then deletes the seeded one for good
+		// (the Media Library has no trash by default). The next seed uploads
+		// the seeded logo again; the person's logo stays.
+		$seeder = new MediaSeeder();
+		$m      = $this->manifest();
+		$first  = $seeder->apply( $seeder->plan( $m ), $m );
+		$theirs = self::factory()->attachment->create_upload_object( DIR_TESTDATA . '/images/canola.jpg' );
+		set_theme_mod( 'custom_logo', $theirs );
+		wp_delete_attachment( $first->id( 'logo' ), true );
+
+		$second = $seeder->apply( $seeder->plan( $m ), $m );
+
+		$this->assertNotSame( $first->id( 'logo' ), $second->id( 'logo' ), 'Precondition: the seeded logo is uploaded again.' );
+		$this->assertGreaterThan( 0, $second->id( 'logo' ) );
+		$this->assertSame( $theirs, (int) get_theme_mod( 'custom_logo' ) );
+	}
+
+	public function test_a_logo_that_names_a_missing_attachment_is_set() {
+		$seeder = new MediaSeeder();
+		$m      = $this->manifest();
+		$first  = $seeder->apply( $seeder->plan( $m ), $m );
+		set_theme_mod( 'custom_logo', 999999 );
+
+		$seeder->apply( $seeder->plan( $m ), $m );
+
+		$this->assertSame( $first->id( 'logo' ), (int) get_theme_mod( 'custom_logo' ) );
+	}
+
 	public function test_an_unset_logo_is_set_from_an_existing_attachment() {
 		$seeder = new MediaSeeder();
 		$m      = $this->manifest();
