@@ -22,6 +22,31 @@ person's own Site Editor (user-origin) edits sit above all three.
 
 AI agents change the site layer with the `pediment-upsert-style` tool — see [mcp.md](mcp.md).
 
+## Plugin default styles
+
+| Style | Block | Look |
+| --- | --- | --- |
+| `band`, `band-alt` | group | Full-width section with vertical padding |
+| `card` | group | Raised card with border, radius and padding |
+| `eyebrow` | paragraph | Small uppercase label with a short line before it |
+| `lead` | paragraph | Larger, muted intro text |
+| `pill`, `pill-ghost` | button | Rounded button, filled or outlined |
+| `media-card` | cover | Rounded cover with shadow and padding |
+| `stat` | group | Big number, label and context, centred |
+| `steps` | group | Numbers its children 01, 02, … |
+| `panel` | group | Dark call-to-action panel |
+| `quote-card` | group | Testimonial card with a large quote mark |
+| `accordion` | details | FAQ item; stronger border when open |
+| `media-row` | media & text | Image with radius and shadow, padded text |
+| `pull-quote` | quote | Large centred quote |
+| `framed` | image | Image with radius and shadow, small caption |
+| `logos` | group | Grey logos that get their colour on hover |
+| `prose` | group | Long text with a comfortable line height |
+
+`stat` styles its children by position: keep the value first and the label
+second. The converter ([convert.md](convert.md)) uses these styles for the
+legacy blocks.
+
 ## Rules (checked on every layer)
 
 - Colours, font sizes, font families, padding, margin, gap, border radius and
@@ -47,6 +72,21 @@ AI agents change the site layer with the `pediment-upsert-style` tool — see [m
 Invalid plugin styles are skipped. Invalid theme styles still load but are
 listed with warnings under Settings → Pediment Theme → Design. Invalid site
 styles are rejected on save.
+
+## Limits
+
+- WordPress puts every style's selectors inside `:where()`, so a style has the
+  lowest specificity, (0,1,0). A theme rule or a core rule can win over it, and
+  a style cannot reliably restyle a nested block that has its own style. Give
+  each look to one style on the block that shows it.
+- `pediment-upsert-style` replaces the whole `styles` object of a site style.
+  To change one property, send the other properties too; read them from
+  `pediment-get-vocabulary` first.
+- `css` cannot hold media queries. Responsive layout comes from the blocks:
+  grid `minimumColumnWidth`, and columns and media & text stack on mobile.
+  For a grid that collapses on phones, set `minimumColumnWidth` (for example
+  `max(10rem, 30%)`) and leave `columnCount` unset: WordPress 6.9 ignores the
+  minimum when `columnCount` is set.
 
 ## Tokens
 
