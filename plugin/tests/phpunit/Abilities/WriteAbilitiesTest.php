@@ -111,6 +111,51 @@ class WriteAbilitiesTest extends AbilityTestCase {
 		$this->assertSame( 'Fish & Chips < 5 €', get_post( $page['id'] )->post_title );
 	}
 
+	public function test_every_ability_refuses_anonymous_users_and_subscribers(): void {
+		$page     = self::factory()->post->create( array( 'post_type' => 'page', 'post_title' => 'Kept', 'post_content' => self::GOOD ) );
+		$revision = (int) wp_save_post_revision( $page );
+		$inputs   = array(
+			'pediment/get-vocabulary' => array(),
+			'pediment/list-pages'     => array(),
+			'pediment/read-page'      => array( 'id' => $page ),
+			'pediment/check-page'     => array( 'id' => $page ),
+			'pediment/write-page'     => array( 'title' => 'Denied', 'markup' => self::GOOD ),
+			'pediment/rollback-page'  => array( 'id' => $page, 'revision' => max( 1, $revision ) ),
+			'pediment/upsert-style'   => array( 'slug' => 'denied', 'label' => 'Denied', 'blockTypes' => array( 'core/group' ), 'styles' => array() ),
+			'pediment/delete-style'   => array( 'slug' => 'card' ),
+		);
+		$this->assertSame( Registrar::names(), array_keys( $inputs ), 'every ability has an input here' );
+		$pages = (int) wp_count_posts( 'page' )->publish + (int) wp_count_posts( 'page' )->draft;
+
+		foreach ( array( 'anonymous' => 0, 'subscriber' => $this->user( 'subscriber' ) ) as $who => $user ) {
+			foreach ( Registrar::names() as $name ) {
+				$result = $this->run_as( $user, $name, $inputs[ $name ] );
+				$this->assertWPError( $result, "{$who} {$name}" );
+				$this->assertSame( 'ability_invalid_permissions', $result->get_error_code(), "{$who} {$name}" );
+			}
+		}
+
+		wp_cache_delete( _count_posts_cache_key( 'page' ), 'counts' );
+		$this->assertSame( $pages, (int) wp_count_posts( 'page' )->publish + (int) wp_count_posts( 'page' )->draft, 'no page was written' );
+		$this->assertSame( 'Kept', get_the_title( $page ) );
+		$this->assertNull( ( new SiteStyles( new StyleValidator() ) )->get( 'denied' ), 'no style was written' );
+	}
+
+	public function test_write_page_rejects_input_that_breaks_its_schema(): void {
+		$admin = $this->user( 'administrator' );
+		foreach ( array(
+			'missing title'  => array( 'markup' => self::GOOD ),
+			'unknown key'    => array( 'title' => 'Schema', 'markup' => self::GOOD, 'content' => 'x' ),
+			'unknown status' => array( 'title' => 'Schema', 'markup' => self::GOOD, 'status' => 'trash' ),
+			'empty title'    => array( 'title' => '', 'markup' => self::GOOD ),
+		) as $case => $input ) {
+			$result = $this->run_as( $admin, 'pediment/write-page', $input );
+			$this->assertWPError( $result, $case );
+			$this->assertSame( 'ability_invalid_input', $result->get_error_code(), $case );
+		}
+		$this->assertSame( 0, (int) ( new WP_Query( array( 'post_type' => 'page', 'post_status' => 'any' ) ) )->found_posts );
+	}
+
 	public function test_edit_pages_without_edit_others_pages_cannot_overwrite_someone_elses_page(): void {
 		$page   = self::factory()->post->create( array( 'post_type' => 'page', 'post_author' => $this->user( 'administrator' ), 'post_title' => 'Theirs', 'post_content' => self::GOOD ) );
 		$author = $this->page_author();
