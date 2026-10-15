@@ -6,7 +6,7 @@
     "start": "WP_EXPERIMENTAL_MODULES=true wp-scripts start --webpack-src-dir=src/blocks --output-path=build/blocks",
     "build:blocks": "WP_EXPERIMENTAL_MODULES=true wp-scripts build --webpack-src-dir=src/blocks --output-path=build/blocks && wp-scripts build-blocks-manifest --input=build/blocks --output=build/blocks-manifest.php",
     "build": "npm run build:blocks",
-    "lint:js": "wp-scripts lint-js src/",
+    "lint:js": "wp-scripts lint-js src/ assets/js/",
     "format": "wp-scripts format src/",
     "test:js": "wp-scripts test-unit-js",
     "e2e": "cd .. && plugin/node_modules/.bin/playwright test --config=plugin/playwright.config.ts --grep-invert @wpml",

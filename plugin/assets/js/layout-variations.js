@@ -5,6 +5,8 @@
  * We clone each variation, add `align: 'wide'` to its default attributes, then
  * re-register it so newly inserted Rows/Grids land at the theme's wide width
  * (1200px) instead of the 720px content width. Plain Group is untouched.
+ *
+ * @param {Object} wp The WordPress globals (window.wp).
  */
 ( function ( wp ) {
 	if ( ! wp || ! wp.blocks || ! wp.domReady ) {
@@ -12,10 +14,10 @@
 	}
 
 	wp.domReady( function () {
-		var variations = wp.blocks.getBlockVariations( 'core/group' ) || [];
+		const variations = wp.blocks.getBlockVariations( 'core/group' ) || [];
 
 		[ 'group-row', 'group-grid' ].forEach( function ( slug ) {
-			var variation = variations.find( function ( v ) {
+			const variation = variations.find( function ( v ) {
 				return v.name === slug;
 			} );
 			if ( ! variation ) {
