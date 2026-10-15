@@ -3,9 +3,9 @@
  * MCP smoke test. Talks to the Pediment MCP server of the running root
  * wp-env exactly like Claude Code does (JSON-RPC over HTTP, Basic auth with
  * an application password) and checks: the tool list, get-vocabulary, a
- * write-page → check-page round trip, and that a rule violation comes back
- * as a tool error naming the violation. Removes the page and the
- * application password it created.
+ * write-page → check-page round trip, and that a write breaking two rules
+ * comes back as one tool error naming both. Removes every page and the
+ * application password it created, even when a step fails.
  *
  * Usage: node tools/mcp-smoke.mjs   (wp-env must be running)
  */
@@ -49,7 +49,7 @@ async function main() {
 	const auth = 'Basic ' + Buffer.from( `admin:${ password }` ).toString( 'base64' );
 	let session = null;
 	let nextId = 0;
-	let pageId = 0;
+	const pageIds = [];
 
 	const rpc = async ( method, params ) => {
 		const headers = { 'Content-Type': 'application/json', Authorization: auth };
@@ -67,7 +67,13 @@ async function main() {
 		if ( notification ) {
 			return null;
 		}
-		const json = await response.json();
+		const raw = await response.text();
+		let json;
+		try {
+			json = JSON.parse( raw );
+		} catch {
+			throw new Error( `${ method }: HTTP ${ response.status } did not return JSON: ${ raw.slice( 0, 300 ) }` );
+		}
 		if ( json.error ) {
 			throw new Error( `${ method }: ${ json.error.message }` );
 		}
@@ -98,26 +104,47 @@ async function main() {
 			markup: '<!-- wp:paragraph -->\n<p>Hello from MCP.</p>\n<!-- /wp:paragraph -->',
 		} );
 		assert( ! written.isError, `write-page failed: ${ text( written ) }` );
-		pageId = written.structuredContent.id;
+		const pageId = written.structuredContent.id;
+		pageIds.push( pageId );
 
 		const checked = await call( 'pediment-check-page', { id: pageId } );
 		assert( ! checked.isError && checked.structuredContent.errors.length === 0, `check-page reported errors: ${ text( checked ) }` );
 
+		// Two rules broken at once: the error must list both (Policy reports every violation).
 		const rejected = await call( 'pediment-write-page', {
 			title: 'MCP smoke bad',
-			markup: '<!-- wp:group {"style":{"spacing":{"padding":{"top":"78px"}}}} -->\n<div class="wp-block-group" style="padding-top:78px"></div>\n<!-- /wp:group -->',
+			markup:
+				'<!-- wp:html -->\n<p>raw</p>\n<!-- /wp:html -->\n\n' +
+				'<!-- wp:paragraph {"style":{"typography":{"fontSize":"78px"}}} -->\n<p style="font-size:78px">Big</p>\n<!-- /wp:paragraph -->',
 		} );
-		assert( rejected.isError && /78px/.test( text( rejected ) ), `write-page accepted or hid a literal padding: ${ text( rejected ) }` );
+		if ( ! rejected.isError && rejected.structuredContent?.id ) {
+			pageIds.push( rejected.structuredContent.id );
+		}
+		const why = text( rejected );
+		assert( rejected.isError, `write-page accepted core/html and a literal font size: ${ why }` );
+		assert( /core\/html: block is not allowed/.test( why ), `write-page error does not name core/html: ${ why }` );
+		assert( /fontSize has the literal value "78px"/.test( why ), `write-page error does not name the literal font size: ${ why }` );
 
-		console.log( `MCP smoke OK — ${ names.length } tools, page ${ pageId } written and checked, violation reported.` );
+		console.log( `MCP smoke OK — ${ names.length } tools, page ${ pageId } written and checked, both violations reported.` );
 	} finally {
-		if ( pageId ) {
-			wp( 'post', 'delete', String( pageId ), '--force' );
+		// Each step on its own, so a failing cleanup neither hides the real
+		// error nor skips the steps after it.
+		const cleanup = ( label, step ) => {
+			try {
+				step();
+			} catch ( error ) {
+				console.error( `MCP smoke cleanup: ${ label } failed: ${ error.message }` );
+			}
+		};
+		for ( const id of pageIds ) {
+			cleanup( `delete page ${ id }`, () => wp( 'post', 'delete', String( id ), '--force' ) );
 		}
-		const uuids = wp( 'user', 'application-password', 'list', 'admin', '--name=mcp-smoke', '--field=uuid' );
-		for ( const uuid of uuids.split( '\n' ).filter( Boolean ) ) {
-			wp( 'user', 'application-password', 'delete', 'admin', uuid );
-		}
+		cleanup( 'delete the application password', () => {
+			const uuids = wp( 'user', 'application-password', 'list', 'admin', '--name=mcp-smoke', '--field=uuid' );
+			for ( const uuid of uuids.split( '\n' ).filter( Boolean ) ) {
+				cleanup( `delete application password ${ uuid }`, () => wp( 'user', 'application-password', 'delete', 'admin', uuid ) );
+			}
+		} );
 	}
 }
 
