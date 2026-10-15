@@ -39,7 +39,9 @@ final class PageData {
 	}
 
 	/**
-	 * Full record including markup and translations.
+	 * Full record including markup and translations. `translations` is an
+	 * object so an empty map still encodes as JSON `{}`, as the output schema
+	 * declares.
 	 *
 	 * @param \WP_Post $post Page.
 	 */
@@ -56,7 +58,7 @@ final class PageData {
 			}
 		}
 		return self::summary( $post ) + array(
-			'translations' => $translations,
+			'translations' => (object) $translations,
 			'markup'       => $post->post_content,
 			'revisions'    => count( wp_get_post_revisions( $post->ID, array( 'fields' => 'ids' ) ) ),
 		);

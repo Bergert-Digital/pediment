@@ -9,13 +9,17 @@ class AbilitiesLanguageTest extends PolylangTestCase {
 
 	use AbilityRegistryReset;
 
+	private $originalCurlang;
+
 	public function set_up(): void {
 		parent::set_up();
+		$this->originalCurlang = PLL()->curlang;
 		$this->reset_registries();
 	}
 
 	public function tear_down(): void {
 		$this->reset_registries();
+		PLL()->curlang = $this->originalCurlang;
 		parent::tear_down();
 	}
 
@@ -27,6 +31,9 @@ class AbilitiesLanguageTest extends PolylangTestCase {
 		$provider->setLanguage( $de, 'de' );
 		$provider->linkTranslations( [ 'en' => $en, 'de' => $de ] );
 
+		// A request scoped to one language: a plain page query would now hide the German page.
+		PLL()->curlang = PLL()->model->get_language( 'en' );
+
 		wp_set_current_user( self::factory()->user->create( [ 'role' => 'editor' ] ) );
 		$result = wp_get_ability( 'pediment/list-pages' )->execute( [] );
 
@@ -35,6 +42,6 @@ class AbilitiesLanguageTest extends PolylangTestCase {
 		$this->assertSame( 'de', $languages[ $de ] );
 
 		$page = wp_get_ability( 'pediment/read-page' )->execute( [ 'id' => $en ] );
-		$this->assertSame( [ 'de' => $de ], $page['translations'] );
+		$this->assertSame( [ 'de' => $de ], (array) $page['translations'] );
 	}
 }

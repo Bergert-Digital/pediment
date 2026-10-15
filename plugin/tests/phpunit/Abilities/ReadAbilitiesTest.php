@@ -50,6 +50,7 @@ class ReadAbilitiesTest extends AbilityTestCase {
 		$this->assertSame( array( $child ), array_column( $children['pages'], 'id' ) );
 
 		$page = $this->run_as( $editor, 'pediment/read-page', array( 'id' => $child ) );
+		$this->assertSame( '{}', wp_json_encode( $page['translations'] ) );
 		$this->assertSame( 'Child', $page['title'] );
 		$this->assertSame( $parent, $page['parent'] );
 		$this->assertSame( 'draft', $page['status'] );
@@ -76,6 +77,37 @@ class ReadAbilitiesTest extends AbilityTestCase {
 			$this->assertWPError( $result, $name );
 			$this->assertSame( 'ability_invalid_permissions', $result->get_error_code(), $name );
 		}
+	}
+
+	public function test_edit_post_decides_for_a_user_who_has_edit_pages(): void {
+		$owner = $this->user( 'editor' );
+		$other = self::factory()->post->create( array( 'post_type' => 'page', 'post_status' => 'publish', 'post_author' => $owner ) );
+
+		$author = $this->user( 'author' );
+		get_userdata( $author )->add_cap( 'edit_pages' );
+		get_userdata( $author )->add_cap( 'edit_published_pages' );
+		$mine = self::factory()->post->create( array( 'post_type' => 'page', 'post_status' => 'publish', 'post_author' => $author ) );
+
+		foreach ( array( 'pediment/read-page', 'pediment/check-page' ) as $name ) {
+			$result = $this->run_as( $author, $name, array( 'id' => $other ) );
+			$this->assertWPError( $result, $name );
+			$this->assertSame( 'ability_invalid_permissions', $result->get_error_code(), $name );
+			$this->assertNotWPError( $this->run_as( $author, $name, array( 'id' => $mine ) ), $name );
+		}
+	}
+
+	public function test_list_pages_hides_private_pages_the_user_cannot_read(): void {
+		$admin   = $this->user( 'administrator' );
+		$secret  = self::factory()->post->create( array( 'post_type' => 'page', 'post_status' => 'private', 'post_author' => $admin ) );
+		$public  = self::factory()->post->create( array( 'post_type' => 'page', 'post_status' => 'publish', 'post_author' => $admin ) );
+		$author  = $this->user( 'author' );
+		get_userdata( $author )->add_cap( 'edit_pages' );
+		$private = self::factory()->post->create( array( 'post_type' => 'page', 'post_status' => 'private', 'post_author' => $author ) );
+
+		$ids = array_column( $this->run_as( $author, 'pediment/list-pages', array() )['pages'], 'id' );
+
+		$this->assertEqualsCanonicalizing( array( $public, $private ), $ids );
+		$this->assertNotContains( $secret, $ids );
 	}
 
 	public function test_check_page_reports_rules_invalid_blocks_and_legacy_blocks(): void {
