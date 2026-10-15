@@ -244,6 +244,28 @@ class PolicyTest extends WP_UnitTestCase {
 		$this->fail( wp_json_encode( $result['errors'] ) );
 	}
 
+	public function test_escaped_markup_in_a_shortcode_attribute_is_an_error(): void {
+		// The premise: core decodes attribute escapes, so a plugin that echoes
+		// an attribute prints a live tag the raw text never contained.
+		add_shortcode( 'pediment_echo', static fn( $atts ): string => (string) ( $atts['x'] ?? '' ) );
+		$this->assertStringContainsString( '<script>', do_shortcode( '[pediment_echo x="\\x3cscript\\x3e"]' ) );
+		remove_shortcode( 'pediment_echo' );
+
+		$cases = array(
+			'[pediment_echo x="\\x3cscript\\x3ealert(1)\\x3c/script\\x3e"]' => '<script> is not allowed in block markup (in a shortcode',
+			'[pediment_echo x="\\x3cimg src=x \\x6fnerror=alert(1)\\x3e"]' => 'onerror attribute is not allowed in block markup (in a shortcode',
+			'[pediment_echo url="java\\x73cript:alert(1)"]'                    => 'javascript: URL is not allowed in block markup (in a shortcode',
+			'[a] [pediment_echo x="[\\x3csvg\\x3e"]'                         => '<svg> is not allowed in block markup (in a shortcode',
+		);
+		foreach ( $cases as $shortcode => $message ) {
+			$result = $this->check( "<!-- wp:paragraph -->\n<p>{$shortcode}</p>\n<!-- /wp:paragraph -->" );
+			$this->assertTrue( $this->has( $result['errors'], $message ), $shortcode . ' ' . wp_json_encode( $result['errors'] ) );
+		}
+
+		$plain = $this->check( "<!-- wp:paragraph -->\n<p>[gallery ids=\"1,2\"] [path C:\\new\\folder]</p>\n<!-- /wp:paragraph -->" );
+		$this->assertSame( array(), $plain['errors'] );
+	}
+
 	public function test_legacy_blocks_in_markup(): void {
 		$this->assertSame(
 			array( 'pediment/faq', 'pediment/hero' ),
