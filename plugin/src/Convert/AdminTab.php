@@ -1,0 +1,158 @@
+<?php
+/**
+ * "Convert" tab in Settings → Pediment Theme: preview, then convert legacy blocks.
+ *
+ * @package Pediment
+ */
+
+declare(strict_types=1);
+
+namespace Pediment\Convert;
+
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
+
+/**
+ * The production route: hosts without WP-CLI convert here. The tab shows a
+ * dry run of every post that holds a legacy block; one confirmed form post
+ * converts the previewed posts.
+ */
+final class AdminTab {
+
+	public const ACTION = 'pediment_convert_legacy';
+
+	private const REPORT = 'pediment_convert_report_';
+
+	/**
+	 * Registers the tab and the form handler.
+	 */
+	public static function register(): void {
+		add_action(
+			'admin_menu',
+			static function () {
+				pediment_settings_register_tab( 'convert', __( 'Convert legacy blocks', 'pediment' ), array( self::class, 'render' ), 50 );
+			}
+		);
+		add_action( 'admin_post_' . self::ACTION, array( self::class, 'handle' ) );
+	}
+
+	/**
+	 * Who may convert here: the settings page needs manage_options, and the
+	 * run touches templates, which need edit_theme_options.
+	 */
+	public static function allowed(): bool {
+		return current_user_can( 'manage_options' ) && current_user_can( 'edit_theme_options' );
+	}
+
+	/**
+	 * Renders the tab body: the last run's result (once), then the preview.
+	 */
+	public static function render(): void {
+		if ( ! self::allowed() ) {
+			echo '<p>' . esc_html__( 'You are not allowed to convert legacy blocks.', 'pediment' ) . '</p>';
+			return;
+		}
+		$user = get_current_user_id();
+		$last = get_transient( self::REPORT . $user );
+		if ( is_array( $last ) ) {
+			delete_transient( self::REPORT . $user );
+			echo '<h2>' . esc_html__( 'Result', 'pediment' ) . '</h2>';
+			self::table( $last );
+		}
+
+		$service = PostConverter::create();
+		$preview = $service->runMany( $service->candidates(), true );
+		$ready   = array_values( array_filter( $preview['posts'], static fn( array $post ): bool => 'preview' === $post['status'] ) );
+		echo '<h2>' . esc_html__( 'Preview', 'pediment' ) . '</h2>';
+		echo '<p>' . esc_html__( 'Posts, pages, synced patterns and templates in every language that still use legacy Pediment blocks. Nothing changes until you press the button. Every converted post keeps a revision of its old content.', 'pediment' ) . '</p>';
+		if ( array() === $preview['posts'] ) {
+			echo '<p><strong>' . esc_html__( 'No legacy blocks found. Nothing to convert.', 'pediment' ) . '</strong></p>';
+			return;
+		}
+		self::table( $preview );
+		?>
+		<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
+			<input type="hidden" name="action" value="<?php echo esc_attr( self::ACTION ); ?>" />
+			<?php foreach ( $ready as $post ) : ?>
+				<input type="hidden" name="ids[]" value="<?php echo esc_attr( (string) $post['id'] ); ?>" />
+			<?php endforeach; ?>
+			<?php wp_nonce_field( self::ACTION ); ?>
+			<?php
+			/* translators: %d: number of posts */
+			submit_button( sprintf( _n( 'Convert %d post', 'Convert %d posts', count( $ready ), 'pediment' ), count( $ready ) ), 'primary', 'submit', true, array() === $ready ? array( 'disabled' => 'disabled' ) : array() );
+			?>
+		</form>
+		<?php
+	}
+
+	/**
+	 * Form handler: checks rights and nonce, converts, shows the result.
+	 */
+	public static function handle(): void {
+		if ( ! self::allowed() ) {
+			wp_die( esc_html__( 'You are not allowed to convert legacy blocks.', 'pediment' ), 403 );
+		}
+		check_admin_referer( self::ACTION );
+		$ids = array_map( 'absint', (array) wp_unslash( $_POST['ids'] ?? array() ) ); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- absint on every item.
+		self::process( array_values( array_filter( $ids ) ) );
+		wp_safe_redirect( pediment_settings_page_url( 'convert' ) );
+		exit;
+	}
+
+	/**
+	 * Converts the posts and keeps the result for the next page load.
+	 *
+	 * @param list<int> $ids Post IDs from the confirmed preview.
+	 * @return array{dryRun:bool,posts:list<array>,summary:array<string,int>}
+	 */
+	public static function process( array $ids ): array {
+		$report = PostConverter::create()->runMany( $ids, false, static fn( int $id ): bool => current_user_can( 'edit_post', $id ) );
+		set_transient( self::REPORT . get_current_user_id(), $report, 10 * MINUTE_IN_SECONDS );
+		return $report;
+	}
+
+	/**
+	 * One table of post reports.
+	 *
+	 * @param array $report runMany() result.
+	 */
+	private static function table( array $report ): void {
+		?>
+		<table class="widefat striped">
+			<thead><tr>
+				<th><?php esc_html_e( 'Post', 'pediment' ); ?></th>
+				<th><?php esc_html_e( 'Type', 'pediment' ); ?></th>
+				<th><?php esc_html_e( 'Language', 'pediment' ); ?></th>
+				<th><?php esc_html_e( 'Status', 'pediment' ); ?></th>
+				<th><?php esc_html_e( 'Legacy blocks', 'pediment' ); ?></th>
+				<th><?php esc_html_e( 'Notes', 'pediment' ); ?></th>
+			</tr></thead>
+			<tbody>
+			<?php foreach ( $report['posts'] as $post ) : ?>
+				<tr>
+					<td><a href="<?php echo esc_url( (string) get_edit_post_link( $post['id'] ) ); ?>"><?php echo esc_html( '' !== $post['title'] ? $post['title'] : '#' . $post['id'] ); ?></a></td>
+					<td><?php echo esc_html( $post['type'] ); ?></td>
+					<td><?php echo esc_html( $post['language'] ); ?></td>
+					<td><?php echo esc_html( $post['status'] ); ?></td>
+					<td><?php echo esc_html( implode( ', ', array_merge( $post['converted'], $post['unmapped'] ) ) ); ?></td>
+					<td>
+						<?php echo esc_html( implode( ' · ', array_merge( $post['errors'], $post['notes'] ) ) ); ?>
+						<?php if ( '' !== $post['diff'] ) : ?>
+							<details><summary><?php esc_html_e( 'Show changes', 'pediment' ); ?></summary><pre style="white-space:pre-wrap;max-height:30em;overflow:auto"><?php echo esc_html( $post['diff'] ); ?></pre></details>
+						<?php endif; ?>
+					</td>
+				</tr>
+			<?php endforeach; ?>
+			</tbody>
+		</table>
+		<p>
+		<?php
+		$summary = $report['summary'];
+		/* translators: 1: posts, 2: legacy blocks, 3: converted, 4: preview, 5: failed, 6: skipped, 7: unchanged */
+		echo esc_html( sprintf( __( '%1$d posts, %2$d legacy blocks · converted %3$d · ready %4$d · failed %5$d · skipped %6$d · unchanged %7$d', 'pediment' ), $summary['posts'], $summary['blocks'], $summary['converted'], $summary['preview'], $summary['failed'], $summary['skipped'], $summary['unchanged'] ) );
+		?>
+		</p>
+		<?php
+	}
+}
