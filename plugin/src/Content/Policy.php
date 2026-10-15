@@ -265,23 +265,9 @@ final class Policy {
 	 */
 	private function markup_errors( string $markup ): array {
 		$html   = $this->rendered_text( parse_blocks( $markup ) );
-		$errors = array();
-
-		if ( preg_match_all( '/<\s*(' . implode( '|', self::FORBIDDEN_TAGS ) . ')\b/i', $html, $found, PREG_OFFSET_CAPTURE ) ) {
-			foreach ( $found[1] as $i => list( $tag ) ) {
-				$errors[] = '<' . strtolower( $tag ) . '> is not allowed in block markup' . $this->excerpt( $html, $found[0][ $i ][1] );
-			}
-		}
-		if ( preg_match_all( '/(?:^|[\s\/"\'`])(on[a-z]+)\s*=/i', $html, $found, PREG_OFFSET_CAPTURE ) ) {
-			foreach ( $found[1] as $i => list( $name, $offset ) ) {
-				$errors[] = strtolower( $name ) . ' attribute is not allowed in block markup' . $this->excerpt( $html, $offset );
-			}
-		}
-		// Browsers ignore whitespace and control characters inside a URL scheme.
-		$squashed = (string) preg_replace( '/[\x00-\x20]+/', '', $this->decode_entities( $html ) );
-		$position = stripos( $squashed, 'javascript:' );
-		if ( false !== $position ) {
-			$errors[] = 'javascript: URL is not allowed in block markup' . $this->excerpt( $squashed, $position );
+		$errors = $this->active_markup_errors( $html, '' );
+		foreach ( $this->decoded_shortcode_spans( $html ) as $decoded ) {
+			array_push( $errors, ...$this->active_markup_errors( $decoded, ' (in a shortcode, after its escapes are decoded)' ) );
 		}
 		if ( preg_match_all( '/(?<![\w-])style\s*=\s*("[^"]*(?:"|$)|\'[^\']*(?:\'|$)|[^\s>]+)/i', $html, $found ) ) {
 			foreach ( $found[1] as $raw ) {
@@ -292,6 +278,63 @@ final class Policy {
 			}
 		}
 		return $errors;
+	}
+
+	/**
+	 * Active tags, event-handler attributes and javascript: URLs in a text.
+	 *
+	 * @param string $html   Text as the browser would receive it.
+	 * @param string $suffix Appended to the rule part of each message.
+	 * @return list<string>
+	 */
+	private function active_markup_errors( string $html, string $suffix ): array {
+		$errors = array();
+		if ( preg_match_all( '/<\s*(' . implode( '|', self::FORBIDDEN_TAGS ) . ')\b/i', $html, $found, PREG_OFFSET_CAPTURE ) ) {
+			foreach ( $found[1] as $i => list( $tag ) ) {
+				$errors[] = '<' . strtolower( $tag ) . '> is not allowed in block markup' . $suffix . $this->excerpt( $html, $found[0][ $i ][1] );
+			}
+		}
+		if ( preg_match_all( '/(?:^|[\s\/"\'`])(on[a-z]+)\s*=/i', $html, $found, PREG_OFFSET_CAPTURE ) ) {
+			foreach ( $found[1] as $i => list( $name, $offset ) ) {
+				$errors[] = strtolower( $name ) . ' attribute is not allowed in block markup' . $suffix . $this->excerpt( $html, $offset );
+			}
+		}
+		// Browsers ignore whitespace and control characters inside a URL scheme.
+		$squashed = (string) preg_replace( '/[\x00-\x20]+/', '', $this->decode_entities( $html ) );
+		$position = stripos( $squashed, 'javascript:' );
+		if ( false !== $position ) {
+			$errors[] = 'javascript: URL is not allowed in block markup' . $suffix . $this->excerpt( $squashed, $position );
+		}
+		return $errors;
+	}
+
+	/**
+	 * Shortcode spans as their handler receives them. Core decodes shortcode
+	 * attributes with stripcslashes() at render time, so `\x3cscript\x3e`
+	 * becomes `<script>` only after the raw-text scan. A shortcode attribute
+	 * never holds `]`, so every span from the first `[` after one `]` up to the
+	 * next `]` covers every shortcode that ends there (one pass, linear).
+	 * Only spans that decoding changes are returned.
+	 *
+	 * @param string $html Rendered text.
+	 * @return list<string>
+	 */
+	private function decoded_shortcode_spans( string $html ): array {
+		$spans    = array();
+		$segments = explode( ']', $html );
+		array_pop( $segments );
+		foreach ( $segments as $segment ) {
+			$open = strpos( $segment, '[' );
+			if ( false === $open ) {
+				continue;
+			}
+			$span    = substr( $segment, $open );
+			$decoded = stripcslashes( $span );
+			if ( $decoded !== $span ) {
+				$spans[] = $decoded;
+			}
+		}
+		return $spans;
 	}
 
 	/**
