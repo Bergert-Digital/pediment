@@ -20,7 +20,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 /**
  * Vertical flex group → details.is-style-accordion (summary = question,
- * one paragraph = answer). A lone faq-item becomes a lone details block.
+ * answer = one paragraph, or one per <p> in the answer). A lone faq-item
+ * becomes a lone details block.
  */
 final class FaqMapper implements Mapper {
 
@@ -61,6 +62,6 @@ final class FaqMapper implements Mapper {
 			return null;
 		}
 		$details = array( 'className' => $context->className( $block, 'core/details', 'is-style-accordion' ) );
-		return Build::details( $question, '' === $answer ? array() : array( Build::paragraph( $answer ) ), $details + $context->carry( $block, null ) );
+		return Build::details( $question, '' === $answer ? array() : $context->paragraphs( $answer, 'pediment/faq-item answer' ), $details + $context->carry( $block, null ) );
 	}
 }
