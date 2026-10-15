@@ -237,4 +237,55 @@ class PostConverterTest extends WP_UnitTestCase {
 		$this->assertNotContains( $plain, $candidates );
 		$this->assertNotContains( $core, $candidates );
 	}
+
+	public function test_a_trusted_backup_keeps_content_kses_would_strip(): void {
+		$id = $this->page_with_iframe_as_admin( self::LEGACY );
+		$this->as_editor_without_unfiltered_html();
+
+		$service = new PostConverter( Converter::withDefaults(), new Policy(), new FakeMedia(), true );
+		$report  = $service->run( $id, false );
+
+		$this->assertSame( 'converted', $report['status'] );
+		$this->assertStringContainsString( '<iframe', get_post_field( 'post_content', $report['restoreRevision'] ) );
+		$this->assertNotFalse( has_filter( 'content_save_pre', 'wp_filter_post_kses' ), 'kses is back on afterwards' );
+	}
+
+	public function test_core_blocks_that_kses_only_reformats_do_not_block_an_editor(): void {
+		$core = '<!-- wp:separator {"className":"is-style-wide"} -->' . "\n" . '<hr class="wp-block-separator has-alpha-channel-opacity is-style-wide"/>' . "\n" . '<!-- /wp:separator -->'
+			. "\n\n" . '<!-- wp:paragraph { "align" : "center" } -->' . "\n" . '<p class="has-text-align-center">Hi<br/>there</p>' . "\n" . '<!-- /wp:paragraph -->';
+		wp_set_current_user( self::factory()->user->create( array( 'role' => 'administrator' ) ) );
+		kses_init();
+		$id = $this->page( self::LEGACY . "\n\n" . $core );
+		$this->assertStringContainsString( '{ "align" : "center" }', get_post_field( 'post_content', $id ), 'stored unfiltered' );
+		$this->as_editor_without_unfiltered_html();
+
+		$report = $this->service()->run( $id, false );
+
+		$this->assertSame( 'converted', $report['status'], implode( '; ', $report['errors'] ) );
+		$this->assertStringContainsString( 'is-style-pull-quote', get_post_field( 'post_content', $id ) );
+	}
+
+	public function test_a_negative_revision_limit_means_unlimited(): void {
+		$id = $this->page( self::LEGACY );
+		$this->revisions_limited_to( -5 );
+		$this->assertSame( 'converted', $this->service()->run( $id, false )['status'] );
+	}
+
+	public function test_the_editor_report_is_cleared_when_the_backup_is_pruned_after_the_write(): void {
+		$id = $this->page( self::LEGACY );
+		InvalidBlockLog::record( $id, array( 'core/group' ) );
+		// Two revisions are allowed before the write; after it, only the newest survives.
+		$calls = 0;
+		add_filter(
+			'wp_revisions_to_keep',
+			static function () use ( &$calls ): int {
+				return 1 < ++$calls ? 1 : 2;
+			}
+		);
+		$report = $this->service()->run( $id, false );
+		$this->assertSame( 'failed', $report['status'] );
+		$this->assertStringContainsString( 'backup revision was removed', $report['errors'][0] );
+		$this->assertStringContainsString( 'is-style-pull-quote', get_post_field( 'post_content', $id ) );
+		$this->assertNull( InvalidBlockLog::get( $id ) );
+	}
 }

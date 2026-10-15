@@ -29,7 +29,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  * comments. A trusted run suspends kses around the write, the way the seeder
  * does (Pediment\Seeder\Kses). An untrusted run (the default, used by the
  * ability and the wp-admin screen) leaves kses on; if kses would change the
- * converted markup in any way beyond `<img ... />` spacing, the post is
+ * converted markup in any way beyond block-comment formatting and self-closing tag spacing, the post is
  * refused ("failed", nothing written), in a dry run too.
  *
  * Every write needs a backup revision. A post whose revisions are off, not
@@ -136,8 +136,11 @@ final class PostConverter {
 	 * Converts (or previews) one post.
 	 *
 	 * Status: preview (dry run, would convert), converted, unchanged (nothing
-	 * to convert), failed (conversion would add content-rule errors, or the
-	 * save failed; nothing written), skipped (not a convertible post).
+	 * to convert), failed (conversion would add content-rule errors, the
+	 * revision or kses guards refuse it, or the save failed; nothing written —
+	 * except when the revision limit pruned the backup after the write: then
+	 * the content is converted but the backup is gone, and the error says so),
+	 * skipped (not a convertible post).
 	 *
 	 * @param int  $id      Post ID.
 	 * @param bool $dry_run Preview only.
@@ -179,40 +182,47 @@ final class PostConverter {
 			return $report;
 		}
 
-		// Seeded or hand-created posts may have no revision of their current
-		// content; save one so rollback-page can restore the legacy version.
-		$saved   = wp_save_post_revision( $id );
-		$restore = is_int( $saved ) && $saved > 0 ? $saved : PageData::latestRevision( $id );
-		if ( ! $this->isBackup( $restore, $id ) ) {
-			$report['status'] = 'failed';
-			$report['errors'] = array( 'no backup revision could be saved; nothing was written' );
-			return $report;
-		}
-		$kses    = $this->trusted ? Kses::suspend() : false;
-		$updated = wp_update_post(
-			wp_slash(
-				array(
-					'ID'           => $id,
-					'post_content' => $result->markup,
-				)
-			),
-			true
-		);
-		if ( $this->trusted ) {
-			Kses::restore( $kses );
+		// A trusted run (WP-CLI) suspends kses for the backup revision as well
+		// as the write: revisions are stored through wp_insert_post, so kses
+		// would strip the backup's iframes and a rollback would delete them.
+		$kses = $this->trusted ? Kses::suspend() : false;
+		try {
+			// Seeded or hand-created posts may have no revision of their current
+			// content; save one so rollback-page can restore the legacy version.
+			$saved   = wp_save_post_revision( $id );
+			$restore = is_int( $saved ) && $saved > 0 ? $saved : PageData::latestRevision( $id );
+			if ( ! $this->isBackup( $restore, $id ) ) {
+				$report['status'] = 'failed';
+				$report['errors'] = array( 'no backup revision could be saved; nothing was written' );
+				return $report;
+			}
+			$updated = wp_update_post(
+				wp_slash(
+					array(
+						'ID'           => $id,
+						'post_content' => $result->markup,
+					)
+				),
+				true
+			);
+		} finally {
+			if ( $this->trusted ) {
+				Kses::restore( $kses );
+			}
 		}
 		if ( is_wp_error( $updated ) ) {
 			$report['status'] = 'failed';
 			$report['errors'] = array( $updated->get_error_message() );
 			return $report;
 		}
+		// The content changed, so the editor's invalid-block report is stale.
+		InvalidBlockLog::clear( $id );
 		if ( ! $this->isBackup( $restore, $id ) ) {
 			// The revision limit pruned the backup after the write.
 			$report['status'] = 'failed';
 			$report['errors'] = array( 'the backup revision was removed after the write; restore the content from the diff or a database backup' );
 			return $report;
 		}
-		InvalidBlockLog::clear( $id );
 		$report['status']          = 'converted';
 		$report['revision']        = PageData::latestRevision( $id );
 		$report['restoreRevision'] = $restore;
@@ -227,15 +237,15 @@ final class PostConverter {
 	 */
 	private function writeProblem( \WP_Post $post, string $markup ): string {
 		$keep = post_type_supports( $post->post_type, 'revisions' ) ? wp_revisions_to_keep( $post ) : 0;
-		if ( -1 !== $keep && $keep < 2 ) {
+		if ( $keep >= 0 && $keep < 2 ) {
 			return 'revisions are disabled or limited to fewer than 2 for this post (WP_POST_REVISIONS); conversion needs a backup revision';
 		}
 		if ( $this->trusted || false === has_filter( 'content_save_pre', 'wp_filter_post_kses' ) ) {
 			return '';
 		}
 		$stored = wp_unslash( apply_filters( 'content_save_pre', wp_slash( $markup ) ) );
-		$stored = self::normalizeImages( is_string( $stored ) ? $stored : '' );
-		$wanted = self::normalizeImages( $markup );
+		$stored = self::canonical( is_string( $stored ) ? $stored : '' );
+		$wanted = self::canonical( $markup );
 		if ( $stored === $wanted ) {
 			return '';
 		}
@@ -249,12 +259,14 @@ final class PostConverter {
 	}
 
 	/**
-	 * Self-closing images as kses writes them, so that harmless difference is ignored.
+	 * The markup in a form that ignores what kses and the block filter rewrite
+	 * without changing content: block comments re-serialized (JSON spacing,
+	 * escapes, block names) and self-closing tags written as `<tag ... />`.
 	 *
 	 * @param string $markup Markup.
 	 */
-	private static function normalizeImages( string $markup ): string {
-		return (string) preg_replace( '#(<img\b[^>]*?)\s*/>#i', '$1 />', $markup );
+	private static function canonical( string $markup ): string {
+		return (string) preg_replace( '#<([a-z][a-z0-9:-]*)((?:\s+[^<>\s/][^<>]*?)?)\s*/>#i', '<$1$2 />', serialize_blocks( parse_blocks( $markup ) ) );
 	}
 
 	/**
