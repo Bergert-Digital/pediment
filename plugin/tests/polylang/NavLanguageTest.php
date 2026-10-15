@@ -61,7 +61,7 @@ class NavLanguageTest extends PolylangTestCase {
 		$seeder   = new NavSeeder( $lang );
 
 		$entryIds = [ 'about|en' => $this->page( 'en' ), 'about|de' => $this->page( 'de' ) ];
-		$plan     = $seeder->plan( $manifest, $entryIds );
+		$plan     = $seeder->plan( $manifest );
 		$ids      = $seeder->apply( $plan, $manifest, $entryIds );
 
 		$this->assertSame( [], $seeder->errors() );
@@ -76,7 +76,7 @@ class NavLanguageTest extends PolylangTestCase {
 		$seeder   = new NavSeeder( $lang );
 
 		$entryIds = [ 'about|en' => $this->page( 'en' ), 'about|de' => $this->page( 'de' ) ];
-		$ids      = $seeder->apply( $seeder->plan( $manifest, $entryIds ), $manifest, $entryIds );
+		$ids      = $seeder->apply( $seeder->plan( $manifest ), $manifest, $entryIds );
 
 		$this->assertSame( $ids['primary|de'], $lang->translationOf( $ids['primary|en'], 'de' ) );
 	}
@@ -89,7 +89,7 @@ class NavLanguageTest extends PolylangTestCase {
 		$en       = $this->page( 'en' );
 		$de       = $this->page( 'de' );
 		$entryIds = [ 'about|en' => $en, 'about|de' => $de ];
-		$ids      = $seeder->apply( $seeder->plan( $manifest, $entryIds ), $manifest, $entryIds );
+		$ids      = $seeder->apply( $seeder->plan( $manifest ), $manifest, $entryIds );
 
 		$this->assertStringContainsString( '"id":' . $de, get_post( $ids['primary|de'] )->post_content );
 		$this->assertStringNotContainsString( '"id":' . $en, get_post( $ids['primary|de'] )->post_content );
@@ -135,7 +135,7 @@ class NavLanguageTest extends PolylangTestCase {
 			return ( $postarr['post_name'] ?? '' ) === 'primary-fr' ? true : $maybe_empty;
 		};
 		add_filter( 'wp_insert_post_empty_content', $fail, 10, 2 );
-		$ids = $seeder->apply( $seeder->plan( $manifest, $entryIds ), $manifest, $entryIds );
+		$ids = $seeder->apply( $seeder->plan( $manifest ), $manifest, $entryIds );
 		remove_filter( 'wp_insert_post_empty_content', $fail, 10 );
 
 		$this->assertArrayNotHasKey( 'primary|fr', $ids, 'Precondition: the French nav create must actually have failed.' );
@@ -189,7 +189,7 @@ class NavLanguageTest extends PolylangTestCase {
 			'about|de' => $this->page( 'de' ),
 			'about|fr' => $this->page( 'fr' ),
 		];
-		$ids      = $seeder->apply( $seeder->plan( $threeLanguages, $entryIds ), $threeLanguages, $entryIds );
+		$ids      = $seeder->apply( $seeder->plan( $threeLanguages ), $threeLanguages, $entryIds );
 		$this->assertArrayHasKey( 'primary|fr', $ids, 'Precondition: a French nav must exist before the language is dropped.' );
 
 		PLL()->model->delete_language( (int) $this->addedLanguageId );
@@ -203,10 +203,7 @@ class NavLanguageTest extends PolylangTestCase {
 			'Precondition: dropping the language must leave the nav untagged, not tagged with an unconfigured language.'
 		);
 
-		$plan = ( new NavSeeder( new PolylangProvider() ) )->plan(
-			$this->manifest(),
-			[ 'about|en' => $entryIds['about|en'], 'about|de' => $entryIds['about|de'] ]
-		);
+		$plan = ( new NavSeeder( new PolylangProvider() ) )->plan( $this->manifest() );
 
 		$this->assertTrue( $plan->hasErrors() );
 		$this->assertStringContainsString( (string) $ids['primary|en'], $plan->errors()[0] );
@@ -242,7 +239,7 @@ class NavLanguageTest extends PolylangTestCase {
 		];
 
 		$seeder = new NavSeeder( new PolylangProvider() );
-		$navIds = $seeder->apply( $seeder->plan( $manifest, $ids ), $manifest, $ids );
+		$navIds = $seeder->apply( $seeder->plan( $manifest ), $manifest, $ids );
 
 		$this->assertSame( [], $seeder->errors() );
 
@@ -314,7 +311,7 @@ class NavLanguageTest extends PolylangTestCase {
 		$de       = $this->page( 'de' );
 		$entryIds = [ 'about|en' => $en, 'about|de' => $de ];
 
-		$ids = $seeder->apply( $seeder->plan( $manifest, $entryIds ), $manifest, $entryIds );
+		$ids = $seeder->apply( $seeder->plan( $manifest ), $manifest, $entryIds );
 
 		$this->assertSame( [], $seeder->errors() );
 		$deContent = get_post( $ids['primary|de'] )->post_content;

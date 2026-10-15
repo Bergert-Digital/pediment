@@ -52,20 +52,25 @@ class RunnerTest extends WP_UnitTestCase {
 		$this->assertTrue( $second->ok() );
 	}
 
-	public function test_a_reseed_never_updates_an_existing_page() {
+	public function test_a_reseed_never_updates_existing_content() {
 		$first   = ( new Runner() )->run();
 		$aboutId = $first->ids['about|'];
 		$homeId  = $first->ids['home|'];
+		$navId   = (int) get_posts( [ 'post_type' => 'wp_navigation', 'posts_per_page' => 1, 'fields' => 'ids' ] )[0];
 
-		// A person edits the page and the reading settings in wp-admin.
+		// A person edits the page, the menu and the reading settings in wp-admin.
 		wp_update_post( [ 'ID' => $aboutId, 'post_title' => 'About us', 'post_content' => '<p>written live</p>', 'post_name' => 'ueber-uns', 'menu_order' => 4 ] );
+		wp_update_post( [ 'ID' => $navId, 'post_content' => wp_slash( '<!-- wp:navigation-link {"label":"Shop","url":"/shop/","kind":"custom"} /-->' ) ] );
 		update_option( 'page_on_front', $aboutId );
 		$before    = get_post( $aboutId );
+		$navBefore = get_post( $navId )->post_content;
 		$revisions = count( wp_get_post_revisions( $aboutId ) );
 
-		// The manifest moves on: new copy, title and slug for about, and a new page.
-		$this->manifest['pages']['about'] = [ 'title' => 'About', 'content' => '<p>from git</p>', 'slug' => 'about-git' ];
-		$this->manifest['pages']['team']  = [ 'title' => 'Team', 'content' => '<p>team</p>' ];
+		// The manifest moves on: new copy, title and slug for about, a new page,
+		// and the new page in the menu.
+		$this->manifest['pages']['about']             = [ 'title' => 'About', 'content' => '<p>from git</p>', 'slug' => 'about-git' ];
+		$this->manifest['pages']['team']              = [ 'title' => 'Team', 'content' => '<p>team</p>' ];
+		$this->manifest['navs']['primary']['items'][] = [ 'entry' => 'team' ];
 
 		$second = ( new Runner() )->run();
 
@@ -76,15 +81,23 @@ class RunnerTest extends WP_UnitTestCase {
 		$this->assertSame( 'ueber-uns', $after->post_name );
 		$this->assertSame( 4, $after->menu_order );
 		$this->assertCount( $revisions, wp_get_post_revisions( $aboutId ), 'no write, so no new revision' );
+		$this->assertSame( $navBefore, get_post( $navId )->post_content, 'the menu a person edited stays theirs' );
 		$this->assertSame( $aboutId, (int) get_option( 'page_on_front' ), 'the reading setting a person chose stays' );
 		$this->assertGreaterThan( 0, $second->ids['team|'] ?? 0, 'a page the manifest added is still created' );
+		$this->assertSame( $homeId, $second->ids['home|'] );
 
 		$actions = [];
-		foreach ( $second->plan->byKind( PlanItem::KIND_ENTRY ) as $item ) {
-			$actions[ $item->key ] = $item->action;
+		foreach ( $second->plan->items() as $item ) {
+			$actions[ $item->kind . ':' . $item->key ] = $item->action;
 		}
-		$this->assertSame( [ 'home' => PlanItem::UNCHANGED, 'about' => PlanItem::UNCHANGED, 'team' => PlanItem::CREATE ], $actions );
-		$this->assertSame( $homeId, $second->ids['home|'] );
+		$this->assertSame( PlanItem::UNCHANGED, $actions['entry:home'] );
+		$this->assertSame( PlanItem::UNCHANGED, $actions['entry:about'] );
+		$this->assertSame( PlanItem::UNCHANGED, $actions['nav:primary'] );
+		$this->assertSame( PlanItem::CREATE, $actions['entry:team'] );
+
+		$third = ( new Runner() )->run( [ 'dry_run' => true ] );
+		$this->assertTrue( $third->plan->isEmpty(), 'once the new page exists there is nothing left to write' );
+		$this->assertStringContainsString( '0 to write,', \Pediment\Seeder\Reporter::summaryLine( $third ) );
 	}
 
 	public function test_a_page_a_person_renamed_keeps_its_slug_and_the_seed_stays_green() {
@@ -226,15 +239,16 @@ class RunnerTest extends WP_UnitTestCase {
 		$this->assertTrue( $second->plan->isEmpty(), 'a re-seed of a non-public entry must plan no writes' );
 	}
 
-	public function test_a_client_unpublishing_the_menu_is_reported() {
-		$result = ( new Runner() )->run();
-		$navs   = get_posts( [ 'post_type' => 'wp_navigation', 'posts_per_page' => -1 ] );
+	public function test_a_menu_a_person_unpublished_is_left_alone() {
+		( new Runner() )->run();
+		$navs = get_posts( [ 'post_type' => 'wp_navigation', 'posts_per_page' => -1 ] );
 		wp_update_post( [ 'ID' => $navs[0]->ID, 'post_status' => 'draft' ] );
 
 		$second = ( new Runner() )->run();
 
-		$this->assertFalse( $second->ok(), 'a menu that will not render is not a successful seed' );
-		$this->assertStringContainsString( 'navs.primary', implode( "\n", $second->problems ) );
+		$this->assertTrue( $second->ok(), 'the seeder does not overrule a person who took the menu offline' );
+		$this->assertSame( 'draft', get_post_status( $navs[0]->ID ) );
+		$this->assertStringContainsString( 'does not render', $second->plan->byKind( PlanItem::KIND_NAV )[0]->note );
 	}
 
 	public function test_a_typoed_media_key_is_reported_when_the_page_is_created() {

@@ -3,7 +3,6 @@
 
 use Pediment\Language\NullProvider;
 use Pediment\Seeder\Manifest;
-use Pediment\Seeder\MegaBlocks;
 use Pediment\Seeder\Meta;
 use Pediment\Seeder\NavSeeder;
 use Pediment\Seeder\PlanItem;
@@ -49,7 +48,7 @@ class NavSeederTest extends WP_UnitTestCase {
 		$m      = $this->manifest( [ [ 'entry' => 'home' ] ] );
 		$ids    = [ 'home|' => self::factory()->post->create( [ 'post_type' => 'page' ] ) ];
 
-		$navIds = $seeder->apply( $seeder->plan( $m, $ids ), $m, $ids );
+		$navIds = $seeder->apply( $seeder->plan( $m ), $m, $ids );
 
 		$nav = get_post( $navIds['primary|'] );
 		$this->assertSame( 'wp_navigation', $nav->post_type );
@@ -57,102 +56,114 @@ class NavSeederTest extends WP_UnitTestCase {
 		$this->assertSame( 'primary', get_post_meta( $nav->ID, Meta::KEY, true ) );
 	}
 
-	public function test_membership_changes_are_planned_and_applied_in_place() {
+	public function test_a_manifest_membership_change_never_reaches_an_existing_nav() {
 		$seeder = new NavSeeder( new NullProvider() );
 		$ids    = [
 			'home|'  => self::factory()->post->create( [ 'post_type' => 'page' ] ),
 			'about|' => self::factory()->post->create( [ 'post_type' => 'page' ] ),
 		];
 		$first  = $this->manifest( [ [ 'entry' => 'home' ] ] );
-		$navIds = $seeder->apply( $seeder->plan( $first, $ids ), $first, $ids );
+		$navIds = $seeder->apply( $seeder->plan( $first ), $first, $ids );
+		$before = get_post( $navIds['primary|'] )->post_content;
 
 		$second = $this->manifest( [ [ 'entry' => 'home' ], [ 'entry' => 'about' ] ] );
-		$plan   = $seeder->plan( $second, $ids );
+		$plan   = $seeder->plan( $second );
 		$again  = $seeder->apply( $plan, $second, $ids );
 
-		$this->assertSame( PlanItem::UPDATE, $plan->items()[0]->action );
-		$this->assertSame( 2, $plan->items()[0]->changes['items']['to'] );
-		$this->assertSame( $navIds['primary|'], $again['primary|'], 'update in place, never re-create' );
-		$this->assertSame( 2, substr_count( get_post( $again['primary|'] )->post_content, 'wp:navigation-link' ) );
+		$this->assertSame( PlanItem::UNCHANGED, $plan->items()[0]->action );
+		$this->assertSame( [], $plan->items()[0]->changes );
+		$this->assertSame( $navIds['primary|'], $again['primary|'] );
+		$this->assertSame( $before, get_post( $navIds['primary|'] )->post_content );
+		$this->assertSame( [], $seeder->created() );
 	}
 
 	public function test_an_unchanged_nav_is_not_rewritten() {
 		$seeder = new NavSeeder( new NullProvider() );
 		$m      = $this->manifest( [ [ 'entry' => 'home' ] ] );
 		$ids    = [ 'home|' => self::factory()->post->create( [ 'post_type' => 'page' ] ) ];
-		$navIds = $seeder->apply( $seeder->plan( $m, $ids ), $m, $ids );
+		$navIds = $seeder->apply( $seeder->plan( $m ), $m, $ids );
 		$before = get_post( $navIds['primary|'] )->post_modified_gmt;
 
-		$plan = $seeder->plan( $m, $ids );
+		$plan = $seeder->plan( $m );
 		$seeder->apply( $plan, $m, $ids );
 
 		$this->assertSame( PlanItem::UNCHANGED, $plan->items()[0]->action );
 		$this->assertSame( $before, get_post( $navIds['primary|'] )->post_modified_gmt );
 	}
 
-	public function test_a_nav_with_slashes_in_its_urls_is_not_rewritten_forever() {
-		// The trap: KSES strips the `\/` escapes out of the stored JSON, so a
-		// freshly serialized string never matches what is in the database and the
-		// entity is rewritten on every single run.
+	public function test_a_nav_with_slashes_in_its_urls_is_stored_verbatim() {
+		// KSES strips the `\/` escapes out of stored JSON unless the seeder
+		// suspends it; the new menu must hold exactly what serialize() wrote.
 		$seeder = new NavSeeder( new NullProvider() );
 		$m      = $this->manifest( [ [ 'url' => '/contact/us', 'label' => 'Contact' ] ] );
-		$seeder->apply( $seeder->plan( $m, [] ), $m, [] );
 
-		$plan = $seeder->plan( $m, [] );
+		$navIds = $seeder->apply( $seeder->plan( $m ), $m, [] );
 
-		$this->assertSame( PlanItem::UNCHANGED, $plan->items()[0]->action );
+		$this->assertSame( $seeder->serialize( $m->navs()['primary'], '', [] ), get_post( $navIds['primary|'] )->post_content );
 	}
 
 	public function test_an_item_whose_entry_is_not_seeded_is_reported() {
 		$seeder = new NavSeeder( new NullProvider() );
 		$m      = $this->manifest( [ [ 'entry' => 'home' ] ] );
 
-		$seeder->apply( $seeder->plan( $m, [] ), $m, [] );
+		$seeder->apply( $seeder->plan( $m ), $m, [] );
 
 		$this->assertNotEmpty( $seeder->errors() );
 		$this->assertStringContainsString( 'home', $seeder->errors()[0] );
 	}
 
-	public function test_a_trashed_nav_is_restored_not_re_created() {
-		// A client deleting the menu used to leave the seed key on the trashed
-		// row while a second entity was created beside it — two navs under one
-		// identity, which the very next run reports as fatal.
+	public function test_a_trashed_nav_stays_in_the_trash_and_is_never_re_created() {
+		// Restoring would be a write to a menu that exists; creating a second
+		// one would put two navs under one identity, which the very next run
+		// reports as fatal. Neither: the plan says where it is.
 		$seeder = new NavSeeder( new NullProvider() );
 		$m      = $this->manifest( [ [ 'entry' => 'home' ] ] );
 		$ids    = [ 'home|' => self::factory()->post->create( [ 'post_type' => 'page' ] ) ];
-		$navIds = $seeder->apply( $seeder->plan( $m, $ids ), $m, $ids );
+		$navIds = $seeder->apply( $seeder->plan( $m ), $m, $ids );
 		wp_trash_post( $navIds['primary|'] );
 
-		$plan  = $seeder->plan( $m, $ids );
+		$plan  = $seeder->plan( $m );
 		$again = $seeder->apply( $plan, $m, $ids );
 
-		$this->assertSame( PlanItem::RESTORE, $plan->items()[0]->action );
-		$this->assertSame( $navIds['primary|'], $again['primary|'], 'restore in place, never re-create' );
-		$nav = get_post( $navIds['primary|'] );
-		$this->assertSame( 'publish', $nav->post_status );
-		$this->assertSame( 'primary', $nav->post_name, 'the __trashed suffix must not survive' );
-		$this->assertSame( '', get_post_meta( $navIds['primary|'], '_wp_trash_meta_status', true ) );
-		$this->assertCount( 1, get_posts( [ 'post_type' => 'wp_navigation', 'post_status' => 'any', 'posts_per_page' => -1, 'fields' => 'ids' ] ) );
+		$this->assertSame( PlanItem::UNCHANGED, $plan->items()[0]->action );
+		$this->assertStringContainsString( 'in the trash', $plan->items()[0]->note );
+		$this->assertSame( $navIds['primary|'], $again['primary|'] );
+		$this->assertSame( 'trash', get_post( $navIds['primary|'] )->post_status );
+		$this->assertCount( 1, get_posts( [ 'post_type' => 'wp_navigation', 'post_status' => [ 'publish', 'trash' ], 'posts_per_page' => -1, 'fields' => 'ids' ] ) );
+	}
+
+	public function test_an_unpublished_nav_is_left_alone_and_says_why() {
+		$seeder = new NavSeeder( new NullProvider() );
+		$m      = $this->manifest( [ [ 'entry' => 'home' ] ] );
+		$ids    = [ 'home|' => self::factory()->post->create( [ 'post_type' => 'page' ] ) ];
+		$navIds = $seeder->apply( $seeder->plan( $m ), $m, $ids );
+		wp_update_post( [ 'ID' => $navIds['primary|'], 'post_status' => 'draft' ] );
+
+		$plan = $seeder->plan( $m );
+		$seeder->apply( $plan, $m, $ids );
+
+		$this->assertSame( PlanItem::UNCHANGED, $plan->items()[0]->action );
+		$this->assertStringContainsString( 'does not render', $plan->items()[0]->note );
+		$this->assertSame( 'draft', get_post( $navIds['primary|'] )->post_status );
 	}
 
 	public function test_two_entities_under_one_key_are_reported() {
 		$seeder = new NavSeeder( new NullProvider() );
 		$m      = $this->manifest( [ [ 'entry' => 'home' ] ] );
 		$ids    = [ 'home|' => self::factory()->post->create( [ 'post_type' => 'page' ] ) ];
-		$seeder->apply( $seeder->plan( $m, $ids ), $m, $ids );
+		$seeder->apply( $seeder->plan( $m ), $m, $ids );
 		$impostor = self::factory()->post->create( [ 'post_type' => 'wp_navigation' ] );
 		update_post_meta( $impostor, \Pediment\Seeder\Meta::KEY, 'primary' );
 
-		$plan = $seeder->plan( $m, $ids );
+		$plan = $seeder->plan( $m );
 
 		$this->assertTrue( $plan->hasErrors() );
 		$this->assertStringContainsString( 'primary', $plan->errors()[0] );
 	}
 
-	public function test_an_unresolved_link_is_still_reported_once_the_nav_stops_changing() {
-		// A nav that is ALREADY short (seeded before this rule existed, or written
-		// by hand) plans as UNCHANGED — the missing link is still missing, and
-		// silence would read as success.
+	public function test_an_existing_nav_is_not_checked_for_missing_links() {
+		// The seeder no longer manages an existing menu's links, so an entry
+		// the menu cannot resolve is not its error to report.
 		$seeder = new NavSeeder( new NullProvider() );
 		$m      = $this->manifest( [ [ 'entry' => 'home' ] ] );
 		$navId  = self::factory()->post->create(
@@ -160,34 +171,39 @@ class NavSeederTest extends WP_UnitTestCase {
 		);
 		update_post_meta( $navId, Meta::KEY, 'primary' );
 
-		$plan = $seeder->plan( $m, [] );
+		$plan = $seeder->plan( $m );
 		$seeder->apply( $plan, $m, [] );
 
 		$this->assertSame( PlanItem::UNCHANGED, $plan->items()[0]->action );
-		$this->assertNotEmpty( $seeder->errors(), 'the problem persists, so the report must too' );
-		$this->assertStringContainsString( 'home', $seeder->errors()[0] );
+		$this->assertSame( [], $seeder->errors() );
 	}
 
-	public function test_a_nav_is_left_untouched_rather_than_written_short() {
-		// An entry whose write failed earlier in the same run is absent from the
-		// id map. serialize() drops the link, so writing would replace the live
-		// menu with a shortened one — the header quietly losing an item.
+	public function test_an_edited_nav_is_never_rewritten() {
+		// A person reworked the menu in the Site Editor: dropped a link and
+		// added their own. The manifest also changed. The menu stays theirs.
 		$seeder = new NavSeeder( new NullProvider() );
 		$ids    = [
 			'home|'  => self::factory()->post->create( [ 'post_type' => 'page' ] ),
 			'about|' => self::factory()->post->create( [ 'post_type' => 'page' ] ),
 		];
 		$m      = $this->manifest( [ [ 'entry' => 'home' ], [ 'entry' => 'about' ] ] );
-		$navIds = $seeder->apply( $seeder->plan( $m, $ids ), $m, $ids );
-		$before = get_post( $navIds['primary|'] )->post_content;
+		$navId  = $seeder->apply( $seeder->plan( $m ), $m, $ids )['primary|'];
+		wp_update_post(
+			[
+				'ID'           => $navId,
+				'post_content' => wp_slash( '<!-- wp:navigation-link {"label":"Shop","url":"/shop/","kind":"custom"} /-->' ),
+			]
+		);
+		$edited = get_post( $navId )->post_content;
 
-		$partial = [ 'home|' => $ids['home|'] ];
-		$plan    = $seeder->plan( $m, $partial );
-		$seeder->apply( $plan, $m, $partial );
+		$changed = $this->manifest( [ [ 'entry' => 'about' ], [ 'url' => '/contact', 'label' => 'Contact' ] ] );
+		$plan    = $seeder->plan( $changed );
+		$seeder->apply( $plan, $changed, $ids );
 
-		$this->assertSame( PlanItem::UPDATE, $plan->items()[0]->action );
-		$this->assertSame( $before, get_post( $navIds['primary|'] )->post_content, 'a failed entry write must not delete a link from the live menu' );
-		$this->assertStringContainsString( 'about', implode( "\n", $seeder->errors() ) );
+		$this->assertSame( PlanItem::UNCHANGED, $plan->items()[0]->action );
+		$this->assertFalse( $plan->items()[0]->writes() );
+		$this->assertSame( $edited, get_post( $navId )->post_content );
+		$this->assertSame( [], $seeder->errors() );
 	}
 
 	public function test_serialize_has_no_side_effects() {
@@ -274,23 +290,19 @@ class NavSeederTest extends WP_UnitTestCase {
 		$this->assertSame( 1, substr_count( $markup, 'wp:navigation-link' ) );
 	}
 
-	public function test_an_unresolved_child_leaves_the_whole_menu_alone() {
+	public function test_an_unresolved_child_blocks_creating_the_menu() {
+		// serialize() would drop the child, so creating now would ship a
+		// shortened menu. The menu waits until the child's page exists.
 		$seeder = new NavSeeder( new NullProvider() );
 		$guide  = self::factory()->post->create( [ 'post_type' => 'page' ] );
-		$faq    = self::factory()->post->create( [ 'post_type' => 'page' ] );
-
 		$full   = $this->submenuManifest( [ [ 'entry' => 'guide', 'children' => [ [ 'entry' => 'faq' ] ] ] ] );
-		$ids    = [ 'guide|' => $guide, 'faq|' => $faq ];
-		$navIds = $seeder->apply( $seeder->plan( $full, $ids ), $full, $ids );
-		$before = get_post( $navIds['primary|'] )->post_content;
 
-		// The child's page disappears — its ID no longer resolves.
-		$short = [ 'guide|' => $guide ];
-		$seeder->apply( $seeder->plan( $full, $short ), $full, $short );
+		$navIds = $seeder->apply( $seeder->plan( $full ), $full, [ 'guide|' => $guide ] );
 
-		$this->assertSame( $before, get_post( $navIds['primary|'] )->post_content, 'never write a shortened menu' );
+		$this->assertArrayNotHasKey( 'primary|', $navIds );
+		$this->assertSame( [], get_posts( [ 'post_type' => 'wp_navigation', 'post_status' => 'any', 'fields' => 'ids' ] ) );
 		$this->assertContains(
-			'navs.primary: "faq" has no seeded post yet — the link is missing from the menu.',
+			'navs.primary: "faq" has no seeded post yet — the menu was not created.',
 			$seeder->errors()
 		);
 	}
@@ -304,33 +316,10 @@ class NavSeederTest extends WP_UnitTestCase {
 			]
 		);
 
-		$plan = $seeder->plan( $m, [] );
+		$plan = $seeder->plan( $m );
 
 		$this->assertSame( PlanItem::CREATE, $plan->items()[0]->action );
 		$this->assertSame( 3, $plan->items()[0]->changes['items']['to'], 'home + guide + faq' );
-	}
-
-	public function test_an_existing_submenu_is_counted_when_it_changes() {
-		$seeder = new NavSeeder( new NullProvider() );
-		$ids    = [
-			'home|'  => self::factory()->post->create( [ 'post_type' => 'page' ] ),
-			'guide|' => self::factory()->post->create( [ 'post_type' => 'page' ] ),
-			'faq|'   => self::factory()->post->create( [ 'post_type' => 'page' ] ),
-		];
-		$first  = $this->submenuManifest( [ [ 'entry' => 'guide', 'children' => [ [ 'entry' => 'faq' ] ] ] ] );
-		$seeder->apply( $seeder->plan( $first, $ids ), $first, $ids );
-
-		$second = $this->submenuManifest(
-			[
-				[ 'entry' => 'home' ],
-				[ 'entry' => 'guide', 'children' => [ [ 'entry' => 'faq' ] ] ],
-			]
-		);
-		$plan   = $seeder->plan( $second, $ids );
-
-		$this->assertSame( PlanItem::UPDATE, $plan->items()[0]->action );
-		$this->assertSame( 2, $plan->items()[0]->changes['items']['from'], 'the stored submenu and its one child' );
-		$this->assertSame( 3, $plan->items()[0]->changes['items']['to'] );
 	}
 
 	private function megaItems( string $label = 'Products' ): array {
@@ -389,7 +378,7 @@ class NavSeederTest extends WP_UnitTestCase {
 		$ids    = [ 'home|' => self::factory()->post->create( [ 'post_type' => 'page' ] ) ]; // 'about' never seeded.
 
 		$markup = $seeder->serialize( $m->navs()['primary'], '', $ids );
-		$seeder->apply( $seeder->plan( $m, $ids ), $m, $ids );
+		$seeder->apply( $seeder->plan( $m ), $m, $ids );
 
 		$this->assertStringNotContainsString( '"description":"Who we are"', $markup, 'the unresolved link is dropped' );
 		$this->assertStringContainsString( '"label":"Savings"', $markup, 'resolvable links stay' );
@@ -397,49 +386,9 @@ class NavSeederTest extends WP_UnitTestCase {
 		$this->assertStringContainsString( 'about', $seeder->errors()[0] );
 	}
 
-	public function test_an_editor_edited_mega_block_is_preserved() {
-		$seeder = new NavSeeder( new NullProvider() );
-		$m      = $this->manifest( $this->megaItems() );
-		$ids    = [
-			'home|'  => self::factory()->post->create( [ 'post_type' => 'page' ] ),
-			'about|' => self::factory()->post->create( [ 'post_type' => 'page', 'post_title' => 'About' ] ),
-		];
-		$navId  = $seeder->apply( $seeder->plan( $m, $ids ), $m, $ids )['primary|'];
-
-		$edited = str_replace( '"label":"Savings"', '"label":"ISA"', get_post( $navId )->post_content );
-		wp_update_post( [ 'ID' => $navId, 'post_content' => wp_slash( $edited ) ] );
-
-		$plan = $seeder->plan( $m, $ids );
-		$seeder->apply( $plan, $m, $ids );
-
-		$this->assertSame( PlanItem::UNCHANGED, $plan->items()[0]->action, 'the edit belongs to the client' );
-		$this->assertStringContainsString( '"label":"ISA"', get_post( $navId )->post_content );
-	}
-
-	public function test_a_deleted_mega_block_is_reseeded_from_the_manifest() {
-		$seeder = new NavSeeder( new NullProvider() );
-		$m      = $this->manifest( $this->megaItems() );
-		$ids    = [
-			'home|'  => self::factory()->post->create( [ 'post_type' => 'page' ] ),
-			'about|' => self::factory()->post->create( [ 'post_type' => 'page', 'post_title' => 'About' ] ),
-		];
-		$navId  = $seeder->apply( $seeder->plan( $m, $ids ), $m, $ids )['primary|'];
-
-		$block   = MegaBlocks::extract( get_post( $navId )->post_content )[0];
-		$without = trim( str_replace( $block, '', get_post( $navId )->post_content ) );
-		wp_update_post( [ 'ID' => $navId, 'post_content' => wp_slash( $without ) ] );
-
-		$plan = $seeder->plan( $m, $ids );
-		$seeder->apply( $plan, $m, $ids );
-
-		$this->assertSame( PlanItem::UPDATE, $plan->items()[0]->action, 'membership is git-owned — the block comes back' );
-		$this->assertStringContainsString( 'wp:pediment/mega-menu', get_post( $navId )->post_content );
-	}
-
-	public function test_a_legacy_hand_built_mega_is_preserved_on_first_seed() {
-		// A claimed nav carries a seed key but no hash meta — exactly what
-		// Claimer leaves behind. Its mega content must survive the first seed,
-		// like a claimed page's content does.
+	public function test_a_claimed_nav_is_left_exactly_as_it_is() {
+		// A claimed nav carries a seed key and its hand-built content — exactly
+		// what Claimer leaves behind. The seed after the claim keeps all of it.
 		$seeder   = new NavSeeder( new NullProvider() );
 		$m        = $this->manifest( $this->megaItems() );
 		$ids      = [
@@ -451,47 +400,14 @@ class NavSeederTest extends WP_UnitTestCase {
 			[ 'post_type' => 'wp_navigation', 'post_status' => 'publish', 'post_content' => $handmade ]
 		);
 		update_post_meta( $navId, Meta::KEY, 'primary' );
+		$before = get_post( $navId )->post_content;
 
-		$seeder->apply( $seeder->plan( $m, $ids ), $m, $ids );
+		$seeder->apply( $seeder->plan( $m ), $m, $ids );
 
-		$content = get_post( $navId )->post_content;
-		$this->assertStringContainsString( '"label":"Hand-built"', $content, 'the hand-built block is spliced through verbatim' );
-		$this->assertStringContainsString( 'wp:navigation-link', $content, 'membership still comes from the manifest' );
+		$this->assertSame( $before, get_post( $navId )->post_content );
 	}
 
-	public function test_the_items_tally_counts_a_mega_item_as_one_on_both_sides() {
-		$seeder = new NavSeeder( new NullProvider() );
-		$ids    = [
-			'home|'  => self::factory()->post->create( [ 'post_type' => 'page' ] ),
-			'about|' => self::factory()->post->create( [ 'post_type' => 'page', 'post_title' => 'About' ] ),
-		];
-		$first  = $this->manifest( [ [ 'entry' => 'home' ] ] );
-		$seeder->apply( $seeder->plan( $first, $ids ), $first, $ids );
-
-		$mega = $this->manifest( $this->megaItems() );
-		$grow = $seeder->plan( $mega, $ids );
-		$this->assertSame( [ 'from' => 1, 'to' => 2 ], $grow->items()[0]->changes['items'] );
-
-		$seeder->apply( $grow, $mega, $ids );
-		$shrink = $seeder->plan( $first, $ids );
-		$this->assertSame( [ 'from' => 2, 'to' => 1 ], $shrink->items()[0]->changes['items'], 'the stored mega block is counted by its own needle' );
-	}
-
-	public function test_the_plan_note_names_the_mega_ownership_split() {
-		$seeder = new NavSeeder( new NullProvider() );
-		$ids    = [
-			'home|'  => self::factory()->post->create( [ 'post_type' => 'page' ] ),
-			'about|' => self::factory()->post->create( [ 'post_type' => 'page', 'post_title' => 'About' ] ),
-		];
-		$first  = $this->manifest( [ [ 'entry' => 'home' ] ] );
-		$seeder->apply( $seeder->plan( $first, $ids ), $first, $ids );
-
-		$plan = $seeder->plan( $this->manifest( $this->megaItems() ), $ids );
-
-		$this->assertSame( 'membership is git-owned; mega menu content is kept once edited in the editor', $plan->items()[0]->note );
-	}
-
-	public function test_seeding_writes_one_hash_per_mega_position() {
+	public function test_a_new_mega_nav_carries_no_hash_meta() {
 		$seeder = new NavSeeder( new NullProvider() );
 		$m      = $this->manifest( $this->megaItems() );
 		$ids    = [
@@ -499,142 +415,16 @@ class NavSeederTest extends WP_UnitTestCase {
 			'about|' => self::factory()->post->create( [ 'post_type' => 'page', 'post_title' => 'About' ] ),
 		];
 
-		$navId  = $seeder->apply( $seeder->plan( $m, $ids ), $m, $ids )['primary|'];
-		$hashes = MegaBlocks::storedHashes( $navId );
+		$navId = $seeder->apply( $seeder->plan( $m ), $m, $ids )['primary|'];
 
-		$this->assertCount( 1, $hashes );
-		$this->assertTrue( MegaBlocks::gitOwns( MegaBlocks::extract( get_post( $navId )->post_content )[0], $hashes[0] ) );
-	}
-
-	public function test_a_manifest_change_to_an_untouched_mega_applies_and_rehashes() {
-		$seeder = new NavSeeder( new NullProvider() );
-		$ids    = [
-			'home|'  => self::factory()->post->create( [ 'post_type' => 'page' ] ),
-			'about|' => self::factory()->post->create( [ 'post_type' => 'page', 'post_title' => 'About' ] ),
-		];
-		$first  = $this->manifest( $this->megaItems( 'Products' ) );
-		$navId  = $seeder->apply( $seeder->plan( $first, $ids ), $first, $ids )['primary|'];
-
-		$second = $this->manifest( $this->megaItems( 'Solutions' ) );
-		$plan   = $seeder->plan( $second, $ids );
-		$seeder->apply( $plan, $second, $ids );
-
-		$this->assertSame( PlanItem::UPDATE, $plan->items()[0]->action, 'git still owns an untouched block' );
-		$this->assertStringContainsString( '"label":"Solutions"', get_post( $navId )->post_content );
-		$this->assertSame( PlanItem::UNCHANGED, $seeder->plan( $second, $ids )->items()[0]->action, 'the fresh hash matches again' );
-	}
-
-	public function test_a_manifest_change_to_an_edited_mega_is_not_applied() {
-		$seeder = new NavSeeder( new NullProvider() );
-		$ids    = [
-			'home|'  => self::factory()->post->create( [ 'post_type' => 'page' ] ),
-			'about|' => self::factory()->post->create( [ 'post_type' => 'page', 'post_title' => 'About' ] ),
-		];
-		$first  = $this->manifest( $this->megaItems( 'Products' ) );
-		$navId  = $seeder->apply( $seeder->plan( $first, $ids ), $first, $ids )['primary|'];
-
-		$edited = str_replace( '"label":"Savings"', '"label":"ISA"', get_post( $navId )->post_content );
-		wp_update_post( [ 'ID' => $navId, 'post_content' => wp_slash( $edited ) ] );
-
-		$second = $this->manifest( $this->megaItems( 'Solutions' ) );
-		$plan   = $seeder->plan( $second, $ids );
-		$seeder->apply( $plan, $second, $ids );
-
-		$this->assertSame( PlanItem::UNCHANGED, $plan->items()[0]->action, 'the client owns the block; the manifest change does not apply' );
-		$this->assertStringContainsString( '"label":"ISA"', get_post( $navId )->post_content );
-	}
-
-	public function test_a_membership_rewrite_keeps_an_edited_mega_client_owned() {
-		$seeder = new NavSeeder( new NullProvider() );
-		$ids    = [
-			'home|'  => self::factory()->post->create( [ 'post_type' => 'page' ] ),
-			'about|' => self::factory()->post->create( [ 'post_type' => 'page', 'post_title' => 'About' ] ),
-		];
-		$first  = $this->manifest( $this->megaItems( 'Products' ) );
-		$navId  = $seeder->apply( $seeder->plan( $first, $ids ), $first, $ids )['primary|'];
-
-		$edited = str_replace( '"label":"Savings"', '"label":"ISA"', get_post( $navId )->post_content );
-		wp_update_post( [ 'ID' => $navId, 'post_content' => wp_slash( $edited ) ] );
-
-		// A membership change (extra item) rewrites the nav around the block.
-		$wider = $this->manifest( array_merge( [ [ 'entry' => 'about' ] ], $this->megaItems( 'Products' ) ) );
-		$plan  = $seeder->plan( $wider, $ids );
-		$seeder->apply( $plan, $wider, $ids );
-
-		$this->assertSame( PlanItem::UPDATE, $plan->items()[0]->action );
-		$this->assertStringContainsString( '"label":"ISA"', get_post( $navId )->post_content, 'the edit survives the rewrite' );
-
-		// The block must STILL be client-owned afterwards: a later manifest
-		// change to the mega spec does not apply. Without the hash
-		// carry-forward this is the case that silently reverts client edits.
-		$widerChanged = $this->manifest( array_merge( [ [ 'entry' => 'about' ] ], $this->megaItems( 'Solutions' ) ) );
-		$seeder->apply( $seeder->plan( $widerChanged, $ids ), $widerChanged, $ids );
-		$this->assertStringContainsString( '"label":"ISA"', get_post( $navId )->post_content );
-	}
-
-	public function test_a_reseeded_mega_after_deletion_returns_to_git_ownership() {
-		$seeder = new NavSeeder( new NullProvider() );
-		$ids    = [
-			'home|'  => self::factory()->post->create( [ 'post_type' => 'page' ] ),
-			'about|' => self::factory()->post->create( [ 'post_type' => 'page', 'post_title' => 'About' ] ),
-		];
-		$first  = $this->manifest( $this->megaItems( 'Products' ) );
-		$navId  = $seeder->apply( $seeder->plan( $first, $ids ), $first, $ids )['primary|'];
-
-		$block   = MegaBlocks::extract( get_post( $navId )->post_content )[0];
-		$without = trim( str_replace( $block, '', get_post( $navId )->post_content ) );
-		wp_update_post( [ 'ID' => $navId, 'post_content' => wp_slash( $without ) ] );
-		$seeder->apply( $seeder->plan( $first, $ids ), $first, $ids );
-
-		// Delete-and-reseed is the documented way to re-assert git.
-		$second = $this->manifest( $this->megaItems( 'Solutions' ) );
-		$seeder->apply( $seeder->plan( $second, $ids ), $second, $ids );
-
-		$this->assertStringContainsString( '"label":"Solutions"', get_post( $navId )->post_content );
-	}
-
-	public function test_no_hash_meta_is_written_for_mega_free_navs() {
-		$seeder = new NavSeeder( new NullProvider() );
-		$m      = $this->manifest( [ [ 'entry' => 'home' ] ] );
-		$ids    = [ 'home|' => self::factory()->post->create( [ 'post_type' => 'page' ] ) ];
-
-		$navId = $seeder->apply( $seeder->plan( $m, $ids ), $m, $ids )['primary|'];
-
-		$this->assertSame( '', (string) get_post_meta( $navId, Meta::MEGA_HASH, true ) );
-	}
-
-	public function test_a_saved_mega_nav_round_trips_byte_identical() {
-		// The nav-side version of the slashes trap, for nested JSON full of
-		// client copy: if any byte shifts on save, the stored markup never
-		// matches a fresh serialize() and the nav rewrites on every run.
-		$seeder = new NavSeeder( new NullProvider() );
-		$m      = $this->manifest(
-			[
-				[
-					'mega' => [
-						'label'   => 'Zoë & Sons — "Products"',
-						'columns' => [
-							[
-								'heading' => 'Straße & Co',
-								'links'   => [
-									[ 'label' => 'A/B', 'url' => '/a/b/c/', 'description' => 'Ünïcode, "quotes" & ampersands' ],
-								],
-							],
-						],
-					],
-				],
-			]
-		);
-
-		$navId = $seeder->apply( $seeder->plan( $m, [] ), $m, [] )['primary|'];
-
-		$this->assertSame( PlanItem::UNCHANGED, $seeder->plan( $m, [] )->items()[0]->action );
-		$this->assertNotSame( '', get_post( $navId )->post_content );
+		$this->assertStringContainsString( 'wp:pediment/mega-menu', get_post( $navId )->post_content );
+		$this->assertSame( '', (string) get_post_meta( $navId, '_pediment_seed_mega_hash', true ) );
+		$this->assertSame( [ 'primary|' ], $seeder->created() );
 	}
 
 	public function test_a_mega_free_manifest_serializes_exactly_as_before() {
-		// Locks the no-rewrite-once guarantee: byte-identical output for
-		// manifests that never mention mega, so upgraded sites plan UNCHANGED.
+		// Locks the byte format menus seeded by earlier versions carry, so a
+		// menu created today looks exactly like one created before.
 		$seeder  = new NavSeeder( new NullProvider() );
 		$homeId  = self::factory()->post->create( [ 'post_type' => 'page', 'post_title' => 'Home' ] );
 		$aboutId = self::factory()->post->create( [ 'post_type' => 'page', 'post_title' => 'About' ] );
@@ -662,8 +452,5 @@ class NavSeederTest extends WP_UnitTestCase {
 		);
 
 		$this->assertSame( $expected, $seeder->serialize( $m->navs()['primary'], '', $ids ) );
-
-		$navIds = $seeder->apply( $seeder->plan( $m, $ids ), $m, $ids );
-		$this->assertSame( '', (string) get_post_meta( $navIds['primary|'], Meta::MEGA_HASH, true ) );
 	}
 }

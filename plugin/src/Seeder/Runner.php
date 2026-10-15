@@ -75,7 +75,7 @@ final class Runner {
 
 		$entryPlan = ( new Differ() )->diff( $preview, $actual, $reader->duplicates() );
 		$entryIds  = $this->resolvedIds( $entryPlan );
-		$plan      = Plan::merge( $mediaPlan, $entryPlan, $navSeeder->plan( $manifest, $entryIds ) );
+		$plan      = Plan::merge( $mediaPlan, $entryPlan, $navSeeder->plan( $manifest ) );
 
 		if ( $dryRun || $plan->hasErrors() ) {
 			return new RunResult( $plan, false, $manifest->path(), $plan->errors(), $this->undeclaredMediaProblems( $previewState ), $entryIds, $previewState->missingTranslations() );
@@ -98,8 +98,8 @@ final class Runner {
 		$entryPlan = ( new Differ() )->diff( $desired, $actual, $reader->duplicates() );
 		$applied   = ( new Applier( $this->lang ) )->apply( $entryPlan, $desired );
 
-		// Nav links need the resolved page IDs, so nav is planned again against them.
-		$navPlan = $navSeeder->plan( $manifest, $applied->ids );
+		// A new menu links to the resolved page IDs, so navs are applied after entries.
+		$navPlan = $navSeeder->plan( $manifest );
 		$navIds  = $navSeeder->apply( $navPlan, $manifest, $applied->ids );
 
 		// Report the plan that actually ran, not the preview.
@@ -118,7 +118,7 @@ final class Runner {
 		// Phase 5 runs even when something failed: an operator debugging a
 		// partial apply needs to know what actually landed.
 		$problems = array_merge(
-			( new Verifier( $this->lang, $navSeeder ) )->verify( $manifest, $desired, $applied->ids, $mediaMap, $navIds, $applied->created ),
+			( new Verifier( $this->lang, $navSeeder ) )->verify( $manifest, $desired, $applied->ids, $mediaMap, $navIds, $applied->created, $navSeeder->created() ),
 			$this->undeclaredMediaProblems( $state )
 		);
 		$errors   = array_values( array_unique( array_merge( $mediaErrors, $applied->errors, $navSeeder->errors() ) ) );
@@ -149,7 +149,7 @@ final class Runner {
 		return $problems;
 	}
 
-	/** @return array<string,int> mapKey => post ID for entries that already exist */
+	/** @return array<string,int> mapKey => post ID for entries that already exist (the dry-run result's ids) */
 	private function resolvedIds( Plan $entryPlan ): array {
 		$ids = [];
 		foreach ( $entryPlan->byKind( PlanItem::KIND_ENTRY ) as $item ) {
