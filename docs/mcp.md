@@ -30,15 +30,15 @@ URL with `npx wp-env run cli wp option get siteurl` (the port differs per
 workspace) and create a password with
 `npx wp-env run cli wp user application-password create admin claude --porcelain`.
 `node tools/mcp-smoke.mjs` runs the whole path against the running wp-env: it
-lists the tools, writes and checks a page, and confirms that a rule violation
-comes back as a tool error.
+lists the tools, writes and checks a page, and confirms that a write breaking
+two rules comes back as one tool error that names both.
 
 ## Tools
 
 | Tool | Does |
 | --- | --- |
 | `pediment-get-vocabulary` | Tokens, named styles (with layer), allowed blocks, rules, WordPress version, languages. Call it first. |
-| `pediment-list-pages` | Pages of every language. Filters: language, parent, status. |
+| `pediment-list-pages` | Pages of every language. Filters: language, parent, status. At most 500 pages; `truncated` is true when more matched. |
 | `pediment-read-page` | One page with raw block markup and translations. |
 | `pediment-check-page` | Content-rule errors and warnings, blocks the editor reported invalid, legacy blocks still on the page. |
 | `pediment-write-page` | Create (draft by default) or update a page. Rejected with every violation listed if a rule fails. Keeps a revision. |
@@ -64,7 +64,8 @@ else. Each tool checks WordPress capabilities on every call.
 ### Revisions
 
 WordPress saves no revision when it creates a page, so `pediment-write-page`
-saves a first one itself. Every write returns the id of the newest revision.
+saves a first one itself. Every write returns the id of the newest revision
+(never an autosave, which holds a person's unsaved editor work).
 `pediment-rollback-page` restores a revision of that page. Restoring saves a
 new revision that holds the restored content; the content it replaced stays
 available as an earlier revision, so a rollback can be undone.
@@ -103,9 +104,14 @@ with the result.
 - The markup is scanned as it renders, which is what the browser receives.
   Any `script`, `style`, `iframe`, `object`, `embed`, `noscript`, `svg`,
   `math`, `form`, `base`, `meta`, `link`, `template`, `frame`, `frameset` or
-  `applet` tag, any `on…=` event handler, and any `javascript:` URL is an
-  error, wherever it appears (including inside comments and attribute values).
-  Use the `pediment/form` block instead of a raw form tag.
+  `applet` tag and any `on…=` event handler is an error, wherever it appears
+  (including inside comments and attribute values). Shortcode attributes are
+  also checked after their escapes are decoded, because WordPress decodes
+  `\x3c` to `<` when it runs the shortcode. Use the `pediment/form` block
+  instead of a raw form tag.
+- The text `javascript:` is an error anywhere, even in prose: "Learn
+  JavaScript: a guide" is rejected. Write "JavaScript –" or rephrase.
+- The page title is plain text. A title that contains markup is rejected.
 - Every `is-style-<slug>` class must name a style registered for that block.
 - Warnings: a container block (`core/group`, `core/columns`, `core/cover`)
   without `metadata.name`, so the editor's list view stays readable; and an
@@ -152,8 +158,9 @@ validator cannot know them. That is expected, and the server rules still apply
 to them.
 
 The first run per WordPress line installs a pinned runtime (the editor's
-block packages and jsdom, about 700 MB) into `~/.cache/pediment/validator` (`$XDG_CACHE_HOME/pediment/validator` when
-`XDG_CACHE_HOME` is set). Set `PEDIMENT_VALIDATOR_CACHE` to use another folder. The install needs `npm`
+block packages and jsdom, about 700 MB) into `~/.cache/pediment/validator`
+(`$XDG_CACHE_HOME/pediment/validator` when `XDG_CACHE_HOME` is set). Set
+`PEDIMENT_VALIDATOR_CACHE` to use another folder. The install needs `npm`
 on the PATH and network access, and it runs in a temporary directory that is
 renamed into place, so two parallel first runs do not break each other. Later
 runs reuse the cache. Node 20 or later is required.
