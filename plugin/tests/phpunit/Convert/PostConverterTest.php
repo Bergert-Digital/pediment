@@ -13,6 +13,8 @@ class PostConverterTest extends WP_UnitTestCase {
 
 	private const RED = '<!-- wp:paragraph {"style":{"color":{"text":"#ff0000"}}} -->' . "\n" . '<p class="has-text-color" style="color:#ff0000">Red</p>' . "\n" . '<!-- /wp:paragraph -->';
 
+	private const IFRAME = '<!-- wp:html -->\n<iframe src="https://example.com/embed"></iframe>\n<!-- /wp:html -->';
+
 	private function service(): PostConverter {
 		return new PostConverter( Converter::withDefaults(), new Policy(), new FakeMedia() );
 	}
@@ -111,5 +113,128 @@ class PostConverterTest extends WP_UnitTestCase {
 		$this->assertSame( 'skipped', $report['posts'][0]['status'] );
 		$this->assertSame( array( 'you cannot edit this post' ), $report['posts'][0]['notes'] );
 		$this->assertSame( self::LEGACY, get_post_field( 'post_content', $id ) );
+	}
+
+	private function revisions_limited_to( int $limit ): void {
+		add_filter( 'wp_revisions_to_keep', static fn(): int => $limit );
+	}
+
+	/**
+	 * @dataProvider revision_limits
+	 */
+	public function test_a_limit_below_two_revisions_refuses_the_write( int $limit ): void {
+		$id = $this->page( self::LEGACY );
+		$this->revisions_limited_to( $limit );
+
+		foreach ( array( false, true ) as $dry_run ) {
+			$report = $this->service()->run( $id, $dry_run );
+			$this->assertSame( 'failed', $report['status'] );
+			$this->assertStringContainsString( 'revisions are disabled or limited to fewer than 2', $report['errors'][0] );
+			$this->assertSame( self::LEGACY, get_post_field( 'post_content', $id ) );
+		}
+	}
+
+	public function revision_limits(): array {
+		return array(
+			'disabled' => array( 0 ),
+			'one'      => array( 1 ),
+		);
+	}
+
+	public function test_a_limit_of_two_revisions_still_converts_and_keeps_the_backup(): void {
+		$id = $this->page( self::LEGACY );
+		$this->revisions_limited_to( 2 );
+
+		$report = $this->service()->run( $id, false );
+
+		$this->assertSame( 'converted', $report['status'] );
+		$this->assertSame( self::LEGACY, get_post_field( 'post_content', $report['restoreRevision'] ) );
+		$this->assertSame( $id, wp_is_post_revision( $report['restoreRevision'] ) );
+	}
+
+	public function test_a_post_type_without_revision_support_is_refused(): void {
+		$id = $this->page( self::LEGACY );
+		remove_post_type_support( 'page', 'revisions' );
+		try {
+			$report = $this->service()->run( $id, false );
+		} finally {
+			add_post_type_support( 'page', 'revisions' );
+		}
+		$this->assertSame( 'failed', $report['status'] );
+		$this->assertStringContainsString( 'revisions are disabled or limited to fewer than 2', $report['errors'][0] );
+		$this->assertSame( self::LEGACY, get_post_field( 'post_content', $id ) );
+	}
+
+	private function as_editor_without_unfiltered_html(): void {
+		wp_set_current_user( self::factory()->user->create( array( 'role' => 'editor' ) ) );
+		add_filter( 'map_meta_cap', static fn( $caps, $cap ) => 'unfiltered_html' === $cap ? array( 'do_not_allow' ) : $caps, 10, 2 );
+		kses_init();
+		$this->assertNotFalse( has_filter( 'content_save_pre', 'wp_filter_post_kses' ) );
+	}
+
+	private function page_with_iframe_as_admin( string $legacy ): int {
+		wp_set_current_user( self::factory()->user->create( array( 'role' => 'administrator' ) ) );
+		kses_init();
+		return $this->page( $legacy . "\n\n" . self::IFRAME );
+	}
+
+	public function test_a_user_who_would_lose_content_to_kses_is_refused(): void {
+		$id      = $this->page_with_iframe_as_admin( self::LEGACY );
+		$content = get_post_field( 'post_content', $id );
+		$this->assertStringContainsString( '<iframe', $content );
+		$this->as_editor_without_unfiltered_html();
+
+		foreach ( array( true, false ) as $dry_run ) {
+			$report = $this->service()->run( $id, $dry_run );
+			$this->assertSame( 'failed', $report['status'] );
+			$this->assertStringContainsString( 'saving as this user would remove content outside the converted blocks', $report['errors'][0] );
+			$this->assertStringContainsString( 'iframe', $report['errors'][0] );
+			$this->assertSame( $content, get_post_field( 'post_content', $id ) );
+		}
+	}
+
+	public function test_a_trusted_run_keeps_unrelated_content_that_kses_would_strip(): void {
+		$id = $this->page_with_iframe_as_admin( self::LEGACY );
+		$this->as_editor_without_unfiltered_html();
+
+		$service = new PostConverter( Converter::withDefaults(), new Policy(), new FakeMedia(), true );
+		$report  = $service->run( $id, false );
+
+		$this->assertSame( 'converted', $report['status'] );
+		$this->assertStringContainsString( '<iframe', get_post_field( 'post_content', $id ) );
+		$this->assertStringContainsString( 'is-style-pull-quote', get_post_field( 'post_content', $id ) );
+		$this->assertNotFalse( has_filter( 'content_save_pre', 'wp_filter_post_kses' ), 'kses is back on afterwards' );
+	}
+
+	public function test_a_user_without_unfiltered_html_converts_a_page_kses_leaves_alone(): void {
+		$id = $this->page( self::LEGACY );
+		$this->as_editor_without_unfiltered_html();
+
+		$report = $this->service()->run( $id, false );
+
+		$this->assertSame( 'converted', $report['status'] );
+		$this->assertStringContainsString( 'is-style-pull-quote', get_post_field( 'post_content', $id ) );
+	}
+
+	public function test_a_repeated_error_counts_as_added(): void {
+		$this->assertSame(
+			array( 'blocks[1] core/html: bad' ),
+			PostConverter::addedErrors( array( 'blocks[0] core/html: bad' ), array( 'blocks[0] core/html: bad', 'blocks[1] core/html: bad' ) )
+		);
+		$this->assertSame( array(), PostConverter::addedErrors( array( 'blocks[2] core/html: bad' ), array( 'blocks[0] core/html: bad' ) ) );
+	}
+
+	public function test_candidates_cover_drafts_but_not_trash_or_plain_posts(): void {
+		$draft = self::factory()->post->create( array( 'post_status' => 'draft', 'post_content' => self::LEGACY ) );
+		$trash = self::factory()->post->create( array( 'post_status' => 'trash', 'post_content' => self::LEGACY ) );
+		$plain = $this->page( '<!-- wp:paragraph --><p>Hi</p><!-- /wp:paragraph -->' );
+		$core  = $this->page( '<!-- wp:pediment/hero-and-friends-that-are-not-legacy /-->' );
+
+		$candidates = $this->service()->candidates();
+
+		$this->assertContains( $draft, $candidates );
+		$this->assertNotContains( $trash, $candidates );
+		$this->assertNotContains( $plain, $candidates );
+		$this->assertNotContains( $core, $candidates );
 	}
 }
