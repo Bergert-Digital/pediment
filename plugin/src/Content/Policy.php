@@ -123,7 +123,7 @@ final class Policy {
 		// Registers theme style-variation names (core does it while building theme data).
 		\WP_Theme_JSON_Resolver::get_theme_data();
 
-		$errors   = $this->comment_json_errors( $markup );
+		$errors   = array_merge( $this->comment_json_errors( $markup ), $this->markup_errors( $markup ) );
 		$warnings = array();
 		$this->walk( parse_blocks( $markup ), 'blocks', self::allowedBlocks(), $errors, $warnings );
 		foreach ( $this->external_image_hosts( $markup ) as $host ) {
@@ -173,7 +173,6 @@ final class Policy {
 			if ( null === $name ) {
 				if ( '' !== trim( (string) $block['innerHTML'] ) ) {
 					$errors[] = "{$path}[{$i}]: content outside a block — wrap it in a block";
-					array_push( $errors, ...$this->markup_errors( "{$path}[{$i}]", (string) $block['innerHTML'] ) );
 				}
 				continue;
 			}
@@ -186,8 +185,6 @@ final class Policy {
 					? "{$here}: block is not allowed"
 					: "{$here}: block type is not registered";
 			}
-
-			array_push( $errors, ...$this->markup_errors( $here, (string) $block['innerHTML'] ) );
 
 			$attrs = is_array( $block['attrs'] ?? null ) ? $block['attrs'] : array();
 			foreach ( $this->literal_values( $attrs['style'] ?? array(), 'style' ) as list( $attr_path, $value ) ) {
@@ -251,43 +248,61 @@ final class Policy {
 	}
 
 	/**
-	 * Dangerous markup in one block's own HTML: active tags, event-handler
+	 * Dangerous markup in the submitted content: active tags, event-handler
 	 * attributes, javascript: URLs and literal design values in inline styles.
 	 * Administrators have unfiltered_html, so core's kses does not catch these.
 	 *
-	 * Raw-text checks on purpose: a tag parser reads differently from a browser
-	 * (unterminated trailing tags, noscript, foreign content), and a block's
-	 * unterminated tag closes at the next block's `>` once the page renders.
+	 * Raw-text checks over the whole content with the block delimiter comments
+	 * removed, because that is what the browser receives: static blocks render
+	 * concatenated, so a payload can start in one block and finish in the next,
+	 * and a tag parser reads differently from a browser (unterminated tags,
+	 * noscript, foreign content).
 	 *
-	 * @param string $here Block path for messages.
-	 * @param string $html The block's innerHTML (its own markup, not its inner blocks').
+	 * @param string $markup Serialized blocks.
 	 * @return list<string>
 	 */
-	private function markup_errors( string $here, string $html ): array {
+	private function markup_errors( string $markup ): array {
+		// Up to the first `-->`, as a browser ends a comment (a lazy `{…}` could swallow markup).
+		$html   = (string) preg_replace( '/<!--\s+\/?wp:.*?-->/s', '', $markup );
 		$errors = array();
 
-		if ( preg_match_all( '/<\s*(' . implode( '|', self::FORBIDDEN_TAGS ) . ')\b/i', $html, $found ) ) {
-			foreach ( array_unique( array_map( 'strtolower', $found[1] ) ) as $tag ) {
-				$errors[] = "{$here}: <{$tag}> is not allowed in block markup";
+		if ( preg_match_all( '/<\s*(' . implode( '|', self::FORBIDDEN_TAGS ) . ')\b/i', $html, $found, PREG_OFFSET_CAPTURE ) ) {
+			foreach ( $found[1] as $i => list( $tag ) ) {
+				$errors[] = '<' . strtolower( $tag ) . '> is not allowed in block markup' . $this->excerpt( $html, $found[0][ $i ][1] );
 			}
 		}
-		if ( preg_match_all( '/[\s\/"\'`](on[a-z]+)\s*=/i', $html, $found ) ) {
-			foreach ( array_unique( array_map( 'strtolower', $found[1] ) ) as $name ) {
-				$errors[] = "{$here}: {$name} attribute is not allowed in block markup";
+		if ( preg_match_all( '/(?:^|[\s\/"\'`])(on[a-z]+)\s*=/i', $html, $found, PREG_OFFSET_CAPTURE ) ) {
+			foreach ( $found[1] as $i => list( $name, $offset ) ) {
+				$errors[] = strtolower( $name ) . ' attribute is not allowed in block markup' . $this->excerpt( $html, $offset );
 			}
 		}
-		if ( false !== stripos( (string) preg_replace( '/[\x00-\x20]+/', '', $this->decode_entities( $html ) ), 'javascript:' ) ) {
-			$errors[] = "{$here}: javascript: URL is not allowed in block markup";
+		// Browsers ignore whitespace and control characters inside a URL scheme.
+		$squashed = (string) preg_replace( '/[\x00-\x20]+/', '', $this->decode_entities( $html ) );
+		$position = stripos( $squashed, 'javascript:' );
+		if ( false !== $position ) {
+			$errors[] = 'javascript: URL is not allowed in block markup' . $this->excerpt( $squashed, $position );
 		}
 		if ( preg_match_all( '/(?<![\w-])style\s*=\s*("[^"]*(?:"|$)|\'[^\']*(?:\'|$)|[^\s>]+)/i', $html, $found ) ) {
 			foreach ( $found[1] as $raw ) {
 				$inline = $this->decode_entities( trim( $raw, "\"'" ) );
 				foreach ( $this->inline_style_literals( $inline ) as list( $property, $value ) ) {
-					$errors[] = "{$here}: inline style {$property}:{$value} has a literal value — use a preset or a named style";
+					$errors[] = "inline style {$property}:{$value} has a literal value — use a preset or a named style";
 				}
 			}
 		}
 		return $errors;
+	}
+
+	/**
+	 * A short quoted excerpt of the text at an offset, so a message that lost
+	 * its block path still says where to look.
+	 *
+	 * @param string $text   Text.
+	 * @param int    $offset Byte offset.
+	 */
+	private function excerpt( string $text, int $offset ): string {
+		$snippet = mb_substr( (string) preg_replace( '/\s+/', ' ', substr( $text, $offset ) ), 0, 40 );
+		return ' — near ' . wp_json_encode( $snippet );
 	}
 
 	/**
