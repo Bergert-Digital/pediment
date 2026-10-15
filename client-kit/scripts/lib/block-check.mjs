@@ -8,6 +8,53 @@ const TOKEN = /<!--\s+(\/)?wp:([a-z][a-z0-9_-]*(?:\/[a-z][a-z0-9_-]*)?)(?:\s+(\{
 
 const fullName = ( name ) => ( name.includes( '/' ) ? name : `core/${ name }` );
 
+const MEDIA_PLACEHOLDER = /\{\{media_(url|id):([a-z0-9_\-/]+)\}\}/gi;
+const FIRST_STAND_IN_ID = 900001;
+
+/**
+ * Replaces the seeder's media placeholders (`{{media_id:<key>}}`,
+ * `{{media_url:<key>}}`, see ContentResolver::rewriteMarkup) in a pattern with
+ * stand-ins, so the markup can be parsed. Each distinct key gets one numeric
+ * id and one URL, used everywhere it occurs. `wp adopt` leaves the concrete
+ * `wp-image-<id>` class of an image untouched, so that class is moved to the
+ * stand-in id in the text that follows a block comment carrying the stand-in.
+ *
+ * @param {string} markup
+ * @return {string}
+ */
+export function resolveMediaPlaceholders( markup ) {
+	const ids = new Map();
+	const resolved = markup.replace( MEDIA_PLACEHOLDER, ( _match, kind, key ) => {
+		if ( kind.toLowerCase() === 'url' ) {
+			return `https://media.invalid/${ key }`;
+		}
+		if ( ! ids.has( key ) ) {
+			ids.set( key, FIRST_STAND_IN_ID + ids.size );
+		}
+		return String( ids.get( key ) );
+	} );
+	if ( ids.size === 0 ) {
+		return resolved;
+	}
+	const standIns = new Set( ids.values() );
+	let out = '';
+	let last = 0;
+	let current = null;
+	const text = ( from, to ) => {
+		const piece = resolved.slice( from, to );
+		out += current === null ? piece : piece.replace( /wp-image-\d+/g, `wp-image-${ current }` );
+	};
+	for ( const match of resolved.matchAll( TOKEN ) ) {
+		text( last, match.index );
+		out += match[ 0 ];
+		const id = ! match[ 1 ] && match[ 3 ] ? Number( /"id":(\d+)/.exec( match[ 3 ] )?.[ 1 ] ) : NaN;
+		current = standIns.has( id ) ? id : null;
+		last = match.index + match[ 0 ].length;
+	}
+	text( last, resolved.length );
+	return out;
+}
+
 /**
  * Block comments whose attribute JSON does not parse (WordPress drops it silently).
  *
