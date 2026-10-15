@@ -43,5 +43,7 @@ class ConvertLanguageTest extends PolylangTestCase {
 		$this->assertSame( [ 'en', 'de' ], array_column( $report['posts'], 'language' ) );
 		$this->assertSame( [ 'converted', 'converted' ], array_column( $report['posts'], 'status' ) );
 		$this->assertStringContainsString( '<p>Hallo</p>', get_post_field( 'post_content', $de ) );
+		$this->assertSame( 'de', $provider->languageOf( $de ), 'the write keeps the language' );
+		$this->assertSame( 'en', $provider->languageOf( $en ) );
 	}
 }
