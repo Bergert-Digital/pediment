@@ -144,8 +144,11 @@ final class Context {
 	}
 
 	/**
-	 * Attributes the converted root block inherits: lock, and metadata.name
-	 * (the legacy block's own name, else $name; none when both are empty).
+	 * Attributes the converted root block inherits: lock, and the legacy
+	 * metadata (list-view name, block visibility, pattern name, …) without
+	 * `bindings`, which point to legacy attribute names (dropped and noted).
+	 * metadata.name is the legacy block's own name, else $name; none when
+	 * both are empty.
 	 *
 	 * @param array       $legacy Parsed legacy block.
 	 * @param string|null $name   Default list-view name, null for none.
@@ -156,10 +159,19 @@ final class Context {
 		if ( isset( $attrs['lock'] ) && is_array( $attrs['lock'] ) ) {
 			$out['lock'] = $attrs['lock'];
 		}
-		$own   = Attrs::string( is_array( $attrs['metadata'] ?? null ) ? $attrs['metadata'] : array(), 'name' );
+		$metadata = is_array( $attrs['metadata'] ?? null ) ? $attrs['metadata'] : array();
+		if ( array_key_exists( 'bindings', $metadata ) ) {
+			unset( $metadata['bindings'] );
+			$this->note( "{$legacy['blockName']}: block bindings dropped, they named legacy attributes" );
+		}
+		$own = Attrs::string( $metadata, 'name' );
+		unset( $metadata['name'] );
 		$label = '' !== $own ? $own : (string) $name;
 		if ( '' !== $label ) {
-			$out['metadata'] = array( 'name' => $label );
+			$metadata = array( 'name' => $label ) + $metadata;
+		}
+		if ( array() !== $metadata ) {
+			$out['metadata'] = $metadata;
 		}
 		return $out;
 	}

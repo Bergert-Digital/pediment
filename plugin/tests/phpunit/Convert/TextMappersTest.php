@@ -51,4 +51,24 @@ class TextMappersTest extends WP_UnitTestCase {
 		);
 		$this->assertSame( array( 'name' => 'Imprint text' ), $attrs['metadata'] );
 	}
+
+	public function test_a_hidden_legacy_block_stays_hidden_and_keeps_its_metadata(): void {
+		$result = $this->convert( '<!-- wp:pediment/cta {"title":"Hidden offer","metadata":{"blockVisibility":false,"patternName":"site/offer"}} /-->' );
+		$attrs  = parse_blocks( $result->markup )[0]['attrs'];
+		$this->assertSame(
+			array(
+				'name'            => 'Call to action',
+				'blockVisibility' => false,
+				'patternName'     => 'site/offer',
+			),
+			$attrs['metadata']
+		);
+		$this->assertSame( '', trim( do_blocks( $result->markup ) ), 'WordPress 6.9 hides the converted block too' );
+	}
+
+	public function test_block_bindings_are_dropped_and_noted(): void {
+		$result = $this->convert( '<!-- wp:pediment/pull-quote {"quote":"Q","metadata":{"name":"Motto","bindings":{"quote":{"source":"core/post-meta","args":{"key":"motto"}}}}} /-->' );
+		$this->assertSame( array( 'name' => 'Motto' ), parse_blocks( $result->markup )[0]['attrs']['metadata'] );
+		$this->assertContains( 'pediment/pull-quote: block bindings dropped, they named legacy attributes', $result->notes );
+	}
 }
