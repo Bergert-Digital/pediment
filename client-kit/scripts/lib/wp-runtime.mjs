@@ -5,7 +5,7 @@
  */
 import { createHash } from 'node:crypto';
 import { execFileSync } from 'node:child_process';
-import { copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { homedir } from 'node:os';
 import path from 'node:path';
@@ -34,12 +34,35 @@ export function supportedLines() {
 		.sort();
 }
 
+const isReady = ( dir ) =>
+	existsSync( path.join( dir, '.ok' ) ) && existsSync( path.join( dir, 'node_modules', '@wordpress', 'blocks', 'package.json' ) );
+
+/**
+ * Runs `npm ci` in dir (package.json and package-lock.json already there).
+ *
+ * @param {string} dir
+ * @param {{npm?: string, args?: string[]}} options
+ */
+export function npmInstall( dir, options = {} ) {
+	const npm = options.npm ?? 'npm';
+	const args = options.args ?? [ 'ci', '--ignore-scripts', '--no-audit', '--no-fund', '--loglevel=error' ];
+	try {
+		execFileSync( npm, args, { cwd: dir, stdio: [ 'ignore', 'ignore', 'inherit' ] } );
+	} catch ( error ) {
+		if ( error.code === 'ENOENT' ) {
+			throw new Error( 'npm is required on PATH to install the block validator runtime.' );
+		}
+		throw new Error( `Installing the block validator runtime failed. Check network access to the npm registry. Install dir: ${ dir }` );
+	}
+}
+
 /**
  * Returns the cache dir holding an installed runtime for a WP line,
- * installing it on first use.
+ * installing it on first use. The install runs in a unique temp dir that is
+ * renamed into place, so concurrent first runs never share a half-built tree.
  *
  * @param {string} line
- * @param {{cacheRoot?: string, log?: (message: string) => void}} options
+ * @param {{cacheRoot?: string, log?: (message: string) => void, install?: (dir: string) => void}} options
  */
 export function ensureRuntime( line, options = {} ) {
 	const source = path.join( VALIDATOR_DIR, `wp-${ line }` );
@@ -51,15 +74,36 @@ export function ensureRuntime( line, options = {} ) {
 		process.env.PEDIMENT_VALIDATOR_CACHE ??
 		path.join( process.env.XDG_CACHE_HOME ?? path.join( homedir(), '.cache' ), 'pediment', 'validator' );
 	const log = options.log ?? ( ( message ) => process.stderr.write( `${ message }\n` ) );
+	const install = options.install ?? npmInstall;
 	const hash = createHash( 'sha256' ).update( readFileSync( path.join( source, 'package-lock.json' ) ) ).digest( 'hex' ).slice( 0, 8 );
 	const dir = path.join( cacheRoot, `wp-${ line }-${ hash }` );
-	if ( ! existsSync( path.join( dir, '.ok' ) ) ) {
-		log( `Installing the block validator runtime for WordPress ${ line } (one time, about 700 MB)…` );
-		mkdirSync( dir, { recursive: true } );
-		copyFileSync( path.join( source, 'package.json' ), path.join( dir, 'package.json' ) );
-		copyFileSync( path.join( source, 'package-lock.json' ), path.join( dir, 'package-lock.json' ) );
-		execFileSync( 'npm', [ 'ci', '--ignore-scripts', '--no-audit', '--no-fund' ], { cwd: dir, stdio: [ 'ignore', 'ignore', 'inherit' ] } );
-		writeFileSync( path.join( dir, '.ok' ), new Date().toISOString() );
+	if ( isReady( dir ) ) {
+		return dir;
+	}
+
+	log( `Installing the block validator runtime for WordPress ${ line } (one time, about 700 MB)…` );
+	const temp = `${ dir }.tmp-${ process.pid }-${ Date.now() }`;
+	mkdirSync( temp, { recursive: true } );
+	try {
+		copyFileSync( path.join( source, 'package.json' ), path.join( temp, 'package.json' ) );
+		copyFileSync( path.join( source, 'package-lock.json' ), path.join( temp, 'package-lock.json' ) );
+		install( temp );
+		writeFileSync( path.join( temp, '.ok' ), new Date().toISOString() );
+		try {
+			renameSync( temp, dir );
+		} catch {
+			if ( isReady( dir ) ) {
+				// Another process finished first; use its install.
+				rmSync( temp, { recursive: true, force: true } );
+				return dir;
+			}
+			// A broken tree sits under the final name: replace it.
+			rmSync( dir, { recursive: true, force: true } );
+			renameSync( temp, dir );
+		}
+	} catch ( error ) {
+		rmSync( temp, { recursive: true, force: true } );
+		throw error;
 	}
 	return dir;
 }

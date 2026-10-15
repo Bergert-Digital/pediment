@@ -29,10 +29,12 @@ export function parseArgs( argv ) {
 	const options = { wp: '6.9', file: null, json: false };
 	for ( let i = 0; i < argv.length; i++ ) {
 		const arg = argv[ i ];
-		if ( arg === '--wp' ) {
-			options.wp = argv[ ++i ];
-		} else if ( arg === '--file' ) {
-			options.file = argv[ ++i ];
+		if ( arg === '--wp' || arg === '--file' ) {
+			const value = argv[ ++i ];
+			if ( value === undefined || value.startsWith( '--' ) ) {
+				throw new Error( `missing value for ${ arg }` );
+			}
+			options[ arg.slice( 2 ) ] = value;
 		} else if ( arg === '--json' ) {
 			options.json = true;
 		} else {
@@ -54,7 +56,7 @@ function main() {
 	const wordpress = loadWordPress( ensureRuntime( line ) );
 	const report = buildReport( markup, wordpress.parse, ( block ) => wordpress.validateBlock( block )[ 0 ], line );
 	process.stdout.write( options.json ? `${ JSON.stringify( report, null, 2 ) }\n` : formatReport( report ) );
-	process.exit( report.ok ? 0 : 1 );
+	process.exitCode = report.ok ? 0 : 1;
 }
 
 if ( process.argv[ 1 ] && path.resolve( process.argv[ 1 ] ) === fileURLToPath( import.meta.url ) ) {

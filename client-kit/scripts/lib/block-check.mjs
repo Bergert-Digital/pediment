@@ -99,7 +99,13 @@ export function walkBlocks( blocks, validate ) {
 			const here = `${ prefix }[${ index }] ${ label }`;
 			result.checked++;
 			if ( missing ) {
-				result.notChecked.push( block.attributes?.originalName ?? '(unknown)' );
+				const original = block.attributes?.originalName;
+				if ( original?.startsWith( 'core/' ) ) {
+					// The pinned runtime knows every core block, so this is a typo.
+					result.invalid.push( { path: here, name: original, issues: [ `Unknown core block \`${ original }\` (typo?)` ] } );
+				} else if ( original ) {
+					result.notChecked.push( original );
+				}
 			} else if ( block.isValid === false ) {
 				result.invalid.push( { path: here, name: block.name, issues: issueMessages( block.validationIssues ) } );
 			} else if ( validate( block ) === false ) {
@@ -154,7 +160,13 @@ export function buildReport( markup, parse, validate, wordpress ) {
  */
 export function formatReport( report ) {
 	const lines = [];
-	lines.push( report.ok ? `✔ ${ report.checked } block(s) valid for WordPress ${ report.wordpress }.` : `✖ Problems found (WordPress ${ report.wordpress }):` );
+	if ( ! report.ok ) {
+		lines.push( `✖ Problems found (WordPress ${ report.wordpress }):` );
+	} else if ( report.notChecked.length ) {
+		lines.push( `No problems found in the blocks WordPress ${ report.wordpress } knows (${ report.checked } block(s) seen); some blocks were not checked:` );
+	} else {
+		lines.push( `✔ ${ report.checked } block(s) valid for WordPress ${ report.wordpress }.` );
+	}
 	for ( const error of report.jsonErrors ) {
 		lines.push( `  JSON  ${ error }` );
 	}
