@@ -14,3 +14,4 @@ require_once __DIR__ . '/vendor/autoload.php';
 
 \Pediment\Upgrade\ChatDataCleanup::run();
 delete_option( \Pediment\Upgrade\ChatDataCleanup::DONE_OPTION );
+delete_option( \Pediment\Upgrade\SeedHashCleanup::DONE_OPTION );
