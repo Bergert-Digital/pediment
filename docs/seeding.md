@@ -583,12 +583,12 @@ behalf.
 ## `wp pediment seed`
 
 ```
-wp pediment seed [--dry-run] [--json]
+wp pediment seed [--dry-run] [--format=<format>]
 ```
 
 Runs the same five phases WP-CLI and wp-admin both go through: resolve desired
 state → resolve actual state → diff into a plan → apply → verify. `--dry-run`
-stops after the plan and writes nothing. `--json` emits the same information
+stops after the plan and writes nothing. `--format=json` emits the same information
 machine-readably (`applied`, `ok`, `counts`, one object per plan item,
 `errors`, `problems`) instead of the text report above. Since 4.0, `counts`
 has exactly the keys `create`, `unchanged` and `orphan`, and an item has no
@@ -900,7 +900,9 @@ re-keying one side; there is no automatic migration between post types.
 ### Verification problems
 
 Phase 5 re-reads the database after every apply and reports anything it
-just created that doesn't actually hold — this is deliberately paranoid,
+owns that doesn't actually hold (seed keys, languages and translation groups,
+media, post types, and for rows this run created also slug, parent, reading
+settings and menus). This is deliberately paranoid,
 because the incident that justified writing it was a seed run reporting
 success while the live header rendered nothing. A `VERIFICATION FAILED`
 section names the specific problem per entry (keys are printed in the
