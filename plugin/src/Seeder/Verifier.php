@@ -25,17 +25,18 @@ final class Verifier {
 	/**
 	 * Identity, language, media and post types are checked for every row.
 	 * Everything a person may change after the seeder created a row — slug,
-	 * parent, trash, the reading settings — is checked only for the rows this
-	 * run created: on an existing row it is that person's decision, and the
-	 * seeder never reverts it.
+	 * parent, trash, the reading settings, a menu's links and status — is
+	 * checked only for the rows this run created: on an existing row it is
+	 * that person's decision, and the seeder never reverts it.
 	 *
 	 * @param array<string,DesiredEntry> $desired
 	 * @param array<string,int>          $ids
 	 * @param array<string,int>          $navIds         navKey|language => post ID
 	 * @param string[]                   $createdEntries Entry map keys created in this run.
+	 * @param string[]                   $createdNavs    navKey|language map keys created in this run.
 	 * @return string[]
 	 */
-	public function verify( Manifest $manifest, array $desired, array $ids, MediaMap $media, array $navIds = [], array $createdEntries = [] ): array {
+	public function verify( Manifest $manifest, array $desired, array $ids, MediaMap $media, array $navIds = [], array $createdEntries = [], array $createdNavs = [] ): array {
 		$problems = [];
 
 		foreach ( $desired as $mapKey => $entry ) {
@@ -121,8 +122,8 @@ final class Verifier {
 		}
 
 		// Navigation: the header rendering nothing while the seeder reports
-		// success is the exact incident this class exists to prevent, so the
-		// entities are re-read and their membership re-derived.
+		// success is the exact incident this class exists to prevent, so a
+		// menu this run created is re-read and its membership re-derived.
 		foreach ( $manifest->navs() as $key => $spec ) {
 			foreach ( $this->lang->languages() as $language ) {
 				// Same key|language form the entry loop reports: without it a
@@ -137,9 +138,6 @@ final class Verifier {
 				if ( ! $nav instanceof \WP_Post || 'wp_navigation' !== $nav->post_type ) {
 					$problems[] = sprintf( 'navs.%s: post %d is not a navigation entity.', $mapKey, $navId );
 					continue;
-				}
-				if ( 'publish' !== $nav->post_status ) {
-					$problems[] = sprintf( 'navs.%s: entity %d is "%s" — the menu will not render.', $mapKey, $navId, $nav->post_status );
 				}
 				if ( (string) get_post_meta( $navId, Meta::KEY, true ) !== $key ) {
 					$problems[] = sprintf( 'navs.%s: entity %d is missing its seed key.', $mapKey, $navId );
@@ -156,7 +154,15 @@ final class Verifier {
 						'' === $language ? '(default)' : $language
 					);
 				}
-				if ( (string) $nav->post_content !== $this->navSeeder->serialize( $spec, $language, $ids, (string) $nav->post_content, $navId ) ) {
+
+				if ( ! in_array( $mapKey, $createdNavs, true ) ) {
+					continue;
+				}
+
+				if ( 'publish' !== $nav->post_status ) {
+					$problems[] = sprintf( 'navs.%s: entity %d is "%s" — the menu will not render.', $mapKey, $navId, $nav->post_status );
+				}
+				if ( (string) $nav->post_content !== $this->navSeeder->serialize( $spec, $language, $ids ) ) {
 					$problems[] = sprintf( 'navs.%s: stored membership does not match the manifest.', $mapKey );
 				}
 			}

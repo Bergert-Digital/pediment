@@ -4,6 +4,10 @@
  * not by title or slug. A stray post holding the `primary` slug is what turned
  * replacements into `primary-2` (7d7ca30).
  *
+ * Create-only: a menu that does not exist yet is written from the manifest;
+ * a menu that exists is never rewritten — not its links, not its status. Once
+ * a site is live, its menus belong to the people who edit them.
+ *
  * @package Pediment
  */
 
@@ -21,10 +25,12 @@ final class NavSeeder {
 	/** @var string[] Failures from the most recent apply(). */
 	private array $errors = [];
 
+	/** @var string[] navKey|language map keys the most recent apply() created. */
+	private array $created = [];
+
 	public function __construct( private LanguageProvider $lang ) {}
 
-	/** @param array<string,int> $entryIds */
-	public function plan( Manifest $manifest, array $entryIds ): Plan {
+	public function plan( Manifest $manifest ): Plan {
 		$items    = [];
 		$errors   = [];
 		$existing = $this->existing();
@@ -55,49 +61,7 @@ final class NavSeeder {
 					continue;
 				}
 
-				// A client who deleted the menu still owns the identity: without
-				// this the trashed entity keeps its seed key, a second one is
-				// created beside it, and the next run reports a duplicate — the
-				// `primary-2` shape this class exists to prevent.
-				if ( 'trash' === get_post_status( $postId ) ) {
-					$items[] = new PlanItem(
-						PlanItem::RESTORE,
-						PlanItem::KIND_NAV,
-						$key,
-						$language,
-						$postId,
-						[ 'status' => [ 'from' => 'trash', 'to' => 'publish' ] ]
-					);
-					continue;
-				}
-
-				$current = (string) get_post( $postId )->post_content;
-				$desired = $this->serialize( $spec, $language, $entryIds, $current, $postId );
-				$items[] = $current === $desired
-					? new PlanItem( PlanItem::UNCHANGED, PlanItem::KIND_NAV, $key, $language, $postId )
-					: new PlanItem(
-						PlanItem::UPDATE,
-						PlanItem::KIND_NAV,
-						$key,
-						$language,
-						$postId,
-						[
-							'items' => [
-								// The `<!-- ` prefix on the submenu needle is deliberate: the
-								// closing delimiter is `<!-- /wp:navigation-submenu -->`, and a
-								// bare needle would match it too and double every submenu.
-								// mega-menu is self-closing, so its needle has no such twin;
-								// the full prefix is used for consistency.
-								'from' => substr_count( $current, 'wp:navigation-link' )
-									+ substr_count( $current, '<!-- wp:navigation-submenu' )
-									+ substr_count( $current, '<!-- wp:pediment/mega-menu' ),
-								'to'   => self::countLinks( $spec->items ),
-							],
-						],
-						self::hasMega( $spec )
-							? 'membership is git-owned; mega menu content is kept once edited in the editor'
-							: 'membership is git-owned; editor changes to this menu are reverted'
-					);
+				$items[] = new PlanItem( PlanItem::UNCHANGED, PlanItem::KIND_NAV, $key, $language, $postId, [], $this->leftAloneNote( $postId ) );
 			}
 		}
 
@@ -109,7 +73,8 @@ final class NavSeeder {
 	 * @return array<string,int> navKey|language => post ID
 	 */
 	public function apply( Plan $plan, Manifest $manifest, array $entryIds ): array {
-		$this->errors = [];
+		$this->errors  = [];
+		$this->created = [];
 
 		// Same contract as Applier::apply(): an errored plan writes nothing.
 		if ( $plan->hasErrors() ) {
@@ -120,97 +85,55 @@ final class NavSeeder {
 		$ids = $this->existing();
 
 		// Without this, wp_filter_post_kses() strips the escapes out of the
-		// navigation-link JSON on save, the stored markup never matches a fresh
-		// serialize(), and every nav is rewritten on every run.
+		// navigation-link JSON on save and the stored menu is not what the
+		// manifest describes.
 		$kses = Kses::suspend();
 
 		try {
-			foreach ( $plan->byKind( PlanItem::KIND_NAV ) as $item ) {
+			foreach ( $plan->byAction( PlanItem::CREATE ) as $item ) {
+				if ( PlanItem::KIND_NAV !== $item->kind ) {
+					continue;
+				}
 				$spec = $manifest->navs()[ $item->key ] ?? null;
 				if ( ! $spec instanceof NavSpec ) {
 					continue;
 				}
 
-				// Checked for every item, including UNCHANGED ones: a menu that
-				// quietly comes out short is worse than one that fails, and the
-				// problem persists across runs even though the nav stops changing.
+				// Never create a half-truth. serialize() skips a link it cannot
+				// resolve, so writing now would put a shortened menu in the
+				// header — an entry whose create failed earlier in the same run
+				// would silently be missing from it. Leave the menu uncreated,
+				// say why, and the next seed creates it once the entry exists.
 				$unresolved = $this->unresolvedEntries( $spec, $item->language, $entryIds );
 				foreach ( $unresolved as $missing ) {
-					$this->errors[] = sprintf( 'navs.%s: "%s" has no seeded post yet — the link is missing from the menu.', $spec->key, $missing );
+					$this->errors[] = sprintf( 'navs.%s: "%s" has no seeded post yet — the menu was not created.', $spec->key, $missing );
 				}
-
-				// Never write a half-truth. serialize() skips a link it cannot
-				// resolve, so writing here would REPLACE the live menu with a
-				// shortened one — an entry whose create failed earlier in the same
-				// run would silently delete a link from the header. Leave the
-				// entity exactly as it is and let phase 5 report the mismatch.
 				if ( [] !== $unresolved ) {
 					continue;
 				}
 
-				if ( PlanItem::UNCHANGED === $item->action ) {
+				$postId = wp_insert_post(
+					wp_slash(
+						[
+							'post_type'    => 'wp_navigation',
+							'post_status'  => 'publish',
+							'post_title'   => $spec->title,
+							'post_name'    => $this->slugFor( $spec, $item->language ),
+							'post_content' => $this->serialize( $spec, $item->language, $entryIds ),
+						]
+					),
+					true
+				);
+				if ( is_wp_error( $postId ) ) {
+					$this->errors[] = sprintf( 'navs.%s: could not create the navigation entity — %s', $spec->key, $postId->get_error_message() );
 					continue;
 				}
-
-				if ( PlanItem::CREATE === $item->action ) {
-					$content = $this->serialize( $spec, $item->language, $entryIds );
-					$postId  = wp_insert_post(
-						wp_slash(
-							[
-								'post_type'    => 'wp_navigation',
-								'post_status'  => 'publish',
-								'post_title'   => $spec->title,
-								'post_name'    => $this->slugFor( $spec, $item->language ),
-								'post_content' => $content,
-							]
-						),
-						true
-					);
-					if ( is_wp_error( $postId ) ) {
-						$this->errors[] = sprintf( 'navs.%s: could not create the navigation entity — %s', $spec->key, $postId->get_error_message() );
-						continue;
-					}
-					$postId = (int) $postId;
-					$this->lang->setLanguage( $postId, $item->language );
-					update_post_meta( $postId, Meta::KEY, $spec->key );
-					MegaBlocks::writeHashes( $postId, '' );
-				} elseif ( PlanItem::RESTORE === $item->action ) {
-					$postId  = $item->postId;
-					$old     = (string) get_post( $postId )->post_content;
-					$content = $this->serialize( $spec, $item->language, $entryIds, $old, $postId );
-					// The slug is rewritten too: wp_trash_post() renames it to
-					// `primary__trashed`, and leaving that behind is what a later
-					// create would collide with.
-					$restored = wp_update_post(
-						wp_slash(
-							[
-								'ID'           => $postId,
-								'post_status'  => 'publish',
-								'post_name'    => $this->slugFor( $spec, $item->language ),
-								'post_content' => $content,
-							]
-						),
-						true
-					);
-					if ( is_wp_error( $restored ) ) {
-						$this->errors[] = sprintf( 'navs.%s: could not restore the navigation entity %d — %s', $spec->key, $postId, $restored->get_error_message() );
-						continue;
-					}
-					Meta::clearTrashBookkeeping( $postId );
-					MegaBlocks::writeHashes( $postId, $old );
-				} else {
-					$postId  = $item->postId;
-					$old     = (string) get_post( $postId )->post_content;
-					$content = $this->serialize( $spec, $item->language, $entryIds, $old, $postId );
-					$updated = wp_update_post( wp_slash( [ 'ID' => $postId, 'post_content' => $content ] ), true );
-					if ( is_wp_error( $updated ) ) {
-						$this->errors[] = sprintf( 'navs.%s: could not update the navigation entity — %s', $spec->key, $updated->get_error_message() );
-						continue;
-					}
-					MegaBlocks::writeHashes( $postId, $old );
-				}
+				$postId = (int) $postId;
+				$this->lang->setLanguage( $postId, $item->language );
+				update_post_meta( $postId, Meta::KEY, $spec->key );
 
 				$ids[ $item->mapKey() ] = $postId;
+				$this->created[]        = $item->mapKey();
 			}
 
 			$this->repairLanguage( $plan, $ids );
@@ -227,28 +150,35 @@ final class NavSeeder {
 		return $this->errors;
 	}
 
+	/** @return string[] navKey|language map keys the most recent apply() created. */
+	public function created(): array {
+		return $this->created;
+	}
+
+	/**
+	 * Why an existing menu may not show, said in the plan so nobody mistakes
+	 * a menu a person trashed or unpublished for a seeding failure.
+	 */
+	private function leftAloneNote( int $postId ): string {
+		$status = (string) get_post_status( $postId );
+		if ( 'trash' === $status ) {
+			return 'in the trash — left alone; restore it in the Site Editor, or empty the trash and the next seed creates it again';
+		}
+		if ( 'publish' !== $status ) {
+			return sprintf( '"%s" — left alone; the menu does not render until someone publishes it', $status );
+		}
+		return '';
+	}
+
 	/** @param array<string,int> $entryIds */
-	public function serialize( NavSpec $spec, string $language, array $entryIds, string $current = '', int $navId = 0 ): string {
-		$blocks     = [];
-		$storedMega = MegaBlocks::extract( $current );
-		$megaHashes = 0 < $navId ? MegaBlocks::storedHashes( $navId ) : [];
-		$megaIndex  = 0;
+	public function serialize( NavSpec $spec, string $language, array $entryIds ): string {
+		$blocks = [];
 
 		foreach ( $spec->items as $item ) {
 			$item = (array) $item;
 
-			// Membership is git-owned, content is hash-arbitrated: the block
-			// always (re)appears where the manifest says, but once a human
-			// edits it in the editor its stored markup stops hashing to what
-			// the seeder last wrote, and from then on it is spliced through
-			// verbatim. Matching is positional: nth mega item, nth stored
-			// block. See docs/seeding.md ("Mega menus").
 			if ( isset( $item['mega'] ) ) {
-				$stored   = $storedMega[ $megaIndex ] ?? null;
-				$blocks[] = null !== $stored && ! MegaBlocks::gitOwns( $stored, (string) ( $megaHashes[ $megaIndex ] ?? '' ) )
-					? $stored
-					: $this->megaMarkup( (array) $item['mega'], $language, $entryIds );
-				++$megaIndex;
+				$blocks[] = $this->megaMarkup( (array) $item['mega'], $language, $entryIds );
 				continue;
 			}
 
@@ -267,8 +197,7 @@ final class NavSeeder {
 			$attrs = $this->linkAttrs( $item, $language, $entryIds );
 
 			// Reported by apply() via unresolvedEntries(), not from here:
-			// serialize() must stay pure, and an unresolved link has to be
-			// reported on EVERY run, not only the one that rewrites the nav.
+			// serialize() must stay pure.
 			// A submenu parent takes its children with it — a submenu whose own
 			// link is missing is not a menu anyone meant, and promoting the
 			// children to the top level would silently restructure the header.
@@ -301,9 +230,8 @@ final class NavSeeder {
 	/**
 	 * The block attributes one navigation item resolves to.
 	 *
-	 * Key order is load-bearing, not cosmetic: plan() decides UPDATE by
-	 * comparing stored post_content against a fresh serialize(), so reordering
-	 * these would make every nav on every site rewrite itself once.
+	 * Key order matches what menus seeded by earlier versions carry;
+	 * test_a_mega_free_manifest_serializes_exactly_as_before locks it.
 	 *
 	 * JSON_UNESCAPED_SLASHES matches what the block editor writes, and keeps
 	 * the markup stable under KSES, which strips `\/` on save.
@@ -344,9 +272,9 @@ final class NavSeeder {
 	/**
 	 * One `pediment/mega-menu` block from a manifest mega item.
 	 *
-	 * Key order is load-bearing for the same reason as linkAttrs(): label,
-	 * columns; per column heading, icon, links; per link label, description,
-	 * url — optional keys are omitted, never emitted empty. Entry links
+	 * Key order is fixed like linkAttrs(): label, columns; per column
+	 * heading, icon, links; per link label, description, url — optional keys
+	 * are omitted, never emitted empty. Entry links
 	 * resolve through linkAttrs() (per-language permalink, label falls back
 	 * to the post title); the resolver's id/kind/type keys are dropped
 	 * because the block schema does not know them.
@@ -392,19 +320,13 @@ final class NavSeeder {
 			'columns' => $columns,
 		];
 
-		// Mega attrs carry client copy, and Gutenberg's JS serializeAttributes()
-		// re-serializes EVERY block in the post whenever the nav is saved in the
-		// Site Editor, not just the ones a human touched. serialize_block_attributes()
-		// is core's PHP twin of that JS function (wp_json_encode with
-		// JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE, then --/</>/&/\" each
-		// rewritten to a \u escape) — matching it byte-for-byte is what keeps an
-		// UNTOUCHED mega block's stored hash matching after an unrelated editor
-		// save. wp_json_encode() alone would byte-shift any label/description
-		// containing an umlaut, `&`, `"`, or `--`, and the block would be silently
-		// captured as client-owned. The links/switcher lines below deliberately
-		// keep plain wp_json_encode( …, JSON_UNESCAPED_SLASHES ): their byte format
-		// is locked by existing sites, and the zero-mega golden test
-		// (test_a_mega_free_manifest_serializes_exactly_as_before) enforces that.
+		// serialize_block_attributes() is core's PHP twin of the editor's JS
+		// serializeAttributes() (unescaped slashes and unicode, then --, <, >,
+		// & and \" as \u escapes), so the stored block is byte-identical to
+		// what the Site Editor would save. The links/switcher lines above keep
+		// plain wp_json_encode( …, JSON_UNESCAPED_SLASHES ): their byte format
+		// matches menus seeded by earlier versions, and the zero-mega golden
+		// test (test_a_mega_free_manifest_serializes_exactly_as_before) locks it.
 		return '<!-- wp:pediment/mega-menu ' . serialize_block_attributes( $attrs ) . ' /-->';
 	}
 
@@ -527,34 +449,16 @@ final class NavSeeder {
 		return $missing;
 	}
 
-	/** Whether any of the spec's items declares a mega menu. */
-	private static function hasMega( NavSpec $spec ): bool {
-		foreach ( $spec->items as $item ) {
-			if ( isset( ( (array) $item )['mega'] ) ) {
-				return true;
-			}
-		}
-		return false;
-	}
-
 	/**
-	 * Total links a nav spec describes, counting submenu parents and children.
-	 *
-	 * The plan's `items` change is operator-facing arithmetic, so it has to
-	 * count the same things on both sides: `count( $spec->items )` would report
-	 * a two-level menu as its top-level width and read as a shrink.
-	 *
-	 * A mega item counts as 1: its links are JSON attributes, invisible to the
-	 * needles plan() counts on the stored side.
+	 * Total links a nav spec describes, counting submenu parents and children,
+	 * for the plan's `items` line on a create. A mega item counts as 1.
 	 *
 	 * @param array<int,array<string,mixed>> $items
 	 */
 	private static function countLinks( array $items ): int {
 		$count = 0;
 		foreach ( $items as $item ) {
-			// A language switcher is not a link; skip it so this count stays
-			// symmetric with plan()'s `from` tally (which counts only
-			// navigation-link/-submenu markup in the stored nav).
+			// A language switcher is not a link.
 			if ( isset( ( (array) $item )['language_switcher'] ) ) {
 				continue;
 			}
@@ -664,7 +568,8 @@ final class NavSeeder {
 	}
 
 	/**
-	 * Tag a pre-existing navigation entity that has no language at all.
+	 * Tag a pre-existing navigation entity that has no language at all — the
+	 * one thing the seeder does to a menu that exists.
 	 *
 	 * The nav-side mirror of `Applier::repairLanguage()`, needed for the same
 	 * migration case and reached the same way: a claimed legacy nav carries the
