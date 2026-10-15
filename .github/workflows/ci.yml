@@ -54,6 +54,10 @@ jobs:
       - run: npm run env:start
       - run: npx wp-env run tests-wordpress --env-cwd=wp-content/plugins/pediment-ai ./vendor/bin/phpunit
       - run: npx wp-env run tests-wordpress --env-cwd=wp-content/plugins/pediment-ai ./vendor/bin/phpunit -c phpunit-polylang.xml.dist
+      # tools/dev-bootstrap.mjs exits early under CI, so activate the plugin
+      # (and the MCP Adapter from .wp-env.json) here, then smoke-test the server.
+      - run: npx wp-env run cli wp plugin activate pediment-ai mcp-adapter
+      - run: node tools/mcp-smoke.mjs
       - if: always()
         run: npm run env:stop
 
