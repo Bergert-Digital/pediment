@@ -88,4 +88,14 @@ class ReporterTest extends WP_UnitTestCase {
 		$this->assertStringContainsString( 'x/home-de', $text );
 		$this->assertTrue( $result->ok(), 'A missing translation must not fail the run.' );
 	}
+
+	public function test_menu_notices_print_in_their_own_section_without_failing_the_run() {
+		$result = new RunResult( new Plan(), true, '/x/manifest.php', [], [], [], [], [ 'menu footer: about is in the trash, left out' ] );
+
+		$text = Reporter::text( $result );
+
+		$this->assertStringContainsString( "MENUS\n  - menu footer: about is in the trash, left out", $text );
+		$this->assertStringNotContainsString( 'TRANSLATIONS', $text );
+		$this->assertTrue( $result->ok() );
+	}
 }

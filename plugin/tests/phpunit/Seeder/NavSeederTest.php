@@ -307,6 +307,87 @@ class NavSeederTest extends WP_UnitTestCase {
 		);
 	}
 
+	public function test_a_new_menu_leaves_out_a_page_in_the_trash_and_says_so() {
+		$seeder = new NavSeeder( new NullProvider() );
+		$m      = $this->manifest( [ [ 'entry' => 'home' ], [ 'entry' => 'about' ] ] );
+		$ids    = [
+			'home|'  => self::factory()->post->create( [ 'post_type' => 'page' ] ),
+			'about|' => self::factory()->post->create( [ 'post_type' => 'page' ] ),
+		];
+		wp_trash_post( $ids['about|'] );
+
+		$navIds = $seeder->apply( $seeder->plan( $m ), $m, $ids );
+
+		$content = get_post( $navIds['primary|'] )->post_content;
+		$this->assertStringContainsString( '"id":' . $ids['home|'], $content );
+		$this->assertStringNotContainsString( '"id":' . $ids['about|'], $content );
+		$this->assertSame( [ 'menu primary: about is in the trash, left out' ], $seeder->notices() );
+		$this->assertSame( [], $seeder->errors(), 'a trashed page is left out, not unresolved' );
+		$this->assertSame( [ 'primary|' ], $seeder->created() );
+	}
+
+	public function test_a_trashed_child_is_left_out_and_its_parent_stays() {
+		$seeder = new NavSeeder( new NullProvider() );
+		$m      = $this->submenuManifest( [ [ 'entry' => 'guide', 'children' => [ [ 'entry' => 'faq' ] ] ] ] );
+		$ids    = [
+			'guide|' => self::factory()->post->create( [ 'post_type' => 'page' ] ),
+			'faq|'   => self::factory()->post->create( [ 'post_type' => 'page' ] ),
+		];
+		wp_trash_post( $ids['faq|'] );
+
+		$navIds = $seeder->apply( $seeder->plan( $m ), $m, $ids );
+
+		$content = get_post( $navIds['primary|'] )->post_content;
+		$this->assertStringContainsString( '"id":' . $ids['guide|'], $content );
+		$this->assertStringNotContainsString( '"id":' . $ids['faq|'], $content );
+		$this->assertSame( [ 'menu primary: faq is in the trash, left out' ], $seeder->notices() );
+	}
+
+	public function test_a_trashed_submenu_parent_takes_its_children_with_it() {
+		$seeder = new NavSeeder( new NullProvider() );
+		$m      = $this->submenuManifest( [ [ 'entry' => 'guide', 'children' => [ [ 'entry' => 'faq' ] ] ] ] );
+		$ids    = [
+			'guide|' => self::factory()->post->create( [ 'post_type' => 'page' ] ),
+			'faq|'   => self::factory()->post->create( [ 'post_type' => 'page' ] ),
+		];
+		wp_trash_post( $ids['guide|'] );
+
+		$navIds = $seeder->apply( $seeder->plan( $m ), $m, $ids );
+
+		$this->assertStringNotContainsString( 'navigation-submenu', get_post( $navIds['primary|'] )->post_content );
+		$this->assertSame( [ 'menu primary: guide is in the trash, left out' ], $seeder->notices() );
+	}
+
+	public function test_a_trashed_mega_link_is_left_out_and_reported() {
+		$seeder = new NavSeeder( new NullProvider() );
+		$m      = $this->manifest( $this->megaItems() );
+		$ids    = [
+			'home|'  => self::factory()->post->create( [ 'post_type' => 'page' ] ),
+			'about|' => self::factory()->post->create( [ 'post_type' => 'page', 'post_title' => 'About' ] ),
+		];
+		wp_trash_post( $ids['about|'] );
+
+		$navIds = $seeder->apply( $seeder->plan( $m ), $m, $ids );
+
+		$content = get_post( $navIds['primary|'] )->post_content;
+		$this->assertStringNotContainsString( 'Who we are', $content );
+		$this->assertStringContainsString( '"label":"Savings"', $content );
+		$this->assertSame( [ 'menu primary: about is in the trash, left out' ], $seeder->notices() );
+	}
+
+	public function test_the_notices_start_over_on_every_apply() {
+		$seeder = new NavSeeder( new NullProvider() );
+		$m      = $this->manifest( [ [ 'entry' => 'home' ] ] );
+		$ids    = [ 'home|' => self::factory()->post->create( [ 'post_type' => 'page' ] ) ];
+		wp_trash_post( $ids['home|'] );
+		$seeder->apply( $seeder->plan( $m ), $m, $ids );
+		$this->assertNotSame( [], $seeder->notices() );
+
+		$seeder->apply( $seeder->plan( $m ), $m, $ids );
+
+		$this->assertSame( [], $seeder->notices(), 'the menu exists now, so nothing is left out' );
+	}
+
 	public function test_the_planned_item_count_includes_children() {
 		$seeder = new NavSeeder( new NullProvider() );
 		$m      = $this->submenuManifest(
