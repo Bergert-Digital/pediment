@@ -261,6 +261,25 @@ final class Build {
 	}
 
 	/**
+	 * Builds core/media-text. Reads align, mediaPosition, mediaId, mediaSizeSlug and
+	 * className; the image URL and alt live only in the HTML.
+	 *
+	 * @param array  $attrs Attributes.
+	 * @param array  $inner Inner blocks of the text side.
+	 * @param string $url   Image URL (unescaped), '' for an empty figure.
+	 * @param string $alt   Alt text (unescaped).
+	 */
+	public static function mediaText( array $attrs, array $inner, string $url, string $alt ): array {
+		$right  = 'right' === ( $attrs['mediaPosition'] ?? 'left' );
+		$class  = self::classes( 'wp-block-media-text', self::align( $attrs ), $right ? 'has-media-on-the-right' : '', 'is-stacked-on-mobile', (string) ( $attrs['className'] ?? '' ) );
+		$img    = '' === $url ? '' : sprintf( '<img src="%s" alt="%s" class="wp-image-%d size-%s"/>', esc_url( $url ), esc_attr( $alt ), (int) ( $attrs['mediaId'] ?? 0 ), esc_attr( (string) ( $attrs['mediaSizeSlug'] ?? 'full' ) ) );
+		$figure = '<figure class="wp-block-media-text__media">' . $img . '</figure>';
+		$open   = "<div class=\"{$class}\">" . ( $right ? '' : $figure ) . '<div class="wp-block-media-text__content">';
+		$close  = '</div>' . ( $right ? $figure : '' ) . '</div>';
+		return self::container( 'core/media-text', $attrs, $open, $inner, $close );
+	}
+
+	/**
 	 * The class attribute value from class names; empty names are skipped.
 	 *
 	 * @param string ...$names Class names.

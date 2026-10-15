@@ -59,6 +59,8 @@ final class Converter {
 				new Mappers\LogoCloudMapper(),
 				new Mappers\HeroMapper(),
 				new Mappers\CtaMapper(),
+				new Mappers\MediaTextMapper(),
+				new Mappers\ImageCaptionMapper(),
 			)
 		);
 	}
