@@ -3,6 +3,8 @@ import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
+import { existsSync, mkdirSync, mkdtempSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import {
 	commentJsonErrors,
 	looseContent,
@@ -11,7 +13,7 @@ import {
 	buildReport,
 	formatReport,
 } from '../scripts/lib/block-check.mjs';
-import { wpLine, supportedLines } from '../scripts/lib/wp-runtime.mjs';
+import { wpLine, supportedLines, ensureRuntime, npmInstall } from '../scripts/lib/wp-runtime.mjs';
 import { parseArgs } from '../scripts/validate-blocks.mjs';
 
 const here = path.dirname( fileURLToPath( import.meta.url ) );
@@ -64,6 +66,109 @@ test( 'version lines and arguments', () => {
 	assert.deepEqual( supportedLines(), [ '6.9', '7.0' ] );
 	assert.deepEqual( parseArgs( [ '--wp', '7.0', '--file', 'a.html', '--json' ] ), { wp: '7.0', file: 'a.html', json: true } );
 	assert.deepEqual( parseArgs( [] ), { wp: '6.9', file: null, json: false } );
+} );
+
+test( 'unknown core blocks are problems, third-party unknown blocks are not checked', () => {
+	const blocks = [
+		{ name: 'core/missing', isValid: true, attributes: { originalName: 'core/paragrph' }, innerBlocks: [] },
+		{ name: 'core/missing', isValid: true, attributes: { originalName: 'pediment/form' }, innerBlocks: [] },
+	];
+	const result = walkBlocks( blocks, () => true );
+	assert.equal( result.invalid.length, 1 );
+	assert.equal( result.invalid[ 0 ].name, 'core/paragrph' );
+	assert.match( result.invalid[ 0 ].issues[ 0 ], /unknown core block/i );
+	assert.deepEqual( result.notChecked, [ 'pediment/form' ] );
+	const report = buildReport( '<!-- wp:paragrph /-->', () => blocks.slice( 0, 1 ), () => true, '6.9' );
+	assert.equal( report.ok, false );
+} );
+
+test( 'a report with unchecked blocks is not announced as plainly valid', () => {
+	const parse = () => [ { name: 'core/missing', isValid: true, attributes: { originalName: 'pediment/form' }, innerBlocks: [] } ];
+	const report = buildReport( '<!-- wp:pediment/form /-->', parse, () => true, '6.9' );
+	assert.equal( report.ok, true );
+	const text = formatReport( report );
+	assert.doesNotMatch( text, /✔ \d+ block\(s\) valid/ );
+	assert.match( text, /not checked/i );
+	assert.match( text, /pediment\/form/ );
+} );
+
+test( 'nameless core/missing (loose text) is not listed as not checked', () => {
+	const parse = () => [ { name: 'core/missing', isValid: true, attributes: {}, innerBlocks: [] } ];
+	assert.deepEqual( buildReport( 'loose', parse, () => true, '6.9' ).notChecked, [] );
+} );
+
+test( 'options without a value are errors', () => {
+	assert.throws( () => parseArgs( [ '--file' ] ), /missing value for --file/ );
+	assert.throws( () => parseArgs( [ '--wp' ] ), /missing value for --wp/ );
+	assert.throws( () => parseArgs( [ '--file', '--json' ] ), /missing value for --file/ );
+} );
+
+const fakeInstall = ( dir ) => {
+	mkdirSync( path.join( dir, 'node_modules', '@wordpress', 'blocks' ), { recursive: true } );
+	writeFileSync( path.join( dir, 'node_modules', '@wordpress', 'blocks', 'package.json' ), '{}' );
+};
+const cacheRoot = () => mkdtempSync( path.join( tmpdir(), 'pediment-validator-test-' ) );
+const quiet = { log() {} };
+
+test( 'ensureRuntime installs into a temp dir and renames it into place', () => {
+	const root = cacheRoot();
+	let installedIn;
+	const dir = ensureRuntime( '6.9', { cacheRoot: root, ...quiet, install: ( target ) => { installedIn = target; fakeInstall( target ); } } );
+	assert.notEqual( installedIn, dir );
+	assert.match( path.basename( installedIn ), /\.tmp-/ );
+	assert.ok( existsSync( path.join( dir, '.ok' ) ) );
+	assert.deepEqual( readdirSync( root ), [ path.basename( dir ) ] );
+	let again = false;
+	assert.equal( ensureRuntime( '6.9', { cacheRoot: root, ...quiet, install: () => { again = true; } } ), dir );
+	assert.equal( again, false );
+	rmSync( root, { recursive: true } );
+} );
+
+test( 'ensureRuntime keeps the winner when another process installs first', () => {
+	const root = cacheRoot();
+	const dir = ensureRuntime( '6.9', { cacheRoot: root, ...quiet, install: fakeInstall } );
+	rmSync( dir, { recursive: true } );
+	let winner;
+	const result = ensureRuntime( '6.9', {
+		cacheRoot: root,
+		...quiet,
+		install: ( target ) => {
+			fakeInstall( target );
+			winner = dir;
+			fakeInstall( winner );
+			writeFileSync( path.join( winner, '.ok' ), 'winner' );
+		},
+	} );
+	assert.equal( result, dir );
+	assert.equal( readdirSync( root ).length, 1, 'temp dir is removed' );
+	assert.equal( readdirSync( dir ).includes( '.ok' ), true );
+	rmSync( root, { recursive: true } );
+} );
+
+test( 'ensureRuntime reinstalls a cache that has .ok but an empty node_modules', () => {
+	const root = cacheRoot();
+	const dir = ensureRuntime( '6.9', { cacheRoot: root, ...quiet, install: fakeInstall } );
+	rmSync( path.join( dir, 'node_modules' ), { recursive: true } );
+	let calls = 0;
+	assert.equal( ensureRuntime( '6.9', { cacheRoot: root, ...quiet, install: ( target ) => { calls++; fakeInstall( target ); } } ), dir );
+	assert.equal( calls, 1 );
+	assert.ok( existsSync( path.join( dir, 'node_modules', '@wordpress', 'blocks', 'package.json' ) ) );
+	assert.equal( readdirSync( root ).length, 1 );
+	rmSync( root, { recursive: true } );
+} );
+
+test( 'a failed install leaves no cache dir behind', () => {
+	const root = cacheRoot();
+	assert.throws( () => ensureRuntime( '6.9', { cacheRoot: root, ...quiet, install: () => { throw new Error( 'boom' ); } } ), /boom/ );
+	assert.deepEqual( readdirSync( root ), [] );
+	rmSync( root, { recursive: true } );
+} );
+
+test( 'npmInstall explains a missing npm and a failed install', () => {
+	const dir = cacheRoot();
+	assert.throws( () => npmInstall( dir, { npm: 'pediment-no-such-npm' } ), /npm is required on PATH/ );
+	assert.throws( () => npmInstall( dir, { npm: process.execPath, args: [ '-e', 'process.exit(1)' ] } ), /network access.*pediment-validator-test-/s );
+	rmSync( dir, { recursive: true } );
 } );
 
 const e2e = process.env.PEDIMENT_VALIDATOR_E2E === '1';
