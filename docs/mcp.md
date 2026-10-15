@@ -65,8 +65,9 @@ else. Each tool checks WordPress capabilities on every call.
 
 WordPress saves no revision when it creates a page, so `pediment-write-page`
 saves a first one itself. Every write returns the id of the newest revision.
-`pediment-rollback-page` restores a revision of that page and keeps the
-content it replaces as a new revision, so a rollback can be undone too.
+`pediment-rollback-page` restores a revision of that page. Restoring saves a
+new revision that holds the restored content; the content it replaced stays
+available as an earlier revision, so a rollback can be undone.
 
 ### Errors
 
@@ -123,7 +124,15 @@ runs the editor's own check in Node:
 | --- | --- |
 | `--wp` | WordPress version or line of the target site (default 6.9). Lines 6.9 and 7.0 are supported. |
 | `--file` | Markup file. A `.php` pattern file has its leading `<?php … ?>` header removed. Without it the validator reads stdin. |
+| `--pattern` | The markup is a seeder pattern. A `.php` file is always treated as one. |
 | `--json` | Machine-readable report. |
+
+Seeder media placeholders in a pattern (`{{media_id:<key>}}` and
+`{{media_url:<key>}}`, as `wp pediment adopt` writes them) are replaced by
+stand-ins before the check: one numeric id and one URL per key, used
+everywhere the key occurs. The `wp-image-<id>` class of an image follows the
+stand-in id. Other errors in the file are still reported, and a message may
+quote a stand-in id such as 900001 where the file has the placeholder.
 
 Exit codes: 0 valid, 1 problems found, 2 the tool itself failed (bad
 arguments, no network on first run, unsupported WordPress line).
@@ -143,8 +152,8 @@ validator cannot know them. That is expected, and the server rules still apply
 to them.
 
 The first run per WordPress line installs a pinned runtime (the editor's
-block packages and jsdom, about 700 MB) into `~/.cache/pediment/validator`.
-Set `PEDIMENT_VALIDATOR_CACHE` to use another folder. The install needs `npm`
+block packages and jsdom, about 700 MB) into `~/.cache/pediment/validator` (`$XDG_CACHE_HOME/pediment/validator` when
+`XDG_CACHE_HOME` is set). Set `PEDIMENT_VALIDATOR_CACHE` to use another folder. The install needs `npm`
 on the PATH and network access, and it runs in a temporary directory that is
 renamed into place, so two parallel first runs do not break each other. Later
 runs reuse the cache. Node 20 or later is required.

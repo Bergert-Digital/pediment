@@ -12,9 +12,10 @@ import {
 	issueMessages,
 	buildReport,
 	formatReport,
+	resolveMediaPlaceholders,
 } from '../scripts/lib/block-check.mjs';
 import { wpLine, supportedLines, ensureRuntime, npmInstall } from '../scripts/lib/wp-runtime.mjs';
-import { parseArgs } from '../scripts/validate-blocks.mjs';
+import { parseArgs, prepareMarkup } from '../scripts/validate-blocks.mjs';
 
 const here = path.dirname( fileURLToPath( import.meta.url ) );
 const cli = path.join( here, '..', 'scripts', 'validate-blocks.mjs' );
@@ -64,8 +65,9 @@ test( 'version lines and arguments', () => {
 	assert.equal( wpLine( '7.0' ), '7.0' );
 	assert.throws( () => wpLine( 'trunk' ) );
 	assert.deepEqual( supportedLines(), [ '6.9', '7.0' ] );
-	assert.deepEqual( parseArgs( [ '--wp', '7.0', '--file', 'a.html', '--json' ] ), { wp: '7.0', file: 'a.html', json: true } );
-	assert.deepEqual( parseArgs( [] ), { wp: '6.9', file: null, json: false } );
+	assert.deepEqual( parseArgs( [ '--wp', '7.0', '--file', 'a.html', '--json' ] ), { wp: '7.0', file: 'a.html', json: true, pattern: false } );
+	assert.deepEqual( parseArgs( [] ), { wp: '6.9', file: null, json: false, pattern: false } );
+	assert.equal( parseArgs( [ '--pattern' ] ).pattern, true );
 } );
 
 test( 'unknown core blocks are problems, third-party unknown blocks are not checked', () => {
@@ -101,6 +103,58 @@ test( 'options without a value are errors', () => {
 	assert.throws( () => parseArgs( [ '--file' ] ), /missing value for --file/ );
 	assert.throws( () => parseArgs( [ '--wp' ] ), /missing value for --wp/ );
 	assert.throws( () => parseArgs( [ '--file', '--json' ] ), /missing value for --file/ );
+} );
+
+const ADOPTED_IMAGE =
+	'<!-- wp:image {"id":{{media_id:hero}},"sizeSlug":"full","linkDestination":"none"} -->\n' +
+	'<figure class="wp-block-image size-full"><img src="{{media_url:hero}}" alt="" class="wp-image-7"/></figure>\n' +
+	'<!-- /wp:image -->';
+
+test( 'media placeholders become one stable stand-in per key', () => {
+	const out = resolveMediaPlaceholders(
+		'{"id":{{media_id:hero}}} {{media_id:logo}} {{media_id:hero}} {{media_url:hero}} {{media_url:team/a-1}} {{media_url:hero}}'
+	);
+	const [ heroId, logoId, heroAgain, heroUrl, teamUrl, heroUrlAgain ] = out.replace( '{"id":', '' ).replace( '}}', '}' ).split( ' ' );
+	assert.doesNotMatch( out, /\{\{/ );
+	assert.match( heroId, /^\d+}?$/ );
+	assert.equal( heroAgain, heroId.replace( '}', '' ) );
+	assert.notEqual( logoId, heroAgain );
+	assert.equal( heroUrl, heroUrlAgain );
+	assert.notEqual( heroUrl, teamUrl );
+	assert.match( heroUrl, /^https:\/\// );
+	assert.equal( resolveMediaPlaceholders( 'no placeholders' ), 'no placeholders' );
+} );
+
+test( 'an adopted image keeps its wp-image class in step with the stand-in id', () => {
+	const out = resolveMediaPlaceholders( ADOPTED_IMAGE );
+	const id = /"id":(\d+)/.exec( out )[ 1 ];
+	assert.match( out, new RegExp( `class="wp-image-${ id }"` ) );
+	assert.deepEqual( commentJsonErrors( out ), [] );
+	assert.deepEqual( commentJsonErrors( ADOPTED_IMAGE ).length, 1 );
+} );
+
+test( 'only the placeholder block has its wp-image class rewritten', () => {
+	const other = '<!-- wp:image {"id":41} --><figure class="wp-block-image"><img src="/b.jpg" alt="" class="wp-image-41"/></figure><!-- /wp:image -->';
+	const out = resolveMediaPlaceholders( ADOPTED_IMAGE + other );
+	assert.ok( out.endsWith( other ) );
+} );
+
+test( 'prepareMarkup resolves placeholders only for patterns', () => {
+	assert.doesNotMatch( prepareMarkup( ADOPTED_IMAGE, { file: 'patterns/home.php' } ), /\{\{/ );
+	assert.doesNotMatch( prepareMarkup( ADOPTED_IMAGE, { file: null, pattern: true } ), /\{\{/ );
+	assert.match( prepareMarkup( ADOPTED_IMAGE, { file: 'page.html' } ), /\{\{media_id:hero\}\}/ );
+	assert.equal( prepareMarkup( '<?php\n/** x */\n?>\n<!-- wp:more /-->', { file: 'a.php' } ), '<!-- wp:more /-->' );
+} );
+
+test( 'a pattern with a placeholder and a real problem still fails', () => {
+	const parse = () => [ { name: 'core/image', isValid: true, innerBlocks: [] } ];
+	const good = buildReport( prepareMarkup( ADOPTED_IMAGE, { file: 'a.php' } ), parse, () => true, '6.9' );
+	assert.equal( good.ok, true );
+	const loose = buildReport( prepareMarkup( 'stray text\n' + ADOPTED_IMAGE, { file: 'a.php' } ), parse, () => true, '6.9' );
+	assert.equal( loose.ok, false );
+	assert.equal( loose.loose.length, 1 );
+	const brokenJson = buildReport( prepareMarkup( ADOPTED_IMAGE.replace( '"sizeSlug"', '"sizeSlug":}, "x"' ), { file: 'a.php' } ), parse, () => true, '6.9' );
+	assert.equal( brokenJson.ok, false );
 } );
 
 const fakeInstall = ( dir ) => {
@@ -174,9 +228,9 @@ test( 'npmInstall explains a missing npm and a failed install', () => {
 const e2e = process.env.PEDIMENT_VALIDATOR_E2E === '1';
 
 test( 'end to end against the real WordPress 6.9 runtime', { skip: ! e2e }, () => {
-	const run = ( markup ) => {
+	const run = ( markup, extra = [] ) => {
 		try {
-			return { code: 0, out: execFileSync( 'node', [ cli, '--json' ], { input: markup, encoding: 'utf8' } ) };
+			return { code: 0, out: execFileSync( 'node', [ cli, '--json', ...extra ], { input: markup, encoding: 'utf8' } ) };
 		} catch ( error ) {
 			return { code: error.status, out: error.stdout };
 		}
@@ -191,6 +245,12 @@ test( 'end to end against the real WordPress 6.9 runtime', { skip: ! e2e }, () =
 	const invalid = run( '<!-- wp:group --><div class="wp-block-nope"><!-- wp:paragraph --><p>x</p><!-- /wp:paragraph --></div><!-- /wp:group -->' );
 	assert.equal( invalid.code, 1 );
 	assert.equal( JSON.parse( invalid.out ).invalid[ 0 ].name, 'core/group' );
+
+	const adopted = run( ADOPTED_IMAGE, [ '--pattern' ] );
+	assert.equal( adopted.code, 0, adopted.out );
+	const adoptedBroken = run( ADOPTED_IMAGE.replace( 'wp-block-image size-full', 'wp-block-nope' ), [ '--pattern' ] );
+	assert.equal( adoptedBroken.code, 1 );
+	assert.equal( JSON.parse( adoptedBroken.out ).invalid[ 0 ].name, 'core/image' );
 
 	const unknown = run( '<!-- wp:pediment/form {"id":"x"} /-->' );
 	assert.equal( unknown.code, 0 );

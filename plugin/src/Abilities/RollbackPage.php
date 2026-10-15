@@ -29,7 +29,7 @@ final class RollbackPage extends Ability {
 	}
 
 	protected function description(): string {
-		return __( 'Restores the page with the given id to one of its own revisions (revision ids come from write-page results). The current content is kept as a new revision.', 'pediment' );
+		return __( 'Restores the page with the given id to one of its own revisions (revision ids come from write-page results). Restoring saves a new revision that holds the restored content; the content it replaced stays available as an earlier revision.', 'pediment' );
 	}
 
 	protected function inputSchema(): array {

@@ -104,15 +104,18 @@ Validate the pattern before seeding it with real content. The editor rejects a s
 markup does not match what it generates, and the page then opens as "invalid content".
 
 ```bash
-node "<skill-dir>/../../scripts/validate-blocks.mjs" --file patterns/<key>.php
+node ${CLAUDE_SKILL_DIR}/../../scripts/validate-blocks.mjs --file patterns/<key>.php
 ```
 
 Fix every INVALID, STALE, LOOSE and JSON line and re-run until it exits 0. Blocks listed under
-"not checked" are Pediment or theme blocks the validator does not know; that is expected. The first
-run installs a pinned WordPress runtime (about 700 MB, once) into `~/.cache/pediment/validator`, so
-tell the user why it is slow. Pass `--wp <version>` when the site does not run WordPress 6.9. Exit
-code 2 means the tool itself failed (for example no network on the first run), not that the page
-is invalid.
+"not checked" are Pediment or theme blocks the validator does not know; that is expected. The
+validator resolves `{{media_id:<key>}}` and `{{media_url:<key>}}` placeholders itself, so adopted
+patterns validate as they are; an id such as 900001 in a message stands for such a placeholder.
+
+The first run installs a pinned WordPress runtime (about 700 MB, once) into
+`~/.cache/pediment/validator`, so tell the user why it is slow. Pass `--wp <version>` when the site
+does not run WordPress 6.9. Exit code 2 means the tool itself failed (for example no network on
+the first run), not that the page is invalid.
 
 ---
 
@@ -139,7 +142,8 @@ npm run adopt -- <key>
 ```
 
 Re-run the validator from step 5 on the adopted file. Read the diff before committing — `adopt`
-does not convert sized image variants or `srcset` URLs to placeholders, so a page with responsive images can carry environment-specific URLs into git.
+does not convert sized image variants or `srcset` URLs to placeholders, so a page with responsive
+images can carry environment-specific URLs into git.
 
 Commit `seed/manifest.php` and `patterns/<key>.php` together.
 
