@@ -75,6 +75,7 @@ final class ListPages extends Ability {
 			'orderby'        => 'menu_order title',
 			'order'          => 'ASC',
 			'no_found_rows'  => true,
+			'perm'           => 'readable',
 		);
 		if ( isset( $input['parent'] ) ) {
 			$args['post_parent'] = (int) $input['parent'];
