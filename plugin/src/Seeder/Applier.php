@@ -302,7 +302,7 @@ final class Applier {
 	 * Point the front page and the posts page at their entries — only when the
 	 * entry was created in this run, or while the site has no such page yet
 	 * (option 0). A choice a person made later in Settings → Reading is never
-	 * reverted.
+	 * reverted, and a trashed page is never chosen.
 	 *
 	 * @param array<string,DesiredEntry> $desired
 	 * @param array<string,int>          $ids
@@ -313,6 +313,13 @@ final class Applier {
 
 		foreach ( $desired as $mapKey => $entry ) {
 			if ( $entry->language !== $default || ! isset( $ids[ $mapKey ] ) ) {
+				continue;
+			}
+			// Core resets both settings when the page is trashed (an empty option
+			// would then read as "unset"). A trashed page stays out of the reading
+			// settings: that is the person's decision, and visitors would get a
+			// trashed page.
+			if ( 'trash' === get_post_status( $ids[ $mapKey ] ) ) {
 				continue;
 			}
 			$isNew = in_array( $mapKey, $created, true );
