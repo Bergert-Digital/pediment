@@ -19,7 +19,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
- * Grid (min 10rem) of group.is-style-stat → value, label, context
+ * Grid (one column per stat up to four, fewer on narrow screens) of group.is-style-stat → value, label, context
  * paragraphs. The stat style targets children by position, so value and
  * label are always emitted.
  */
@@ -39,10 +39,7 @@ final class StatGridMapper implements Mapper {
 		}
 		$group           = Attrs::put( array(), 'align', $context->align( $block ) );
 		$group           = Attrs::put( $group, 'className', $context->className( $block, 'core/group' ) );
-		$group['layout'] = array(
-			'type'               => 'grid',
-			'minimumColumnWidth' => '10rem',
-		);
+		$group['layout'] = Build::gridLayout( min( 4, count( $stats ) ), '10rem' );
 		return Build::group( $group + $context->carry( $block, 'Stats' ), $stats );
 	}
 

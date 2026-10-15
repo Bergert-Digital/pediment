@@ -19,7 +19,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
- * A group.is-style-steps (grid, min 12.5rem; the style numbers its children)
+ * A group.is-style-steps (grid of at most 3 columns, 2 for exactly four steps,
+ * one on phones; the style numbers its children)
  * → one group per step with an h3 and a paragraph.
  */
 final class StepsMapper implements Mapper {
@@ -38,10 +39,7 @@ final class StepsMapper implements Mapper {
 		}
 		$group              = Attrs::put( array(), 'align', $context->align( $block ) );
 		$group['className'] = $context->className( $block, 'core/group', 'is-style-steps' );
-		$group['layout']    = array(
-			'type'               => 'grid',
-			'minimumColumnWidth' => '12.5rem',
-		);
+		$group['layout']    = Build::gridLayout( 4 === count( $steps ) ? 2 : min( 3, count( $steps ) ), '12.5rem' );
 		return Build::group( $group + $context->carry( $block, 'Steps' ), $steps );
 	}
 

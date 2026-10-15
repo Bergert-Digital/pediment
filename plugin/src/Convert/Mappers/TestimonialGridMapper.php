@@ -19,7 +19,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
- * Grid (2 columns, min 20rem) of group.is-style-quote-card → core/quote.
+ * Grid (at most 2 columns, one on phones) of group.is-style-quote-card → core/quote.
  * Without an avatar the byline is the quote's citation; with one, a flex
  * "Byline" group holds the rounded avatar and the byline paragraph.
  */
@@ -40,11 +40,7 @@ final class TestimonialGridMapper implements Mapper {
 		$group           = array( 'tagName' => 'section' );
 		$group           = Attrs::put( $group, 'align', $context->align( $block ) );
 		$group           = Attrs::put( $group, 'className', $context->className( $block, 'core/group' ) );
-		$group['layout'] = array(
-			'type'               => 'grid',
-			'columnCount'        => 2,
-			'minimumColumnWidth' => '20rem',
-		);
+		$group['layout'] = Build::gridLayout( 2, '20rem' );
 		return Build::group( $group + $context->carry( $block, 'Testimonials' ), $cards );
 	}
 

@@ -57,7 +57,10 @@ final class SectionHeadMapper implements Mapper {
 		$group           = Attrs::put( array(), 'align', $context->align( $block ) );
 		$group           = Attrs::put( $group, 'className', $context->className( $block, 'core/group' ) );
 		$group['style']  = array( 'spacing' => array( 'margin' => array( 'bottom' => 'var:preset|spacing|60' ) ) );
-		$group['layout'] = array( 'type' => 'constrained' );
+		$group['layout'] = $center ? array( 'type' => 'constrained' ) : array(
+			'type'           => 'constrained',
+			'justifyContent' => 'left',
+		);
 		return Build::group( $group + $context->carry( $block, 'Section head' ), $inner );
 	}
 }

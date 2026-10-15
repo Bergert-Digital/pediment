@@ -280,6 +280,27 @@ final class Build {
 	}
 
 	/**
+	 * The layout of a grid with at most $columns columns that collapses on
+	 * narrow screens.
+	 *
+	 * Core ignores minimumColumnWidth when columnCount is set (it writes
+	 * repeat(N, minmax(0, 1fr)) and never collapses), so the grid is described
+	 * by minimumColumnWidth alone: max($floor, a share of the width). Wide
+	 * grids hold exactly $columns tracks; below roughly $columns * $floor the
+	 * floor wins and the tracks drop to fewer columns, down to one on phones.
+	 *
+	 * @param int    $columns Most columns on wide screens (at least 1).
+	 * @param string $floor   Narrowest a column may get, a CSS length.
+	 */
+	public static function gridLayout( int $columns, string $floor ): array {
+		$share = intdiv( 90, max( 1, $columns ) );
+		return array(
+			'type'               => 'grid',
+			'minimumColumnWidth' => "max({$floor}, {$share}%)",
+		);
+	}
+
+	/**
 	 * The class attribute value from class names; empty names are skipped.
 	 *
 	 * @param string ...$names Class names.
