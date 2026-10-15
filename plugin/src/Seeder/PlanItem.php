@@ -9,7 +9,6 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 final class PlanItem {
 	public const CREATE    = 'create'; // No post carries this key yet.
-	public const RESTORE   = 'restore'; // Exists but trashed.
 	public const UNCHANGED = 'unchanged'; // Exists; the seeder never changes it.
 	public const ORPHAN    = 'orphan'; // Carries a seed key the manifest dropped.
 

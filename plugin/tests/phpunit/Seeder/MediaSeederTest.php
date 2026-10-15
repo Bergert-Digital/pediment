@@ -77,25 +77,48 @@ class MediaSeederTest extends WP_UnitTestCase {
 		$this->assertSame( 0, ( new MediaSeeder() )->map( $this->manifest() )->id( 'logo' ) );
 	}
 
-	public function test_a_trashed_attachment_is_restored_rather_than_re_uploaded() {
+	public function test_a_trashed_attachment_stays_in_the_trash_and_is_not_uploaded_again() {
 		$seeder = new MediaSeeder();
 		$m      = $this->manifest();
 		$first  = $seeder->apply( $seeder->plan( $m ), $m );
-		wp_trash_post( $first->id( 'logo' ) );
+		wp_trash_post( $first->id( 'hero' ) );
 
 		$plan   = $seeder->plan( $m );
 		$second = $seeder->apply( $plan, $m );
 
-		$this->assertSame( PlanItem::RESTORE, $plan->byAction( PlanItem::RESTORE )[0]->action );
-		$this->assertSame( $first->id( 'logo' ), $second->id( 'logo' ), 'restore, never re-upload' );
-		// get_post_status() resolves `inherit` on an unattached attachment to
-		// `publish`, so assert the raw column instead.
-		$this->assertSame( 'inherit', get_post_field( 'post_status', $second->id( 'logo' ) ) );
+		$this->assertSame( [], $plan->byAction( PlanItem::CREATE ) );
+		$hero = array_values( array_filter( $plan->items(), static fn( PlanItem $i ): bool => 'hero' === $i->key ) )[0];
+		$this->assertSame( PlanItem::UNCHANGED, $hero->action );
+		$this->assertStringContainsString( 'in the trash', $hero->note );
+		$this->assertSame( $first->id( 'hero' ), $second->id( 'hero' ) );
+		$this->assertSame( 'trash', get_post_field( 'post_status', $second->id( 'hero' ) ) );
 		$this->assertCount(
 			1,
-			get_posts( [ 'post_type' => 'attachment', 'post_status' => 'any', 'fields' => 'ids', 'meta_key' => \Pediment\Seeder\Meta::KEY, 'meta_value' => 'logo' ] ),
+			get_posts( [ 'post_type' => 'attachment', 'post_status' => [ 'inherit', 'trash' ], 'fields' => 'ids', 'meta_key' => Meta::KEY, 'meta_value' => 'hero' ] ),
 			'one seed key, one attachment'
 		);
+	}
+
+	public function test_a_logo_a_person_chose_is_kept() {
+		$seeder = new MediaSeeder();
+		$m      = $this->manifest();
+		$first  = $seeder->apply( $seeder->plan( $m ), $m );
+		set_theme_mod( 'custom_logo', $first->id( 'hero' ) );
+
+		$seeder->apply( $seeder->plan( $m ), $m );
+
+		$this->assertSame( $first->id( 'hero' ), (int) get_theme_mod( 'custom_logo' ) );
+	}
+
+	public function test_an_unset_logo_is_set_from_an_existing_attachment() {
+		$seeder = new MediaSeeder();
+		$m      = $this->manifest();
+		$first  = $seeder->apply( $seeder->plan( $m ), $m );
+		remove_theme_mod( 'custom_logo' );
+
+		$seeder->apply( $seeder->plan( $m ), $m );
+
+		$this->assertSame( $first->id( 'logo' ), (int) get_theme_mod( 'custom_logo' ) );
 	}
 
 	public function test_two_attachments_under_one_key_are_reported() {

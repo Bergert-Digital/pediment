@@ -2,6 +2,8 @@
 /**
  * Media presence: every media key in the manifest resolves to exactly one
  * attachment, identified by _pediment_seed_key like everything else.
+ * Create-only: an attachment that exists — even one in the trash — is never
+ * written to again.
  *
  * @package Pediment
  */
@@ -52,16 +54,17 @@ final class MediaSeeder {
 
 			if ( isset( $existing[ $key ] ) ) {
 				$postId  = $existing[ $key ];
-				$items[] = 'trash' === get_post_status( $postId )
-					? new PlanItem(
-						PlanItem::RESTORE,
-						PlanItem::KIND_MEDIA,
-						$key,
-						'',
-						$postId,
-						[ 'status' => [ 'from' => 'trash', 'to' => 'inherit' ] ]
-					)
-					: new PlanItem( PlanItem::UNCHANGED, PlanItem::KIND_MEDIA, $key, '', $postId );
+				$items[] = new PlanItem(
+					PlanItem::UNCHANGED,
+					PlanItem::KIND_MEDIA,
+					$key,
+					'',
+					$postId,
+					[],
+					'trash' === get_post_status( $postId )
+						? 'in the trash — left alone; restore it in the Media Library, or delete it permanently and the next seed uploads it again'
+						: ''
+				);
 				continue;
 			}
 
@@ -96,39 +99,30 @@ final class MediaSeeder {
 			return $this->map( $manifest );
 		}
 
-		$ids = array_intersect_key( $this->existing(), $manifest->media() );
+		$ids     = array_intersect_key( $this->existing(), $manifest->media() );
+		$created = [];
 
-		foreach ( $plan->byKind( PlanItem::KIND_MEDIA ) as $item ) {
+		foreach ( $plan->byAction( PlanItem::CREATE ) as $item ) {
 			$spec = $manifest->media()[ $item->key ] ?? null;
-			if ( ! $spec instanceof MediaSpec ) {
-				continue;
-			}
-
-			if ( PlanItem::RESTORE === $item->action ) {
-				$restored = wp_update_post( [ 'ID' => $item->postId, 'post_status' => 'inherit' ], true );
-				if ( is_wp_error( $restored ) ) {
-					$this->errors[] = sprintf( 'media.%s: could not restore attachment %d — %s', $item->key, $item->postId, $restored->get_error_message() );
-					continue;
-				}
-				Meta::clearTrashBookkeeping( $item->postId );
-				$ids[ $item->key ] = $item->postId;
-				continue;
-			}
-
-			if ( PlanItem::CREATE !== $item->action ) {
+			if ( PlanItem::KIND_MEDIA !== $item->kind || ! $spec instanceof MediaSpec ) {
 				continue;
 			}
 			$id = $this->sideload( $spec );
 			if ( $id > 0 ) {
 				$ids[ $item->key ] = $id;
+				$created[]         = $item->key;
 			}
 		}
 
 		$map = new MediaMap( $ids );
 
+		// The site logo follows the same rule as the reading settings: set it
+		// when its attachment was created in this run, or while the site has
+		// none. A logo a person chose later in the Site Editor stays.
 		$logoKey = $manifest->siteLogo();
-		if ( '' !== $logoKey && $map->id( $logoKey ) > 0 && (int) get_theme_mod( 'custom_logo' ) !== $map->id( $logoKey ) ) {
-			set_theme_mod( 'custom_logo', $map->id( $logoKey ) );
+		$logoId  = '' === $logoKey ? 0 : $map->id( $logoKey );
+		if ( $logoId > 0 && ( in_array( $logoKey, $created, true ) || 0 === (int) get_theme_mod( 'custom_logo' ) ) ) {
+			set_theme_mod( 'custom_logo', $logoId );
 		}
 
 		return $map;
