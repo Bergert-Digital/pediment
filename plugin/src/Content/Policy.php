@@ -252,18 +252,19 @@ final class Policy {
 	 * attributes, javascript: URLs and literal design values in inline styles.
 	 * Administrators have unfiltered_html, so core's kses does not catch these.
 	 *
-	 * Raw-text checks over the whole content with the block delimiter comments
-	 * removed, because that is what the browser receives: static blocks render
+	 * Raw-text checks over the static markup core renders (see rendered_text()),
+	 * because that is what the browser receives: static blocks render
 	 * concatenated, so a payload can start in one block and finish in the next,
 	 * and a tag parser reads differently from a browser (unterminated tags,
-	 * noscript, foreign content).
+	 * noscript, foreign content). HTML comments stay in the scanned text: a
+	 * browser may end one earlier than expected (`--!>`), so text inside a
+	 * comment is checked too.
 	 *
 	 * @param string $markup Serialized blocks.
 	 * @return list<string>
 	 */
 	private function markup_errors( string $markup ): array {
-		// Up to the first `-->`, as a browser ends a comment (a lazy `{…}` could swallow markup).
-		$html   = (string) preg_replace( '/<!--\s+\/?wp:.*?-->/s', '', $markup );
+		$html   = $this->rendered_text( parse_blocks( $markup ) );
 		$errors = array();
 
 		if ( preg_match_all( '/<\s*(' . implode( '|', self::FORBIDDEN_TAGS ) . ')\b/i', $html, $found, PREG_OFFSET_CAPTURE ) ) {
@@ -291,6 +292,33 @@ final class Policy {
 			}
 		}
 		return $errors;
+	}
+
+	/**
+	 * The static markup core renders for parsed blocks, in document order:
+	 * each block's innerContent with every null entry replaced by the next
+	 * inner block. The block delimiters are whatever core's parser consumed,
+	 * so nothing that core outputs is left out.
+	 *
+	 * @param array $blocks Parsed blocks.
+	 */
+	private function rendered_text( array $blocks ): string {
+		$text = '';
+		foreach ( $blocks as $block ) {
+			$inner   = $block['innerBlocks'] ?? array();
+			$content = $block['innerContent'] ?? array();
+			if ( null === $block['blockName'] || ! is_array( $content ) ) {
+				$text .= (string) ( $block['innerHTML'] ?? '' );
+				continue;
+			}
+			$next = 0;
+			foreach ( $content as $chunk ) {
+				$text .= is_string( $chunk )
+					? $chunk
+					: $this->rendered_text( isset( $inner[ $next ] ) ? array( $inner[ $next++ ] ) : array() );
+			}
+		}
+		return $text;
 	}
 
 	/**

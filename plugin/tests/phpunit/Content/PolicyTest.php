@@ -209,9 +209,27 @@ class PolicyTest extends WP_UnitTestCase {
 		$this->assertTrue( $this->has( $result['errors'], 'onerror attribute is not allowed in block markup' ), wp_json_encode( $result['errors'] ) );
 	}
 
-	public function test_a_fake_block_comment_cannot_hide_markup_from_the_scan(): void {
+	public function test_a_delimiter_that_swallows_markup_is_a_json_error(): void {
+		// Core reads the whole span up to `} -->` as one delimiter, so the script never renders; the bad JSON is the error.
 		$result = $this->check( '<!-- wp:paragraph {"a":1 --><script>alert(1)</script><!-- } --><p>x</p><!-- /wp:paragraph -->' );
-		$this->assertTrue( $this->has( $result['errors'], '<script> is not allowed in block markup' ), wp_json_encode( $result['errors'] ) );
+		$this->assertTrue( $this->has( $result['errors'], 'core/paragraph: block comment attributes are not valid JSON' ), wp_json_encode( $result['errors'] ) );
+	}
+
+	public function test_a_comment_that_is_not_a_delimiter_cannot_hide_a_handler(): void {
+		$result = $this->check( '<!-- wp:paragraph --><p title="<!-- wp:x "><img src=x onerror=alert(1)> -->">x</p><!-- /wp:paragraph -->' );
+		$this->assertTrue( $this->has( $result['errors'], 'onerror attribute is not allowed in block markup' ), wp_json_encode( $result['errors'] ) );
+	}
+
+	public function test_a_comment_closed_by_bang_cannot_hide_markup(): void {
+		$cases = array(
+			'<script>alert(1)</script>'              => '<script> is not allowed in block markup',
+			'<img src=x onerror=alert(1)>'           => 'onerror attribute is not allowed in block markup',
+			'<a href="javascript:alert(1)">y</a>'    => 'javascript: URL is not allowed in block markup',
+		);
+		foreach ( $cases as $payload => $message ) {
+			$result = $this->check( '<!-- wp:paragraph --><p>x<!-- wp:x --!>' . $payload . '</p><!-- /wp:paragraph -->' );
+			$this->assertTrue( $this->has( $result['errors'], $message ), $payload . ' ' . wp_json_encode( $result['errors'] ) );
+		}
 	}
 
 	public function test_markup_errors_carry_a_short_excerpt(): void {
