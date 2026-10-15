@@ -115,10 +115,26 @@ class MediaSeederTest extends WP_UnitTestCase {
 		$m      = $this->manifest();
 		$first  = $seeder->apply( $seeder->plan( $m ), $m );
 		remove_theme_mod( 'custom_logo' );
+		// Core mirrors custom_logo into the site_logo option and reads it back.
+		delete_option( 'site_logo' );
 
 		$seeder->apply( $seeder->plan( $m ), $m );
 
 		$this->assertSame( $first->id( 'logo' ), (int) get_theme_mod( 'custom_logo' ) );
+	}
+
+	public function test_a_trashed_logo_attachment_is_not_set_as_the_logo() {
+		$seeder = new MediaSeeder();
+		$m      = $this->manifest();
+		$first  = $seeder->apply( $seeder->plan( $m ), $m );
+		wp_trash_post( $first->id( 'logo' ) );
+		remove_theme_mod( 'custom_logo' );
+		// Core mirrors custom_logo into the site_logo option and reads it back.
+		delete_option( 'site_logo' );
+
+		$seeder->apply( $seeder->plan( $m ), $m );
+
+		$this->assertSame( 0, (int) get_theme_mod( 'custom_logo' ), 'a trashed attachment is never the site logo' );
 	}
 
 	public function test_two_attachments_under_one_key_are_reported() {
