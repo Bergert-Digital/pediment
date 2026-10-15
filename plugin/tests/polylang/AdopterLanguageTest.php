@@ -2,7 +2,6 @@
 
 use Pediment\Language\PolylangProvider;
 use Pediment\Seeder\Adopter;
-use Pediment\Seeder\ContentHash;
 use Pediment\Seeder\Manifest;
 use Pediment\Seeder\Meta;
 
@@ -79,33 +78,5 @@ class AdopterLanguageTest extends PolylangTestCase {
 		$result = ( new Adopter( new PolylangProvider() ) )->adopt( 'adoptme', 'en' );
 
 		$this->assertStringEndsWith( '/patterns/adoptme.php', $result['path'] );
-	}
-
-	public function test_the_german_hashes_are_written_against_the_german_post() {
-		$this->manifest();
-		$this->page( 'en', '<p>english</p>' );
-		$de = $this->page( 'de', '<p>deutsch</p>' );
-
-		( new Adopter( new PolylangProvider() ) )->adopt( 'adoptme', 'de' );
-
-		$this->assertSame( ContentHash::forPost( $de ), get_post_meta( $de, Meta::HASH, true ) );
-
-		// HASH alone is self-referential (it is always the live post's own hash,
-		// fix or bug) and does not prove SOURCE was crossed with the GERMAN
-		// title. Assert the exact value the next seed will compare against,
-		// keyed on "Übernimm mich" — the manifest's declared German title, not
-		// the English default — so a regression that hashes the wrong title is
-		// caught here rather than three months from now as a silent overwrite.
-		$this->assertSame(
-			ContentHash::compute( 'Übernimm mich', $this->resolvedPatternContent( $this->dir . '/adoptme.de.php' ) ),
-			get_post_meta( $de, Meta::SOURCE, true )
-		);
-	}
-
-	/** The bytes the pattern registry would read from the written file. */
-	private function resolvedPatternContent( string $file ): string {
-		ob_start();
-		include $file;
-		return (string) ob_get_clean();
 	}
 }

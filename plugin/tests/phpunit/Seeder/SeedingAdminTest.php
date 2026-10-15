@@ -132,7 +132,7 @@ class SeedingAdminTest extends WP_UnitTestCase {
 
 		$this->assertStringContainsString( 'Pediment claim', $report );
 		$this->assertSame( 'home', get_post_meta( $id, \Pediment\Seeder\Meta::KEY, true ) );
-		$this->assertSame( '', get_post_meta( $id, \Pediment\Seeder\Meta::HASH, true ) );
+		$this->assertSame( '', get_post_meta( $id, '_pediment_seed_hash', true ) );
 		$this->assertSame( 'Legacy home', get_post( $id )->post_title );
 	}
 

@@ -49,7 +49,7 @@ class ClaimRunnerTest extends WP_UnitTestCase {
 		$this->assertTrue( $result->applied );
 		$this->assertSame( [], $result->errors );
 		$this->assertSame( 'home', get_post_meta( $id, Meta::KEY, true ) );
-		$this->assertSame( '', get_post_meta( $id, Meta::HASH, true ) );
+		$this->assertSame( '', get_post_meta( $id, '_pediment_seed_hash', true ) );
 	}
 
 	/**

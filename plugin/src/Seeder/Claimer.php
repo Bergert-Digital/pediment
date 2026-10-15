@@ -8,10 +8,9 @@
  * such a site plans a CREATE for every entry and duplicates the whole site.
  *
  * A claim is the one-time bridge: it matches by the things a legacy row and a
- * manifest entry can still agree on, and writes exactly one meta key. It never
- * writes a hash, so every claimed row stays protected under the Differ's rule
- * 2 (missing hash = treat as edited); bringing a page under git's control is
- * still an explicit `wp pediment adopt`.
+ * manifest entry can still agree on, and writes exactly one meta key. The
+ * seed after a claim finds every claimed row and leaves it as it is — the
+ * seeder never writes to a row that exists.
  *
  * @package Pediment
  */

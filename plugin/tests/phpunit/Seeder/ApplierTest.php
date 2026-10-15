@@ -2,7 +2,6 @@
 
 use Pediment\Language\NullProvider;
 use Pediment\Seeder\Applier;
-use Pediment\Seeder\ContentHash;
 use Pediment\Seeder\ContentResolver;
 use Pediment\Seeder\DesiredState;
 use Pediment\Seeder\Differ;
@@ -50,7 +49,7 @@ class ApplierTest extends WP_UnitTestCase {
 		return [ 'pages' => $pages ];
 	}
 
-	public function test_creates_pages_with_key_slug_and_both_hashes() {
+	public function test_creates_pages_with_key_and_slug_and_no_hash_meta() {
 		$ids = $this->seed( $this->manifest( [ 'home' => [ 'title' => 'Home', 'content' => '<p>hi</p>' ] ] ) );
 		$id  = $ids['home|'];
 
@@ -59,8 +58,8 @@ class ApplierTest extends WP_UnitTestCase {
 		$this->assertSame( 'home', $post->post_name );
 		$this->assertSame( 'publish', $post->post_status );
 		$this->assertSame( 'home', get_post_meta( $id, Meta::KEY, true ) );
-		$this->assertSame( ContentHash::forPost( $id ), get_post_meta( $id, Meta::HASH, true ) );
-		$this->assertSame( ContentHash::compute( 'Home', '<p>hi</p>' ), get_post_meta( $id, Meta::SOURCE, true ) );
+		$this->assertSame( '', get_post_meta( $id, '_pediment_seed_hash', true ) );
+		$this->assertSame( '', get_post_meta( $id, '_pediment_seed_source', true ) );
 	}
 
 	public function test_block_attribute_json_survives_the_write() {

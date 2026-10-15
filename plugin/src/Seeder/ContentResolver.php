@@ -98,10 +98,6 @@ final class ContentResolver {
 	/**
 	 * Expand `{{media_url:…}}` / `{{media_id:…}}` in arbitrary markup.
 	 *
-	 * Public because `Adopter` has to hash the same shape the seeder will: the
-	 * bytes it writes back into the pattern file still carry placeholders, and a
-	 * source hash taken from those can never match what `DesiredState` computes.
-	 *
 	 * @throws ManifestError When the PCRE engine itself fails while rewriting placeholders.
 	 */
 	public function rewriteMarkup( string $content ): string {

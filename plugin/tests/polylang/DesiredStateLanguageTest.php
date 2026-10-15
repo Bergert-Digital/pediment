@@ -46,12 +46,6 @@ class DesiredStateLanguageTest extends PolylangTestCase {
 		$this->assertSame( 'home', $desired['home|en']->slug );
 	}
 
-	public function test_the_hashes_differ_per_language() {
-		$desired = ( new DesiredState( new PolylangProvider(), new ContentResolver( new MediaMap( [] ) ) ) )->build( $this->manifest() );
-
-		$this->assertNotSame( $desired['home|en']->sourceHash, $desired['home|de']->sourceHash );
-	}
-
 	public function test_a_missing_translated_pattern_is_reported() {
 		$state = new DesiredState( new PolylangProvider(), new ContentResolver( new MediaMap( [] ) ) );
 		$state->build( $this->manifest() );
