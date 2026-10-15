@@ -121,8 +121,8 @@ class ClaimerTest extends WP_UnitTestCase {
 		$this->assertSame( 1, $first['claimed'] );
 		$this->assertSame( [], $first['errors'] );
 		$this->assertSame( 'about', get_post_meta( $id, Meta::KEY, true ) );
-		$this->assertSame( '', get_post_meta( $id, Meta::HASH, true ) );
-		$this->assertSame( '', get_post_meta( $id, Meta::SOURCE, true ) );
+		$this->assertSame( '', get_post_meta( $id, '_pediment_seed_hash', true ) );
+		$this->assertSame( '', get_post_meta( $id, '_pediment_seed_source', true ) );
 		$this->assertSame( 'live copy', get_post( $id )->post_content );
 		$this->assertSame( 'Live title', get_post( $id )->post_title );
 

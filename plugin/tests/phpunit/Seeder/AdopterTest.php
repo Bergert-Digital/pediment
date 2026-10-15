@@ -3,10 +3,8 @@
 
 use Pediment\Language\NullProvider;
 use Pediment\Seeder\Adopter;
-use Pediment\Seeder\ContentHash;
 use Pediment\Seeder\Manifest;
 use Pediment\Seeder\MediaSeeder;
-use Pediment\Seeder\Meta;
 use Pediment\Seeder\Runner;
 
 class AdopterTest extends WP_UnitTestCase {
@@ -56,20 +54,18 @@ class AdopterTest extends WP_UnitTestCase {
 		$this->assertStringContainsString( 'client copy', $contents );
 	}
 
-	public function test_adopt_resets_the_hashes_so_the_page_is_no_longer_protected() {
+	public function test_adopt_writes_the_file_and_nothing_else() {
 		$ids = ( new Runner() )->run()->ids;
 		$id  = $ids['home|'];
 		wp_update_post( [ 'ID' => $id, 'post_content' => '<p>client copy</p>' ] );
+		$metaBefore = get_post_meta( $id );
+		$postBefore = get_post( $id );
 
 		( new Adopter( new NullProvider() ) )->adopt( 'home' );
 
-		$this->assertSame( ContentHash::forPost( $id ), get_post_meta( $id, Meta::HASH, true ) );
-		// SOURCE is hashed from what the pattern FILE resolves to, not from the
-		// row — that is what the next run will compare against.
-		$this->assertSame(
-			ContentHash::compute( get_post( $id )->post_title, $this->patternFileContent() ),
-			get_post_meta( $id, Meta::SOURCE, true )
-		);
+		$this->assertSame( $metaBefore, get_post_meta( $id ) );
+		$this->assertSame( $postBefore->post_content, get_post( $id )->post_content );
+		$this->assertSame( $postBefore->post_modified_gmt, get_post( $id )->post_modified_gmt );
 	}
 
 	public function test_dry_run_writes_no_file() {
@@ -99,8 +95,8 @@ class AdopterTest extends WP_UnitTestCase {
 	}
 
 	public function test_the_next_seed_sees_an_adopted_page_as_unchanged() {
-		// The promise of adopt: the client's version becomes the source of truth,
-		// so the run right after it must plan nothing.
+		// The live page and the pattern file now agree, and the run right
+		// after adopt plans nothing.
 		$ids = ( new Runner() )->run()->ids;
 		wp_update_post( [ 'ID' => $ids['home|'], 'post_content' => '<!-- wp:paragraph --><p>client copy</p><!-- /wp:paragraph -->' ] );
 
@@ -113,9 +109,6 @@ class AdopterTest extends WP_UnitTestCase {
 	}
 
 	public function test_the_next_seed_sees_an_adopted_page_with_media_as_unchanged() {
-		// The two halves of adopt — placeholder restoration and hash resetting —
-		// have to agree: the source hash it stores is compared against a hash the
-		// seeder computes AFTER placeholders expand.
 		wp_mkdir_p( $this->dir . '/seed/media' );
 		file_put_contents( $this->dir . '/seed/media/hero.svg', '<svg xmlns="http://www.w3.org/2000/svg"/>' );
 		remove_all_filters( 'pediment_seed_manifest' );

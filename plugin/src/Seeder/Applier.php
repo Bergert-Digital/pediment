@@ -16,8 +16,6 @@
  *     never re-tags or moves a post that already carries one. That and the
  *     translation-group link are the only things the seeder does to a row it
  *     did not create in this run.
- *   - _pediment_seed_hash comes from the PERSISTED row, _pediment_seed_source
- *     from the input.
  *
  * @package Pediment
  */
@@ -129,14 +127,8 @@ final class Applier {
 		}
 
 		update_post_meta( $postId, Meta::KEY, $entry->key );
-		$this->recordHashes( $postId, $entry );
 
 		return $postId;
-	}
-
-	private function recordHashes( int $postId, DesiredEntry $entry ): void {
-		update_post_meta( $postId, Meta::HASH, ContentHash::forPost( $postId ) );
-		update_post_meta( $postId, Meta::SOURCE, $entry->sourceHash );
 	}
 
 	/** @param array<string,int> $ids */

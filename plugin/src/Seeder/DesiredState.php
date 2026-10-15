@@ -78,8 +78,7 @@ final class DesiredState {
 					$spec->frontPage,
 					$spec->postsPage,
 					$spec->menuOrder,
-					$spec->terms,
-					ContentHash::compute( $title, $content )
+					$spec->terms
 				);
 
 				$desired[ $entry->id() ] = $entry;

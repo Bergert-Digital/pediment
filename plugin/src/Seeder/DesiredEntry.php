@@ -20,8 +20,7 @@ final class DesiredEntry {
 		public readonly bool $frontPage,
 		public readonly bool $postsPage,
 		public readonly int $menuOrder,
-		public readonly array $terms,
-		public readonly string $sourceHash
+		public readonly array $terms
 	) {}
 
 	public function id(): string {

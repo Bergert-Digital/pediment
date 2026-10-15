@@ -19,7 +19,7 @@ class DifferTest extends WP_UnitTestCase {
 		);
 		return new DesiredEntry(
 			$d['key'], $d['language'], $d['postType'], $d['title'], $d['slug'], $d['parentKey'],
-			$d['content'], $d['frontPage'], $d['postsPage'], $d['menuOrder'], $d['terms'], ''
+			$d['content'], $d['frontPage'], $d['postsPage'], $d['menuOrder'], $d['terms']
 		);
 	}
 
@@ -33,7 +33,7 @@ class DifferTest extends WP_UnitTestCase {
 		);
 		return new ActualEntry(
 			$d['id'], $d['key'], $d['language'], $d['postType'], $d['title'], $d['slug'], $d['parentId'],
-			$d['status'], $d['menuOrder'], '', '', ''
+			$d['status'], $d['menuOrder']
 		);
 	}
 

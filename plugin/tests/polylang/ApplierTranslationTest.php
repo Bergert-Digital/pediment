@@ -2,7 +2,6 @@
 
 use Pediment\Language\PolylangProvider;
 use Pediment\Seeder\Applier;
-use Pediment\Seeder\ContentHash;
 use Pediment\Seeder\ContentResolver;
 use Pediment\Seeder\DesiredEntry;
 use Pediment\Seeder\DesiredState;
@@ -149,7 +148,7 @@ class ApplierTranslationTest extends PolylangTestCase {
 		$lang->setLanguage( $postId, 'de' );
 		update_post_meta( $postId, Meta::KEY, 'about' );
 
-		$entry   = new DesiredEntry( 'about', 'en', 'page', 'About', 'about', null, '<p>x</p>', false, false, 0, [], ContentHash::compute( 'About', '<p>x</p>' ) );
+		$entry   = new DesiredEntry( 'about', 'en', 'page', 'About', 'about', null, '<p>x</p>', false, false, 0, [] );
 		$desired = [ 'about|en' => $entry ];
 		// The same already-tagged post, planned UNCHANGED under the 'en' map
 		// key — models a post whose Polylang language disagrees with what the
