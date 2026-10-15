@@ -55,6 +55,26 @@ class PatternFilesTest extends WP_UnitTestCase {
 		$this->assertSame( $text, $out['text'] );
 	}
 
+	public function test_raw_html_in_a_legacy_container_fails_the_file(): void {
+		$text = self::HEADER . "<!-- wp:pediment/prose -->\n<p>Raw <?php echo esc_html( acme_name() ); ?></p>\n<!-- /wp:pediment/prose -->\n";
+		$out  = $this->files()->convertText( $text );
+		$this->assertSame( 'failed', $out['status'] );
+		$this->assertSame( array( 'pediment/prose holds HTML outside blocks; edit it into blocks first ("<p>Raw <?php echo esc_html( acme_name() ); ?></p>")' ), $out['errors'] );
+		$this->assertSame( $text, $out['text'] );
+		$this->assertSame( '', $out['diff'] );
+		foreach ( $out['notes'] as $note ) {
+			$this->assertStringNotContainsString( 'rendered nothing', $note );
+		}
+	}
+
+	public function test_a_block_comment_whose_attributes_are_php_fails_the_file(): void {
+		$text = self::HEADER . '<!-- wp:pediment/pull-quote {"quote":"Q"} /-->' . "\n" . '<!-- wp:pediment/hero <?php echo acme_hero_attrs(); ?> /-->' . "\n";
+		$out  = $this->files()->convertText( $text );
+		$this->assertSame( 'failed', $out['status'] );
+		$this->assertSame( array( 'pediment/hero is still in the markup after conversion (its block comment does not parse); convert it by hand' ), $out['errors'] );
+		$this->assertSame( $text, $out['text'] );
+	}
+
 	public function test_dry_run_writes_nothing_and_a_real_run_rewrites_only_changed_files(): void {
 		$legacy = self::HEADER . '<!-- wp:pediment/pull-quote {"quote":"Q"} /-->' . "\n";
 		$plain  = self::HEADER . '<!-- wp:paragraph -->' . "\n" . '<p>Plain</p>' . "\n" . '<!-- /wp:paragraph -->' . "\n";

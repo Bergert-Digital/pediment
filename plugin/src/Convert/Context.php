@@ -43,6 +43,13 @@ final class Context {
 	private array $notes = array();
 
 	/**
+	 * Problems that stop the conversion, and how often each occurred.
+	 *
+	 * @var array<string,int>
+	 */
+	private array $problems = array();
+
+	/**
 	 * Constructor.
 	 *
 	 * @param Converter $converter Converter (for inner blocks).
@@ -75,6 +82,23 @@ final class Context {
 	 */
 	public function note( string $message ): void {
 		$this->notes[ $message ] = ( $this->notes[ $message ] ?? 0 ) + 1;
+	}
+
+	/**
+	 * Records a problem that makes the conversion unsafe: the run's result
+	 * keeps the input markup, and callers write nothing. Repeats are counted.
+	 *
+	 * @param string $message Problem; names the legacy block and what to do.
+	 */
+	public function refuse( string $message ): void {
+		$this->problems[ $message ] = ( $this->problems[ $message ] ?? 0 ) + 1;
+	}
+
+	/**
+	 * Whether a problem was recorded.
+	 */
+	public function refused(): bool {
+		return array() !== $this->problems;
 	}
 
 	/**
@@ -171,10 +195,21 @@ final class Context {
 	 * @param string $markup Final markup.
 	 */
 	public function result( string $markup ): Result {
-		$notes = array();
-		foreach ( $this->notes as $message => $count ) {
-			$notes[] = $count > 1 ? sprintf( '%s (%d times)', $message, $count ) : $message;
+		$notes = self::counted( $this->notes );
+		return new Result( $markup, $this->converted, array_values( array_unique( $this->unmapped ) ), $notes, self::counted( $this->problems ) );
+	}
+
+	/**
+	 * Messages with their count ("… (3 times)") when they occurred more than once.
+	 *
+	 * @param array<string,int> $messages Message → count.
+	 * @return list<string>
+	 */
+	private static function counted( array $messages ): array {
+		$out = array();
+		foreach ( $messages as $message => $count ) {
+			$out[] = $count > 1 ? sprintf( '%s (%d times)', $message, $count ) : (string) $message;
 		}
-		return new Result( $markup, $this->converted, array_values( array_unique( $this->unmapped ) ), $notes );
+		return $out;
 	}
 }

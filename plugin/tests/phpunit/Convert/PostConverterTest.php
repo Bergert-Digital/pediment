@@ -115,6 +115,45 @@ class PostConverterTest extends WP_UnitTestCase {
 		$this->assertSame( self::LEGACY, get_post_field( 'post_content', $id ) );
 	}
 
+	public function test_raw_html_in_a_legacy_container_fails_the_post_and_writes_nothing(): void {
+		$content = "<!-- wp:pediment/prose -->\n<!-- wp:paragraph -->\n<p>Block</p>\n<!-- /wp:paragraph -->\n<p>Raw tail</p>\n<!-- /wp:pediment/prose -->";
+		$id      = $this->page( $content );
+		foreach ( array( true, false ) as $dry_run ) {
+			$report = $this->service()->run( $id, $dry_run );
+			$this->assertSame( 'failed', $report['status'] );
+			$this->assertSame( array( 'pediment/prose holds HTML outside blocks; edit it into blocks first ("<p>Raw tail</p>")' ), $report['errors'] );
+			$this->assertSame( '', $report['diff'] );
+			$this->assertSame( 0, $report['restoreRevision'] );
+		}
+		$this->assertSame( $content, get_post_field( 'post_content', $id ) );
+		$this->assertCount( 0, wp_get_post_revisions( $id ) );
+	}
+
+	public function test_a_legacy_block_left_after_conversion_fails_the_post(): void {
+		$content = self::LEGACY . "\n" . '<!-- wp:pediment/pull-quote __ATTRS__ /-->';
+		$id      = $this->page( $content );
+		$report  = $this->service()->run( $id, false );
+		$this->assertSame( 'failed', $report['status'] );
+		$this->assertSame( array( 'pediment/pull-quote is still in the markup after conversion (its block comment does not parse); convert it by hand' ), $report['errors'] );
+		$this->assertSame( $content, get_post_field( 'post_content', $id ) );
+	}
+
+	public function test_candidates_find_delimiters_with_other_whitespace(): void {
+		global $wpdb;
+		$newline = $this->page( 'x' );
+		$tab     = $this->page( 'x' );
+		// Saved directly: kses re-serializes block comments on wp_insert_post.
+		$wpdb->update( $wpdb->posts, array( 'post_content' => "<!--\nwp:pediment/pull-quote {\"quote\":\"Hi\"} /-->" ), array( 'ID' => $newline ) );
+		$wpdb->update( $wpdb->posts, array( 'post_content' => "<!--\twp:pediment/pull-quote {\"quote\":\"Hi\"} /-->" ), array( 'ID' => $tab ) );
+		clean_post_cache( $newline );
+		clean_post_cache( $tab );
+		$service = $this->service();
+		$this->assertContains( $newline, $service->candidates() );
+		$this->assertContains( $tab, $service->candidates() );
+		$this->assertSame( 'converted', $service->run( $tab, false )['status'] );
+		$this->assertStringContainsString( 'is-style-pull-quote', get_post_field( 'post_content', $tab ) );
+	}
+
 	private function revisions_limited_to( int $limit ): void {
 		add_filter( 'wp_revisions_to_keep', static fn(): int => $limit );
 	}
