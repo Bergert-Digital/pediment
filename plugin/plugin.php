@@ -97,6 +97,9 @@ add_action(
 	5
 );
 
+// Pediment 4 seeds bootstrap-only; drop the 3.x content-arbitration meta once per site.
+add_action( 'admin_init', array( \Pediment\Upgrade\SeedHashCleanup::class, 'maybeRun' ) );
+
 if ( defined( 'WP_CLI' ) && WP_CLI ) {
 	require_once __DIR__ . '/wp-cli/SeedCommand.php';
 	\WP_CLI::add_command( 'pediment seed', \Pediment\Cli\SeedCommand::class );
