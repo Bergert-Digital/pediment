@@ -29,31 +29,6 @@ final class StyleValidator {
 	private const RESERVED_SLUGS = array( 'feed', 'rss', 'rss2', 'rdf', 'atom', 'embed' );
 
 	/**
-	 * Style-node paths whose values must be tokens.
-	 */
-	private const TOKEN_PATHS = array(
-		'color.text',
-		'color.background',
-		'color.gradient',
-		'typography.fontSize',
-		'typography.fontFamily',
-		'spacing.padding',
-		'spacing.margin',
-		'spacing.blockGap',
-		'border.radius',
-		'border.color',
-		'border.top.color',
-		'border.right.color',
-		'border.bottom.color',
-		'border.left.color',
-		'shadow',
-		'outline.color',
-		'filter.duotone',
-	);
-
-	private const KEYWORDS = array( '0', 'none', 'inherit', 'initial', 'unset', 'transparent', 'currentcolor' );
-
-	/**
 	 * CSS Color 4 named colours (148 keywords).
 	 */
 	private const CSS_NAMED_COLOURS = array(
@@ -163,13 +138,13 @@ final class StyleValidator {
 	private function validate_node( array $node, string $path ): array {
 		$errors = array();
 
-		foreach ( self::TOKEN_PATHS as $token_path ) {
+		foreach ( TokenValue::PATHS as $token_path ) {
 			$value = _wp_array_get( $node, explode( '.', $token_path ), null );
 			if ( null === $value ) {
 				continue;
 			}
-			foreach ( $this->leaves( $value, "{$path}.{$token_path}" ) as list( $leaf_path, $leaf ) ) {
-				if ( ! $this->is_token_value( $leaf ) ) {
+			foreach ( TokenValue::leaves( $value, "{$path}.{$token_path}" ) as list( $leaf_path, $leaf ) ) {
+				if ( ! TokenValue::isToken( $leaf ) ) {
 					$errors[] = "{$leaf_path}: literal value " . wp_json_encode( $leaf ) . ' — use a preset or custom token';
 				}
 			}
@@ -198,57 +173,6 @@ final class StyleValidator {
 		}
 
 		return $errors;
-	}
-
-	/**
-	 * Flattens a value into [path, scalar] pairs. A pure `{ref: "…"}` object
-	 * counts as a token; in a mixed object the `ref` key is skipped. A list,
-	 * not a map, for the same reason as strings().
-	 *
-	 * @param mixed  $value Value.
-	 * @param string $path  Path.
-	 * @return list<array{0:string,1:mixed}>
-	 */
-	private function leaves( $value, string $path ): array {
-		if ( ! is_array( $value ) ) {
-			return array( array( $path, $value ) );
-		}
-		if ( array_keys( $value ) === array( 'ref' ) && is_string( $value['ref'] ) && '' !== trim( $value['ref'] ) ) {
-			return array();
-		}
-		$out = array();
-		foreach ( $value as $key => $child ) {
-			if ( 'ref' === $key && count( $value ) > 1 ) {
-				continue;
-			}
-			array_push( $out, ...$this->leaves( $child, "{$path}.{$key}" ) );
-		}
-		return $out;
-	}
-
-	/**
-	 * Whether a scalar is an allowed token value.
-	 *
-	 * @param mixed $value Value.
-	 */
-	private function is_token_value( $value ): bool {
-		if ( is_int( $value ) || is_float( $value ) ) {
-			return 0.0 === (float) $value;
-		}
-		if ( ! is_string( $value ) ) {
-			return false;
-		}
-		$v = trim( $value );
-		if ( in_array( strtolower( $v ), self::KEYWORDS, true ) ) {
-			return true;
-		}
-		if ( 1 === preg_match( '/^-?\d+(\.\d+)?%$/', $v ) ) {
-			return true;
-		}
-		if ( 1 === preg_match( '/^var:preset\|[a-z-]+\|[a-z0-9-]+$/', $v ) ) {
-			return true;
-		}
-		return 1 === preg_match( '/^var\(--wp--(preset|custom)--[a-z0-9-]+(--[a-z0-9-]+)*\)$/', $v );
 	}
 
 	/**
