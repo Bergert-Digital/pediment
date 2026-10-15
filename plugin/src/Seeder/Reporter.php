@@ -62,6 +62,14 @@ final class Reporter {
 			}
 		}
 
+		if ( [] !== $result->menuNotices ) {
+			$lines[] = '';
+			$lines[] = 'MENUS';
+			foreach ( $result->menuNotices as $notice ) {
+				$lines[] = '  - ' . $notice;
+			}
+		}
+
 		if ( [] !== $result->notices ) {
 			$lines[] = '';
 			$lines[] = 'TRANSLATIONS';

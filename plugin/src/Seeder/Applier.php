@@ -237,7 +237,11 @@ final class Applier {
 			// (both come from manifest identifiers), flagged in case a future
 			// caller feeds this the same shape with looser input.
 			[ $key, $language ] = array_pad( explode( '|', (string) $mapKey ), 2, '' );
-			if ( '' === $language || $postId <= 0 ) {
+			// A trashed row stays out of the group: the seeder used to restore it
+			// first, and linking a page a person trashed into a group is new
+			// behaviour. The map is then short of one language, which the count
+			// check below skips whole, so the group is left as it is.
+			if ( '' === $language || $postId <= 0 || 'trash' === get_post_status( $postId ) ) {
 				continue;
 			}
 			$byKey[ $key ][ $language ] = $postId;

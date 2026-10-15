@@ -86,6 +86,20 @@ class ApplierTranslationTest extends PolylangTestCase {
 		$this->assertSame( $applied->ids['guide|de'], $lang->translationOf( $applied->ids['guide|en'], 'de' ) );
 	}
 
+	public function test_a_trashed_page_is_not_linked_into_a_new_translation_group() {
+		[ $applied ] = $this->seed();
+		$en = $applied->ids['guide|en'];
+		wp_delete_post( $applied->ids['guide|de'], true );
+		wp_trash_post( $en );
+
+		[ $second, $lang ] = $this->seed();
+
+		$de = $second->ids['guide|de'];
+		$this->assertGreaterThan( 0, $de, 'Precondition: the German guide page is created again.' );
+		$this->assertNotSame( $en, $lang->translationOf( $de, 'en' ), 'A page a person trashed is not pulled into a group.' );
+		$this->assertNotSame( $de, $lang->translationOf( $en, 'de' ) );
+	}
+
 	public function test_the_front_page_option_holds_the_default_language_page() {
 		[ $applied ] = $this->seed();
 

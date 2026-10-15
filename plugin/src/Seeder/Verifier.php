@@ -162,7 +162,7 @@ final class Verifier {
 				if ( 'publish' !== $nav->post_status ) {
 					$problems[] = sprintf( 'navs.%s: entity %d is "%s" — the menu will not render.', $mapKey, $navId, $nav->post_status );
 				}
-				if ( (string) $nav->post_content !== $this->navSeeder->serialize( $spec, $language, $ids ) ) {
+				if ( (string) $nav->post_content !== $this->navSeeder->serialize( $spec, $language, $this->navSeeder->linkableIds( $ids ) ) ) {
 					$problems[] = sprintf( 'navs.%s: stored membership does not match the manifest.', $mapKey );
 				}
 			}

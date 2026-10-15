@@ -100,6 +100,20 @@ class RunnerTest extends WP_UnitTestCase {
 		$this->assertStringContainsString( '0 to write,', \Pediment\Seeder\Reporter::summaryLine( $third ) );
 	}
 
+	public function test_a_new_menu_leaves_out_a_page_in_the_trash_without_failing_the_run() {
+		$first = ( new Runner() )->run();
+		wp_trash_post( $first->ids['about|'] );
+		$this->manifest['navs']['footer'] = [ 'title' => 'Footer', 'items' => [ [ 'entry' => 'home' ], [ 'entry' => 'about' ] ] ];
+
+		$second = ( new Runner() )->run();
+
+		$this->assertTrue( $second->ok(), implode( "\n", array_merge( $second->errors, $second->problems ) ) );
+		$this->assertSame( [ 'menu footer: about is in the trash, left out' ], $second->menuNotices );
+		$this->assertStringContainsString( "MENUS\n  - menu footer: about is in the trash, left out", \Pediment\Seeder\Reporter::text( $second ) );
+		$footer = get_posts( [ 'post_type' => 'wp_navigation', 'meta_key' => Meta::KEY, 'meta_value' => 'footer', 'posts_per_page' => 1 ] )[0];
+		$this->assertStringNotContainsString( '"id":' . $first->ids['about|'], $footer->post_content );
+	}
+
 	public function test_a_page_a_person_renamed_keeps_its_slug_and_the_seed_stays_green() {
 		$first = ( new Runner() )->run();
 		wp_update_post( [ 'ID' => $first->ids['about|'], 'post_name' => 'ueber-uns' ] );

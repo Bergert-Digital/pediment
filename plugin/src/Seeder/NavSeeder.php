@@ -28,6 +28,9 @@ final class NavSeeder {
 	/** @var string[] navKey|language map keys the most recent apply() created. */
 	private array $created = [];
 
+	/** @var string[] Entries the most recent apply() left out of a new menu, one line each. */
+	private array $notices = [];
+
 	public function __construct( private LanguageProvider $lang ) {}
 
 	public function plan( Manifest $manifest ): Plan {
@@ -75,6 +78,7 @@ final class NavSeeder {
 	public function apply( Plan $plan, Manifest $manifest, array $entryIds ): array {
 		$this->errors  = [];
 		$this->created = [];
+		$this->notices = [];
 
 		// Same contract as Applier::apply(): an errored plan writes nothing.
 		if ( $plan->hasErrors() ) {
@@ -82,7 +86,8 @@ final class NavSeeder {
 			return $this->existing();
 		}
 
-		$ids = $this->existing();
+		$ids      = $this->existing();
+		$linkable = $this->linkableIds( $entryIds );
 
 		// Without this, wp_filter_post_kses() strips the escapes out of the
 		// navigation-link JSON on save and the stored menu is not what the
@@ -112,6 +117,14 @@ final class NavSeeder {
 					continue;
 				}
 
+				// A page a person put in the trash is not a link for a new
+				// menu. It is not unresolved either: the seeder knows the
+				// post, and trashing it was a decision. The item is left out
+				// and the run says so.
+				foreach ( $this->trashedEntries( $spec, $item->language, $entryIds ) as $trashedKey ) {
+					$this->notices[] = sprintf( 'menu %s: %s is in the trash, left out', $spec->key, $trashedKey );
+				}
+
 				$postId = wp_insert_post(
 					wp_slash(
 						[
@@ -119,7 +132,7 @@ final class NavSeeder {
 							'post_status'  => 'publish',
 							'post_title'   => $spec->title,
 							'post_name'    => $this->slugFor( $spec, $item->language ),
-							'post_content' => $this->serialize( $spec, $item->language, $entryIds ),
+							'post_content' => $this->serialize( $spec, $item->language, $linkable ),
 						]
 					),
 					true
@@ -153,6 +166,31 @@ final class NavSeeder {
 	/** @return string[] navKey|language map keys the most recent apply() created. */
 	public function created(): array {
 		return $this->created;
+	}
+
+	/**
+	 * The entry ids a new menu may link to: the ones whose post is not in the
+	 * trash. The Verifier serializes with the same ids, so a menu created
+	 * without a trashed page still matches its expected membership.
+	 *
+	 * @param array<string,int> $entryIds
+	 * @return array<string,int>
+	 */
+	public function linkableIds( array $entryIds ): array {
+		return array_filter(
+			$entryIds,
+			static fn( int $postId ): bool => 'trash' !== get_post_status( $postId )
+		);
+	}
+
+	/**
+	 * What the most recent apply() left out of a menu it created, because the
+	 * page is in the trash. Notices, not errors: the run is still clean.
+	 *
+	 * @return string[]
+	 */
+	public function notices(): array {
+		return $this->notices;
 	}
 
 	/**
@@ -385,7 +423,10 @@ final class NavSeeder {
 			// (both come from manifest identifiers), same caveat as
 			// Applier::linkTranslationGroups().
 			[ $key, $language ] = array_pad( explode( '|', (string) $mapKey ), 2, '' );
-			if ( '' === $language || $postId <= 0 ) {
+			// A trashed menu stays out of the group: linking it would be new
+			// behaviour (the seeder used to restore it first), and a map short
+			// of one language is skipped whole by the count check below.
+			if ( '' === $language || $postId <= 0 || 'trash' === get_post_status( $postId ) ) {
 				continue;
 			}
 			$byKey[ $key ][ $language ] = $postId;
@@ -417,36 +458,68 @@ final class NavSeeder {
 	 * @return string[]
 	 */
 	private function unresolvedEntries( NavSpec $spec, string $language, array $entryIds ): array {
-		$missing = [];
+		return array_values(
+			array_filter(
+				$this->referencedEntries( $spec ),
+				static fn( string $entry ): bool => 0 === (int) ( $entryIds[ $entry . '|' . $language ] ?? 0 )
+			)
+		);
+	}
+
+	/**
+	 * Entry keys this nav references whose seeded post is in the trash.
+	 *
+	 * @param array<string,int> $entryIds
+	 * @return string[]
+	 */
+	private function trashedEntries( NavSpec $spec, string $language, array $entryIds ): array {
+		return array_values(
+			array_filter(
+				$this->referencedEntries( $spec ),
+				static function ( string $entry ) use ( $language, $entryIds ): bool {
+					$postId = (int) ( $entryIds[ $entry . '|' . $language ] ?? 0 );
+					return $postId > 0 && 'trash' === get_post_status( $postId );
+				}
+			)
+		);
+	}
+
+	/**
+	 * Every entry key the nav links to: top-level items, children, and mega
+	 * links. A key that is used twice is listed once.
+	 *
+	 * @return string[]
+	 */
+	private function referencedEntries( NavSpec $spec ): array {
+		$entries = [];
 		foreach ( $spec->items as $item ) {
-			$missing = array_merge( $missing, $this->unresolvedItem( (array) $item, $language, $entryIds ) );
+			$entries = array_merge( $entries, $this->referencedItem( (array) $item ) );
 		}
-		return $missing;
+		return array_values( array_unique( $entries ) );
 	}
 
 	/**
 	 * @param array<string,mixed> $item
-	 * @param array<string,int>   $entryIds
 	 * @return string[]
 	 */
-	private function unresolvedItem( array $item, string $language, array $entryIds ): array {
-		$missing = [];
+	private function referencedItem( array $item ): array {
+		$entries = [];
 
-		if ( isset( $item['entry'] ) && 0 === (int) ( $entryIds[ $item['entry'] . '|' . $language ] ?? 0 ) ) {
-			$missing[] = (string) $item['entry'];
+		if ( isset( $item['entry'] ) ) {
+			$entries[] = (string) $item['entry'];
 		}
 
 		foreach ( (array) ( $item['children'] ?? [] ) as $child ) {
-			$missing = array_merge( $missing, $this->unresolvedItem( (array) $child, $language, $entryIds ) );
+			$entries = array_merge( $entries, $this->referencedItem( (array) $child ) );
 		}
 
 		foreach ( (array) ( ( (array) ( $item['mega'] ?? [] ) )['columns'] ?? [] ) as $column ) {
 			foreach ( (array) ( ( (array) $column )['links'] ?? [] ) as $link ) {
-				$missing = array_merge( $missing, $this->unresolvedItem( (array) $link, $language, $entryIds ) );
+				$entries = array_merge( $entries, $this->referencedItem( (array) $link ) );
 			}
 		}
 
-		return $missing;
+		return $entries;
 	}
 
 	/**

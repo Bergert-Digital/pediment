@@ -123,7 +123,7 @@ final class Runner {
 		);
 		$errors   = array_values( array_unique( array_merge( $mediaErrors, $applied->errors, $navSeeder->errors() ) ) );
 
-		return new RunResult( $plan, true, $manifest->path(), $errors, $problems, $applied->ids, $state->missingTranslations() );
+		return new RunResult( $plan, true, $manifest->path(), $errors, $problems, $applied->ids, $state->missingTranslations(), $navSeeder->notices() );
 	}
 
 	/**
