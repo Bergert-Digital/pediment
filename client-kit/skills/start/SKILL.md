@@ -188,8 +188,11 @@ Report the local URL (http://localhost:8888), the wp-admin URL, and what to do n
 
 ## Phase 4 — hand off
 
-- **Greenfield:** tell the user which pattern files to edit (`patterns/<key>.php`), and that
-  `npm run seed` re-applies them. Offer to build the first page with them.
+- **Greenfield:** the seed created every page once, from its pattern file (`patterns/<key>.php`).
+  Tell the user that later changes to a page go through the `pediment-write-page` MCP tool or the
+  block editor — a re-seed never updates a page that exists — and that `npm run adopt -- <key>`
+  writes a finished page back into its pattern file for new environments. Offer to build the
+  first page with them.
 - **Port:** hand over the page list and run `/pediment:port-page <url>` per page, one at a time.
 
 Offer to create a GitHub remote **last**, and only with explicit confirmation:

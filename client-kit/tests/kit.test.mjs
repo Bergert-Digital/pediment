@@ -167,3 +167,20 @@ test('external docs use the public marketplace and explicit plugin name', async 
     assert.doesNotMatch(body, /\/plugin marketplace add \.\/client-kit/);
   }
 });
+
+test('port-page and start send changes to an existing page through MCP, not a re-seed', async () => {
+  const port = await readFile(path.join(kit, 'skills', 'port-page', 'SKILL.md'), 'utf8');
+  const start = await readFile(path.join(kit, 'skills', 'start', 'SKILL.md'), 'utf8');
+
+  assert.match(port, /pediment-write-page/);
+  assert.match(port, /npm run adopt -- <key>/);
+  assert.doesNotMatch(port, /re-validate \(step 5\), re-seed/);
+  assert.match(start, /pediment-write-page/);
+  assert.doesNotMatch(start, /`npm run seed` re-applies them/);
+});
+
+test('visual-qa no longer recommends the legacy cta block', async () => {
+  const body = await readFile(path.join(kit, 'shared', 'visual-qa.md'), 'utf8');
+  assert.doesNotMatch(body, /A conversion band → `cta`/);
+  assert.match(body, /`panel`/);
+});
