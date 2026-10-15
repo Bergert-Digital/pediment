@@ -124,7 +124,7 @@ final class PostConverter {
 		$posts = array();
 		foreach ( array_values( array_unique( array_map( 'intval', $ids ) ) ) as $id ) {
 			$posts[] = null !== $can && get_post( $id ) instanceof \WP_Post && ! $can( $id )
-				? $this->skipped( $id, 'you cannot edit this post' )
+				? array( 'title' => '' ) + $this->skipped( $id, 'you cannot edit this post' )
 				: $this->run( $id, $dry_run );
 		}
 		return array(

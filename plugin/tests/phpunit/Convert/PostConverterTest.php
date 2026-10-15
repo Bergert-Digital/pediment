@@ -112,6 +112,7 @@ class PostConverterTest extends WP_UnitTestCase {
 		$report = $this->service()->runMany( array( $id ), false, static fn( int $post ): bool => false );
 		$this->assertSame( 'skipped', $report['posts'][0]['status'] );
 		$this->assertSame( array( 'you cannot edit this post' ), $report['posts'][0]['notes'] );
+		$this->assertSame( '', $report['posts'][0]['title'], 'the title of a post the caller may not edit is not shown' );
 		$this->assertSame( self::LEGACY, get_post_field( 'post_content', $id ) );
 	}
 
