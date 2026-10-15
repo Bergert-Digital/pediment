@@ -112,6 +112,9 @@ if ( defined( 'WP_CLI' ) && WP_CLI ) {
 
 	require_once __DIR__ . '/wp-cli/LanguagesCommand.php';
 	\WP_CLI::add_command( 'pediment languages', \Pediment\Cli\LanguagesCommand::class );
+
+	require_once __DIR__ . '/wp-cli/ConvertCommand.php';
+	\WP_CLI::add_command( 'pediment convert', \Pediment\Cli\ConvertCommand::class );
 }
 
 add_action(
