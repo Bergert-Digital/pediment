@@ -65,6 +65,23 @@ else. Each tool checks WordPress capabilities on every call.
   `all: true` it skips the posts the user cannot edit.
 - `pediment-rollback-page` refuses a revision that belongs to another page.
 
+### Converting legacy blocks
+
+`pediment-convert-legacy` refuses a post (status `failed`, nothing written,
+also in a dry run) in these cases, so a dry run shows them before a real run:
+
+- Revisions are disabled for the post or limited to fewer than 2. The tool
+  needs a backup revision first.
+- The user lacks `unfiltered_html`, and saving as that user would strip
+  content outside the converted blocks (kses removes iframes and similar
+  markup). Run the conversion as an administrator, or use WP-CLI, which is
+  trusted.
+- The converted content would add a content-rule error.
+
+`failed` can also mean the write happened but the revision limit pruned the
+backup afterwards; the error message says so. Details and the results table:
+[convert.md](convert.md).
+
 ### Revisions
 
 WordPress saves no revision when it creates a page, so `pediment-write-page`
