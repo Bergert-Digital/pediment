@@ -2,28 +2,33 @@
 
 The plugin ships a declarative seeding engine: a client theme declares the pages,
 posts, media, navigation, and custom post types a site needs in a single
-`seed/manifest.php` file, and `wp pediment seed` makes the database match it.
+`seed/manifest.php` file, and `wp pediment seed` creates whatever of it the
+site does not have yet.
 Content itself (block markup) lives in the theme's `patterns/` directory, not in
 the manifest — the manifest is structure, patterns are content.
 
 This is the reference for a client-theme author who has never touched the
-engine: what you declare, what the seeder owns forever, what your client can
-safely edit once the site is live, and what to do when a run reports a problem.
+engine: what you declare, what the seeder creates, why it never changes a page,
+menu or setting that already exists, and what to do when a run reports a
+problem.
 Every snippet below is copied from the plugin's own reference fixture,
 [`tests/fixtures/client-theme/seed/manifest.php`](../tests/fixtures/client-theme/seed/manifest.php)
 — the file the e2e suite seeds and asserts against on every CI run.
 
-## The arbitration contract, in one paragraph
+## Bootstrap only, in one paragraph
 
-Git owns structure — which entries exist, their slugs, their nesting, which
-page is the front page, which menu a page belongs to, which custom post types
-are registered, which media files exist. The database owns content once a
-human has edited it in the block editor. A stored hash decides which regime
-applies to a given row: if the hash the seeder wrote still matches what's in
-the database, git also still owns the content and a manifest/pattern change
-gets written on the next run; the moment the row's hash stops matching (an
-editor changed the title or body), content and title freeze permanently and
-only structure keeps being enforced.
+The seeder bootstraps a site; it does not maintain one. On a fresh site,
+`wp pediment seed` creates every page, post, menu and media file the manifest
+declares, sets the front page, the posts page and the site logo, and gives
+every row its identity (`_pediment_seed_key`). On a site that is already
+seeded, it creates only what is missing — a page or a language the manifest
+added, a menu or a media file that does not exist yet — and never changes a
+row that exists: not its title, content, slug, parent, order or status, not a
+menu's links, not a reading setting or a logo a person chose. A live site
+belongs to the people and the AI agent who edit it: pages change in the block
+editor or through the Pediment MCP tools ([mcp.md](mcp.md)), never through a
+re-seed. Pattern files stay in the theme for one job: building the same pages
+in a new environment.
 
 ## The manifest
 
@@ -89,11 +94,11 @@ Per-entry keys:
 | `title` | yes | — | Non-empty string. |
 | `pattern` **or** `content` | yes, exactly one | — | `pattern` is a registered block-pattern slug; `content` is literal block markup (an empty string is valid, e.g. the fixture's `contact` and `blog` pages). Declaring both, or neither, is a validation error. |
 | `post_type` | `pages`/`posts`: no; `entries`: yes | `page` / `post` | Never rewritten once a row exists — a mismatch between the manifest and the database is a hard error (see below). |
-| `slug` | no | the last `/`-segment of the key | Must already be a valid slug (`sanitize_title($slug) === $slug`) and non-empty, so a key may not end in `/`; it is structure and gets reverted if an editor changes it. |
+| `slug` | no | the last `/`-segment of the key | Must already be a valid slug (`sanitize_title($slug) === $slug`) and non-empty, so a key may not end in `/`. Used when the entry is created; a later change on the site stays. |
 | `parent` | no | none | Another entry's key. Must be declared; parent cycles are rejected at load time. |
 | `front_page` | no | `false` | At most one entry site-wide may set this. |
 | `posts_page` | no | `false` | At most one entry site-wide may set this. |
-| `menu_order` | no | `0` | Structure; enforced. |
+| `menu_order` | no | `0` | Used when the entry is created. |
 | `terms` | no | `[]` | `taxonomy => [slug, …]`. Create-only — see Limitations. |
 
 ### `media`
@@ -134,10 +139,13 @@ Each item is either `{ entry, label }` — a link to a manifest entry, resolved
 to that entry's live post ID and permalink at write time — or `{ url, label }`
 for an external/custom link. An `entry` that names an undeclared key fails
 validation immediately; an `entry` that's declared but has no live post yet
-(e.g. its own write failed earlier in the same run) is reported on every run,
-and the whole navigation is left exactly as it is rather than written without
-that link — a menu that quietly comes out one item short is worse than one
-that visibly fails.
+(e.g. its own write failed earlier in the same run) is reported, and the menu
+is not created until every link resolves — a menu that quietly comes out one
+item short is worse than one that visibly fails.
+
+The `navs` section describes a menu at the moment it is created. After that
+the menu is edited in the Site Editor, and a change to `navs` reaches only
+environments where that menu does not exist yet.
 
 `label` is optional on an `{ entry, … }` item. When it is omitted,
 `NavSeeder::serialize()` falls back to the linked entry's own `post_title` —
@@ -195,7 +203,7 @@ Two consequences worth knowing before you declare one:
   live post in a language, the whole submenu is omitted from that language's
   serialized menu rather than its children being promoted to the top level —
   and, as with any unresolved link, `unresolvedEntries()` reports it and the
-  navigation is left exactly as it is rather than written short.
+  menu is not created yet.
 
 #### Mega menus
 
@@ -228,31 +236,9 @@ may not declare `children`, may not appear inside `children`, and may not
 combine with the other item types. All of it is validated at parse time with
 exact paths (`navs.primary.items.1.mega.columns.0.links.2`).
 
-Ownership is split, and this is the one place nav seeding deviates from
-"membership is git-owned; editor changes are reverted":
-
-- **Membership is still git-owned.** Where the mega menu sits, and that it
-  exists at all, comes from the manifest. Deleting the block in the editor
-  brings it back on the next seed; adding a second one removes it.
-- **Content is hash-arbitrated, exactly like page content** ("The two hashes"
-  above, scoped to one block). The seeder stores a per-position hash of each
-  mega block it writes (`_pediment_seed_mega_hash` on the nav entity). While
-  the stored block still matches, manifest changes flow through on re-seed.
-  The moment someone edits the block in the Site Editor the hash stops
-  matching, and from then on the seeder splices the stored block through
-  verbatim — the client's edits win, on every future run.
-- **Re-asserting git** = delete the block in the editor and re-seed:
-  membership re-creates it from the manifest and re-hashes it.
-
-A claimed legacy nav carries no hash, so a hand-built mega menu survives its
-first seed — the same "a claimed row's very first seed is safe" property pages
-have. Matching between manifest mega items and stored blocks is positional
-(nth item ↔ nth block): swapping two mega items within one nav transfers
-their edit-ownership, so treat multi-mega navs with care. Deleting or
-inserting a mega item in a multi-mega nav likewise shifts the positions after
-it, so an edited block's ownership can transfer to a neighboring position —
-it does not flip back to git (the carry-forward still holds), but placement
-can surprise.
+Like every menu, a mega menu is written once, when its menu is created. After
+that its links, labels and descriptions are edited in the Site Editor, and the
+seeder never touches them again.
 
 ### `post_types`
 
@@ -280,10 +266,9 @@ reports this (see below), it doesn't fail silently.
 'site' => array( 'logo' => 'logo' ),
 ```
 
-Names a `media` key; must already be declared there. On apply, that
-attachment becomes the site's custom logo (`theme_mod: custom_logo`) — and
-keeps becoming it: this is structure, re-asserted on every run, not a
-one-time default (see Limitations).
+Names a `media` key; must already be declared there. That attachment becomes
+the site's custom logo (`theme_mod: custom_logo`) when the seeder uploads it,
+or while the site has no logo. A logo a person chose later stays.
 
 ## Languages
 
@@ -368,9 +353,8 @@ share one `post_name` namespace regardless of which language owns them. If
 `slugFor()` instead reused the default's slug verbatim, two languages both
 asking for the literal slug `sample-insight-one` would land as
 `sample-insight-one` and `sample-insight-one-2` — indistinguishable from any
-other slug collision — and once that happens `Verifier::verify()` reports a
-mismatch on every run forever, because retrying would just get
-re-uniquified identically on the next write (see "Failure modes" below).
+other slug collision — and `Verifier::verify()` reports a mismatch on the run
+that creates the page (see "Failure modes" below).
 `EntrySpec::slugFor()` (`plugin/src/Seeder/EntrySpec.php`) and `NavSeeder`'s
 private `slugFor()` (`plugin/src/Seeder/NavSeeder.php`) both apply the same
 `<key>-<lang>` idiom for the same reason — the derived suffix is the
@@ -441,6 +425,10 @@ TRANSLATIONS
     `wp pediment adopt contact --language=fr` once it is translated in the editor.
 ```
 
+Notices are about pages the run creates. A page that already exists is never
+written again, so its translation gaps are not reported; translate it on the
+site.
+
 **Notices never fail the run.** `RunResult::ok()` only inspects `errors` and
 `problems`; a fresh site that just added a language would otherwise fail its
 very first seed on the exact gap the notice exists to describe. Read the
@@ -462,77 +450,83 @@ titles). For the default language, or on a monolingual site, `--language` is
 omitted or matches the default and the file has no suffix, same as before
 this step existed.
 
-## What "structure" means, concretely
+## On a site that is already seeded
 
-Everything the seeder re-asserts on every run, regardless of what an editor
-has done to a row:
+Every run, for every row the manifest declares:
 
-- **Existence** — a manifest entry with no matching row gets created.
-- **Slug** — reverted to the manifest's value if changed (see the slug-collision
-  failure mode below for the one case this can't do).
-- **Nesting** — `post_parent`, resolved from the `parent` key to the parent's
-  live post ID.
-- **Front page / posts page** — `show_on_front` / `page_on_front` /
-  `page_for_posts`, enforced for the default-language entry.
-- **Nav membership** — which entries a navigation menu links to, and in what
-  order (see Limitations: this one *does* revert an editor's menu edit). A
-  trashed menu is restored in place, not replaced by a second entity.
-- **Custom post type registration** — the CPT exists and is reachable.
-- **Media presence** — a `media` key resolves to exactly one live attachment;
-  trashed attachments are restored rather than re-uploaded.
-- **The site logo** — `site.logo` is re-asserted on every run whenever
-  `custom_logo` has drifted, including away from a value a client chose in the
-  Customizer (see Limitations).
-- **Editorial state** — only `trash` is reverted (restored to `publish`).
-  `draft` and `pending` are left alone: a client taking a page offline, or
-  holding a revision for review, is not overruled by the next seed.
+- **Missing** (no row carries its key) → `create`, with its language, terms,
+  slug, parent and menu order. A new child finds a parent that already exists.
+- **Exists** → `unchanged`. Title, content, slug, parent, menu order, status
+  and terms stay as they are, however far they are from the manifest.
+- **In the trash** → `unchanged`, with a note. The seeder neither restores it
+  nor creates a second row under the same key. Restore it yourself, or empty
+  the trash: once the row is gone for good, the next seed creates it again.
+- **Not declared any more** → `orphan`, left in place.
 
-Title and body content are explicitly *not* on this list once a row has been
-edited — that's the arbitration contract above.
+Menus and media follow the same rule. A menu that is not published gets a
+note too, because it does not render, and a media file in the trash stays
+there: delete it permanently and the next seed uploads it again.
 
-## The two hashes
+A menu the run creates is the one place the trash matters to a link. A page in
+the trash is left out of the new menu, and the run says so in a `MENUS`
+section (next to `TRANSLATIONS`, in the text report of a real run):
 
-`Pediment\Seeder\Meta` defines the identity and arbitration keys:
+```
+MENUS
+  - menu primary: contact is in the trash, left out
+```
 
-- `_pediment_seed_key` — stable identity. The engine never looks up seeded
-  content by slug or title; duplicate keys are the one thing it treats as
-  fatal (below).
-- `_pediment_seed_hash` — a hash of the **persisted row**
-  (`ContentHash::forPost()`, title + `post_content` as WordPress actually
-  stored them, *after* WordPress's own normalization). This is what decides
-  "has the client edited this?" — hashing the intended input instead would
-  make WordPress's own markup normalization look like an edit on literally
-  every page, on the very first re-seed.
-- `_pediment_seed_source` — a hash of the **git-side input** (the resolved
-  pattern or literal content) the seeder last wrote. This is what decides "has
-  the manifest changed since the last write?"
+It is a notice, not an error: the run stays clean, and the menu is edited in
+the Site Editor like any other. A page that has no post at all yet (its own
+create failed) is different: the menu is not created, and the run reports an
+error.
 
-On every entry, the Differ applies one rule, in order:
+Three things the seeder still does on a site that is already seeded, because
+they are identity, not content:
 
-1. No row exists → **create** it.
-2. The stored hash is missing, from an older hash version, or no longer
-   matches the row → the row is treated as edited: title and content are
-   never touched; only structure is enforced. The dry-run plan's note tells
-   you which of the three it was — see "Reading a plan" below.
-3. Otherwise → content is up for grabs: write it if `_pediment_seed_source`
-   shows the manifest/pattern changed, leave it alone if not.
+- **Language repair.** A row with no language at all (a page that predates the
+  site's languages) is tagged with the language it was found under. A row that
+  already has a language is never moved.
+- **Translation groups.** Every language of a seed key is linked into one
+  translation group on every run, so a language the manifest adds later
+  creates its own pages and joins the groups that already exist. A row in the
+  trash is never linked into a group, and a group short of one configured
+  language is left as it is.
+- **Empty settings.** The front page, the posts page and the site logo are set
+  when their entry or attachment is created in this run, or while the site
+  has none (`page_on_front`, `page_for_posts` or `custom_logo` is `0`). A
+  choice a person made stays. A page in the trash is never made the front page
+  or the posts page, and an attachment in the trash is never made the logo.
 
-Because rule 2 also fires for a row the engine has simply never written a
-hash to yet, a *claimed* row's very first `wp pediment seed` is safe — it is
-treated as edited and only gets structure applied, never a silent content
-overwrite. That safety net only covers rows the engine can see in the first
-place: `StateReader::read()` only reads posts that already carry
-`_pediment_seed_key` at all (`meta_key => Meta::KEY, meta_compare =>
-'EXISTS'`), so an *unclaimed* legacy row has no `$actual` entry whatsoever.
-For that row `Differ::diff()` never reaches rule 2 — `$have` is `null`, rule
-1 fires, and `wp pediment seed` plans a **create**, duplicating the row
-instead of protecting it. Rule 2's protection is conditional on the row
-already carrying a key; `wp pediment claim` (below) is what gives an existing
-site's content that key in the first place, before its first seed.
+The header template part is not part of the seeder: plugin activation and a
+theme switch create it once (`plugin/inc/bootstrap.php`), and `wp pediment
+seed` never touches it.
+
+Patterns are read only for rows the run creates. A theme may delete the
+pattern file of a page that now lives only on the site; the next seed does not
+need it. A *new* entry whose pattern is not registered still stops the run.
+
+## Identity
+
+`_pediment_seed_key` (`Pediment\Seeder\Meta::KEY`) is the only meta the
+seeder writes. It is the stable identity: the engine never looks seeded content
+up by slug or title, and duplicate keys are the one thing it treats as fatal
+(below).
+
+Pediment 3.x also stored two content hashes (`_pediment_seed_hash`,
+`_pediment_seed_source`) and a mega-menu hash (`_pediment_seed_mega_hash`) to
+decide when a re-seed could overwrite a page. 4.0 removes them: on the first
+admin request after the update, `Pediment\Upgrade\SeedHashCleanup` deletes
+all three from every post, once.
+
+`StateReader::read()` only sees posts that already carry a key, so on a site
+whose content predates the engine a first seed plans a `create` for every
+entry and duplicates the site. `wp pediment claim` (below) gives that content
+its keys first.
 
 ## Reading a plan (`wp pediment seed --dry-run`)
 
-A clean, up-to-date site:
+A seeded site where nothing is missing:
 
 ```
 Pediment seed — dry run
@@ -557,66 +551,34 @@ PAGES & POSTS
 NAV
   unchanged   primary
 
-0 to write, 0 protected, 0 orphan, 13 unchanged. Nothing was written (--dry-run).
+0 to write, 0 orphan, 13 unchanged. Nothing was written (--dry-run).
 ```
 
 That's the state every commit to a client theme's `seed/manifest.php` /
 `patterns/` should converge to before merging: `0 to write`. `docs/STANDARDS.md`
-makes this a requirement, not a suggestion.
+makes this a requirement, and the seed-check action in client CI greps for
+`0 to write,` — the words and the comma are a contract.
 
-A row that needs a structural fix (here, an editor renamed a page's slug)
-shows the field, its current and desired value, and rolls up into the
-`N to write` count:
+A page a person rewrote, renamed and moved still reads `unchanged`: the plan
+does not compare a row that exists with the manifest at all, so a dry run
+cannot answer "has anyone edited this page?".
+
+A manifest that added a page (`team`), on a site where someone trashed
+`contact`:
 
 ```
 PAGES & POSTS
-  update      about            slug "about-clientslug" -> "about"
+  unchanged   home
+  unchanged   about
+  unchanged   contact          in the trash — left alone; restore it in the editor, or empty the trash and the next seed creates it again
+  create      team             title=Team; content -> 11 bytes; slug=team; parent_key=; status=publish; menu_order=0
 
-NAV
-  update      primary          items 3 -> 3
-
-2 to write, 0 protected, 0 orphan, 11 unchanged.
+1 to write, 0 orphan, 13 unchanged.
 ```
-
-(The nav shows `update` too here because the nav's stored links reference the
-page's numeric ID; the *count* of items doesn't change, but this is a case
-where a stale reference would be invisible if the report only counted items —
-so treat "items 3 -> 3" as "the membership no longer matches the manifest",
-not as "nothing to see here.")
-
-A row whose content is genuinely protected — the manifest/pattern changed
-*and* an editor separately changed the same row — carries a `^ protected:`
-line naming the frozen fields and why:
-
-```
-  update      guide/pricing    slug "pricing-old" -> "pricing"
-              ^ protected: title, content (edited in the editor — content and title left alone)
-```
-
-The three notes you'll see there, and what each means:
-
-- `edited in the editor — content and title left alone` — a real client edit;
-  the fix (if you want git to own it again) is `wp pediment adopt`.
-- `never seeded by this engine — content left alone; run wp pediment adopt to
-  take it into git` — this row predates the seeder (e.g. migrating an existing
-  site onto it). Same fix.
-- `seeded by an older hash version — content left alone; re-adopt to refresh
-  it` — the engine's hash format changed since this row was last written.
-
-**A plan-only edit that does not collide with a manifest change never shows
-up as "protected" at all.** If nobody has touched the manifest since a client
-edited a page, the Differ has nothing it wants to write, so the item reports
-`unchanged` — correctly, since there's genuinely no pending action, but it
-means a dry run cannot answer "has anyone edited this page in the editor?" on
-its own.
 
 Rows the manifest no longer declares, but that still carry a seed key, are
 listed as `orphan` and left in place — nothing ever deletes a post on your
 behalf.
-
-Two things a dry-run plan is silent about, because the Applier — not the
-Differ — owns them and they never produce plan items: the front-page/posts-page
-options, and taxonomy term drift on an existing entry (see Limitations).
 
 ## `wp pediment seed`
 
@@ -628,7 +590,9 @@ Runs the same five phases WP-CLI and wp-admin both go through: resolve desired
 state → resolve actual state → diff into a plan → apply → verify. `--dry-run`
 stops after the plan and writes nothing. `--json` emits the same information
 machine-readably (`applied`, `ok`, `counts`, one object per plan item,
-`errors`, `problems`) instead of the text report above.
+`errors`, `problems`) instead of the text report above. Since 4.0, `counts`
+has exactly the keys `create`, `unchanged` and `orphan`, and an item has no
+`protected` field.
 
 Rewrite rules are flushed once, at the very end, and only softly
 (`flush_rewrite_rules(false)`) — the engine never sets `permalink_structure`
@@ -643,9 +607,12 @@ Settings → Permalinks, which flushes correctly there.
 wp pediment adopt <key> [--language=<code>] [--dry-run]
 ```
 
-The inverse of seeding: exports a live entry's current block markup back into
-its `patterns/<slug>.php` file, and resets both hashes so the next seed treats
-the page as up to date rather than protected. Concretely, it:
+Exports a live entry's current block markup into its `patterns/<slug>.php`
+file. Use it when a page was built or changed on the site and a new
+environment (a fresh local wp-env, CI, a staging site) should get the same
+page from its first seed. It writes the file only — no post meta, no post —
+and the next seed on the site it came from still plans `unchanged`.
+Concretely, it:
 
 - refuses to run against an entry declared with literal `content` — only
   `pattern`-backed entries have a file to adopt into;
@@ -656,22 +623,16 @@ the page as up to date rather than protected. Concretely, it:
   one is already there, rather than regenerating a bare one;
 - keeps a `.bak` sibling when it's about to overwrite a file whose contents
   differ from what it's about to write;
-- reads the file back the way the pattern registry will, verifies the
-  written `Slug:` header still matches what the manifest expects, and rolls
-  back to the backup (or deletes the new file) if it doesn't — a mismatched
-  header would mean the next seed can't find the pattern at all;
-- stores the source hash in exactly the shape the next seed will compute it —
-  the *manifest's* title crossed with the pattern output *after* media
-  placeholders expand. Hashing the file's raw bytes instead would leave every
-  media-bearing page mismatched, and hashing the live title would make the
-  next run write the manifest's old title back over a client's rename.
+- reads the written `Slug:` header back the way the pattern registry will, and
+  rolls back to the backup (or deletes the new file) if it does not match the
+  manifest — a mismatched header would mean a seed in a new environment cannot
+  find the pattern.
 
 **Adopt takes the body into git, never the title.** The manifest is a
 hand-edited file and the engine does not rewrite it, so adopting a page a
 client renamed prints a warning naming both titles and leaves the manifest
-alone. The next seed will not revert the rename (the source hash matches), but
-git and the database now disagree about the name until you edit the manifest
-yourself.
+alone. Update the manifest by hand if new environments should get the new
+name.
 
 **Known limitation:** sized image variants (`hero-300x200.jpg`) and `srcset`
 attributes are *not* rewritten to placeholders — only the exact attachment URL
@@ -694,12 +655,9 @@ manifest entries by the things a legacy row and a manifest entry can still
 agree on, and writes exactly one meta key, `_pediment_seed_key`
 (`Pediment\Seeder\Claimer`, `plugin/src/Seeder/Claimer.php`).
 
-That's the only thing it writes. It never writes `_pediment_seed_hash` — and
-the omission is the point, not an oversight: the Differ's rule 2 above ("The
-two hashes") treats a missing hash exactly like an edited row, so a claimed
-row comes out of the very next seed *protected* — structure is enforced,
-title and content are left alone. Bringing a page under git's control after
-that is `wp pediment adopt <key>`, the same command that adopts any other row.
+That's the only thing it writes. The seed after a claim finds every claimed
+row by its key and plans it `unchanged`: content, title, slug and status stay
+exactly as they were. Claimed menus are left as they are too.
 
 ### Precondition: configure languages before you claim
 
@@ -712,9 +670,9 @@ unconfigured is a mistake a re-run cannot repair. With Polylang inactive or
 unconfigured, `LanguageRegistry` hands back `NullProvider`, whose language
 list is a single empty string: the claim would key only the default-slug rows
 and report every other language's live page as `no-match`. Configure the
-languages afterwards, seed, and each of those unclaimed pages trips the
-Differ's rule 1 and is created again alongside the live one — the exact
-duplication a claim exists to prevent.
+languages afterwards, seed, and each of those unclaimed pages has no key, so
+the seed creates it again alongside the live one — the exact duplication a
+claim exists to prevent.
 
 `wp pediment languages` is WP-CLI only; it has **no wp-admin equivalent**.
 The option that makes `wp_navigation` translatable, in particular, can never
@@ -783,25 +741,17 @@ entities in that language at all. A single unclaimed nav whose slug does not
 match the derived one is reported `ambiguous`, not `no-match` — the claim can
 see a menu there and will not guess.
 
-> **Check every nav line in a claim preview by hand.** Navs are the one place
-> where the claim's "writes nothing but the identity" promise does not carry
-> through to the seed that follows. There is no hash arbitration for navs at
-> all: menu membership is git-owned, so `NavSeeder::plan()` compares the
-> serialized item list and emits an `update` whose note reads *"membership is
-> git-owned; editor changes to this menu are reverted."* A claimed nav's links
-> are therefore **rewritten by the very next seed** — unlike a claimed page,
-> which comes out `protected`.
->
-> That matters because of the slug-blind rule above. On a live site whose only
-> Site-Editor menu is, say, a footer menu, one declared nav plus one unclaimed
-> `wp_navigation` is enough: the claim keys that footer menu as `primary`
-> without comparing slug or title, and the next seed replaces its links with
-> the manifest's. The rule is deliberate — legacy menus carry slugs like
-> `primary-2` that cannot slug-match, which is the case it was built for — so
-> the safeguard is you, reading the `navigation "<title>" (ID <n>)` note in
-> `wp pediment claim --dry-run` and confirming it names the menu you meant.
->
-> The one exception is mega-menu *content*, which is hash-arbitrated per block — see "Mega menus" under `navs`.
+> **Check every nav line in a claim preview by hand.** On a live site whose
+> only Site-Editor menu is, say, a footer menu, one declared nav plus one
+> unclaimed `wp_navigation` is enough: the claim keys that footer menu as
+> `primary` without comparing slug or title. The seed after it does not
+> rewrite a claimed menu's links, but the header's ref-less navigation block
+> binds to whichever menu is keyed `primary` (`pediment_seeded_nav_id()`), so
+> the footer menu would render in the header. The rule is deliberate — legacy
+> menus carry slugs like `primary-2` that cannot slug-match, which is the case
+> it was built for — so the safeguard is you, reading the
+> `navigation "<title>" (ID <n>)` note in `wp pediment claim --dry-run` and
+> confirming it names the menu you meant.
 
 ### Re-running claim
 
@@ -846,47 +796,11 @@ Success: Dry run complete — nothing was written.
 and stops there — `no-match` and `ambiguous` lines are report-only either
 way.
 
-### Worked example: claim through to protected
+### Worked example: claim, then seed
 
-The example above stops at the claim's own report. This one continues one
-step further, onto the *next* `wp pediment seed`, to show the payoff the
-claim exists for: a claimed row reads back as `protected`, not `unchanged`,
-because `Claimer::apply()` never wrote a hash. Captured from a rehearsal
-against three pages (`about` ID 46, `contact` ID 8, `blog` ID 9) with every
-seed meta key — `_pediment_seed_key`, `_pediment_seed_hash`,
-`_pediment_seed_source` — stripped, so the setup actually models a page that
-predates the seeding engine (see the note below for why that distinction
-matters):
-
-```
-Pediment claim — dry run
-manifest: /var/www/html/wp-content/themes/pediment-fixture/seed/manifest.php
-
-PAGES & POSTS
-  claim      about (en)       page "about" (ID 46)
-  claim      contact (en)     page "contact" (ID 8)
-  claim      blog (en)        page "blog" (ID 9)
-
-3 to claim, 0 without a match, 0 ambiguous. Nothing was written (--dry-run).
-Success: Dry run complete — nothing was written.
-```
-
-```
-Pediment claim
-manifest: /var/www/html/wp-content/themes/pediment-fixture/seed/manifest.php
-
-PAGES & POSTS
-  claim      about (en)       page "about" (ID 46)
-  claim      contact (en)     page "contact" (ID 8)
-  claim      blog (en)        page "blog" (ID 9)
-
-3 to claim, 0 without a match, 0 ambiguous.
-Success: Claim applied.
-```
-
-Nothing so far has touched content — both runs above only name and then
-write a `_pediment_seed_key`. The next seed's dry run is where the claim's
-promise shows up:
+One step past the claim's own report: the next seed's dry run finds the
+claimed rows by their keys and plans them `unchanged`. The shape for three
+claimed pages (`about`, `contact`, `blog`) on the fixture site:
 
 ```
 Pediment seed — dry run
@@ -897,33 +811,17 @@ MEDIA
 
 PAGES & POSTS
   unchanged   home
-  protected   about            never seeded by this engine — content left alone; run `wp pediment adopt` to take it into git
-  protected   contact          never seeded by this engine — content left alone; run `wp pediment adopt` to take it into git
-  protected   blog             never seeded by this engine — content left alone; run `wp pediment adopt` to take it into git
-  unchanged   mega-demo
-  ... (remaining unchanged rows and the TRANSLATIONS block elided — same shape as the "Reading a plan" example above)
+  unchanged   about
+  unchanged   contact
+  unchanged   blog
+  ... (remaining unchanged rows elided)
 
-0 to write, 3 protected, 0 orphan, 22 unchanged. Nothing was written (--dry-run).
-Success: Dry run complete — nothing was written.
+0 to write, 0 orphan, 13 unchanged. Nothing was written (--dry-run).
 ```
 
-`--dry-run` again, so this still wrote nothing — it only reports what a real
-`wp pediment seed` would do. Three claimed rows, three `protected` lines, the
-summary's `protected` count matching, and the note text is exactly rule 2's
-`'' === $have->storedHash` branch (see "The two hashes" above): the row was
-never seeded by this engine, so title and content are left alone.
-
-**Building a rehearsal or test fixture for this sequence, deleting only
-`_pediment_seed_key` from a page that has already been through a real seed
-is not enough** — the stored hash and source hash survive untouched, still
-match the untouched content, and the claim only restores the identity key,
-so the next seed's Differ reaches rule 3 (in sync) before it ever gets to
-rule 2, and reports `unchanged` instead of `protected`. Both outcomes are
-safe and neither writes content; the weaker setup just can't demonstrate the
-protection property, because the surviving hash makes the row look
-already-in-sync rather than never-seeded. A faithful rehearsal of a legacy
-page has to delete `_pediment_seed_hash` and `_pediment_seed_source` too, not
-just the identity key.
+A seed never writes a claimed page, so its live content, title and slug are
+safe from the first run on. Anything the claim reported `no-match` is created
+by the next seed — read those lines before you apply.
 
 ### The wp-admin path
 
@@ -1002,7 +900,7 @@ re-keying one side; there is no automatic migration between post types.
 ### Verification problems
 
 Phase 5 re-reads the database after every apply and reports anything it
-claims to own that doesn't actually hold — this is deliberately paranoid,
+just created that doesn't actually hold — this is deliberately paranoid,
 because the incident that justified writing it was a seed run reporting
 success while the live header rendered nothing. A `VERIFICATION FAILED`
 section names the specific problem per entry (keys are printed in the
@@ -1017,19 +915,24 @@ apart), e.g.:
 - `about: references media key "hreo", which the manifest does not declare —
   the placeholder was written out unresolved.` — a typo in a
   `{{media_url:…}}` / `{{media_id:…}}` placeholder. Nothing else catches it:
-  the media plan has no such key, so the literal sentinel would otherwise be
-  written into the page and hashed as if it were correct.
-- `navs.primary: stored membership does not match the manifest.`
+  the media plan has no such key. Reported on the run that creates the page;
+  fix the live page in the editor, and the pattern file for new environments.
+- `navs.primary: stored membership does not match the manifest.` — for a menu
+  this run created.
 - `post_types.guide: already registered by something else — the manifest's
   settings (show_in_rest, supports, rewrite) were not applied.`
 
-**The slug-collision case is the one structural rule the seeder cannot force
-through.** If another post already occupies the slug the manifest wants,
+Slug, parent, trash, the front-page and posts-page settings, and a menu's
+links and status are checked only for rows this run created. On a row that
+existed before the run they are a person's decision, not a problem.
+
+**A slug collision is the one thing a create cannot force through.** If
+another post already occupies the slug the manifest wants,
 `wp_unique_post_slug()` silently uniquifies it (`contact` → `contact-2`)
-instead of erroring, and Applier / Verifier both report it rather than
-retrying forever (a retry would rewrite the row every single run without ever
-converging). Fix: free the slug (rename or delete whatever's squatting on it),
-or declare a different `slug` in the manifest for this entry, then re-run.
+instead of erroring, and Applier and Verifier both report it on the run that
+creates the page. Later runs leave the page alone. Fix: rename the new page on
+the site (or free the slug and rename it), then declare the slug you want in
+the manifest so new environments match.
 
 A run's exit reflects both errors and verification problems — `RunResult::ok()`
 is false if either is non-empty, and WP-CLI's `wp pediment seed` exits non-zero
@@ -1062,20 +965,18 @@ other claim re-run (see "Re-running claim" above).
 
 ## Limitations, by design
 
-- **Nav membership is git-owned, not client-editable.** Unlike page content,
-  a navigation menu's links are structure: the seeder rewrites the whole
-  entity whenever its serialized membership differs from the manifest, so an
-  editor who adds, removes, or reorders a link in the Site Editor's
-  navigation block will see that change reverted on the next
-  `wp pediment seed`. An `entry`-type link the manifest references but that
-  has no seeded post yet is reported as unresolved on *every* run (not just
-  the one that changes the nav), so a missing link doesn't silently disappear
-  from the report once the nav itself stops needing a rewrite. Mega-menu *content* is the exception: it is hash-arbitrated like page content, so a client's edits to a seeded mega menu persist ("Mega menus" above).
-- **The site logo is git-owned, not client-editable.** Like nav membership,
-  `site.logo` is re-asserted whenever `custom_logo` differs from the manifest's
-  media key, so a client who picks a different logo in the Customizer will see
-  it reverted on the next `wp pediment seed`. Change the manifest, not the
-  Customizer.
+- **The manifest describes a site at creation time.** A change to an
+  existing page's title, slug, parent or content in the manifest or a pattern
+  file never reaches a site where that page exists. Change the live page in
+  the editor or through the MCP tools, and run `wp pediment adopt` if new
+  environments should match.
+  For plugin developers: an already seeded wp-env database no longer picks up
+  pattern changes through `wp pediment seed`. Run `npx wp-env clean all` and
+  start wp-env again to re-seed from scratch.
+- **Menus are written once.** A change to `navs` reaches only environments
+  where that menu does not exist yet. A page the manifest adds later is
+  created, but it is not added to an existing menu — add it in the Site
+  Editor.
 - **Terms are create-only.** `wp_set_object_terms()` replaces a taxonomy's
   assignments rather than merging into them; re-applying the manifest's terms
   on every run would strip a category a client added by hand in the editor.
@@ -1087,18 +988,12 @@ other claim re-run (see "Re-running claim" above).
   there's no current user in that context, and the engine doesn't set one.
   If your theme or a plugin displays "by {author}", account for a `0` author
   on seeded content.
-- **A dry-run plan is silent about front-page/posts-page drift.** The
-  Applier — not the Differ — owns `show_on_front` / `page_on_front` /
-  `page_for_posts`, and enforces them unconditionally on every real apply, but
-  neither the reassignment nor the fact that one is pending produces a plan
-  item, so `--dry-run` cannot tell you "the front page option is about to
-  change." Only an actual `wp pediment seed` (or the Verifier, after the
-  fact) will show it.
-- **A dry-run plan is silent about term drift too, but for a different
-  reason: nothing ever fixes it.** Terms are create-only (above) on *every*
-  run, dry or real, so a manifest-side term change on an existing entry never
-  produces a plan item and never gets applied — `--dry-run` isn't hiding a
-  pending write here, there simply isn't one.
+- **A dry-run plan is silent about the reading settings and the logo.** They
+  are set only when their entry or attachment is created in the same run, or
+  while the site has none, and neither produces a plan item.
+- **A dry-run plan is silent about term drift too.** Terms are create-only
+  (above), so a manifest-side term change on an existing entry never produces
+  a plan item and never gets applied.
 - **The wp-admin "Apply plan" button has no confirmation step.** It runs on
   click, same as the CLI without `--dry-run`. Preview first.
 - **Media and taxonomies are not translated.** One attachment and one term

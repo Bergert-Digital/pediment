@@ -152,22 +152,27 @@ or manually checked against a newer plugin release recently, not that anything i
 
 ## Day-two work
 
-Structure — which pages exist, their slugs, nesting, nav membership, languages — lives in
-`seed/manifest.php`. Content lives in `patterns/*.php`. See
-[docs/seeding.md](seeding.md) for the full manifest/pattern format, the content-arbitration
-contract, and how to read a dry-run plan; this section is only the day-to-day loop:
+The seeder bootstraps a site and never changes a page, menu or setting that
+already exists (see [docs/seeding.md](seeding.md), "Bootstrap only"). So the
+day-to-day loop depends on where the page lives:
 
-```bash
-npm run seed:plan    # see what a seed would change; read it before applying
-npm run seed
-```
+- **A page that does not exist yet** — declare it in `seed/manifest.php`, add
+  `patterns/<key>.php`, then:
 
-To take a client's live edit in the block editor back into git (the seeder otherwise leaves an
-edited page's content alone forever, by design — see `docs/seeding.md`'s arbitration contract):
+  ```bash
+  npm run seed:plan    # read the plan: expect one create per new row
+  npm run seed
+  ```
 
-```bash
-npm run adopt -- <key>
-```
+- **A page that exists** — change it in the block editor, or through the
+  Pediment MCP tools ([docs/mcp.md](mcp.md)) after validating the markup with
+  client-kit's `validate-blocks`. A re-seed does not touch it.
+- **New environments should match the live page** — export it into its
+  pattern file and commit the file:
+
+  ```bash
+  npm run adopt -- <key>
+  ```
 
 The `--` matters: `npm run adopt -- about --language=de` forwards `about --language=de` to `wp
 pediment adopt` intact. A second `--` would arrive as a literal extra positional argument and
@@ -181,7 +186,9 @@ attaches `<slug>.zip` to the GitHub release. From there:
 
 1. Download the zip from the release.
 2. Appearance → Themes → Add New → Upload in wp-admin, and activate it.
-3. Settings → Pediment Theme → Seeding → apply the plan, to bring the manifest's structure live.
+3. Settings → Pediment Theme → Seeding → **Preview plan**, then **Apply plan**. It creates what
+   the new release declares and the site does not have yet (a new page, a new menu); it never
+   changes a page that exists.
 
 **The client theme has no auto-updater.** Unlike the Pediment plugin, which updates itself
 through wp-admin, a new theme release only reaches production when someone uploads the zip by
@@ -205,14 +212,14 @@ it. The order (`docs/superpowers/specs/2026-08-05-migration-step6-design.md`
 4. **Claim content** — identity only; see
    [`wp pediment claim`](seeding.md#wp-pediment-claim) for what it matches
    and what it refuses to.
-5. **Preview plan** (seed) — expect `0 to write`, N `protected`.
-6. **Apply plan** (seed) — structure only.
+5. **Preview plan** (seed) — expect every claimed row `unchanged` and a
+   `create` only for pages, menus or media the site really does not have.
+6. **Apply plan** (seed) — creates those rows; claimed rows stay as they are.
 
-**Step 5 is a gate, not a formality.** A preview that reports anything other
-than protected pages and the structural changes you actually expect means
-the claim was incomplete — some row didn't match, or matched the wrong one —
-and the fix is to go back and correct the manifest or the claim, never to
-apply the plan anyway. Applying over an incomplete claim risks creating
+**Step 5 is a gate, not a formality.** A `create` for a page the site already
+has means the claim was incomplete — that row didn't match, or matched the
+wrong one — and the fix is to go back and correct the manifest or the claim,
+never to apply the plan anyway. Applying over an incomplete claim risks creating
 duplicate content for whatever didn't get identity in step 4, which is
 exactly the failure claiming exists to prevent.
 

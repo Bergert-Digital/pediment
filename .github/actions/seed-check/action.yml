@@ -114,9 +114,9 @@ runs:
       shell: bash
       working-directory: ${{ inputs.theme-path }}
       # Assert on the seeder's own summary line rather than re-deriving its verb
-      # list. Reporter::summaryLine() counts CREATE + UPDATE + RESTORE as writes
-      # (plugin/src/Seeder/Reporter.php); a grep for create|update alone would
-      # silently pass "converged" while a restore was still pending.
+      # list. Reporter::summaryLine() counts every plan item that writes
+      # (plugin/src/Seeder/Reporter.php); since 4.0 the seeder only creates, so
+      # "0 to write," means everything the manifest declares exists.
       run: |
         set -euo pipefail
         npm run seed:plan | tee /tmp/replan.txt

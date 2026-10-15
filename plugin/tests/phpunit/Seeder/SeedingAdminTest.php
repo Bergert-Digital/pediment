@@ -147,4 +147,16 @@ class SeedingAdminTest extends WP_UnitTestCase {
 		$this->assertNull( $report );
 		$this->assertSame( '', get_post_meta( $id, \Pediment\Seeder\Meta::KEY, true ) );
 	}
+
+	public function test_the_tab_says_the_seed_only_creates_what_is_missing() {
+		wp_set_current_user( self::factory()->user->create( [ 'role' => 'administrator' ] ) );
+
+		ob_start();
+		pediment_seed_admin_render_tab();
+		$html = (string) ob_get_clean();
+
+		$this->assertStringContainsString( 'never changes anything that already exists', $html );
+		$this->assertStringNotContainsString( 'protected', $html );
+		$this->assertStringNotContainsString( 'rewrites', $html );
+	}
 }
