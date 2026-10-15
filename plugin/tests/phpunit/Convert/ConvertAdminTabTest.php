@@ -13,7 +13,7 @@ class ConvertAdminTabTest extends WP_UnitTestCase {
 	}
 
 	public function tear_down(): void {
-		unset( $GLOBALS['pediment_settings_tabs'], $_POST['ids'], $_POST['_wpnonce'], $_REQUEST['_wpnonce'] );
+		unset( $GLOBALS['pediment_settings_tabs'], $_POST['ids'], $_POST['after'], $_GET['after'], $_POST['_wpnonce'], $_REQUEST['_wpnonce'] );
 		parent::tear_down();
 	}
 
@@ -115,7 +115,7 @@ class ConvertAdminTabTest extends WP_UnitTestCase {
 		$this->assertStringNotContainsString( 'Batch page 3', $first );
 		$this->assertStringContainsString( 'Convert 2 posts', $first );
 		$this->assertStringContainsString( '3 posts with legacy blocks in total', $first );
-		$this->assertStringContainsString( '1 more after this batch', $first );
+		$this->assertStringContainsString( '1 more post with legacy blocks after this batch', $first );
 		$this->assertLessThan( strpos( $first, 'name="ids[]"' ), strpos( $first, 'name="_wpnonce"' ), 'the nonce comes before the ids so max_input_vars cannot drop it' );
 
 		$report = AdminTab::process( array( $a, $b, $c ) );
@@ -126,7 +126,44 @@ class ConvertAdminTabTest extends WP_UnitTestCase {
 		$this->assertStringContainsString( '<h2>Result</h2>', $next );
 		$this->assertStringContainsString( 'name="ids[]" value="' . $c . '"', $next );
 		$this->assertStringContainsString( 'Convert 1 post', $next );
-		$this->assertStringNotContainsString( 'more after this batch', $next );
+		$this->assertStringNotContainsString( 'after this batch', $next );
+	}
+
+	public function test_the_cursor_moves_past_posts_that_are_not_ready(): void {
+		$this->admin();
+		add_filter( 'pediment_convert_batch_size', static fn(): int => 2 );
+		list( $a, $b, $c ) = $this->legacyPages( 3 );
+		$stuck = static fn( $keep, $post ) => in_array( $post->ID, array( $a, $b ), true ) ? 0 : $keep;
+		add_filter( 'wp_revisions_to_keep', $stuck, 10, 2 );
+
+		$first = $this->renderTab();
+		$this->assertSame( 2, substr_count( $first, '<td>failed</td>' ) );
+		$this->assertStringContainsString( 'Convert 0 posts', $first );
+		$this->assertStringContainsString( 'Next batch', $first );
+		$this->assertStringContainsString( 'after=' . $b, $first );
+		$this->assertStringNotContainsString( 'Start from the beginning', $first );
+
+		$_GET['after'] = (string) $b;
+		$second = $this->renderTab();
+		$this->assertStringContainsString( 'Batch page 3', $second );
+		$this->assertStringNotContainsString( 'Batch page 1', $second );
+		$this->assertStringContainsString( 'name="ids[]" value="' . $c . '"', $second );
+		$this->assertStringContainsString( 'name="after" value="' . $b . '"', $second );
+		$this->assertStringContainsString( 'Start from the beginning', $second );
+		$this->assertStringNotContainsString( 'Next batch', $second );
+
+		$report = AdminTab::process( array( $c ) );
+		$this->assertSame( 'converted', $report['posts'][0]['status'] );
+		remove_filter( 'wp_revisions_to_keep', $stuck, 10 );
+	}
+
+	public function test_a_cursor_past_the_last_candidate_offers_the_start(): void {
+		$this->admin();
+		list( $a ) = $this->legacyPages( 1 );
+		$_GET['after'] = (string) ( $a + 100 );
+		$html          = $this->renderTab();
+		$this->assertStringContainsString( 'No more posts with legacy blocks after this point', $html );
+		$this->assertStringContainsString( 'Start from the beginning', $html );
 	}
 
 	public function test_a_tampered_id_list_fails_the_nonce_check(): void {

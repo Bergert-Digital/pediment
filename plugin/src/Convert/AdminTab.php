@@ -60,6 +60,13 @@ final class AdminTab {
 	}
 
 	/**
+	 * The `after` query arg: the preview starts after this post ID.
+	 */
+	private static function cursor(): int {
+		return absint( wp_unslash( $_GET['after'] ?? 0 ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- read-only position; absint.
+	}
+
+	/**
 	 * The nonce action for a set of previewed posts. It binds the confirm to
 	 * the preview: a changed id list fails the nonce check.
 	 *
@@ -88,26 +95,35 @@ final class AdminTab {
 		}
 
 		$service = PostConverter::create();
+		$after   = self::cursor();
 		$all     = $service->candidates();
-		$batch   = array_slice( $all, 0, self::batchSize() );
+		$rest    = array_values( array_filter( $all, static fn( int $id ): bool => $id > $after ) );
+		$batch   = array_slice( $rest, 0, self::batchSize() );
 		$preview = $service->runMany( $batch, true );
+		$start   = $after > 0 ? ' <a href="' . esc_url( pediment_settings_page_url( 'convert' ) ) . '">' . esc_html__( 'Start from the beginning', 'pediment' ) . '</a>' : '';
 		$ready   = array_values( array_filter( $preview['posts'], static fn( array $post ): bool => 'preview' === $post['status'] ) );
 		echo '<h2>' . esc_html__( 'Preview', 'pediment' ) . '</h2>';
 		echo '<p>' . esc_html__( 'Posts, pages, synced patterns and templates in every language that still use legacy Pediment blocks. Nothing changes until you press the button. Every converted post keeps a revision of its old content.', 'pediment' ) . '</p>';
 		if ( array() === $preview['posts'] ) {
+			if ( $after > 0 && array() !== $all ) {
+				echo '<p><strong>' . esc_html__( 'No more posts with legacy blocks after this point.', 'pediment' ) . '</strong>' . $start . '</p>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- $start is built from escaped parts.
+				return;
+			}
 			echo '<p><strong>' . esc_html__( 'No legacy blocks found. Nothing to convert.', 'pediment' ) . '</strong></p>';
 			return;
 		}
 		self::table( $preview );
-		$more = count( $all ) - count( $batch );
+		$more = count( $rest ) - count( $batch );
 		echo '<p>' . esc_html( sprintf( /* translators: %d: number of posts */ _n( '%d post with legacy blocks in total.', '%d posts with legacy blocks in total.', count( $all ), 'pediment' ), count( $all ) ) );
 		if ( $more > 0 ) {
-			echo ' ' . esc_html( sprintf( /* translators: %d: number of posts */ _n( '%d more after this batch — run again after converting.', '%d more after this batch — run again after converting.', $more, 'pediment' ), $more ) );
+			echo ' ' . esc_html( sprintf( /* translators: %d: number of posts */ _n( '%d more post with legacy blocks after this batch.', '%d more posts with legacy blocks after this batch.', $more, 'pediment' ), $more ) );
+			echo ' <a href="' . esc_url( add_query_arg( 'after', (string) end( $batch ), pediment_settings_page_url( 'convert' ) ) ) . '">' . esc_html__( 'Next batch', 'pediment' ) . '</a>';
 		}
-		echo '</p>';
+		echo $start . '</p>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- $start is built from escaped parts.
 		?>
 		<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
 			<input type="hidden" name="action" value="<?php echo esc_attr( self::ACTION ); ?>" />
+			<input type="hidden" name="after" value="<?php echo esc_attr( (string) $after ); ?>" />
 			<?php wp_nonce_field( self::nonceAction( array_column( $ready, 'id' ) ) ); ?>
 			<?php foreach ( $ready as $post ) : ?>
 				<input type="hidden" name="ids[]" value="<?php echo esc_attr( (string) $post['id'] ); ?>" />
@@ -130,7 +146,8 @@ final class AdminTab {
 		$ids = array_values( array_filter( array_map( 'absint', (array) wp_unslash( $_POST['ids'] ?? array() ) ) ) ); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- absint on every item.
 		check_admin_referer( self::nonceAction( $ids ) );
 		self::process( $ids );
-		wp_safe_redirect( pediment_settings_page_url( 'convert' ) );
+		$after = absint( wp_unslash( $_POST['after'] ?? 0 ) ); // phpcs:ignore WordPress.Security.NonceVerification.Missing, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- the nonce was checked above; absint.
+		wp_safe_redirect( add_query_arg( 'after', $after > 0 ? $after : false, pediment_settings_page_url( 'convert' ) ) );
 		exit;
 	}
 
