@@ -1,0 +1,12 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/theme.json",
+	"version": 3,
+	"title": "Prose",
+	"slug": "prose",
+	"blockTypes": [ "core/group" ],
+	"styles": {
+		"typography": { "lineHeight": "1.75" },
+		"elements": { "h2": { "typography": { "fontSize": "var:preset|font-size|2-xl" } }, "h3": { "typography": { "fontSize": "var:preset|font-size|xl" } }, "link": { "typography": { "textDecoration": "underline" } } },
+		"css": "&>h2{margin-top:var(--wp--preset--spacing--60)}&>h3{margin-top:var(--wp--preset--spacing--50)}"
+	}
+}
