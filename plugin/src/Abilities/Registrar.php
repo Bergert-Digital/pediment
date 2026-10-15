@@ -47,6 +47,10 @@ final class Registrar {
 			new ListPages(),
 			new ReadPage(),
 			new CheckPage( $policy ),
+			new WritePage( $policy ),
+			new RollbackPage(),
+			new UpsertStyle( $store ),
+			new DeleteStyle( $store ),
 		);
 	}
 
