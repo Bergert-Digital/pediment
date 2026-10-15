@@ -163,4 +163,18 @@ class PolylangProviderTest extends PolylangTestCase {
 
 		$this->assertNotContains( $de, $found );
 	}
+
+	public function test_language_of_returns_the_tagged_language() {
+		$id = self::factory()->post->create( [ 'post_type' => 'page' ] );
+		$this->provider->setLanguage( $id, 'de' );
+
+		$this->assertSame( 'de', $this->provider->languageOf( $id ) );
+	}
+
+	public function test_language_of_an_untagged_post_is_empty() {
+		$id = self::factory()->post->create( [ 'post_type' => 'page' ] );
+		wp_delete_object_term_relationships( $id, 'language' );
+
+		$this->assertSame( '', $this->provider->languageOf( $id ) );
+	}
 }

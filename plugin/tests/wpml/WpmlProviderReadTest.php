@@ -102,4 +102,17 @@ class WpmlProviderReadTest extends WpmlTestCase {
 		$this->assertSame( 'en', end( $switches ), 'The last switch restores WPML to the ambient (en) seed language.' );
 		$this->assertNotEmpty( $url );
 	}
+
+	public function test_language_of_returns_the_assigned_language() {
+		$id = self::factory()->post->create( [ 'post_type' => 'page' ] );
+		( new WpmlProvider() )->setLanguage( $id, 'de' );
+
+		$this->assertSame( 'de', ( new WpmlProvider() )->languageOf( $id ) );
+	}
+
+	public function test_language_of_a_post_without_assignment_is_empty() {
+		$id = self::factory()->post->create( [ 'post_type' => 'page' ] );
+
+		$this->assertSame( '', ( new WpmlProvider() )->languageOf( $id ) );
+	}
 }

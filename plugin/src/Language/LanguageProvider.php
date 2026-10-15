@@ -67,6 +67,9 @@ interface LanguageProvider {
 	 */
 	public function permalinkInLanguage( int $postId, string $language ): string;
 
+	/** The post's language code; '' when it has none or the site is monolingual. */
+	public function languageOf( int $postId ): string;
+
 	/**
 	 * Serialized language-switcher block for the seeded header, or '' when the
 	 * active plugin has no switcher (monolingual). $config is the manifest's

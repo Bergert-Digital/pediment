@@ -75,6 +75,14 @@ final class PolylangProvider implements LanguageProvider {
 		return $postId > 0 && false !== pll_get_post_language( $postId );
 	}
 
+	public function languageOf( int $postId ): string {
+		if ( $postId <= 0 ) {
+			return '';
+		}
+		$code = pll_get_post_language( $postId );
+		return is_string( $code ) ? $code : '';
+	}
+
 	/**
 	 * @param array<string,int> $map language code => post ID
 	 */
