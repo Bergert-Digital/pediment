@@ -24,7 +24,9 @@ every row its identity (`_pediment_seed_key`). On a site that is already
 seeded, it creates only what is missing — a page or a language the manifest
 added, a menu or a media file that does not exist yet — and never changes a
 row that exists: not its title, content, slug, parent, order or status, not a
-menu's links, not a reading setting or a logo a person chose. A live site
+menu's links, not a translation, reading setting or logo a person chose. (It
+does tag a row that has no language yet, and fills a reading setting or logo
+that is empty — see "On a site that is already seeded".) A live site
 belongs to the people and the AI agent who edit it: pages change in the block
 editor or through the Pediment MCP tools ([mcp.md](mcp.md)), never through a
 re-seed. Pattern files stay in the theme for one job: building the same pages
