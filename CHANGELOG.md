@@ -1,5 +1,107 @@
 # Changelog
 
+## [4.0.0](https://github.com/Bergert-Digital/pediment/compare/v3.10.0...v4.0.0) (2026-10-16)
+
+
+### ⚠ BREAKING CHANGES
+
+* replace AI chat with MCP tools and a site design layer ([#117](https://github.com/Bergert-Digital/pediment/issues/117))
+* **seeder:** wp pediment seed no longer restores trashed seed media and no longer re-asserts site.logo over a logo chosen on the site.
+* **seeder:** wp pediment seed no longer re-syncs navigation menus to the manifest, and _pediment_seed_mega_hash is no longer written or read.
+* **seeder:** wp pediment seed never changes existing entries. The summary line drops the protected count, and --format=json drops the protected field and the protected count.
+* the /pediment/v1/chat routes, the AI settings tab and the pediment_ai_* provider/model filters are gone.
+* the in-editor AI chat sidebar is gone and WordPress 6.9 or newer is required.
+
+### Features
+
+* **abilities:** add pediment/convert-legacy ([01fc29e](https://github.com/Bergert-Digital/pediment/commit/01fc29e247ce3d6428c71b229b1cd16fb4102912))
+* **abilities:** convert at most 25 posts per all call ([6a801e1](https://github.com/Bergert-Digital/pediment/commit/6a801e1d47d5375e00cf240c63a59dc13ea6104b))
+* **abilities:** read vocabulary and pages through abilities ([53f2b6e](https://github.com/Bergert-Digital/pediment/commit/53f2b6e8a2c5183092ca02bd22ed558ad638d248))
+* **abilities:** write pages and styles through abilities ([244b9f9](https://github.com/Bergert-Digital/pediment/commit/244b9f9a0477b0fb8f0974aca71964873d0eee16))
+* **blocks:** hide legacy blocks from the inserter ([701d263](https://github.com/Bergert-Digital/pediment/commit/701d263453f36400a5fabbdf8bbac3cb69fc600c))
+* **cli:** add wp pediment convert ([f210e1a](https://github.com/Bergert-Digital/pediment/commit/f210e1ae36c366d5706c341e16e03783a1176743))
+* **content:** add the content policy for page writes ([6559eb8](https://github.com/Bergert-Digital/pediment/commit/6559eb83a8257055ccd40665d037e442ca06efb1))
+* **content:** editor reports invalid blocks per page ([ab9b667](https://github.com/Bergert-Digital/pediment/commit/ab9b66709b64df59b914911c8e6ee6e20fe95f20))
+* **convert:** add the convert legacy blocks settings tab ([a88a072](https://github.com/Bergert-Digital/pediment/commit/a88a072b20a3164e9eea9151c3a1f6ecd2ca66a2))
+* **convert:** add the converter and the text mappers ([d62ef9c](https://github.com/Bergert-Digital/pediment/commit/d62ef9c37162f53267bd43e2f5dd43cdd7eb8ec1))
+* **convert:** convert stored posts with a revision first ([32182c5](https://github.com/Bergert-Digital/pediment/commit/32182c59b86127a280b3d0d1c3285370ad502d55))
+* **convert:** map faq, testimonials and logo cloud ([803c4f8](https://github.com/Bergert-Digital/pediment/commit/803c4f80704d90894eb4a4809e53a1aff45acb4c))
+* **convert:** map feature, stat and step grids ([ce3ee60](https://github.com/Bergert-Digital/pediment/commit/ce3ee60b4237cd7f35fcf5363e8ca70fce3c0871))
+* **convert:** map hero and call-to-action ([d8cd897](https://github.com/Bergert-Digital/pediment/commit/d8cd8979b6a9d011e7c373dc1a3392dfa164d37d))
+* **convert:** map media-text and image-caption ([6d89d7d](https://github.com/Bergert-Digital/pediment/commit/6d89d7d11a6cd3c7d7ad07fbf669f958397eb4f9))
+* **convert:** warn before production, link the restore ([9f2417b](https://github.com/Bergert-Digital/pediment/commit/9f2417b8803d2e9f4a03d2a19c90661ac3d0d677))
+* **design:** add revisioned site-layer style store ([b75136c](https://github.com/Bergert-Digital/pediment/commit/b75136c3399b31460721df527676589510eb33f0))
+* **design:** add the converter's default styles ([b416735](https://github.com/Bergert-Digital/pediment/commit/b4167352804ab3d2604e7fb47111de1af6631a25))
+* **design:** add token-rule style validator ([5ff08a7](https://github.com/Bergert-Digital/pediment/commit/5ff08a73d9c4ec8d54074dd53d2c9b2054675c8a))
+* **design:** apply site-layer styles over theme and plugin ([f03f34a](https://github.com/Bergert-Digital/pediment/commit/f03f34a7897d8e6bf26ff62e43523dfe39f01708))
+* **design:** export site styles to the client theme ([ec58fb7](https://github.com/Bergert-Digital/pediment/commit/ec58fb7bd1b9b3af8dd5953271f55006818a2e51))
+* **design:** list the merged design vocabulary ([32f89d8](https://github.com/Bergert-Digital/pediment/commit/32f89d8ba4ac34595aa0fa4329b2c18a92ca8647))
+* **design:** ship token-only default block styles ([17e829b](https://github.com/Bergert-Digital/pediment/commit/17e829b8c955964c6cc76f7639b7a4d2a19d0ef0))
+* drop retired AI chat data on upgrade and uninstall ([731d429](https://github.com/Bergert-Digital/pediment/commit/731d429a946ccf6fead96079ab3c16606938d0ad))
+* **kit:** validate block markup like the editor does ([b7e3132](https://github.com/Bergert-Digital/pediment/commit/b7e3132877b13edf9cecd987feb4ea551e9cc47d))
+* **language:** read a post's language through the seam ([0715905](https://github.com/Bergert-Digital/pediment/commit/07159054f17207868dc773dc5c9bcada40143e28))
+* **mcp:** expose Pediment abilities as an MCP server ([3006db0](https://github.com/Bergert-Digital/pediment/commit/3006db06f7efc0aae5e3296888e02a031d1c7322))
+* remove the AI chat editor UI, require WordPress 6.9 ([b79199a](https://github.com/Bergert-Digital/pediment/commit/b79199a9597a86decb7372c787f92d3544549176))
+* remove the AI chat server, REST API and settings ([ce4af32](https://github.com/Bergert-Digital/pediment/commit/ce4af32b42b28b360e2087734a85abbbd8d08f27))
+* replace AI chat with MCP tools and a site design layer ([#117](https://github.com/Bergert-Digital/pediment/issues/117)) ([ba6acb6](https://github.com/Bergert-Digital/pediment/commit/ba6acb62b4bd46ba94f9d4c8b24f686ca016d6ab))
+* **seeder:** create menus once, never rewrite them ([1338dd5](https://github.com/Bergert-Digital/pediment/commit/1338dd5a939a52d9de97f3727099de35ff231ac3))
+* **seeder:** never restore media or reset the logo ([644112c](https://github.com/Bergert-Digital/pediment/commit/644112cb092b3ce189025e0a3e96552cc8edecdb))
+* **seeder:** seed creates missing entries only ([2174ab5](https://github.com/Bergert-Digital/pediment/commit/2174ab5c8b435493e352ce99fa6dbad492ba92dc))
+* **upgrade:** drop the 3.x seed hash meta once per site ([da275be](https://github.com/Bergert-Digital/pediment/commit/da275be952ae6e2241cb0071bd940969f1ffd5f8))
+
+
+### Bug Fixes
+
+* **abilities:** empty translations as object, scope list-pages ([aedfcc5](https://github.com/Bergert-Digital/pediment/commit/aedfcc56d9c88db9986cea86019e7a86f5cc1c82))
+* **abilities:** filter list-pages by language before the cap ([5e3a19d](https://github.com/Bergert-Digital/pediment/commit/5e3a19dbb4ac8f765d2360aa5e4e43d6689edd5f))
+* **abilities:** guard translation_of and parent in write-page ([5ca719e](https://github.com/Bergert-Digital/pediment/commit/5ca719e196fe4b9b86d5af47a75de43e3dc4ca1a))
+* **abilities:** never return an autosave as the revision ([e5bf37e](https://github.com/Bergert-Digital/pediment/commit/e5bf37e7a970451d572f15990d3025f6c2aec838))
+* **abilities:** reject markup in write-page titles ([d88e0ea](https://github.com/Bergert-Digital/pediment/commit/d88e0ea0c829644372f438891b317df710146fbd))
+* **admin:** say what the seed adds and what it keeps ([a461a8d](https://github.com/Bergert-Digital/pediment/commit/a461a8d9e0af9d4a3fa0be297814cfdfb0703755))
+* **cli:** harden pattern file conversion ([18921d9](https://github.com/Bergert-Digital/pediment/commit/18921d905ed74ec19944e223c30386bcc84d9b67))
+* **content:** check block markup as raw text ([33e2713](https://github.com/Bergert-Digital/pediment/commit/33e27135e189e2d66bc2c73dfb32685b5202396e))
+* **content:** scan block markup and every style leaf ([9d4b72c](https://github.com/Bergert-Digital/pediment/commit/9d4b72c95d40d66de81569c45cd53480ca878938))
+* **content:** scan rendered markup across blocks ([81b38cb](https://github.com/Bergert-Digital/pediment/commit/81b38cb922e54b25f5a297624e8bce785c883a18))
+* **content:** scan shortcode attributes after decoding ([e786946](https://github.com/Bergert-Digital/pediment/commit/e7869469051e43ca7b710976f7c69948310fb7de))
+* **content:** scan the markup core renders, not stripped text ([12d0f54](https://github.com/Bergert-Digital/pediment/commit/12d0f5435bfbd907243aabd57814d8a65774d854))
+* **content:** tell agents about the markup scan in rules ([9906463](https://github.com/Bergert-Digital/pediment/commit/990646392eafcbf06cdc8eef879db8051935d286))
+* **convert:** add a cursor so stuck posts cannot stall batches ([516916a](https://github.com/Bergert-Digital/pediment/commit/516916ae3090af312d0593c55593fe17ea693566))
+* **convert:** batch the convert tab and bind the nonce ([1e7366a](https://github.com/Bergert-Digital/pediment/commit/1e7366a117054ebb82eb09113a46c158c94274ed))
+* **convert:** build stat paragraphs only when set ([cbf51f4](https://github.com/Bergert-Digital/pediment/commit/cbf51f420b53678974796e78df68b8cb5e3d60db))
+* **convert:** guard backups, kses and candidate scan ([42cbb2f](https://github.com/Bergert-Digital/pediment/commit/42cbb2f3115ae99ec331339810bd4ed92292dcab))
+* **convert:** keep legacy block metadata on the new block ([7f4b6b8](https://github.com/Bergert-Digital/pediment/commit/7f4b6b8d396712ba1c94847375c9c3cc62178757))
+* **convert:** make grids collapse and left heads align ([f55c0b0](https://github.com/Bergert-Digital/pediment/commit/f55c0b004779f392ee568041d1259d3f8cffa476))
+* **convert:** refuse markup that cannot convert safely ([6e0d0b1](https://github.com/Bergert-Digital/pediment/commit/6e0d0b15961a542e16a0c2b21453d63f66381a28))
+* **convert:** split paragraph answers, refuse block HTML ([1e37bad](https://github.com/Bergert-Digital/pediment/commit/1e37badce7a8d4e5069d9e16c70d5642480a5a70))
+* **convert:** trusted backup, canonical kses check ([452b966](https://github.com/Bergert-Digital/pediment/commit/452b96658b36dd44d9112e91b9b8ce6742136547))
+* **design:** apply site layer through theme data so the editor sees it ([5315d98](https://github.com/Bergert-Digital/pediment/commit/5315d98fda974003d059e59ed02163833b2d5f89))
+* **design:** close style validator bypasses ([0003309](https://github.com/Bergert-Digital/pediment/commit/0003309d0ceae6e8c9a2825767e3fc35a852cfc7))
+* **design:** fail clearly when export has nothing to write ([9e505bd](https://github.com/Bergert-Digital/pediment/commit/9e505bdbfe83531a93b33b099f92e57b54a0c4c4))
+* **design:** keep site overrides and theme values on export ([5392f78](https://github.com/Bergert-Digital/pediment/commit/5392f78d420218878d40606075e6693edb98b190))
+* **design:** readable pill text, report bad style files ([4356f12](https://github.com/Bergert-Digital/pediment/commit/4356f12a3c2692c93eb76e846c28c80fff0e49ea))
+* **design:** refuse to store styles that fail to encode ([e860546](https://github.com/Bergert-Digital/pediment/commit/e860546858eb7006eacd4c455f0c0ea657b1a681))
+* **design:** register site style names when injecting ([38be240](https://github.com/Bergert-Digital/pediment/commit/38be240cc61c251facbd082a5aa58a3bb671a6f6))
+* **design:** save a first revision when a style is created ([72cb46d](https://github.com/Bergert-Digital/pediment/commit/72cb46d8801581bc5bdef451f5bdd257c3434c6f))
+* **design:** stop dotted keys hiding style values from checks ([928b1ea](https://github.com/Bergert-Digital/pediment/commit/928b1eaa704c6e1185050481fb22aca7205e9ad6))
+* **design:** validate css by core grammar and block "&lt;" ([6022631](https://github.com/Bergert-Digital/pediment/commit/602263165432a6287551b460a503faa89dcb8967))
+* **kit:** make validator install race-safe, flag core typos ([35ca0d2](https://github.com/Bergert-Digital/pediment/commit/35ca0d2a194218c0507dfc20f2c706677a57f369))
+* **kit:** resolve media placeholders in validated patterns ([814375a](https://github.com/Bergert-Digital/pediment/commit/814375a78901f4f86602108049c7903d70e770da))
+* **patterns:** reconvert landing, stat contrast on navy ([ae12b87](https://github.com/Bergert-Digital/pediment/commit/ae12b8743462f16b1f9a8e1dd2da2fe3633b4a69))
+* **seeder:** find seeded menus in every status ([461e8d7](https://github.com/Bergert-Digital/pediment/commit/461e8d74f1bddf62f2cef2abdf322844b0862e47))
+* **seeder:** keep a trashed page out of reading settings ([9b5725b](https://github.com/Bergert-Digital/pediment/commit/9b5725b6cae0df4c22db8c88e1f057a6d29e0911))
+* **seeder:** keep reading settings and logo a person chose ([8609cae](https://github.com/Bergert-Digital/pediment/commit/8609cae20844d08efdfa5644712532af5bf9809f))
+* **seeder:** keep trashed pages out of new menus and groups ([cf2fba1](https://github.com/Bergert-Digital/pediment/commit/cf2fba115a3cc750b00ed71bdfd6e9acb1429539))
+* **seeder:** link translation groups only when a run adds ([3cd8d53](https://github.com/Bergert-Digital/pediment/commit/3cd8d5374c904dc5d731df149ac3e93b26207bfc))
+* **seeder:** name the language in MENUS notices ([c4ff3db](https://github.com/Bergert-Digital/pediment/commit/c4ff3dbc5ebf34627ca3bb3a278237cf3afb72fb))
+* **seeder:** never make a trashed attachment the logo ([d002220](https://github.com/Bergert-Digital/pediment/commit/d0022206be4e6ec48507abb967b945ed40af1cc4))
+* **upgrade:** stop chat cleanup checks once done ([e56e08a](https://github.com/Bergert-Digital/pediment/commit/e56e08aa519fe326df46c6d91c11e2bb667b1775))
+
+
+### Refactors
+
+* **patterns:** convert shipped patterns to core blocks ([b4657f7](https://github.com/Bergert-Digital/pediment/commit/b4657f70403ca882ff9b50763d91283a3bc457c1))
+* **seeder:** remove the content-arbitration hashes ([4a498bb](https://github.com/Bergert-Digital/pediment/commit/4a498bbabeaa00a233c931e1ebb40958ac7f2842))
+
 ## [3.10.0](https://github.com/Bergert-Digital/pediment/compare/v3.9.0...v3.10.0) (2026-10-07)
 
 
