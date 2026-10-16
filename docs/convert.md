@@ -13,7 +13,7 @@ default styles (see [design-layer.md](design-layer.md)):
 
 | Legacy block | Becomes |
 | --- | --- |
-| `section-head` | constrained group (preset bottom margin) → `eyebrow` paragraph, heading, `lead` paragraph |
+| `section-head` | constrained group with the plain class `pediment-section-head` (preset bottom margin) → `eyebrow` paragraph, heading, `lead` paragraph |
 | `hero` default / centered | section group → h1, `lead` paragraph, `pill` button |
 | `hero` media-bg | `media-card` cover (the image, primary overlay) → h1, `lead`, `pill` button |
 | `hero` stat-card | columns: copy, `pill` + `pill-ghost` buttons, ticks list · `media-card` cover with a `card` group that holds a `stat` group and the metrics |
