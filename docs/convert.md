@@ -36,6 +36,15 @@ minimum when `columnCount` is set, and the grid would never collapse. On wide
 screens the grid holds N columns; below about N times the floor it drops to
 fewer columns, down to one.
 
+The `card` style centres the card's content. The converter writes no
+alignment on the card's heading, paragraphs or image, so a client theme's
+`card` style with `text-align:left` left-aligns the whole card, the icon and
+the image included. The centring is in the style's `css`, and a theme's `css`
+for `card` replaces the plugin's completely: a theme `card` partial with its
+own `css` must repeat `text-align:center` to keep the cards centred. The hero
+stat card (a `card` group with a `stat` group and the metrics) is centred by
+the same style.
+
 A feature's icon becomes a `pediment/icon` block in the `tile` style, the
 first block of the card. A feature with an image keeps the image and gets no
 icon, as the legacy block rendered it. A feature without an `icon` attribute
