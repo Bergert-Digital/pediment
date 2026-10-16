@@ -188,7 +188,7 @@ attaches `<slug>.zip` to the GitHub release. From there:
 2. Appearance → Themes → Add New → Upload in wp-admin, and activate it.
 3. Settings → Pediment Theme → Seeding → **Preview plan**, then **Apply plan**. It creates what
    the new release declares and the site does not have yet (a new page, a new menu); it never
-   changes a page that exists.
+   changes anything a person made.
 
 **The client theme has no auto-updater.** Unlike the Pediment plugin, which updates itself
 through wp-admin, a new theme release only reaches production when someone uploads the zip by
@@ -217,9 +217,17 @@ Pediment 4.0 is a breaking release. On each site, in this order:
    legacy `pediment/*` presentation blocks still render in 4.0, but the
    inserter hides them, and 5.0 deletes them. [convert.md](convert.md) has the
    full order for a production site.
+
+   On admin-only hosting you cannot change the revision limit yourself. If the
+   preview reports that revisions are disabled or limited to fewer than 2,
+   ask the host or the site's developer to raise `WP_POST_REVISIONS` in
+   `wp-config.php` (to 2 or more, or remove the limit). Do not convert until
+   then: without a backup revision the converter skips the page
+   ([convert.md](convert.md), "Results").
 4. **Know what changed in seeding.** `wp pediment seed` and "Apply plan" are
-   bootstrap-only now: they create what is missing and never change a page,
-   menu, reading setting or logo that exists. A deploy that used to push
+   bootstrap-only now: they add what is missing (pages, menus, media, missing
+   language tags, empty reading settings) and never change a page, menu,
+   translation, reading setting or logo a person made. A deploy that used to push
    pattern edits to live pages through a re-seed no longer does. Change live
    pages in the editor or through the MCP tools ([seeding.md](seeding.md),
    "Bootstrap only"). The plan summary reads `N to write, N orphan,
@@ -227,6 +235,17 @@ Pediment 4.0 is a breaking release. On each site, in this order:
    `protected` from each item and from `counts`.
 5. **The AI chat is gone.** The editor sidebar, its REST routes and the AI
    settings tab were removed. The MCP tools replace them.
+6. **Update the client repo's own docs.** An existing client repo carries the
+   3.x text in its own `AGENTS.md` and `README.md`: pages are
+   "content-protected", and a change to an existing page means "edit the
+   pattern, then `npm run seed`". Remove both. An agent that follows them
+   after the upgrade edits a pattern, sees `0 to write,` and reports the work
+   done while the live page has not changed. Copy the 4.0 wording from
+   [`client-template/AGENTS.md`](../client-template/AGENTS.md) and
+   [`client-template/README.md`](../client-template/README.md): a new page
+   goes in the manifest and a pattern and is seeded once; an existing page
+   changes through `pediment-write-page` or the editor, then
+   `npm run adopt -- <key>` refreshes its pattern for new environments.
 
 ## Moving an existing site onto Pediment
 
