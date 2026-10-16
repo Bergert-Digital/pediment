@@ -1,5 +1,13 @@
 # Changelog
 
+## [4.2.0](https://github.com/Bergert-Digital/pediment/compare/v4.1.0...v4.2.0) (2026-10-16)
+
+
+### Features
+
+* **convert:** mark converted section heads with a class ([5a70f22](https://github.com/Bergert-Digital/pediment/commit/5a70f22f8cc478ae21b6b460d073787c3f957e99))
+* **convert:** mark converted section heads with a class ([#126](https://github.com/Bergert-Digital/pediment/issues/126)) ([88d6c4e](https://github.com/Bergert-Digital/pediment/commit/88d6c4ee5a47a87f4e7d389fab666ccccf44fe57))
+
 ## [4.1.0](https://github.com/Bergert-Digital/pediment/compare/v4.0.0...v4.1.0) (2026-10-16)
 
 
