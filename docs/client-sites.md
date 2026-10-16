@@ -152,8 +152,11 @@ or manually checked against a newer plugin release recently, not that anything i
 
 ## Day-two work
 
-The seeder bootstraps a site and never changes a page, menu or setting that
-already exists (see [docs/seeding.md](seeding.md), "Bootstrap only"). So the
+The seeder bootstraps a site. It never changes the content, title or slug of a
+page that exists, never rewrites a menu, and keeps reading settings and a logo
+that a person chose. It only fills gaps: empty reading settings or logo,
+missing language tags, and the translation links of pages it creates (see
+[docs/seeding.md](seeding.md), "Bootstrap only"). So the
 day-to-day loop depends on where the page lives:
 
 - **A page that does not exist yet** — declare it in `seed/manifest.php`, add
