@@ -42,6 +42,7 @@ AI agents change the site layer with the `pediment-upsert-style` tool — see [m
 | `framed` | image | Image with radius and shadow, small caption |
 | `logos` | group | Grey logos that get their colour on hover |
 | `prose` | group | Long text with a comfortable line height |
+| `tile` | Pediment icon | The icon on a small rounded square: accent glyph on the accent tint. Styles the inner `.wp-block-pediment-icon__glyph` |
 
 `stat` styles its children by position: keep the value first and the label
 second. The converter ([convert.md](convert.md)) uses these styles for the

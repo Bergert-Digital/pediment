@@ -18,7 +18,7 @@ default styles (see [design-layer.md](design-layer.md)):
 | `hero` media-bg | `media-card` cover (the image, primary overlay) → h1, `lead`, `pill` button |
 | `hero` stat-card | columns: copy, `pill` + `pill-ghost` buttons, ticks list · `media-card` cover with a `card` group that holds a `stat` group and the metrics |
 | `cta` | `panel` section group → h2, paragraph, `pill` + `pill-ghost` buttons |
-| `feature-grid` + `feature` | grid group (up to 3 columns, 2 for four cards) of `card` groups → image, h3, text, link |
+| `feature-grid` + `feature` | grid group (up to 3 columns, 2 for four cards) of `card` groups → image or `tile` icon (`pediment/icon`), h3, text, link |
 | `stat-grid` + `stat` | grid group (one column per stat, up to 4) of `stat` groups → value, label, context (only the parts that are set) |
 | `steps` + `step` | `steps` grid group (up to 3 columns, 2 for four steps; numbers the steps) of groups → h3, text |
 | `media-text` | `media-row` media & text block; inner blocks move unchanged |
@@ -35,6 +35,15 @@ Grids collapse on phones. The converter writes `minimumColumnWidth` as
 minimum when `columnCount` is set, and the grid would never collapse. On wide
 screens the grid holds N columns; below about N times the floor it drops to
 fewer columns, down to one.
+
+A feature's icon becomes a `pediment/icon` block in the `tile` style, the
+first block of the card. A feature with an image keeps the image and gets no
+icon, as the legacy block rendered it. A feature without an `icon` attribute
+gets `trend-up`, the legacy default; a feature with an empty icon gets none.
+An icon that is not in the icon set stays in the block, and the report names
+it ("pediment/feature: icon … is not in the icon set, the card shows no
+icon"). A client theme restyles the tile with its own `tile` style for
+`pediment/icon` (see [design-layer.md](design-layer.md)).
 
 A child block outside its parent (a lone FAQ item, stat, step, feature or
 testimonial) converts on its own. A legacy block inside another block, at any
@@ -55,9 +64,6 @@ says so ("pediment/hero: variant … has no mapping, converted as default").
 
 Some things have no core equivalent and are dropped:
 
-- Feature icons. The report names them once per page, with a count
-  ("pediment/feature: icon dropped … (3 times)"). A feature with an image
-  keeps the image.
 - Hero tick icons and the FAQ toggle icon. The new blocks use the default list
   bullet and the details arrow. The report does not name these.
 - Hover effects (card lift, link arrow).
