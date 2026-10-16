@@ -21,7 +21,9 @@ The REST API uses the `pediment/v1` namespace.
 Client themes declare their pages, posts, media, navigation, and custom post types in a
 `seed/manifest.php` file; content itself lives in the theme's `patterns/` directory.
 `wp pediment seed` bootstraps a site: it creates what the manifest declares and the site
-does not have yet, and never changes a page, menu or setting that exists. Live pages
+does not have yet. It never changes an existing page's content, title or slug, never
+rewrites a menu, and keeps reading settings and a logo a person chose; it only fills empty
+settings, missing language tags and the translation links of pages it creates. Live pages
 change in the editor or through the MCP tools; `wp pediment adopt <key>` exports a live
 page's markup into its pattern file so new environments match. A manifest that declares a
 `languages` section makes the site multilingual (via Polylang); `wp pediment languages`
