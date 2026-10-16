@@ -62,12 +62,33 @@ describe( 'panelColors', () => {
 		} );
 	} );
 
-	it( 'passes an unknown slug through with light text, like the front end', () => {
+	it( 'gives an unknown slug the default panel colour, like the front end', () => {
 		expect( panelColors( 'no-such-colour', palette ) ).toEqual( {
-			bg: 'no-such-colour',
+			bg: '#0A1B33',
 			fg: 'var(--wp--preset--color--surface)',
-			picker: 'no-such-colour',
+			picker: '#0A1B33',
 		} );
+	} );
+
+	it( 'never passes a hostile value through', () => {
+		expect( panelColors( 'red;position:fixed', palette ).bg ).toBe(
+			'#0A1B33'
+		);
+		expect( panelColors( '#0A1B33FF', palette ).bg ).toBe( '#0A1B33' );
+	} );
+
+	it( 'keeps a three-digit hex', () => {
+		expect( panelColors( '#abc', palette ).bg ).toBe( '#abc' );
+	} );
+
+	it( 'paints the default panel in the palette primary when there is one', () => {
+		const withPrimary = [ { slug: 'primary', color: '#F5E716' } ];
+		expect( panelColors( '', withPrimary ) ).toEqual( {
+			bg: '#F5E716',
+			fg: 'var(--wp--preset--color--foreground)',
+			picker: '#F5E716',
+		} );
+		expect( panelColors( 'bogus!', withPrimary ).bg ).toBe( '#F5E716' );
 	} );
 } );
 

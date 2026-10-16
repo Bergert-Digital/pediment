@@ -16,12 +16,7 @@ import {
 } from '@wordpress/components';
 import { useSelect } from '@wordpress/data';
 import { useState } from '@wordpress/element';
-import {
-	DEFAULT_PANEL_COLOR,
-	panelColors,
-	storedPanelColor,
-	type PaletteColor,
-} from './panel-fg';
+import { panelColors, storedPanelColor, type PaletteColor } from './panel-fg';
 
 type Slide = {
 	mediaId: number;
@@ -115,12 +110,7 @@ export default function Edit( {
 		...( themePalette ?? [] ),
 		...( defaultPalette ?? [] ),
 	];
-	const panel = panelColors(
-		has( attributes.panelColor )
-			? attributes.panelColor
-			: DEFAULT_PANEL_COLOR,
-		palette
-	);
+	const panel = panelColors( attributes.panelColor ?? '', palette );
 	const slides = attributes.slides ?? [];
 	const [ active, setActive ] = useState( 0 );
 	const [ autoOpen, setAutoOpen ] = useState( -1 );

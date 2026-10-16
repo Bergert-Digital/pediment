@@ -261,14 +261,45 @@ class SliderTest extends WP_UnitTestCase {
 		$this->assertStringContainsString( '--slide-panel-fg:var(--wp--preset--color--foreground)', $html );
 	}
 
-	public function test_an_unknown_slug_falls_back_like_any_invalid_value() {
+	public function test_an_unknown_slug_uses_the_default_panel_colour() {
 		$this->theme_palette( array( 'accent' => '#F5E716' ) );
 
 		$html = $this->slider( array( 'panelColor' => 'no-such-colour', 'slides' => array( array( 'heading' => 'H' ) ) ) );
 
-		$this->assertStringNotContainsString( 'var(--wp--preset--color--no-such-colour)', $html );
-		$this->assertStringContainsString( '--slide-panel-bg:no-such-colour', $html );
-		$this->assertStringContainsString( '--slide-panel-fg:var(--wp--preset--color--surface)', $html );
+		$this->assertStringNotContainsString( 'no-such-colour', $html );
+		$this->assertStringContainsString( '--slide-panel-bg:var(--wp--preset--color--primary)', $html );
+	}
+
+	/**
+	 * Only a hex or a known slug reaches the style attribute. esc_attr() does
+	 * not stop a `;` from starting a new declaration.
+	 */
+	public function test_a_hostile_panel_colour_writes_nothing_raw_into_the_style() {
+		$html = $this->slider( array( 'panelColor' => 'red;position:fixed', 'slides' => array( array( 'heading' => 'H' ) ) ) );
+
+		$this->assertStringNotContainsString( 'position:fixed', $html );
+		$this->assertStringNotContainsString( 'red;', $html );
+		$this->assertStringContainsString( '--slide-panel-bg:var(--wp--preset--color--primary);--slide-panel-fg:', $html );
+	}
+
+	public function test_only_three_and_six_digit_hex_values_are_colours() {
+		$short = $this->slider( array( 'panelColor' => '#abc', 'slides' => array( array( 'heading' => 'H' ) ) ) );
+		$this->assertStringContainsString( '--slide-panel-bg:#abc;', $short );
+
+		$alpha = $this->slider( array( 'panelColor' => '#0A1B33FF', 'slides' => array( array( 'heading' => 'H' ) ) ) );
+		$this->assertStringNotContainsString( '#0A1B33FF', $alpha );
+		$this->assertStringContainsString( '--slide-panel-bg:var(--wp--preset--color--primary)', $alpha );
+	}
+
+	/** The default panel is the primary preset, so its text follows primary's colour. */
+	public function test_the_default_panel_text_follows_the_primary_palette_colour() {
+		$this->theme_palette( array( 'primary' => '#F5E716' ) );
+
+		$invalid = $this->slider( array( 'panelColor' => 'bogus!', 'slides' => array( array( 'heading' => 'H' ) ) ) );
+		$this->assertStringContainsString( '--slide-panel-bg:var(--wp--preset--color--primary);--slide-panel-fg:var(--wp--preset--color--foreground)', $invalid );
+
+		$empty = $this->slider( array( 'panelColor' => '', 'slides' => array( array( 'heading' => 'H' ) ) ) );
+		$this->assertStringContainsString( '--slide-panel-bg:var(--wp--preset--color--primary);--slide-panel-fg:var(--wp--preset--color--foreground)', $empty );
 	}
 
 	public function test_empty_panel_colour_still_uses_the_primary_preset() {

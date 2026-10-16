@@ -88,16 +88,22 @@ two forms:
   text on a light one. When one slug is in several origins, the custom
   (Global Styles) colour wins over the theme's, and the theme's over core's
   default, which is the order the preset vars cascade in.
-- **A colour** (`"#0A1B33"`, the default): used as it is, as before.
+- **A hex colour** (`#rgb` or `#rrggbb`, the default is `"#0A1B33"`): hex
+  values work as before.
 
-Anything else, including a slug that is not in the palette, is passed
-through unchanged with light text, which is how an invalid value always
-rendered. Prefer the slug in patterns: it keeps colour literals out of
-content.
+Anything else is invalid: a slug that is not in the palette, a named colour
+(`red`), an 8-digit hex, or a value such as `red;position:fixed`. An invalid
+value gets the default panel, `var(--wp--preset--color--primary)`, with the
+text colour computed from primary's palette colour. Nothing else is written
+into the `style` attribute. Prefer the slug in patterns: it keeps colour
+literals out of content.
 
 In the editor, picking a palette swatch stores its slug; a custom colour
-stays hex. The preview resolves both forms the same way `render.php` does
-(`panelColors()` in `plugin/src/blocks/slider/panel-fg.ts`).
+stays hex. A palette pick stores the **first** slug with that colour value
+(custom, then theme, then default origin): when two slugs share one hex, the
+first one wins, even if you clicked the other swatch. The preview resolves
+every form the same way `render.php` does (`panelColors()` in
+`plugin/src/blocks/slider/panel-fg.ts`).
 
 ## Legacy blocks
 
