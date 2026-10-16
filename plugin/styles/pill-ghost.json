@@ -1,0 +1,11 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/theme.json",
+	"version": 3,
+	"title": "Pill (outline)",
+	"slug": "pill-ghost",
+	"blockTypes": [ "core/button" ],
+	"styles": {
+		"color": { "background": "transparent", "text": "currentColor" },
+		"border": { "radius": "var(--wp--custom--radius--pill)", "width": "1px", "style": "solid", "color": "currentColor" }
+	}
+}

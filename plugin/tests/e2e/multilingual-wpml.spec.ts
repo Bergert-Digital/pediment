@@ -197,6 +197,14 @@ test.describe( 'multilingual seeding (WPML)', { tag: '@wpml' }, () => {
 	// not fatal, and shows a working switcher control with a real language link.
 	test.describe( 'language switcher renders', () => {
 		test.beforeAll( () => {
+			// Menus are create-only: a re-seed never rewrites one that exists. So
+			// force-delete the seeded `primary` menus (found by the seeder's own
+			// identity lookup, all languages) first, and the re-seed below creates
+			// them again with the switcher item.
+			wp(
+				`eval 'foreach ( ( new \\Pediment\\Seeder\\NavSeeder( \\Pediment\\Language\\LanguageRegistry::provider() ) )->keyed() as $mapKey => $postIds ) { if ( 0 === strpos( $mapKey, "primary|" ) ) { foreach ( $postIds as $postId ) { wp_delete_post( $postId, true ); } } }'`
+			);
+
 			// Re-seed with a `language_switcher` appended to the primary nav,
 			// through the real engine (Runner + the pediment_seed_manifest filter),
 			// so the header the browser loads is the one the seeder actually wrote.

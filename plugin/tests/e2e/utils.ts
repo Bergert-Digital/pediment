@@ -122,56 +122,6 @@ async function dismissEditorOverlays( page: Page ) {
 	}
 }
 
-/**
- * Opens the editor's general sidebar to a specific tab via the WordPress data API.
- * More reliable than clicking around UI affordances that move between WP versions.
- *   tab = 'edit-post/document' | 'edit-post/block'
- */
-async function openSidebarTab(
-	page: Page,
-	tab: 'edit-post/document' | 'edit-post/block'
-) {
-	await page.evaluate( ( target ) => {
-		const wp = ( window as any ).wp;
-		const dispatch =
-			wp?.data?.dispatch?.( 'core/edit-post' ) ??
-			wp?.data?.dispatch?.( 'core/editor' );
-		dispatch?.openGeneralSidebar?.( target );
-	}, tab );
-}
-
-/**
- * Opens the Document sidebar, ensures the "Pediment" PluginDocumentSettingPanel is expanded,
- * and returns the chat panel locator (`.pediment-chat`) for further interactions.
- */
-export async function openAIChatPanel( page: Page ) {
-	await openSidebarTab( page, 'edit-post/document' );
-	const toggle = page.getByRole( 'button', { name: /^Pediment$/i } ).first();
-	await toggle.waitFor( { state: 'visible', timeout: 10_000 } );
-	if ( ( await toggle.getAttribute( 'aria-expanded' ) ) === 'false' ) {
-		await toggle.click();
-	}
-	const panel = page.locator( '.pediment-chat:visible' ).first();
-	await panel.waitFor( { state: 'visible', timeout: 10_000 } );
-	return panel;
-}
-
-/**
- * Variant for the block-inspector Pediment PanelBody (rendered by BlockChatPanel.tsx
- * when a block is selected). Use this after selecting a block in the canvas.
- */
-export async function openBlockAIChatPanel( page: Page ) {
-	await openSidebarTab( page, 'edit-post/block' );
-	const toggle = page.getByRole( 'button', { name: /^Pediment$/i } ).first();
-	await toggle.waitFor( { state: 'visible', timeout: 10_000 } );
-	if ( ( await toggle.getAttribute( 'aria-expanded' ) ) === 'false' ) {
-		await toggle.click();
-	}
-	const panel = page.locator( '.pediment-chat:visible' ).first();
-	await panel.waitFor( { state: 'visible', timeout: 10_000 } );
-	return panel;
-}
-
 /** Create a page through wp-cli and return its front-end URL. */
 export function createPageWithContent(
 	slug: string,

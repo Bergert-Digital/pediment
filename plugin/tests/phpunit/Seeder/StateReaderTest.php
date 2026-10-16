@@ -2,7 +2,6 @@
 // plugin/tests/phpunit/Seeder/StateReaderTest.php
 
 use Pediment\Language\NullProvider;
-use Pediment\Seeder\ContentHash;
 use Pediment\Seeder\ContentResolver;
 use Pediment\Seeder\DesiredState;
 use Pediment\Seeder\Manifest;
@@ -17,8 +16,6 @@ class StateReaderTest extends WP_UnitTestCase {
 			array_merge( [ 'post_type' => 'page', 'post_title' => 'T', 'post_content' => 'C' ], $args )
 		);
 		update_post_meta( $id, Meta::KEY, $key );
-		update_post_meta( $id, Meta::HASH, ContentHash::forPost( $id ) );
-		update_post_meta( $id, Meta::SOURCE, ContentHash::compute( 'T', 'C' ) );
 		return $id;
 	}
 
@@ -34,7 +31,6 @@ class StateReaderTest extends WP_UnitTestCase {
 		$this->assertSame( 'Home', $entry->title );
 		$this->assertSame( '<p>h</p>', $entry->content );
 		$this->assertTrue( $entry->frontPage );
-		$this->assertSame( ContentHash::compute( 'Home', '<p>h</p>' ), $entry->sourceHash );
 	}
 
 	public function test_reads_seeded_entries_by_key_not_slug() {
@@ -45,16 +41,6 @@ class StateReaderTest extends WP_UnitTestCase {
 		$this->assertArrayHasKey( 'home|', $actual );
 		$this->assertSame( $id, $actual['home|']->id );
 		$this->assertSame( 'startseite', $actual['home|']->slug );
-		$this->assertTrue( ContentHash::matches( $actual['home|']->storedHash, $actual['home|']->currentHash ) );
-	}
-
-	public function test_a_client_edit_shows_as_a_hash_mismatch() {
-		$id = $this->seeded( 'home' );
-		wp_update_post( [ 'ID' => $id, 'post_content' => 'client wrote this' ] );
-
-		$actual = ( new StateReader( new NullProvider() ) )->read()['home|'];
-
-		$this->assertFalse( ContentHash::matches( $actual->storedHash, $actual->currentHash ) );
 	}
 
 	public function test_drafts_and_trashed_entries_are_still_found() {

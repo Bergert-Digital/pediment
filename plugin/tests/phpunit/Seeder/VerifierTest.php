@@ -42,29 +42,61 @@ class VerifierTest extends WP_UnitTestCase {
 		$this->assertStringContainsString( 'home', $problems[0] );
 	}
 
-	public function test_a_uniquified_slug_is_a_problem() {
-		// WordPress appends -2 when a slug collides; silently accepting that is
-		// how seeded URLs drift from the manifest.
+	public function test_a_uniquified_slug_on_a_new_page_is_a_problem() {
+		// WordPress appends -2 when a slug collides; the page this run created
+		// did not get the URL the manifest declares.
 		$m  = $this->manifest();
 		$id = self::factory()->post->create( [ 'post_type' => 'page', 'post_name' => 'home-2', 'post_title' => 'Home' ] );
 		update_post_meta( $id, Meta::KEY, 'home' );
 		update_option( 'show_on_front', 'page' );
 		update_option( 'page_on_front', $id );
 
-		$problems = ( new Verifier( new NullProvider(), new NavSeeder( new NullProvider() ) ) )->verify( $m, $this->desired( $m ), [ 'home|' => $id ], new MediaMap( [] ) );
+		$problems = ( new Verifier( new NullProvider(), new NavSeeder( new NullProvider() ) ) )->verify( $m, $this->desired( $m ), [ 'home|' => $id ], new MediaMap( [] ), [], [ 'home|' ] );
 
 		$this->assertStringContainsString( 'home-2', implode( "\n", $problems ) );
 	}
 
-	public function test_a_front_page_option_pointing_elsewhere_is_a_problem() {
+	public function test_an_unset_front_page_option_is_a_problem_for_a_new_page() {
 		$m  = $this->manifest();
 		$id = self::factory()->post->create( [ 'post_type' => 'page', 'post_name' => 'home', 'post_title' => 'Home' ] );
 		update_post_meta( $id, Meta::KEY, 'home' );
 		update_option( 'show_on_front', 'posts' );
+		update_option( 'page_on_front', 0 );
+
+		$problems = ( new Verifier( new NullProvider(), new NavSeeder( new NullProvider() ) ) )->verify( $m, $this->desired( $m ), [ 'home|' => $id ], new MediaMap( [] ), [], [ 'home|' ] );
+
+		$this->assertStringContainsString( 'front page', implode( "\n", $problems ) );
+	}
+
+	public function test_a_front_page_a_person_chose_is_not_a_problem_for_a_new_page() {
+		// The seeded home was deleted for good and this run created it again;
+		// the front page a person chose meanwhile stays, and the run is green.
+		$m      = $this->manifest();
+		$id     = self::factory()->post->create( [ 'post_type' => 'page', 'post_name' => 'home', 'post_title' => 'Home' ] );
+		$theirs = self::factory()->post->create( [ 'post_type' => 'page', 'post_name' => 'start', 'post_title' => 'Start' ] );
+		update_post_meta( $id, Meta::KEY, 'home' );
+		update_option( 'show_on_front', 'page' );
+		update_option( 'page_on_front', $theirs );
+
+		$problems = ( new Verifier( new NullProvider(), new NavSeeder( new NullProvider() ) ) )->verify( $m, $this->desired( $m ), [ 'home|' => $id ], new MediaMap( [] ), [], [ 'home|' ] );
+
+		$this->assertSame( [], $problems );
+	}
+
+	public function test_drift_on_an_existing_page_is_not_a_problem() {
+		// A person renamed, moved and trashed the page and chose another front
+		// page. The seeder did not create it in this run, so none of that is
+		// its business.
+		$m      = $this->manifest();
+		$parent = self::factory()->post->create( [ 'post_type' => 'page' ] );
+		$id     = self::factory()->post->create( [ 'post_type' => 'page', 'post_name' => 'startseite', 'post_title' => 'Home', 'post_parent' => $parent ] );
+		update_post_meta( $id, Meta::KEY, 'home' );
+		wp_trash_post( $id );
+		update_option( 'show_on_front', 'posts' );
 
 		$problems = ( new Verifier( new NullProvider(), new NavSeeder( new NullProvider() ) ) )->verify( $m, $this->desired( $m ), [ 'home|' => $id ], new MediaMap( [] ) );
 
-		$this->assertStringContainsString( 'front page', implode( "\n", $problems ) );
+		$this->assertSame( [], $problems );
 	}
 
 	public function test_a_child_whose_parent_has_no_post_is_a_problem() {
@@ -83,7 +115,7 @@ class VerifierTest extends WP_UnitTestCase {
 		$child = self::factory()->post->create( [ 'post_type' => 'page', 'post_name' => 'pricing', 'post_title' => 'Pricing', 'post_parent' => 0 ] );
 		update_post_meta( $child, Meta::KEY, 'guide/pricing' );
 
-		$problems = ( new Verifier( new NullProvider(), new NavSeeder( new NullProvider() ) ) )->verify( $m, $this->desired( $m ), [ 'guide/pricing|' => $child ], new MediaMap( [] ) );
+		$problems = ( new Verifier( new NullProvider(), new NavSeeder( new NullProvider() ) ) )->verify( $m, $this->desired( $m ), [ 'guide/pricing|' => $child ], new MediaMap( [] ), [], [ 'guide/pricing|' ] );
 
 		$this->assertStringContainsString( 'landed at the site root', implode( "\n", $problems ) );
 	}
@@ -118,34 +150,52 @@ class VerifierTest extends WP_UnitTestCase {
 		$this->assertStringContainsString( 'logo', implode( "\n", $problems ) );
 	}
 
-	public function test_an_edited_mega_block_passes_verification() {
-		$seeder = new NavSeeder( new NullProvider() );
-		$m      = Manifest::fromArray(
-			[
-				'pages' => [ 'home' => [ 'title' => 'Home', 'content' => '<p>h</p>' ] ],
-				'navs'  => [
-					'primary' => [
-						'title' => 'Primary',
-						'items' => [
-							[ 'url' => '/features/', 'label' => 'Features' ],
-							[ 'mega' => [ 'label' => 'Products', 'columns' => [ [ 'heading' => 'H', 'links' => [ [ 'label' => 'L', 'url' => '/l/' ] ] ] ] ] ],
-						],
-					],
-				],
-			],
+	public function test_a_trashed_attachment_is_not_a_problem() {
+		$dir = get_temp_dir() . 'pediment-verify-test';
+		wp_mkdir_p( $dir . '/seed/media' );
+		file_put_contents( $dir . '/seed/media/logo.svg', '<svg xmlns="http://www.w3.org/2000/svg"/>' );
+		$m  = Manifest::fromArray( [ 'media' => [ 'logo' => [ 'file' => 'seed/media/logo.svg' ] ] ], $dir );
+		$id = self::factory()->attachment->create_object( [ 'file' => 'logo.svg', 'post_mime_type' => 'image/svg+xml' ] );
+		update_post_meta( $id, Meta::KEY, 'logo' );
+		wp_trash_post( $id );
+
+		$problems = ( new Verifier( new NullProvider(), new NavSeeder( new NullProvider() ) ) )->verify( $m, [], [], new MediaMap( [ 'logo' => $id ] ) );
+
+		$this->assertSame( [], $problems, 'the plan reports the trash; the seeder leaves it there' );
+	}
+
+	private function navManifest(): Manifest {
+		return Manifest::fromArray(
+			[ 'navs' => [ 'primary' => [ 'title' => 'Primary', 'items' => [ [ 'url' => '/features/', 'label' => 'Features' ] ] ] ] ],
 			'/tmp/theme'
 		);
+	}
 
-		$navIds = $seeder->apply( $seeder->plan( $m, [] ), $m, [] );
-		$navId  = $navIds['primary|'];
-		$edited = str_replace( '"label":"L"', '"label":"Edited"', get_post( $navId )->post_content );
-		wp_update_post( [ 'ID' => $navId, 'post_content' => wp_slash( $edited ) ] );
+	public function test_an_edited_existing_nav_passes_verification() {
+		$seeder = new NavSeeder( new NullProvider() );
+		$m      = $this->navManifest();
+		$navIds = $seeder->apply( $seeder->plan( $m ), $m, [] );
+		wp_update_post(
+			[
+				'ID'           => $navIds['primary|'],
+				'post_content' => wp_slash( '<!-- wp:navigation-link {"label":"Shop","url":"/shop/","kind":"custom"} /-->' ),
+				'post_status'  => 'draft',
+			]
+		);
 
-		$id = self::factory()->post->create( [ 'post_type' => 'page', 'post_name' => 'home', 'post_title' => 'Home' ] );
-		update_post_meta( $id, Meta::KEY, 'home' );
+		$problems = ( new Verifier( new NullProvider(), $seeder ) )->verify( $m, [], [], new MediaMap( [] ), $navIds );
 
-		$problems = ( new Verifier( new NullProvider(), $seeder ) )->verify( $m, $this->desired( $m ), [ 'home|' => $id ], new MediaMap( [] ), $navIds );
+		$this->assertSame( [], $problems, 'a menu this run did not create belongs to the person who edited it' );
+	}
 
-		$this->assertSame( [], $problems, 'a client-owned mega block is not a membership mismatch' );
+	public function test_a_nav_created_this_run_is_checked_for_membership() {
+		$seeder = new NavSeeder( new NullProvider() );
+		$m      = $this->navManifest();
+		$navIds = $seeder->apply( $seeder->plan( $m ), $m, [] );
+		wp_update_post( [ 'ID' => $navIds['primary|'], 'post_content' => '' ] );
+
+		$problems = ( new Verifier( new NullProvider(), $seeder ) )->verify( $m, [], [], new MediaMap( [] ), $navIds, [], [ 'primary|' ] );
+
+		$this->assertContains( 'navs.primary|: stored membership does not match the manifest.', $problems );
 	}
 }

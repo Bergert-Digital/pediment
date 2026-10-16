@@ -1,0 +1,15 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/theme.json",
+	"version": 3,
+	"title": "Panel",
+	"slug": "panel",
+	"blockTypes": [ "core/group" ],
+	"styles": {
+		"color": { "background": "var:preset|color|primary", "text": "var:preset|color|surface" },
+		"border": { "radius": "var(--wp--custom--radius--lg)" },
+		"spacing": { "padding": { "top": "var:preset|spacing|70", "right": "var:preset|spacing|60", "bottom": "var:preset|spacing|70", "left": "var:preset|spacing|60" } },
+		"elements": { "heading": { "color": { "text": "var:preset|color|surface" } }, "link": { "color": { "text": "var:preset|color|surface" } } },
+		"blocks": { "core/paragraph": { "color": { "text": "var(--wp--custom--color--text-on-accent-muted)" } } },
+		"css": "text-align:center;& .wp-block-button.is-style-pill .wp-block-button__link{background:var(--wp--preset--color--surface);color:var(--wp--preset--color--accent-hover)}"
+	}
+}

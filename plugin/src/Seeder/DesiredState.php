@@ -28,11 +28,13 @@ final class DesiredState {
 	) {}
 
 	/**
+	 * @param array<string,mixed> $actual Rows that already exist, keyed "key|language" as
+	 *                                    StateReader::read() returns them. Only the keys are read.
 	 * @return array<string,DesiredEntry>
 	 *
-	 * @throws ManifestError When an entry's pattern is not registered.
+	 * @throws ManifestError When the pattern of an entry that will be created is not registered.
 	 */
-	public function build( Manifest $manifest ): array {
+	public function build( Manifest $manifest, array $actual = [] ): array {
 		$desired               = [];
 		$this->undeclaredMedia = [];
 		$this->missingTitles   = [];
@@ -42,14 +44,21 @@ final class DesiredState {
 
 		foreach ( $this->lang->languages() as $language ) {
 			foreach ( $manifest->entriesInDependencyOrder() as $spec ) {
-				$title   = $spec->titleFor( $language, $default );
-				$content = $this->resolver->resolve( $spec, $language, $default );
+				$title  = $spec->titleFor( $language, $default );
+				$exists = isset( $actual[ $spec->key . '|' . $language ] );
+
+				// A row that exists is never written again, so its pattern is
+				// not read: a live-first theme may drop the pattern file of a
+				// page that now lives only on the site, and that must not block
+				// the run. Its content stays '' and nothing reads it.
+				$content = $exists ? '' : $this->resolver->resolve( $spec, $language, $default );
 
 				// A non-default language rendering the default language's title is
 				// a translation nobody wrote yet. Not an error — the page is real
 				// and navigable — but silence here is how a five-language site
-				// ships three languages of English.
-				if ( $language !== $default && '' !== $language && ! isset( $spec->translations[ $language ]['title'] ) ) {
+				// ships three languages of English. Only a page this run creates
+				// can still get the declared title.
+				if ( ! $exists && $language !== $default && '' !== $language && ! isset( $spec->translations[ $language ]['title'] ) ) {
 					$this->missingTitles[] = sprintf(
 						'%s (%s): no title declared — the page carries the default language title "%s".',
 						$spec->key,
@@ -69,19 +78,21 @@ final class DesiredState {
 					$spec->frontPage,
 					$spec->postsPage,
 					$spec->menuOrder,
-					$spec->terms,
-					ContentHash::compute( $title, $content )
+					$spec->terms
 				);
 
 				$desired[ $entry->id() ] = $entry;
+
+				if ( $exists ) {
+					continue;
+				}
 
 				// The resolver records what it could not resolve per call, so it
 				// has to be read here or it is overwritten by the next entry.
 				// Keys the manifest DOES declare are the fresh-site case — media
 				// simply has not been applied yet, and the MediaSeeder/Verifier
 				// own that. A key nobody declares is a typo that can never
-				// resolve: the literal sentinel lands in a live page and gets
-				// hashed as if it were correct.
+				// resolve: the literal sentinel would land in the new page.
 				$undeclared = array_values( array_diff( $this->resolver->unresolvedMediaKeys(), $declared ) );
 				if ( [] !== $undeclared ) {
 					$this->undeclaredMedia[ $entry->id() ] = $undeclared;

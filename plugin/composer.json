@@ -1,6 +1,6 @@
 {
   "name": "bergert-digital/pediment-plugin",
-  "description": "The Pediment engine + AI: WordPress blocks, templates, tokens, and AI page composer",
+  "description": "The Pediment site engine: WordPress blocks, templates, design tokens, forms and seeding",
   "homepage": "https://github.com/Bergert-Digital/pediment",
   "type": "wordpress-plugin",
   "license": "GPL-2.0-or-later",

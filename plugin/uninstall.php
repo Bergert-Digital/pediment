@@ -1,6 +1,7 @@
 <?php
 /**
- * Runs when the plugin is deleted from wp-admin. Drops AI plugin tables.
+ * Runs when the plugin is deleted from wp-admin. Removes the retired AI chat's
+ * data. Forms submissions and seeded content belong to the site and stay.
  *
  * @package Pediment
  */
@@ -9,11 +10,8 @@ if ( ! defined( 'WP_UNINSTALL_PLUGIN' ) ) {
 	exit;
 }
 
-global $wpdb;
+require_once __DIR__ . '/vendor/autoload.php';
 
-$wpdb->query( "DROP TABLE IF EXISTS {$wpdb->prefix}pediment_ai_jobs" );
-$wpdb->query( "DROP TABLE IF EXISTS {$wpdb->prefix}pediment_ai_usage" );
-
-delete_option( 'pediment_ai_settings' );
-
-wp_clear_scheduled_hook( 'pediment_ai_job_run' );
+\Pediment\Upgrade\ChatDataCleanup::run();
+delete_option( \Pediment\Upgrade\ChatDataCleanup::DONE_OPTION );
+delete_option( \Pediment\Upgrade\SeedHashCleanup::DONE_OPTION );

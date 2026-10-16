@@ -61,7 +61,7 @@ class NavLanguageTest extends PolylangTestCase {
 		$seeder   = new NavSeeder( $lang );
 
 		$entryIds = [ 'about|en' => $this->page( 'en' ), 'about|de' => $this->page( 'de' ) ];
-		$plan     = $seeder->plan( $manifest, $entryIds );
+		$plan     = $seeder->plan( $manifest );
 		$ids      = $seeder->apply( $plan, $manifest, $entryIds );
 
 		$this->assertSame( [], $seeder->errors() );
@@ -76,7 +76,7 @@ class NavLanguageTest extends PolylangTestCase {
 		$seeder   = new NavSeeder( $lang );
 
 		$entryIds = [ 'about|en' => $this->page( 'en' ), 'about|de' => $this->page( 'de' ) ];
-		$ids      = $seeder->apply( $seeder->plan( $manifest, $entryIds ), $manifest, $entryIds );
+		$ids      = $seeder->apply( $seeder->plan( $manifest ), $manifest, $entryIds );
 
 		$this->assertSame( $ids['primary|de'], $lang->translationOf( $ids['primary|en'], 'de' ) );
 	}
@@ -89,10 +89,68 @@ class NavLanguageTest extends PolylangTestCase {
 		$en       = $this->page( 'en' );
 		$de       = $this->page( 'de' );
 		$entryIds = [ 'about|en' => $en, 'about|de' => $de ];
-		$ids      = $seeder->apply( $seeder->plan( $manifest, $entryIds ), $manifest, $entryIds );
+		$ids      = $seeder->apply( $seeder->plan( $manifest ), $manifest, $entryIds );
 
 		$this->assertStringContainsString( '"id":' . $de, get_post( $ids['primary|de'] )->post_content );
 		$this->assertStringNotContainsString( '"id":' . $en, get_post( $ids['primary|de'] )->post_content );
+	}
+
+	public function test_a_menu_translation_a_person_relinked_is_left_alone_by_a_reseed() {
+		$manifest = $this->manifest();
+		$lang     = new PolylangProvider();
+		$seeder   = new NavSeeder( $lang );
+		$entryIds = [ 'about|en' => $this->page( 'en' ), 'about|de' => $this->page( 'de' ) ];
+		$ids      = $seeder->apply( $seeder->plan( $manifest ), $manifest, $entryIds );
+		$theirs   = self::factory()->post->create( [ 'post_type' => 'wp_navigation', 'post_status' => 'publish', 'post_title' => 'Hauptmenü' ] );
+		$lang->setLanguage( $theirs, 'de' );
+		$lang->linkTranslations( [ 'en' => $ids['primary|en'], 'de' => $theirs ] );
+		$this->assertSame( $theirs, $lang->translationOf( $ids['primary|en'], 'de' ), 'Precondition: the person linked their own menu.' );
+
+		$seeder->apply( $seeder->plan( $manifest ), $manifest, $entryIds );
+
+		$this->assertSame( [], $seeder->created() );
+		$this->assertSame( $theirs, $lang->translationOf( $ids['primary|en'], 'de' ), 'the menu translation a person linked stays' );
+	}
+
+	public function test_a_language_added_later_links_its_new_menu_into_the_existing_group() {
+		$lang     = new PolylangProvider();
+		$entryIds = [ 'about|en' => $this->page( 'en' ), 'about|de' => $this->page( 'de' ) ];
+		$first    = ( new NavSeeder( $lang ) )->apply( ( new NavSeeder( $lang ) )->plan( $this->manifest() ), $this->manifest(), $entryIds );
+
+		$fr                    = PLL()->model->add_language( [ 'slug' => 'fr', 'name' => 'Français', 'locale' => 'fr_FR', 'flag' => 'fr', 'rtl' => 0, 'term_group' => 2 ] );
+		$this->addedLanguageId = $fr instanceof WP_Error ? null : (int) $fr->term_id;
+		PLL()->model->clean_languages_cache();
+
+		$three = Manifest::fromArray(
+			[
+				'languages' => [
+					'en' => [ 'name' => 'English', 'locale' => 'en_US', 'default' => true ],
+					'de' => [ 'name' => 'Deutsch', 'locale' => 'de_DE' ],
+					'fr' => [ 'name' => 'Français', 'locale' => 'fr_FR' ],
+				],
+				'pages'     => [ 'about' => [ 'title' => 'About', 'content' => '' ] ],
+				'navs'      => [ 'primary' => [ 'title' => 'Primary', 'items' => [ [ 'entry' => 'about' ] ] ] ],
+			],
+			get_stylesheet_directory()
+		);
+		$lang   = new PolylangProvider();
+		$seeder = new NavSeeder( $lang );
+		$ids    = $seeder->apply( $seeder->plan( $three ), $three, $entryIds + [ 'about|fr' => $this->page( 'fr' ) ] );
+
+		$this->assertSame( [ 'primary|fr' ], $seeder->created() );
+		$this->assertSame( $ids['primary|fr'], $lang->translationOf( $first['primary|en'], 'fr' ), 'the new language joins the existing group' );
+		$this->assertSame( $first['primary|de'], $lang->translationOf( $first['primary|en'], 'de' ) );
+	}
+
+	public function test_a_menu_notice_names_the_language() {
+		$manifest = $this->manifest();
+		$seeder   = new NavSeeder( new PolylangProvider() );
+		$entryIds = [ 'about|en' => $this->page( 'en' ), 'about|de' => $this->page( 'de' ) ];
+		wp_trash_post( $entryIds['about|de'] );
+
+		$seeder->apply( $seeder->plan( $manifest ), $manifest, $entryIds );
+
+		$this->assertSame( [ 'menu primary|de: about is in the trash, left out' ], $seeder->notices() );
 	}
 
 	/**
@@ -135,7 +193,7 @@ class NavLanguageTest extends PolylangTestCase {
 			return ( $postarr['post_name'] ?? '' ) === 'primary-fr' ? true : $maybe_empty;
 		};
 		add_filter( 'wp_insert_post_empty_content', $fail, 10, 2 );
-		$ids = $seeder->apply( $seeder->plan( $manifest, $entryIds ), $manifest, $entryIds );
+		$ids = $seeder->apply( $seeder->plan( $manifest ), $manifest, $entryIds );
 		remove_filter( 'wp_insert_post_empty_content', $fail, 10 );
 
 		$this->assertArrayNotHasKey( 'primary|fr', $ids, 'Precondition: the French nav create must actually have failed.' );
@@ -189,7 +247,7 @@ class NavLanguageTest extends PolylangTestCase {
 			'about|de' => $this->page( 'de' ),
 			'about|fr' => $this->page( 'fr' ),
 		];
-		$ids      = $seeder->apply( $seeder->plan( $threeLanguages, $entryIds ), $threeLanguages, $entryIds );
+		$ids      = $seeder->apply( $seeder->plan( $threeLanguages ), $threeLanguages, $entryIds );
 		$this->assertArrayHasKey( 'primary|fr', $ids, 'Precondition: a French nav must exist before the language is dropped.' );
 
 		PLL()->model->delete_language( (int) $this->addedLanguageId );
@@ -203,10 +261,7 @@ class NavLanguageTest extends PolylangTestCase {
 			'Precondition: dropping the language must leave the nav untagged, not tagged with an unconfigured language.'
 		);
 
-		$plan = ( new NavSeeder( new PolylangProvider() ) )->plan(
-			$this->manifest(),
-			[ 'about|en' => $entryIds['about|en'], 'about|de' => $entryIds['about|de'] ]
-		);
+		$plan = ( new NavSeeder( new PolylangProvider() ) )->plan( $this->manifest() );
 
 		$this->assertTrue( $plan->hasErrors() );
 		$this->assertStringContainsString( (string) $ids['primary|en'], $plan->errors()[0] );
@@ -242,7 +297,7 @@ class NavLanguageTest extends PolylangTestCase {
 		];
 
 		$seeder = new NavSeeder( new PolylangProvider() );
-		$navIds = $seeder->apply( $seeder->plan( $manifest, $ids ), $manifest, $ids );
+		$navIds = $seeder->apply( $seeder->plan( $manifest ), $manifest, $ids );
 
 		$this->assertSame( [], $seeder->errors() );
 
@@ -314,7 +369,7 @@ class NavLanguageTest extends PolylangTestCase {
 		$de       = $this->page( 'de' );
 		$entryIds = [ 'about|en' => $en, 'about|de' => $de ];
 
-		$ids = $seeder->apply( $seeder->plan( $manifest, $entryIds ), $manifest, $entryIds );
+		$ids = $seeder->apply( $seeder->plan( $manifest ), $manifest, $entryIds );
 
 		$this->assertSame( [], $seeder->errors() );
 		$deContent = get_post( $ids['primary|de'] )->post_content;

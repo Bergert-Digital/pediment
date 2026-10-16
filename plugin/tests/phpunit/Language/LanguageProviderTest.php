@@ -89,4 +89,8 @@ class LanguageProviderTest extends WP_UnitTestCase {
 		LanguageRegistry::reset();
 		$this->assertInstanceOf( NullProvider::class, LanguageRegistry::provider() );
 	}
+
+	public function test_null_provider_language_of_is_empty(): void {
+		$this->assertSame( '', ( new NullProvider() )->languageOf( 12345 ) );
+	}
 }

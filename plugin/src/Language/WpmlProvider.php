@@ -116,6 +116,18 @@ final class WpmlProvider implements LanguageProvider {
 		return null !== $code && '' !== (string) $code;
 	}
 
+	public function languageOf( int $postId ): string {
+		if ( $postId <= 0 ) {
+			return '';
+		}
+		$code = apply_filters(
+			'wpml_element_language_code',
+			null,
+			[ 'element_id' => $postId, 'element_type' => 'post_' . get_post_type( $postId ) ]
+		);
+		return null === $code ? '' : (string) $code;
+	}
+
 	public function translationOf( int $postId, string $language ): int {
 		if ( $postId <= 0 || '' === $language ) {
 			return 0;

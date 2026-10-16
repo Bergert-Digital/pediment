@@ -2,11 +2,11 @@
 /**
  * Plugin Name:       Pediment
  * Plugin URI:        https://github.com/Bergert-Digital/pediment
- * Description:       The Pediment engine + AI: Gutenberg blocks, templates, and tokens, plus an AI composer that edits and refines pages with Claude.
+ * Description:       The Pediment site engine: Gutenberg blocks, templates, design tokens, forms and seeding for client block themes.
  * x-release-please-start-version
  * Version:           3.10.0
  * x-release-please-end
- * Requires at least: 6.4
+ * Requires at least: 6.9
  * Requires PHP:      8.1
  * Author:            Jonas Bergert
  * Author URI:        https://bergert.digital
@@ -90,24 +90,22 @@ if ( class_exists( \Pediment\Updater::class ) ) {
 	\Pediment\Updater::register( PEDIMENT_AI_PLUGIN_FILE );
 }
 
-require_once __DIR__ . '/src/Schema/tables.php';
-register_activation_hook( PEDIMENT_AI_PLUGIN_FILE, 'pediment_ai_install_tables' );
+// Pediment 4 removed the AI chat; drop its leftover data once per site.
 add_action(
 	'plugins_loaded',
-	static function () {
-		if ( get_option( 'pediment_ai_db_version' ) !== PEDIMENT_AI_VERSION ) {
-			pediment_ai_install_tables();
-		}
-	},
+	array( \Pediment\Upgrade\ChatDataCleanup::class, 'maybeRun' ),
 	5
 );
 
-if ( defined( 'WP_CLI' ) && WP_CLI ) {
-	require_once __DIR__ . '/wp-cli/DumpSchemaCommand.php';
-	\WP_CLI::add_command( 'pediment dump-schema', \Pediment\Cli\DumpSchemaCommand::class );
+// Pediment 4 seeds bootstrap-only; drop the 3.x content-arbitration meta once per site.
+add_action( 'admin_init', array( \Pediment\Upgrade\SeedHashCleanup::class, 'maybeRun' ) );
 
+if ( defined( 'WP_CLI' ) && WP_CLI ) {
 	require_once __DIR__ . '/wp-cli/SeedCommand.php';
 	\WP_CLI::add_command( 'pediment seed', \Pediment\Cli\SeedCommand::class );
+
+	require_once __DIR__ . '/wp-cli/DesignCommand.php';
+	\WP_CLI::add_command( 'pediment design', \Pediment\Cli\DesignCommand::class );
 
 	require_once __DIR__ . '/wp-cli/AdoptCommand.php';
 	\WP_CLI::add_command( 'pediment adopt', \Pediment\Cli\AdoptCommand::class );
@@ -117,6 +115,9 @@ if ( defined( 'WP_CLI' ) && WP_CLI ) {
 
 	require_once __DIR__ . '/wp-cli/LanguagesCommand.php';
 	\WP_CLI::add_command( 'pediment languages', \Pediment\Cli\LanguagesCommand::class );
+
+	require_once __DIR__ . '/wp-cli/ConvertCommand.php';
+	\WP_CLI::add_command( 'pediment convert', \Pediment\Cli\ConvertCommand::class );
 }
 
 add_action(

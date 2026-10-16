@@ -132,7 +132,7 @@ class SeedingAdminTest extends WP_UnitTestCase {
 
 		$this->assertStringContainsString( 'Pediment claim', $report );
 		$this->assertSame( 'home', get_post_meta( $id, \Pediment\Seeder\Meta::KEY, true ) );
-		$this->assertSame( '', get_post_meta( $id, \Pediment\Seeder\Meta::HASH, true ) );
+		$this->assertSame( '', get_post_meta( $id, '_pediment_seed_hash', true ) );
 		$this->assertSame( 'Legacy home', get_post( $id )->post_title );
 	}
 
@@ -146,5 +146,20 @@ class SeedingAdminTest extends WP_UnitTestCase {
 
 		$this->assertNull( $report );
 		$this->assertSame( '', get_post_meta( $id, \Pediment\Seeder\Meta::KEY, true ) );
+	}
+
+	public function test_the_tab_says_the_seed_only_creates_what_is_missing() {
+		wp_set_current_user( self::factory()->user->create( [ 'role' => 'administrator' ] ) );
+
+		ob_start();
+		pediment_seed_admin_render_tab();
+		$html = (string) ob_get_clean();
+
+		$this->assertStringContainsString( 'missing language tags', $html );
+		$this->assertStringContainsString( 'empty reading settings', $html );
+		$this->assertStringContainsString( 'never changes anything a person made', $html );
+		$this->assertStringNotContainsString( 'never changes anything that already exists', $html, 'language tags and empty settings are written to rows that exist' );
+		$this->assertStringNotContainsString( 'protected', $html );
+		$this->assertStringNotContainsString( 'rewrites', $html );
 	}
 }

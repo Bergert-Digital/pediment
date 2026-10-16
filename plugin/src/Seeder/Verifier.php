@@ -23,12 +23,22 @@ final class Verifier {
 	public function __construct( private LanguageProvider $lang, private NavSeeder $navSeeder ) {}
 
 	/**
+	 * Identity, language, media and post types are checked for every row.
+	 * Everything a person may change after the seeder created a row — slug,
+	 * parent, trash, the reading settings, a menu's links and status — is
+	 * checked only for the rows this run created: on an existing row it is
+	 * that person's decision, and the seeder never reverts it. For a reading
+	 * setting only "it is set" is checked: one that names another live page
+	 * is a person's choice the seeder kept.
+	 *
 	 * @param array<string,DesiredEntry> $desired
 	 * @param array<string,int>          $ids
-	 * @param array<string,int>          $navIds navKey|language => post ID
+	 * @param array<string,int>          $navIds         navKey|language => post ID
+	 * @param string[]                   $createdEntries Entry map keys created in this run.
+	 * @param string[]                   $createdNavs    navKey|language map keys created in this run.
 	 * @return string[]
 	 */
-	public function verify( Manifest $manifest, array $desired, array $ids, MediaMap $media, array $navIds = [] ): array {
+	public function verify( Manifest $manifest, array $desired, array $ids, MediaMap $media, array $navIds = [], array $createdEntries = [], array $createdNavs = [] ): array {
 		$problems = [];
 
 		foreach ( $desired as $mapKey => $entry ) {
@@ -42,19 +52,6 @@ final class Verifier {
 			if ( ! $post instanceof \WP_Post ) {
 				$problems[] = sprintf( '%s: post ID %d does not exist.', $mapKey, $postId );
 				continue;
-			}
-			// Only trash is a problem: `draft` and `pending` are editorial states
-			// a client is entitled to set, and the Differ deliberately leaves them.
-			if ( 'trash' === $post->post_status ) {
-				$problems[] = sprintf( '%s: post %d is in the trash.', $mapKey, $postId );
-			}
-			if ( $post->post_name !== $entry->slug ) {
-				$problems[] = sprintf(
-					'%s: slug is "%s" but the manifest says "%s" (WordPress uniquifies colliding slugs).',
-					$mapKey,
-					$post->post_name,
-					$entry->slug
-				);
 			}
 			if ( (string) get_post_meta( $postId, Meta::KEY, true ) !== $entry->key ) {
 				$problems[] = sprintf( '%s: post %d is missing its seed key.', $mapKey, $postId );
@@ -75,6 +72,22 @@ final class Verifier {
 				);
 			}
 
+			if ( ! in_array( $mapKey, $createdEntries, true ) ) {
+				continue;
+			}
+
+			if ( 'trash' === $post->post_status ) {
+				$problems[] = sprintf( '%s: post %d is in the trash.', $mapKey, $postId );
+			}
+			if ( $post->post_name !== $entry->slug ) {
+				$problems[] = sprintf(
+					'%s: slug is "%s" but the manifest says "%s" (WordPress uniquifies colliding slugs).',
+					$mapKey,
+					$post->post_name,
+					$entry->slug
+				);
+			}
+
 			$expectedParent = null === $entry->parentKey ? 0 : (int) ( $ids[ $entry->parentKey . '|' . $entry->language ] ?? 0 );
 			if ( null !== $entry->parentKey && 0 === $expectedParent ) {
 				// Falling back to 0 made this check unfailable: a child whose
@@ -85,13 +98,18 @@ final class Verifier {
 				$problems[] = sprintf( '%s: parent is %d, expected %d.', $mapKey, $post->post_parent, $expectedParent );
 			}
 
+			// The Applier fills a reading setting only while it is unset. One
+			// that names another live page is a person's choice and stays, even
+			// when this run created the declared page again — so that is not a
+			// problem. A setting still unset after the run is.
 			if ( $entry->frontPage && $entry->language === $this->lang->defaultLanguage() ) {
-				if ( 'page' !== get_option( 'show_on_front' ) || (int) get_option( 'page_on_front' ) !== $postId ) {
-					$problems[] = sprintf( '%s: is declared front page but the front page setting points elsewhere.', $mapKey );
+				$front = (int) get_option( 'page_on_front' );
+				if ( SiteSetting::isUnset( $front ) || ( $front === $postId && 'page' !== get_option( 'show_on_front' ) ) ) {
+					$problems[] = sprintf( '%s: is declared front page but the front page setting was not set.', $mapKey );
 				}
 			}
-			if ( $entry->postsPage && $entry->language === $this->lang->defaultLanguage() && (int) get_option( 'page_for_posts' ) !== $postId ) {
-				$problems[] = sprintf( '%s: is declared posts page but page_for_posts points elsewhere.', $mapKey );
+			if ( $entry->postsPage && $entry->language === $this->lang->defaultLanguage() && SiteSetting::isUnset( (int) get_option( 'page_for_posts' ) ) ) {
+				$problems[] = sprintf( '%s: is declared posts page but page_for_posts was not set.', $mapKey );
 			}
 		}
 
@@ -103,16 +121,17 @@ final class Verifier {
 			}
 
 			// Re-read rather than trusting the map: the ID could name a row that
-			// no longer exists.
+			// no longer exists. A trashed attachment is a person's decision; the
+			// plan says so, and the seeder leaves it there.
 			$attachment = get_post( $attachmentId );
-			if ( ! $attachment instanceof \WP_Post || 'attachment' !== $attachment->post_type || 'trash' === $attachment->post_status ) {
-				$problems[] = sprintf( 'media.%s: attachment %d is missing or trashed.', $key, $attachmentId );
+			if ( ! $attachment instanceof \WP_Post || 'attachment' !== $attachment->post_type ) {
+				$problems[] = sprintf( 'media.%s: attachment %d is missing.', $key, $attachmentId );
 			}
 		}
 
 		// Navigation: the header rendering nothing while the seeder reports
-		// success is the exact incident this class exists to prevent, so the
-		// entities are re-read and their membership re-derived.
+		// success is the exact incident this class exists to prevent, so a
+		// menu this run created is re-read and its membership re-derived.
 		foreach ( $manifest->navs() as $key => $spec ) {
 			foreach ( $this->lang->languages() as $language ) {
 				// Same key|language form the entry loop reports: without it a
@@ -127,9 +146,6 @@ final class Verifier {
 				if ( ! $nav instanceof \WP_Post || 'wp_navigation' !== $nav->post_type ) {
 					$problems[] = sprintf( 'navs.%s: post %d is not a navigation entity.', $mapKey, $navId );
 					continue;
-				}
-				if ( 'publish' !== $nav->post_status ) {
-					$problems[] = sprintf( 'navs.%s: entity %d is "%s" — the menu will not render.', $mapKey, $navId, $nav->post_status );
 				}
 				if ( (string) get_post_meta( $navId, Meta::KEY, true ) !== $key ) {
 					$problems[] = sprintf( 'navs.%s: entity %d is missing its seed key.', $mapKey, $navId );
@@ -146,7 +162,15 @@ final class Verifier {
 						'' === $language ? '(default)' : $language
 					);
 				}
-				if ( (string) $nav->post_content !== $this->navSeeder->serialize( $spec, $language, $ids, (string) $nav->post_content, $navId ) ) {
+
+				if ( ! in_array( $mapKey, $createdNavs, true ) ) {
+					continue;
+				}
+
+				if ( 'publish' !== $nav->post_status ) {
+					$problems[] = sprintf( 'navs.%s: entity %d is "%s" — the menu will not render.', $mapKey, $navId, $nav->post_status );
+				}
+				if ( (string) $nav->post_content !== $this->navSeeder->serialize( $spec, $language, $this->navSeeder->linkableIds( $ids ) ) ) {
 					$problems[] = sprintf( 'navs.%s: stored membership does not match the manifest.', $mapKey );
 				}
 			}

@@ -51,8 +51,7 @@ final class SeedCommand {
 		$result = ( new Runner() )->run( [ 'dry_run' => isset( $assocArgs['dry-run'] ) ] );
 		$output = self::render( $result, 'json' === ( $assocArgs['format'] ?? 'text' ) );
 
-		// Guarded like DumpSchemaCommand so the rendering is unit-testable
-		// without WP-CLI loaded.
+		// Guarded so the rendering is unit-testable without WP-CLI loaded.
 		if ( class_exists( '\WP_CLI' ) ) {
 			\WP_CLI::line( $output );
 
@@ -73,14 +72,13 @@ final class SeedCommand {
 		$items = [];
 		foreach ( $result->plan->items() as $item ) {
 			$items[] = [
-				'kind'      => $item->kind,
-				'action'    => $item->action,
-				'key'       => $item->key,
-				'language'  => $item->language,
-				'post_id'   => $item->postId,
-				'changes'   => array_keys( $item->changes ),
-				'protected' => array_keys( $item->protectedFields ),
-				'note'      => $item->note,
+				'kind'     => $item->kind,
+				'action'   => $item->action,
+				'key'      => $item->key,
+				'language' => $item->language,
+				'post_id'  => $item->postId,
+				'changes'  => array_keys( $item->changes ),
+				'note'     => $item->note,
 			];
 		}
 
@@ -90,8 +88,8 @@ final class SeedCommand {
 				'ok'       => $result->ok(),
 				'manifest' => $result->manifestPath,
 				'counts'   => $result->plan->counts(),
-				// Counts alone cannot answer "which pages are protected?", which
-				// is the question anyone scripting against --json is asking.
+				// Counts alone cannot answer "which pages will be created?",
+				// which is the question anyone scripting against --json asks.
 				'items'    => $items,
 				'errors'   => $result->errors,
 				'problems' => $result->problems,

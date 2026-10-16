@@ -1,0 +1,14 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/theme.json",
+	"version": 3,
+	"title": "Pull quote",
+	"slug": "pull-quote",
+	"blockTypes": [ "core/quote" ],
+	"styles": {
+		"typography": { "fontSize": "var:preset|font-size|2-xl", "fontWeight": "700", "lineHeight": "1.35", "letterSpacing": "-0.02em" },
+		"spacing": { "padding": { "top": "var:preset|spacing|50", "right": "0", "bottom": "var:preset|spacing|50", "left": "0" } },
+		"border": { "width": "0" },
+		"elements": { "cite": { "typography": { "fontSize": "var:preset|font-size|sm", "fontStyle": "normal", "fontWeight": "600" }, "color": { "text": "var:preset|color|foreground-muted" } } },
+		"css": "text-align:center;max-width:880px;margin-inline:auto"
+	}
+}

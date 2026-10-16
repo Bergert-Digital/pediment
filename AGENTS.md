@@ -5,7 +5,7 @@ Read `docs/STANDARDS.md` before changing code.
 ## Project
 
 This repository ships one WordPress plugin: Pediment. It owns the shared
-blocks, templates, patterns, tokens, forms, assets, and AI editor experience.
+blocks, templates, patterns, tokens, forms, assets, and seeding.
 Client sites pair the plugin with a standalone client theme; the root fixture
 theme exists only for wp-env and integration tests.
 
@@ -25,14 +25,26 @@ scaffolder). See [docs/client-sites.md](docs/client-sites.md).
   `style.scss`, plus PHPUnit coverage for valid and empty attributes.
 - Client themes extend through normal WordPress theme facilities. Never depend
   on editing plugin files for client-specific behavior.
-- Content seeding is declarative now (see `docs/seeding.md`): edit the client
-  theme's `seed/manifest.php` and its `patterns/*.php` files, then run
-  `wp pediment seed`. Never write pages with `wp post create` / `wp post update`
-  — the seeder owns identity (`_pediment_seed_key`) and the content-arbitration
-  hashes, and a hand-written post bypasses both.
+- Seeding is bootstrap-only (see `docs/seeding.md`): `wp pediment seed`
+  creates what the client theme's `seed/manifest.php` and `patterns/*.php`
+  declare and the site lacks. It never changes an existing page's content,
+  title or slug, never rewrites a menu, and keeps reading settings and a logo
+  a person chose; it only fills empty settings, missing language tags and the
+  translation links of pages it creates. Never write pages with `wp post create` / `wp post update` — the
+  seeder owns identity (`_pediment_seed_key`), a hand-written post has none,
+  and the next seed creates a duplicate. Change an existing page through the
+  Pediment MCP tools.
 - Languages are declared in the manifest's `languages` section and configured
   with `wp pediment languages` before seeding, never after — see
   [docs/seeding.md#languages](docs/seeding.md#languages).
+- AI page and style changes on a live site go through the Pediment MCP tools (see
+  [docs/mcp.md](docs/mcp.md)); validate markup with client-kit's validate-blocks before writing.
+- Page content never carries literal design values. Looks come from named
+  block styles in the design layer — see [docs/design-layer.md](docs/design-layer.md).
+- The 18 legacy presentation blocks (`Policy::LEGACY`) are hidden from the
+  inserter and stay only until Pediment 5. Never put them in new content or
+  patterns; convert existing content with the converter — see
+  [docs/convert.md](docs/convert.md).
 
 ## Environment and verification
 

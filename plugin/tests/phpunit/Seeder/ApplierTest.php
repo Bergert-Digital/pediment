@@ -2,7 +2,6 @@
 
 use Pediment\Language\NullProvider;
 use Pediment\Seeder\Applier;
-use Pediment\Seeder\ContentHash;
 use Pediment\Seeder\ContentResolver;
 use Pediment\Seeder\DesiredState;
 use Pediment\Seeder\Differ;
@@ -21,9 +20,10 @@ class ApplierTest extends WP_UnitTestCase {
 	private function seed( array $raw, bool $expectClean = true ): array {
 		$manifest = Manifest::fromArray( $raw, '/tmp/theme' );
 		$lang     = new NullProvider();
-		$desired  = ( new DesiredState( $lang, new ContentResolver( new MediaMap( [] ) ) ) )->build( $manifest );
 		$reader   = new StateReader( $lang );
-		$plan     = ( new Differ() )->diff( $desired, $reader->read(), $reader->duplicates() );
+		$actual   = $reader->read();
+		$desired  = ( new DesiredState( $lang, new ContentResolver( new MediaMap( [] ) ) ) )->build( $manifest, $actual );
+		$plan     = ( new Differ() )->diff( $desired, $actual, $reader->duplicates() );
 		$result   = ( new Applier( $lang ) )->apply( $plan, $desired );
 
 		if ( $expectClean ) {
@@ -38,17 +38,18 @@ class ApplierTest extends WP_UnitTestCase {
 	private function plan( array $raw ): \Pediment\Seeder\Plan {
 		$manifest = Manifest::fromArray( $raw, '/tmp/theme' );
 		$lang     = new NullProvider();
-		$desired  = ( new DesiredState( $lang, new ContentResolver( new MediaMap( [] ) ) ) )->build( $manifest );
 		$reader   = new StateReader( $lang );
+		$actual   = $reader->read();
+		$desired  = ( new DesiredState( $lang, new ContentResolver( new MediaMap( [] ) ) ) )->build( $manifest, $actual );
 
-		return ( new Differ() )->diff( $desired, $reader->read(), $reader->duplicates() );
+		return ( new Differ() )->diff( $desired, $actual, $reader->duplicates() );
 	}
 
 	private function manifest( array $pages ): array {
 		return [ 'pages' => $pages ];
 	}
 
-	public function test_creates_pages_with_key_slug_and_both_hashes() {
+	public function test_creates_pages_with_key_and_slug_and_no_hash_meta() {
 		$ids = $this->seed( $this->manifest( [ 'home' => [ 'title' => 'Home', 'content' => '<p>hi</p>' ] ] ) );
 		$id  = $ids['home|'];
 
@@ -57,8 +58,8 @@ class ApplierTest extends WP_UnitTestCase {
 		$this->assertSame( 'home', $post->post_name );
 		$this->assertSame( 'publish', $post->post_status );
 		$this->assertSame( 'home', get_post_meta( $id, Meta::KEY, true ) );
-		$this->assertSame( ContentHash::forPost( $id ), get_post_meta( $id, Meta::HASH, true ) );
-		$this->assertSame( ContentHash::compute( 'Home', '<p>hi</p>' ), get_post_meta( $id, Meta::SOURCE, true ) );
+		$this->assertSame( '', get_post_meta( $id, '_pediment_seed_hash', true ) );
+		$this->assertSame( '', get_post_meta( $id, '_pediment_seed_source', true ) );
 	}
 
 	public function test_block_attribute_json_survives_the_write() {
@@ -88,36 +89,14 @@ class ApplierTest extends WP_UnitTestCase {
 		$this->assertSame( PlanItem::UNCHANGED, $plan->byKind( PlanItem::KIND_ENTRY )[0]->action );
 	}
 
-	public function test_changed_manifest_content_is_written_and_rehashed() {
+	public function test_a_manifest_change_never_reaches_an_existing_page() {
 		$ids = $this->seed( $this->manifest( [ 'home' => [ 'title' => 'Home', 'content' => '<p>one</p>' ] ] ) );
 		$id  = $ids['home|'];
 
-		$this->seed( $this->manifest( [ 'home' => [ 'title' => 'Home', 'content' => '<p>two</p>' ] ] ) );
+		$this->seed( $this->manifest( [ 'home' => [ 'title' => 'Welcome', 'content' => '<p>two</p>' ] ] ) );
 
-		$this->assertStringContainsString( 'two', get_post( $id )->post_content );
-		$this->assertSame( ContentHash::forPost( $id ), get_post_meta( $id, Meta::HASH, true ) );
-		$this->assertSame( ContentHash::compute( 'Home', '<p>two</p>' ), get_post_meta( $id, Meta::SOURCE, true ) );
-	}
-
-	public function test_a_structure_write_on_an_edited_page_never_restamps_the_hash() {
-		// The failure this guards: a client edits the body AND renames the slug.
-		// The Differ makes that an UPDATE carrying only the slug change, with the
-		// content protected. Re-stamping the hash there would adopt the client's
-		// prose as seeded, and the NEXT run would overwrite their page.
-		$ids = $this->seed( $this->manifest( [ 'home' => [ 'title' => 'Home', 'content' => '<p>one</p>' ] ] ) );
-		$id  = $ids['home|'];
-		wp_update_post( [ 'ID' => $id, 'post_content' => '<p>client copy</p>', 'post_name' => 'startseite' ] );
-		$hashBefore = get_post_meta( $id, Meta::HASH, true );
-
-		$this->seed( $this->manifest( [ 'home' => [ 'title' => 'Home', 'content' => '<p>two</p>' ] ] ) );
-
-		$this->assertSame( 'home', get_post( $id )->post_name, 'slug is structure and is reverted' );
-		$this->assertSame( '<p>client copy</p>', get_post( $id )->post_content );
-		$this->assertSame( $hashBefore, get_post_meta( $id, Meta::HASH, true ), 'a structure-only write must not adopt the client edit' );
-
-		// And the page is still protected on the run after that.
-		$this->seed( $this->manifest( [ 'home' => [ 'title' => 'Home', 'content' => '<p>three</p>' ] ] ) );
-		$this->assertSame( '<p>client copy</p>', get_post( $id )->post_content );
+		$this->assertSame( '<p>one</p>', get_post( $id )->post_content );
+		$this->assertSame( 'Home', get_post( $id )->post_title );
 	}
 
 	public function test_a_client_edit_is_never_overwritten() {
@@ -131,14 +110,15 @@ class ApplierTest extends WP_UnitTestCase {
 		$this->assertSame( 'Client title', get_post( $id )->post_title );
 	}
 
-	public function test_a_client_slug_change_is_reverted() {
+	public function test_a_slug_a_person_changed_is_kept() {
 		$ids = $this->seed( $this->manifest( [ 'contact' => [ 'title' => 'Contact', 'content' => '' ] ] ) );
 		$id  = $ids['contact|'];
 		wp_update_post( [ 'ID' => $id, 'post_name' => 'kontakt' ] );
 
-		$this->seed( $this->manifest( [ 'contact' => [ 'title' => 'Contact', 'content' => '' ] ] ) );
+		$again = $this->seed( $this->manifest( [ 'contact' => [ 'title' => 'Contact', 'content' => '' ] ] ) );
 
-		$this->assertSame( 'contact', get_post( $id )->post_name );
+		$this->assertSame( 'kontakt', get_post( $id )->post_name );
+		$this->assertSame( $id, $again['contact|'] );
 	}
 
 	public function test_nesting_menu_order_and_reading_options_are_applied() {
@@ -160,6 +140,130 @@ class ApplierTest extends WP_UnitTestCase {
 		$this->assertSame( $ids['blog|'], (int) get_option( 'page_for_posts' ) );
 	}
 
+	public function test_a_front_page_a_person_chose_is_kept() {
+		$m   = $this->manifest(
+			[
+				'home'  => [ 'title' => 'Home', 'content' => '', 'front_page' => true ],
+				'about' => [ 'title' => 'About', 'content' => '' ],
+			]
+		);
+		$ids = $this->seed( $m );
+		update_option( 'page_on_front', $ids['about|'] );
+
+		$this->seed( $m );
+
+		$this->assertSame( $ids['about|'], (int) get_option( 'page_on_front' ) );
+	}
+
+	public function test_a_front_page_a_person_chose_survives_a_recreated_home() {
+		// A person picks About as the front page, then deletes the seeded home
+		// for good. The next seed recreates home; the choice still stands.
+		$m   = $this->manifest(
+			[
+				'home'  => [ 'title' => 'Home', 'content' => '', 'front_page' => true ],
+				'about' => [ 'title' => 'About', 'content' => '' ],
+			]
+		);
+		$ids = $this->seed( $m );
+		update_option( 'page_on_front', $ids['about|'] );
+		wp_delete_post( $ids['home|'], true );
+
+		$again = $this->seed( $m );
+
+		$this->assertNotSame( $ids['home|'], $again['home|'], 'Precondition: home is created again.' );
+		$this->assertSame( $ids['about|'], (int) get_option( 'page_on_front' ) );
+	}
+
+	public function test_a_posts_page_a_person_chose_survives_a_recreated_blog() {
+		$m   = $this->manifest(
+			[
+				'blog' => [ 'title' => 'Blog', 'content' => '', 'posts_page' => true ],
+				'news' => [ 'title' => 'News', 'content' => '' ],
+			]
+		);
+		$ids = $this->seed( $m );
+		update_option( 'page_for_posts', $ids['news|'] );
+		wp_delete_post( $ids['blog|'], true );
+
+		$again = $this->seed( $m );
+
+		$this->assertNotSame( $ids['blog|'], $again['blog|'], 'Precondition: blog is created again.' );
+		$this->assertSame( $ids['news|'], (int) get_option( 'page_for_posts' ) );
+	}
+
+	public function test_a_reading_setting_that_names_a_missing_post_is_set() {
+		$m   = $this->manifest(
+			[
+				'home' => [ 'title' => 'Home', 'content' => '', 'front_page' => true ],
+				'blog' => [ 'title' => 'Blog', 'content' => '', 'posts_page' => true ],
+			]
+		);
+		$ids = $this->seed( $m );
+		update_option( 'page_on_front', 999999 );
+		update_option( 'page_for_posts', 999998 );
+
+		$this->seed( $m );
+
+		$this->assertSame( $ids['home|'], (int) get_option( 'page_on_front' ) );
+		$this->assertSame( $ids['blog|'], (int) get_option( 'page_for_posts' ) );
+	}
+
+	public function test_an_unset_front_page_is_set_for_an_existing_page() {
+		// A claimed legacy site: the home page exists, but no static front page
+		// was ever chosen. Filling an empty setting is not overruling anyone.
+		$m   = $this->manifest( [ 'home' => [ 'title' => 'Home', 'content' => '', 'front_page' => true ] ] );
+		$ids = $this->seed( $m );
+		update_option( 'show_on_front', 'posts' );
+		update_option( 'page_on_front', 0 );
+
+		$this->seed( $m );
+
+		$this->assertSame( 'page', get_option( 'show_on_front' ) );
+		$this->assertSame( $ids['home|'], (int) get_option( 'page_on_front' ) );
+	}
+
+	public function test_a_trashed_front_page_is_not_set_again() {
+		// Core resets the reading settings when the front page is trashed. The
+		// trashed row is still in the id map, but pointing the option at it
+		// would serve visitors a trashed page and overrule the person who did it.
+		$m   = $this->manifest( [ 'home' => [ 'title' => 'Home', 'content' => '', 'front_page' => true ] ] );
+		$ids = $this->seed( $m );
+		wp_trash_post( $ids['home|'] );
+		$this->assertSame( 'posts', get_option( 'show_on_front' ) );
+		$this->assertSame( 0, (int) get_option( 'page_on_front' ) );
+
+		$this->seed( $m );
+
+		$this->assertSame( 'posts', get_option( 'show_on_front' ) );
+		$this->assertSame( 0, (int) get_option( 'page_on_front' ) );
+	}
+
+	public function test_a_trashed_posts_page_is_not_set_again() {
+		$m   = $this->manifest( [ 'blog' => [ 'title' => 'Blog', 'content' => '', 'posts_page' => true ] ] );
+		$ids = $this->seed( $m );
+		wp_trash_post( $ids['blog|'] );
+		$this->assertSame( 0, (int) get_option( 'page_for_posts' ) );
+
+		$this->seed( $m );
+
+		$this->assertSame( 0, (int) get_option( 'page_for_posts' ) );
+	}
+
+	public function test_a_new_child_finds_its_existing_parent() {
+		$first = $this->seed( $this->manifest( [ 'guide' => [ 'title' => 'Guide', 'content' => '' ] ] ) );
+
+		$ids = $this->seed(
+			$this->manifest(
+				[
+					'guide'     => [ 'title' => 'Guide', 'content' => '' ],
+					'guide/faq' => [ 'title' => 'FAQ', 'content' => '', 'parent' => 'guide' ],
+				]
+			)
+		);
+
+		$this->assertSame( $first['guide|'], get_post( $ids['guide/faq|'] )->post_parent );
+	}
+
 	public function test_terms_are_created_and_assigned() {
 		$ids = $this->seed(
 			[
@@ -173,17 +277,16 @@ class ApplierTest extends WP_UnitTestCase {
 		$this->assertContains( 'insights', $terms );
 	}
 
-	public function test_a_trashed_entry_is_restored_in_place() {
+	public function test_a_trashed_entry_stays_in_the_trash() {
 		$ids = $this->seed( $this->manifest( [ 'home' => [ 'title' => 'Home', 'content' => '' ] ] ) );
 		$id  = $ids['home|'];
 		wp_trash_post( $id );
 
 		$again = $this->seed( $this->manifest( [ 'home' => [ 'title' => 'Home', 'content' => '' ] ] ) );
 
-		$this->assertSame( $id, $again['home|'], 'restore, never re-create' );
-		$this->assertSame( 'publish', get_post( $id )->post_status );
-		$this->assertSame( 'home', get_post( $id )->post_name, 'wp_trash_post appends __trashed; the restore must undo it' );
-		$this->assertSame( '', get_post_meta( $id, '_wp_trash_meta_status', true ), 'trash bookkeeping must not survive the restore' );
+		$this->assertSame( $id, $again['home|'], 'never a second row under the same key' );
+		$this->assertSame( 'trash', get_post( $id )->post_status );
+		$this->assertCount( 1, get_posts( [ 'post_type' => 'page', 'post_status' => [ 'publish', 'trash' ], 'meta_key' => Meta::KEY, 'meta_value' => 'home', 'fields' => 'ids' ] ) );
 	}
 
 	public function test_errors_in_the_plan_block_every_write() {
@@ -198,10 +301,10 @@ class ApplierTest extends WP_UnitTestCase {
 		$this->assertSame( [], get_posts( [ 'post_type' => 'page', 'fields' => 'ids' ] ) );
 	}
 
-	public function test_a_slug_collision_is_reported_instead_of_churning_forever() {
+	public function test_a_slug_collision_is_reported_when_the_page_is_created() {
 		// A pre-existing unseeded page holds /contact, so WordPress uniquifies the
-		// seeded one to contact-2. Unreported, the Differ would rewrite the row on
-		// every run and never converge.
+		// seeded one to contact-2. The seeder never touches the row again, so the
+		// create is the only moment to say so.
 		self::factory()->post->create( [ 'post_type' => 'page', 'post_name' => 'contact', 'post_title' => 'Client contact' ] );
 
 		$this->seed( $this->manifest( [ 'contact' => [ 'title' => 'Contact', 'content' => '' ] ] ), false );
@@ -210,7 +313,7 @@ class ApplierTest extends WP_UnitTestCase {
 		$this->assertStringContainsString( 'contact-2', $this->lastErrors[0] );
 	}
 
-	public function test_client_added_terms_survive_a_structure_only_write() {
+	public function test_terms_on_an_existing_entry_are_never_reassigned() {
 		$ids = $this->seed(
 			[ 'posts' => [ 'sample' => [ 'title' => 'Sample', 'content' => '', 'terms' => [ 'category' => [ 'insights' ] ] ] ] ]
 		);

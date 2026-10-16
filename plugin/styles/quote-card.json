@@ -1,0 +1,13 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/theme.json",
+	"version": 3,
+	"title": "Quote card",
+	"slug": "quote-card",
+	"blockTypes": [ "core/group" ],
+	"styles": {
+		"color": { "background": "var:preset|color|surface" },
+		"border": { "radius": "var(--wp--custom--radius--lg)", "width": "1px", "style": "solid", "color": "var:preset|color|border" },
+		"spacing": { "padding": { "top": "var:preset|spacing|50", "right": "var:preset|spacing|50", "bottom": "var:preset|spacing|50", "left": "var:preset|spacing|50" } },
+		"css": "&::before{content:\"\\201C\";display:block;height:.7em;line-height:.6;font-size:2.6rem;font-weight:800;color:var(--wp--preset--color--accent)}& .wp-block-quote{margin:0;font-size:var(--wp--preset--font-size--lg);font-weight:600;line-height:1.5}& .wp-block-quote cite{display:block;margin-top:var(--wp--preset--spacing--40);font-size:var(--wp--preset--font-size--sm);font-style:normal;font-weight:400;color:var(--wp--preset--color--foreground-muted)}& cite strong{color:var(--wp--preset--color--foreground)}"
+	}
+}

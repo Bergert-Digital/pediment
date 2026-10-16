@@ -1,7 +1,8 @@
 <?php
 /**
  * The inverse of seeding: export a live entry's markup back into the theme's
- * pattern file and clear the "client edited this" state.
+ * pattern file, so a seed in a NEW environment creates the page as it is live.
+ * It writes the file only — never post meta, never the post.
  *
  * @package Pediment
  */
@@ -112,11 +113,9 @@ final class Adopter {
 		// cache expires (30 minutes), which is exactly the first-adopt case.
 		wp_get_theme()->delete_pattern_cache();
 
-		// Read the file back the way the pattern registry will, and hash THAT as
-		// the source. Hashing the database row instead leaves the two a newline
-		// apart, and the very next seed rewrites the page adopt just blessed.
-		$resolved = $this->resolveWritten( $file );
-		$header   = get_file_data( $file, [ 'slug' => 'Slug' ] );
+		// Read the header back the way the pattern registry will: a file whose
+		// Slug does not match is a file the next seed cannot find.
+		$header = get_file_data( $file, [ 'slug' => 'Slug' ] );
 		if ( $header['slug'] !== $pattern ) {
 			$this->rollback( $file, $backup );
 			return array_merge(
@@ -124,21 +123,6 @@ final class Adopter {
 				[ 'errors' => [ sprintf( '%s: wrote %s but its Slug header reads "%s", not "%s" — the next seed would not find it, so the write was rolled back.', $seedKey, $file, $header['slug'], $pattern ) ] ]
 			);
 		}
-
-		// The live row is now the source of truth in git too, so it is no longer
-		// "edited" — the next seed will treat it as up to date. The source hash
-		// has to be the shape DesiredState will compute on that next run: the
-		// language's declared title (adopt never writes titles back) crossed
-		// with the pattern output AFTER media placeholders expand. Hashing the
-		// raw file bytes instead leaves every media-bearing page mismatched
-		// forever; hashing the default-language title instead of the language's
-		// own leaves every non-default adopt mismatched on the very next seed.
-		update_post_meta( $actual->id, Meta::HASH, ContentHash::forPost( $actual->id ) );
-		update_post_meta(
-			$actual->id,
-			Meta::SOURCE,
-			ContentHash::compute( $declaredTitle, ( new ContentResolver( $media ) )->rewriteMarkup( $resolved ) )
-		);
 
 		return [ 'path' => $file, 'bytes' => strlen( $contents ), 'written' => true, 'backup' => $backup, 'errors' => [], 'warnings' => $warnings ];
 	}
@@ -164,13 +148,6 @@ final class Adopter {
 			return substr( $last, 0, -strlen( $suffix ) );
 		}
 		return $last;
-	}
-
-	/** The bytes the pattern registry will see, produced the way it produces them. */
-	private function resolveWritten( string $file ): string {
-		ob_start();
-		include $file;
-		return (string) ob_get_clean();
 	}
 
 	/** Put the file back the way it was when a post-write check fails. */
@@ -230,7 +207,8 @@ final class Adopter {
 			. " * Categories: pediment\n"
 			. " * Inserter: no\n"
 			. " *\n"
-			. " * Adopted from the live site by `wp pediment adopt`. Edit here, then re-seed.\n"
+			. " * Adopted from the live site by `wp pediment adopt`. A seed creates the page\n"
+			. " * from this file in a new environment; it never updates a page that exists.\n"
 			. " *\n"
 			. " * @package Pediment\n"
 			. " */\n"

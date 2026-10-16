@@ -8,7 +8,7 @@ two plugins have different runtimes: WordPress installs `pediment-plugin.zip`; d
 ## The three units
 
 - **The Pediment WordPress plugin** — the product. It supplies blocks, templates, tokens, forms,
-  seeding, and AI features to WordPress and ships as `pediment-plugin.zip`.
+  and seeding to WordPress and ships as `pediment-plugin.zip`.
 - **The Pediment client kit** — the Claude Code tooling under `client-kit/`. It carries
   `/pediment:start`, `/pediment:port-page`, and `scripts/scaffold.mjs`. It is installed globally in
   Claude Code and is never copied into a client theme.
@@ -44,7 +44,7 @@ below), languages (defaults to one), a pre-checked sitemap (Home / About / Servi
 plus optional Blog), an accent colour (the rest of the palette derives from it), and an optional
 logo file path. The skill states this plainly when it asks: `docs/brief.md` is for you and future
 agents to read; **nothing in the plugin reads it programmatically**. Typing a considered tone
-into that question does not make the AI editor use it — see "What a scaffolded repo contains"
+into that question does not change the plugin's behaviour — see "What a scaffolded repo contains"
 below.
 
 **Porting an existing site** asks a different five: the source URL, brand (extracted from the
@@ -84,9 +84,8 @@ It reports the local URL (`http://localhost:8888`) and the wp-admin URL when don
   seed/manifest.php       Structure: pages, nav, media, languages
   seed/media/             Logo and other seeded media files
   docs/brief.md           What the business does, for whom, in what tone —
-                          read by humans and agents, read by nothing in the
-                          plugin: it does not feed the AI editor or anything
-                          else programmatically
+                          read by humans and agents; nothing in the
+                          plugin reads it programmatically
   AGENTS.md               The client repo's own hard rules for working here
                           (never `wp post create`/`update`, `seed:plan` before
                           `seed`, `adopt -- <key>` to capture editor edits)
@@ -153,22 +152,30 @@ or manually checked against a newer plugin release recently, not that anything i
 
 ## Day-two work
 
-Structure — which pages exist, their slugs, nesting, nav membership, languages — lives in
-`seed/manifest.php`. Content lives in `patterns/*.php`. See
-[docs/seeding.md](seeding.md) for the full manifest/pattern format, the content-arbitration
-contract, and how to read a dry-run plan; this section is only the day-to-day loop:
+The seeder bootstraps a site. It never changes the content, title or slug of a
+page that exists, never rewrites a menu, and keeps reading settings and a logo
+that a person chose. It only fills gaps: empty reading settings or logo,
+missing language tags, and the translation links of pages it creates (see
+[docs/seeding.md](seeding.md), "Bootstrap only"). So the
+day-to-day loop depends on where the page lives:
 
-```bash
-npm run seed:plan    # see what a seed would change; read it before applying
-npm run seed
-```
+- **A page that does not exist yet** — declare it in `seed/manifest.php`, add
+  `patterns/<key>.php`, then:
 
-To take a client's live edit in the block editor back into git (the seeder otherwise leaves an
-edited page's content alone forever, by design — see `docs/seeding.md`'s arbitration contract):
+  ```bash
+  npm run seed:plan    # read the plan: expect one create per new row
+  npm run seed
+  ```
 
-```bash
-npm run adopt -- <key>
-```
+- **A page that exists** — change it in the block editor, or through the
+  Pediment MCP tools ([docs/mcp.md](mcp.md)) after validating the markup with
+  client-kit's `validate-blocks`. A re-seed does not touch it.
+- **New environments should match the live page** — export it into its
+  pattern file and commit the file:
+
+  ```bash
+  npm run adopt -- <key>
+  ```
 
 The `--` matters: `npm run adopt -- about --language=de` forwards `about --language=de` to `wp
 pediment adopt` intact. A second `--` would arrive as a literal extra positional argument and
@@ -182,12 +189,66 @@ attaches `<slug>.zip` to the GitHub release. From there:
 
 1. Download the zip from the release.
 2. Appearance → Themes → Add New → Upload in wp-admin, and activate it.
-3. Settings → Pediment Theme → Seeding → apply the plan, to bring the manifest's structure live.
+3. Settings → Pediment Theme → Seeding → **Preview plan**, then **Apply plan**. It creates what
+   the new release declares and the site does not have yet (a new page, a new menu); it never
+   changes anything a person made.
 
 **The client theme has no auto-updater.** Unlike the Pediment plugin, which updates itself
 through wp-admin, a new theme release only reaches production when someone uploads the zip by
 hand. This is a deliberate step-5 decision, not an oversight — revisit only if it turns out to
 hurt in practice.
+
+## Upgrade to 4.0
+
+Pediment 4.0 is a breaking release. On each site, in this order:
+
+1. **Update the plugin.** wp-admin → Plugins → update Pediment (or upload
+   `pediment-plugin.zip`). WordPress 6.9 or later is required. The first
+   request after the update removes the retired AI chat's tables and settings;
+   the first admin request removes the 3.x seeder's content hashes
+   (`_pediment_seed_hash`, `_pediment_seed_source`, `_pediment_seed_mega_hash`).
+   Pages, menus and media do not change.
+2. **Install the MCP Adapter plugin** (`mcp-adapter` 0.7.0) if AI agents
+   should build pages on the site. [mcp.md](mcp.md) has the application
+   password and the `claude mcp add` line.
+3. **Convert legacy blocks.** Add client-theme styles for the new blocks first
+   (where the theme styled a legacy block), then go to Settings → Pediment
+   Theme → Convert legacy blocks. The tab works in batches of 25 posts. Run
+   the preview first and read the per-page diff, then convert. Revisions must
+   be enabled (at least 2 per post): every page gets a backup revision first,
+   and the result table links each converted page to a **Restore** link. The
+   legacy `pediment/*` presentation blocks still render in 4.0, but the
+   inserter hides them, and 5.0 deletes them. [convert.md](convert.md) has the
+   full order for a production site.
+
+   On admin-only hosting you cannot change the revision limit yourself. If the
+   preview reports that revisions are disabled or limited to fewer than 2,
+   ask the host or the site's developer to raise `WP_POST_REVISIONS` in
+   `wp-config.php` (to 2 or more, or remove the limit). Do not convert until
+   then: without a backup revision the converter skips the page
+   ([convert.md](convert.md), "Results").
+4. **Know what changed in seeding.** `wp pediment seed` and "Apply plan" are
+   bootstrap-only now: they add what is missing (pages, menus, media, missing
+   language tags, empty reading settings) and never change a page, menu,
+   translation, reading setting or logo a person made. A deploy that used to push
+   pattern edits to live pages through a re-seed no longer does. Change live
+   pages in the editor or through the MCP tools ([seeding.md](seeding.md),
+   "Bootstrap only"). The plan summary reads `N to write, N orphan,
+   N unchanged.` (no `protected` count), and `--format=json` drops
+   `protected` from each item and from `counts`.
+5. **The AI chat is gone.** The editor sidebar, its REST routes and the AI
+   settings tab were removed. The MCP tools replace them.
+6. **Update the client repo's own docs.** An existing client repo carries the
+   3.x text in its own `AGENTS.md` and `README.md`: pages are
+   "content-protected", and a change to an existing page means "edit the
+   pattern, then `npm run seed`". Remove both. An agent that follows them
+   after the upgrade edits a pattern, sees `0 to write,` and reports the work
+   done while the live page has not changed. Copy the 4.0 wording from
+   [`client-template/AGENTS.md`](../client-template/AGENTS.md) and
+   [`client-template/README.md`](../client-template/README.md): a new page
+   goes in the manifest and a pattern and is seeded once; an existing page
+   changes through `pediment-write-page` or the editor, then
+   `npm run adopt -- <key>` refreshes its pattern for new environments.
 
 ## Moving an existing site onto Pediment
 
@@ -206,14 +267,14 @@ it. The order (`docs/superpowers/specs/2026-08-05-migration-step6-design.md`
 4. **Claim content** — identity only; see
    [`wp pediment claim`](seeding.md#wp-pediment-claim) for what it matches
    and what it refuses to.
-5. **Preview plan** (seed) — expect `0 to write`, N `protected`.
-6. **Apply plan** (seed) — structure only.
+5. **Preview plan** (seed) — expect every claimed row `unchanged` and a
+   `create` only for pages, menus or media the site really does not have.
+6. **Apply plan** (seed) — creates those rows; claimed rows stay as they are.
 
-**Step 5 is a gate, not a formality.** A preview that reports anything other
-than protected pages and the structural changes you actually expect means
-the claim was incomplete — some row didn't match, or matched the wrong one —
-and the fix is to go back and correct the manifest or the claim, never to
-apply the plan anyway. Applying over an incomplete claim risks creating
+**Step 5 is a gate, not a formality.** A `create` for a page the site already
+has means the claim was incomplete — that row didn't match, or matched the
+wrong one — and the fix is to go back and correct the manifest or the claim,
+never to apply the plan anyway. Applying over an incomplete claim risks creating
 duplicate content for whatever didn't get identity in step 4, which is
 exactly the failure claiming exists to prevent.
 

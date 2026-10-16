@@ -9,11 +9,13 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 final class ApplyResult {
 	/**
-	 * @param array<string,int> $ids    mapKey => post ID for every desired entry that exists after the run.
+	 * @param array<string,int> $ids     mapKey => post ID for every desired entry that exists after the run.
 	 * @param string[]          $errors
+	 * @param string[]          $created mapKeys of the entries this run created.
 	 */
 	public function __construct(
 		public readonly array $ids = [],
-		public readonly array $errors = []
+		public readonly array $errors = [],
+		public readonly array $created = []
 	) {}
 }
