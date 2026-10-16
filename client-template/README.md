@@ -17,7 +17,9 @@ npm run seed
 
 The seed bootstraps the site: it creates the pages, posts, menus and media that
 `seed/manifest.php` and `patterns/*.php` declare and the site does not have yet. It never
-changes anything that exists.
+changes the content, title or slug of a page that exists, never rewrites a menu, and keeps the
+reading settings and logo you chose. It only fills gaps: an empty front page, posts page or
+logo, a missing language tag, and the translation links of pages it creates.
 
 - **New page:** declare it in `seed/manifest.php`, add `patterns/<key>.php`, run `npm run seed`.
 - **Existing page:** change it in the block editor, or with the Pediment MCP tools (see the
