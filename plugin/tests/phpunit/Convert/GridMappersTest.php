@@ -119,6 +119,13 @@ class GridMappersTest extends WP_UnitTestCase {
 		}
 	}
 
+	public function test_card_link_paragraph_carries_a_plain_class(): void {
+		$card = parse_blocks( $this->convert( '<!-- wp:pediment/feature {"title":"T","text":"X","linkText":"Go","linkUrl":"/go"} /-->' )->markup )[0];
+		$link = end( $card['innerBlocks'] );
+		$this->assertSame( array( 'className' => 'pediment-card-link' ), $link['attrs'] );
+		$this->assertSame( "\n<p class=\"pediment-card-link\"><a href=\"/go\">Go</a></p>\n", $link['innerHTML'] );
+	}
+
 	public function test_icon_outside_the_set_is_kept_and_noted(): void {
 		$known   = $this->convert( '<!-- wp:pediment/feature {"icon":"cube","title":"T"} /-->' );
 		$unknown = $this->convert( '<!-- wp:pediment/feature {"icon":"no-such-icon","title":"T"} /-->' );

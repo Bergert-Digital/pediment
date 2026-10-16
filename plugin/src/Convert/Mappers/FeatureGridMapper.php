@@ -20,9 +20,10 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 /**
  * Grid (at most 3 columns, 2 for exactly four cards, one on phones) of group.is-style-card
- * → image or pediment/icon in the tile style, h3, text, link paragraph. An
- * image wins over the icon, as in the legacy render. The card style centres
- * the content, so a client theme's card style can align it another way.
+ * → image or pediment/icon in the tile style, h3, text, link paragraph
+ * (class pediment-card-link). An image wins over the icon, as in the legacy
+ * render. The card style centres the content, so a client theme's card
+ * style can align it another way.
  */
 final class FeatureGridMapper implements Mapper {
 
@@ -102,7 +103,8 @@ final class FeatureGridMapper implements Mapper {
 		$link_text = Attrs::rich( $attrs, 'linkText' );
 		$link_url  = Attrs::url( $attrs, 'linkUrl' );
 		if ( '' !== $link_text && '' !== $link_url ) {
-			$inner[] = Build::paragraph( "<a href=\"{$link_url}\">{$link_text}</a>" );
+			// A plain class so client themes select the link without a structural selector.
+			$inner[] = Build::paragraph( "<a href=\"{$link_url}\">{$link_text}</a>", array( 'className' => 'pediment-card-link' ) );
 		}
 
 		$group = array(
