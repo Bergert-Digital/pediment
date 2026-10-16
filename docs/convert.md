@@ -47,8 +47,8 @@ whole card, the icon and the image included. The centring is the style
 property `typography.textAlign`, and theme partials merge property by
 property: a theme `card` partial keeps the centring unless it sets
 `typography.textAlign` itself, even when it has its own `css`. The hero
-stat card (a `card` group with a `stat` group and the metrics) is centred by
-the same style.
+stat card is a `card` group too: its `stat` group is centred, and each metric
+paragraph is aligned left (value over label), as the legacy block rendered it.
 
 A feature's icon becomes a `pediment/icon` block in the `tile` style, the
 first block of the card. A feature with an image keeps the image and gets no
