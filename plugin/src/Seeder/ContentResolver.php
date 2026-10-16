@@ -25,7 +25,12 @@ final class ContentResolver {
 	/** @var array<string,string> "key|language" => pattern slug that is not registered. */
 	private array $missingPatterns = [];
 
-	public function __construct( private MediaMap $media ) {}
+	/**
+	 * @param string $rawLoader Name of the registry's private raw-content loader
+	 *                          (see rawContent()). A parameter only so a test can
+	 *                          stand in for a core that no longer has it.
+	 */
+	public function __construct( private MediaMap $media, private string $rawLoader = 'get_content' ) {}
 
 	/**
 	 * @param string $language The language being resolved ('' when monolingual).
@@ -58,10 +63,16 @@ final class ContentResolver {
 			}
 
 			// Resolve first, then run Block Hooks on valid markup — the order
-			// get_registered() cannot give us (see rawContent()).
+			// get_registered() cannot give us (see rawContent()). The context is
+			// the one core builds: the entry with its raw content, without
+			// `filePath`.
+			$raw     = $this->rawContent( $registry, $pattern, $entry->key );
+			$context = [ 'content' => $raw ] + $pattern;
+			unset( $context['filePath'] );
+
 			return apply_block_hooks_to_content(
-				$this->rewriteMarkup( $this->rawContent( $registry, $pattern ) ),
-				$pattern,
+				$this->rewriteMarkup( $raw ),
+				$context,
 				'insert_hooked_blocks_and_set_ignored_hooked_blocks_metadata'
 			);
 		}
@@ -79,19 +90,34 @@ final class ContentResolver {
 	 * valid JSON until it is resolved, so the parser drops every attribute of
 	 * that block. The registry's own loader, get_content(), returns the raw
 	 * markup (it includes a `filePath` pattern file the way core does) but is
-	 * private; it exists, unchanged, from WP 6.5 to trunk (7.2). Should a
-	 * future core remove it, this falls back to the hooked content, and
-	 * ContentResolverTest's placeholder tests fail loudly.
+	 * private; it has the same signature from WP 6.5 to trunk (7.2), and its
+	 * body gained a `filePath` check in 7.0.
+	 *
+	 * There is no fallback. The hooked content is exactly the damaged markup
+	 * this method exists to avoid, and production cores update on their own,
+	 * so a core without the loader stops the seed with an error instead of
+	 * seeding pages whose blocks lost their attributes.
 	 *
 	 * @param array<string,mixed> $pattern The get_registered() entry.
+	 * @param string              $key     The manifest entry, for the error.
+	 *
+	 * @throws ManifestError When this WordPress version has no usable raw loader.
 	 */
-	private function rawContent( \WP_Block_Patterns_Registry $registry, array $pattern ): string {
+	private function rawContent( \WP_Block_Patterns_Registry $registry, array $pattern, string $key ): string {
 		$name = (string) ( $pattern['name'] ?? '' );
-		if ( '' !== $name && method_exists( $registry, 'get_content' ) ) {
-			$loader = new \ReflectionMethod( $registry, 'get_content' );
-			return (string) $loader->invoke( $registry, $name );
+		try {
+			$raw = method_exists( $registry, $this->rawLoader )
+				? ( new \ReflectionMethod( $registry, $this->rawLoader ) )->invoke( $registry, $name )
+				: null;
+		} catch ( \Throwable $e ) {
+			$raw = null; // A changed signature is as unusable as a missing method.
 		}
-		return (string) $pattern['content'];
+
+		if ( ! is_string( $raw ) ) {
+			throw new ManifestError( "{$key}: pattern '{$name}' — Pediment cannot read the raw pattern markup on this WordPress version (WP_Block_Patterns_Registry::{$this->rawLoader}() is missing or changed). Seeding it would strip block attributes, so nothing was written; update Pediment." ); // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- exception message for the operator, not echoed output.
+		}
+
+		return $raw;
 	}
 
 	/** @return string[] */

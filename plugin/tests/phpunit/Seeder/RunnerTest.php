@@ -22,6 +22,11 @@ class RunnerTest extends WP_UnitTestCase {
 	}
 
 	public function tear_down(): void {
+		// Registered by test_a_media_id_placeholder_in_pattern_block_json_survives_seeding;
+		// here so a failing assertion cannot leak it into later tests.
+		if ( WP_Block_Patterns_Registry::get_instance()->is_registered( 'client/placeholder-page' ) ) {
+			unregister_block_pattern( 'client/placeholder-page' );
+		}
 		remove_all_filters( 'pediment_seed_manifest' );
 		\Pediment\Seeder\Manifest::resetCache();
 		parent::tear_down();
@@ -389,7 +394,6 @@ class RunnerTest extends WP_UnitTestCase {
 		\Pediment\Seeder\Manifest::resetCache();
 
 		$result = ( new Runner() )->run();
-		unregister_block_pattern( 'client/placeholder-page' );
 
 		$this->assertSame( [], $result->errors );
 		$hero  = get_posts( [ 'post_type' => 'attachment', 'post_status' => 'inherit', 'meta_key' => Meta::KEY, 'meta_value' => 'hero', 'fields' => 'ids' ] );

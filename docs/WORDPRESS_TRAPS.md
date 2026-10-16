@@ -761,7 +761,10 @@ loader, the private `get_content()` (WP 6.5+, also includes a `filePath` pattern
 way core does). It then resolves the placeholders, and only then calls
 `apply_block_hooks_to_content( $resolved, $pattern,
 'insert_hooked_blocks_and_set_ignored_hooked_blocks_metadata' )`, with the same arguments
-core uses. So hooked blocks still behave as before. A placeholder-bearing pattern must
+core uses, and the context core builds (raw `content`, no `filePath`). So hooked blocks
+still behave as before. There is deliberately no fallback to `get_registered()`: on a
+core without the loader the seed stops with a `ManifestError` that says to update
+Pediment, because the fallback is this bug. A placeholder-bearing pattern must
 never go through `parse_blocks()` before it is resolved: `convert --patterns` swaps
 placeholders for stand-ins first, for the same reason (`PatternFiles::convertText()`).
 **Catch it early.** `ContentResolverTest::test_a_placeholder_in_the_block_json_of_a_registered_pattern_keeps_every_attribute`
