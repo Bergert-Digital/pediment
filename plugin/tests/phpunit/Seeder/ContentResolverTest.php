@@ -267,4 +267,94 @@ class ContentResolverTest extends WP_UnitTestCase {
 		$this->assert_image_kept_its_attributes( $content, $attachment );
 		$this->assertStringContainsString( '<!-- wp:loginout /-->', $content, 'the hooked block core would insert is still inserted' );
 	}
+
+	/**
+	 * A future core without the raw loader must stop the seed, not quietly
+	 * fall back to get_registered()'s re-parsed content: that fallback is the
+	 * A4 bug itself. Production cores update on their own; CI pins 6.9.
+	 */
+	public function test_a_core_without_the_raw_pattern_loader_stops_with_a_clear_error() {
+		$this->register_test_pattern( 'client/placeholder-noloader', array( 'content' => self::PLACEHOLDER_MARKUP ) );
+		$resolver = new ContentResolver( new MediaMap( array( 'hero' => $this->hero() ) ), 'get_content_removed_in_a_future_core' );
+
+		try {
+			$resolver->resolve( $this->entry( array( 'pattern' => 'client/placeholder-noloader' ) ) );
+			$this->fail( 'expected a ManifestError' );
+		} catch ( ManifestError $e ) {
+			$this->assertStringContainsString( "client/placeholder-noloader", $e->getMessage() );
+			$this->assertStringContainsString( 'cannot read the raw pattern markup on this WordPress version', $e->getMessage() );
+			$this->assertStringContainsString( 'update Pediment', $e->getMessage() );
+		}
+	}
+
+	public function test_a_seed_aborts_before_any_write_when_the_raw_loader_is_missing() {
+		$this->register_test_pattern( 'client/placeholder-noloader-run', array( 'content' => '<!-- wp:paragraph --><p>x</p><!-- /wp:paragraph -->' ) );
+		$manifest = Manifest::fromArray( array( 'pages' => array( 'x' => array( 'title' => 'X', 'pattern' => 'client/placeholder-noloader-run' ) ) ), '/tmp/theme' );
+		$state    = new \Pediment\Seeder\DesiredState(
+			new \Pediment\Language\NullProvider(),
+			new ContentResolver( new MediaMap( array() ), 'get_content_removed_in_a_future_core' )
+		);
+
+		$this->expectException( ManifestError::class );
+		$state->build( $manifest, array() );
+	}
+
+	/**
+	 * Core hands Block Hooks the pattern with its raw content and without
+	 * `filePath` (get_registered() copies the entry, loads it, then sets
+	 * `content`). Filters on hooked_block_types see the same context here.
+	 */
+	public function test_block_hooks_get_the_context_core_gives_them() {
+		$file = get_temp_dir() . 'pediment-placeholder-context.php';
+		file_put_contents( $file, "<?php\n/**\n * Title: Context\n * Slug: client/placeholder-context\n */\n?>\n" . self::PLACEHOLDER_MARKUP );
+		$this->register_test_pattern( 'client/placeholder-context', array( 'filePath' => $file ) );
+		$contexts = array();
+		add_filter(
+			'hooked_block_types',
+			static function ( $hooked, $position, $anchor, $context ) use ( &$contexts ) {
+				$contexts[] = $context;
+				return $hooked;
+			},
+			10,
+			4
+		);
+
+		( new ContentResolver( new MediaMap( array( 'hero' => $this->hero() ) ) ) )
+			->resolve( $this->entry( array( 'pattern' => 'client/placeholder-context' ) ) );
+
+		// The last context is the resolver's own call; earlier ones come from
+		// core's get_registered(), which the resolver uses to find the entry.
+		$this->assertNotEmpty( $contexts );
+		$context = end( $contexts );
+		$this->assertIsArray( $context );
+		$this->assertSame( 'client/placeholder-context', $context['name'] );
+		$this->assertArrayNotHasKey( 'filePath', $context );
+		$this->assertStringContainsString( '{{media_id:hero}}', $context['content'], 'the raw markup, as core passes it' );
+	}
+
+	/** Without placeholders, a seeded pattern is exactly what core hands out — hooked blocks included. */
+	public function test_a_pattern_without_placeholders_matches_get_registered_byte_for_byte() {
+		$markup = '<!-- wp:group {"layout":{"type":"constrained"}} --><div class="wp-block-group">'
+			. '<!-- wp:image {"id":12,"sizeSlug":"large"} --><figure class="wp-block-image size-large"><img src="https://example.org/a.jpg" alt="" class="wp-image-12"/></figure><!-- /wp:image -->'
+			. '<!-- wp:paragraph --><p>Text</p><!-- /wp:paragraph --></div><!-- /wp:group -->';
+		$this->register_test_pattern( 'client/no-placeholders', array( 'content' => $markup ) );
+		add_filter(
+			'hooked_block_types',
+			static function ( $hooked, $position, $anchor ) {
+				if ( 'core/image' === $anchor && 'after' === $position ) {
+					$hooked[] = 'core/loginout';
+				}
+				return $hooked;
+			},
+			10,
+			3
+		);
+
+		$content = ( new ContentResolver( new MediaMap( array() ) ) )
+			->resolve( $this->entry( array( 'pattern' => 'client/no-placeholders' ) ) );
+
+		$expected = WP_Block_Patterns_Registry::get_instance()->get_registered( 'client/no-placeholders' )['content'];
+		$this->assertStringContainsString( '<!-- wp:loginout /-->', $expected );
+		$this->assertSame( $expected, $content );
+	}
 }
