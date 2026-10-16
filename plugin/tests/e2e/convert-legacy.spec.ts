@@ -19,7 +19,11 @@ const LEGACY = [
 	'<!-- wp:pediment/steps -->\n<!-- wp:pediment/step {"title":"One","text":"First."} /-->\n<!-- wp:pediment/step {"title":"Two","text":"Second."} /-->\n<!-- /wp:pediment/steps -->',
 	'<!-- wp:pediment/faq -->\n<!-- wp:pediment/faq-item {"question":"Parking?","answer":"Yes, at the gate."} /-->\n<!-- /wp:pediment/faq -->',
 	'<!-- wp:pediment/cta {"title":"Ready?","primaryText":"Contact","primaryUrl":"/contact"} /-->',
+	'<!-- wp:pediment/feature-grid -->\n<!-- wp:pediment/feature {"icon":"key","title":"Check-in","text":"Codes by email.","linkText":"How","linkUrl":"/check-in/"} /-->\n<!-- wp:pediment/feature {"title":"Growth","text":"Default icon."} /-->\n<!-- /wp:pediment/feature-grid -->',
 ].join( '\n\n' );
+
+// Functional Pediment blocks the converter writes (not legacy).
+const FUNCTIONAL = [ 'pediment/icon' ];
 
 const ability = ( name: string ) =>
 	`/?rest_route=/wp-abilities/v1/abilities/${ name }/run`;
@@ -80,23 +84,30 @@ test( 'a converted page opens with zero invalid blocks', async ( { page } ) => {
 		await page.goto( `/wp-admin/post.php?post=${ id }&action=edit` );
 		expect( ( await posted ).postDataJSON() ).toEqual( { blocks: [] } );
 
-		const counts = await page.evaluate( () => {
+		const counts = await page.evaluate( ( functional ) => {
 			const wp = ( window as any ).wp;
 			let total = 0;
 			let invalid = 0;
 			let legacy = 0;
+			let icons = 0;
 			const walk = ( blocks: any[] ) =>
 				blocks.forEach( ( block ) => {
 					total++;
 					invalid += block.isValid === false ? 1 : 0;
-					legacy += block.name.startsWith( 'pediment/' ) ? 1 : 0;
+					legacy +=
+						block.name.startsWith( 'pediment/' ) &&
+						! functional.includes( block.name )
+							? 1
+							: 0;
+					icons += block.name === 'pediment/icon' ? 1 : 0;
 					walk( block.innerBlocks || [] );
 				} );
 			walk( wp.data.select( 'core/block-editor' ).getBlocks() );
-			return { total, invalid, legacy };
-		} );
+			return { total, invalid, legacy, icons };
+		}, FUNCTIONAL );
 		expect( counts.invalid ).toBe( 0 );
 		expect( counts.legacy ).toBe( 0 );
+		expect( counts.icons ).toBe( 2 );
 		expect( counts.total ).toBeGreaterThan( 10 );
 	} finally {
 		if ( id ) {
