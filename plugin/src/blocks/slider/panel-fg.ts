@@ -33,14 +33,19 @@ const PALETTE_SLUG = /^[a-z0-9-]+$/;
 
 export type PaletteColor = { slug: string; color: string };
 
+/** The hex forms render.php accepts: #rgb and #rrggbb. */
+const HEX = /^#(?:[0-9a-fA-F]{3}){1,2}$/;
+
 /**
- * Editor-side mirror of the colour resolution in render.php.
+ * Editor-side mirror of `pediment_slider_panel_colors()` in render.php.
  *
- * `panelColor` is a palette slug or a colour. A slug in the palette resolves
- * to that palette colour, and the text colour follows the resolved value —
- * exactly what the front end does. The preview paints the resolved colour
- * itself rather than the preset var: it is the value the var holds, and it
- * spares the editor from re-deriving WordPress's kebab-cased var name.
+ * `panelColor` is a hex (#rgb / #rrggbb), used as it is, or a palette slug,
+ * which resolves to that palette colour. Anything else gets the default
+ * panel: the palette's `primary` (the preset the front end paints), or the
+ * block default when the palette has none. The text colour follows the
+ * resolved value. The preview paints the resolved colour itself rather than
+ * the preset var: it is the value the var holds, and it spares the editor
+ * from re-deriving WordPress's kebab-cased var name.
  *
  * @param value   The `panelColor` attribute.
  * @param palette Merged palette, highest origin first (custom, theme, default).
@@ -50,10 +55,17 @@ export function panelColors(
 	value: string,
 	palette: PaletteColor[]
 ): { bg: string; fg: string; picker: string } {
-	const entry = PALETTE_SLUG.test( value ?? '' )
-		? palette.find( ( c ) => c.slug === value )
-		: undefined;
-	const color = entry ? entry.color : value;
+	const bySlug = ( slug: string ) =>
+		PALETTE_SLUG.test( slug )
+			? palette.find( ( c ) => c.slug === slug )?.color
+			: undefined;
+	let color: string;
+	if ( HEX.test( value ?? '' ) ) {
+		color = value;
+	} else {
+		color =
+			bySlug( value ?? '' ) ?? bySlug( 'primary' ) ?? DEFAULT_PANEL_COLOR;
+	}
 	return { bg: color, fg: panelFg( color ), picker: color };
 }
 

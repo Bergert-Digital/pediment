@@ -63,21 +63,48 @@ if ( ! function_exists( 'pediment_slider_palette_color' ) ) {
 	}
 }
 
-$position = ( isset( $attributes['mediaPosition'] ) && 'right' === $attributes['mediaPosition'] ) ? 'right' : 'left';
-$panel    = isset( $attributes['panelColor'] ) ? (string) $attributes['panelColor'] : '';
-$swatch   = pediment_slider_palette_color( $panel );
-if ( '' !== $swatch ) {
-	// A palette slug: paint the preset var, so the panel follows the palette,
-	// and pick the text colour from the colour that var holds. WordPress names
-	// the var after the kebab-cased slug (WP_Theme_JSON), so `accent2` is
-	// `--wp--preset--color--accent-2`.
-	$bg = 'var(--wp--preset--color--' . _wp_to_kebab_case( $panel ) . ')';
-	$fg = pediment_slider_panel_fg( $swatch );
-} else {
-	// A colour, an unknown slug, or nothing: as before slugs existed.
-	$bg = '' !== $panel ? $panel : 'var(--wp--preset--color--primary)';
-	$fg = pediment_slider_panel_fg( $bg );
+if ( ! function_exists( 'pediment_slider_panel_colors' ) ) {
+	/**
+	 * Panel background and text colour for a `panelColor` value.
+	 *
+	 * Only two forms reach the style attribute: a hex (#rgb or #rrggbb), used
+	 * as it is, and a palette slug, painted as its preset var. Anything else
+	 * is invalid and gets the default panel, the primary preset; nothing raw
+	 * is written into `style`. The text colour follows the colour the panel
+	 * really shows.
+	 *
+	 * @param string $value The `panelColor` attribute.
+	 * @return array{bg:string,fg:string}
+	 */
+	function pediment_slider_panel_colors( $value ) {
+		$value = is_string( $value ) ? $value : '';
+		if ( 1 === preg_match( '/^#(?:[0-9a-fA-F]{3}){1,2}$/', $value ) ) {
+			return array(
+				'bg' => $value,
+				'fg' => pediment_slider_panel_fg( $value ),
+			);
+		}
+
+		$slug   = $value;
+		$swatch = pediment_slider_palette_color( $slug );
+		if ( '' === $swatch ) {
+			$slug   = 'primary';
+			$swatch = pediment_slider_palette_color( $slug );
+		}
+
+		// WordPress names the var after the kebab-cased slug (WP_Theme_JSON),
+		// so `accent2` is `--wp--preset--color--accent-2`.
+		return array(
+			'bg' => 'var(--wp--preset--color--' . _wp_to_kebab_case( $slug ) . ')',
+			'fg' => pediment_slider_panel_fg( $swatch ),
+		);
+	}
 }
+
+$position = ( isset( $attributes['mediaPosition'] ) && 'right' === $attributes['mediaPosition'] ) ? 'right' : 'left';
+$colors   = pediment_slider_panel_colors( isset( $attributes['panelColor'] ) ? $attributes['panelColor'] : '' );
+$bg       = $colors['bg'];
+$fg       = $colors['fg'];
 $slides   = ( isset( $attributes['slides'] ) && is_array( $attributes['slides'] ) ) ? $attributes['slides'] : array();
 $count    = count( $slides );
 

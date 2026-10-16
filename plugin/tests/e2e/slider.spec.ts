@@ -38,9 +38,10 @@ async function activeMediaPanelX(
 	return { mediaX: media.x, panelX: panel.x };
 }
 
-// A light palette slug, a dark palette slug, and a hex: the editor preview
+// A light palette slug, a dark palette slug, a hex, and an unknown value
+// (the default panel): the editor preview
 // must paint each panel exactly like the front end does.
-const PARITY_COLORS = [ 'accent-tint', 'primary', '#0E7490' ];
+const PARITY_COLORS = [ 'accent-tint', 'primary', '#0E7490', 'no-such-colour' ];
 const paritySlug = ( value: string ) =>
 	`${ SLUG }-parity-${ value.replace( /[^a-z0-9]/gi, '' ).toLowerCase() }`;
 
