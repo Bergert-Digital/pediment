@@ -23,6 +23,15 @@ class TextMappersTest extends WP_UnitTestCase {
 		$this->assertStringContainsString( '<h2 class="wp-block-heading has-text-align-center">Hi</h2>', $heading['innerHTML'] );
 	}
 
+	public function test_section_head_group_carries_a_plain_class_themes_can_select(): void {
+		$block = parse_blocks( $this->convert( '<!-- wp:pediment/section-head {"headline":"Hi"} /-->' )->markup )[0];
+		$this->assertSame( 'pediment-section-head', $block['attrs']['className'] );
+		$this->assertStringContainsString( 'class="wp-block-group pediment-section-head"', $block['innerHTML'] );
+
+		$kept = parse_blocks( $this->convert( '<!-- wp:pediment/section-head {"headline":"Hi","className":"ss-intro"} /-->' )->markup )[0];
+		$this->assertSame( 'ss-intro pediment-section-head', $kept['attrs']['className'] );
+	}
+
 	public function test_empty_section_head_prose_and_pull_quote_are_removed(): void {
 		$result = $this->convert( "<!-- wp:pediment/section-head /-->\n\n<!-- wp:pediment/prose -->\n<!-- /wp:pediment/prose -->\n\n<!-- wp:pediment/pull-quote {\"citation\":\"Only a citation\"} /-->" );
 		$this->assertSame( "\n\n\n\n", $result->markup );
