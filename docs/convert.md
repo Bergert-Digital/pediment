@@ -42,10 +42,11 @@ without a structural selector such as `> p:last-child`.
 
 The `card` style centres the card's content. The converter writes no
 alignment on the card's heading, paragraphs or image, so a client theme's
-`card` style with `text-align:left` left-aligns the whole card, the icon and
-the image included. The centring is in the style's `css`, and a theme's `css`
-for `card` replaces the plugin's completely: a theme `card` partial with its
-own `css` must repeat `text-align:center` to keep the cards centred. The hero
+`card` style with `"typography": { "textAlign": "left" }` left-aligns the
+whole card, the icon and the image included. The centring is the style
+property `typography.textAlign`, and theme partials merge property by
+property: a theme `card` partial keeps the centring unless it sets
+`typography.textAlign` itself, even when it has its own `css`. The hero
 stat card (a `card` group with a `stat` group and the metrics) is centred by
 the same style.
 

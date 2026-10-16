@@ -27,7 +27,7 @@ AI agents change the site layer with the `pediment-upsert-style` tool — see [m
 | Style | Block | Look |
 | --- | --- | --- |
 | `band`, `band-alt` | group | Section with a background (surface, or sunken for `band-alt`) and vertical padding |
-| `card` | group | Raised card with border, radius and padding; centres its content (`text-align:center`). A client theme's `card` partial can set another alignment |
+| `card` | group | Raised card with border, radius and padding; centres its content (`typography.textAlign`). A client theme's `card` partial keeps the centring unless it sets `typography.textAlign` itself |
 | `eyebrow` | paragraph | Small uppercase label with a short line before it |
 | `lead` | paragraph | Larger, muted intro text |
 | `pill`, `pill-ghost` | button | Rounded button, filled or outlined |
