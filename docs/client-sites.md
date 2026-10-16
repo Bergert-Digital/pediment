@@ -263,7 +263,24 @@ it. The order (`docs/superpowers/specs/2026-08-05-migration-step6-design.md`
 
 1. Install `pediment-plugin.zip` and activate it (wp-admin).
 2. Upload and activate the standalone client theme (wp-admin).
-3. Settings → Pediment Theme → Seeding → **Preview claim** — read the plan.
+
+   **A site on the retired Pediment parent theme** (a child theme with
+   `Template: pediment`) needs a different order for steps 1–2:
+   - Upload the standalone theme first, then activate the plugin. With the
+     parent theme still loaded, activating the plugin fails with
+     "Cannot redeclare pediment_…()" (WordPress's activation sandbox keeps
+     the site up, but the plugin stays inactive).
+   - If the standalone theme replaces the child theme in place (same slug),
+     WordPress keeps the stored `template = pediment` and still loads the
+     parent's PHP. Visiting Appearance → Themes does not clear it. Activate
+     any other theme, then activate the client theme again; only then
+     activate the plugin.
+   - Between the theme switch and the plugin activation the site renders
+     broken (no header, fallback fonts, empty legacy blocks), because the
+     parent's `theme.json` and blocks are gone and the plugin's are not yet
+     loaded. Do the two steps back to back, or under maintenance mode.
+3. Settings → Pediment Theme → Seeding → **Preview claim** — read the plan,
+   including every MEDIA line (claim matches media by file name since 4.1).
 4. **Claim content** — identity only; see
    [`wp pediment claim`](seeding.md#wp-pediment-claim) for what it matches
    and what it refuses to.

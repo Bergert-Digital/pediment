@@ -55,7 +55,8 @@ final class SectionHeadMapper implements Mapper {
 		}
 
 		$group           = Attrs::put( array(), 'align', $context->align( $block ) );
-		$group           = Attrs::put( $group, 'className', $context->className( $block, 'core/group' ) );
+		// A plain class so client themes can restyle converted section heads without structural selectors.
+		$group           = Attrs::put( $group, 'className', $context->className( $block, 'core/group', 'pediment-section-head' ) );
 		$group['style']  = array( 'spacing' => array( 'margin' => array( 'bottom' => 'var:preset|spacing|60' ) ) );
 		$group['layout'] = $center ? array( 'type' => 'constrained' ) : array(
 			'type'           => 'constrained',
