@@ -10,11 +10,10 @@
     "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true,
     "baseUrl": ".",
-    "paths": { "@/*": ["editor/*"] },
     "jsx": "react-jsx",
     "allowJs": true,
     "noEmit": true
   },
-  "include": ["editor/**/*.ts", "editor/**/*.tsx", "src/**/*.ts", "src/**/*.tsx"],
+  "include": ["src/**/*.ts", "src/**/*.tsx"],
   "exclude": ["node_modules", "build"]
 }

@@ -17,10 +17,7 @@ final class ActualEntry {
 		public readonly string $slug,
 		public readonly int $parentId,
 		public readonly string $status,
-		public readonly int $menuOrder,
-		public readonly string $storedHash,
-		public readonly string $currentHash,
-		public readonly string $sourceHash
+		public readonly int $menuOrder
 	) {}
 
 	public function mapKey(): string {

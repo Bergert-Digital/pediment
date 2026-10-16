@@ -3,7 +3,7 @@
  * __PEDIMENT_NAME__ theme bootstrap.
  *
  * A Pediment client theme has almost no PHP: blocks, templates, tokens,
- * seeding and the AI editor all ship in the Pediment plugin. What lives here
+ * seeding all ship in the Pediment plugin. What lives here
  * is what is genuinely specific to this client — bespoke blocks under
  * src/blocks/, and the stylesheet.
  *

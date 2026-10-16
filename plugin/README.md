@@ -1,60 +1,42 @@
 # Pediment
 
-WordPress site engine with shared Gutenberg blocks, templates, patterns, tokens,
-forms, and AI-powered authoring: compose a page from a prompt, edit an existing
-page, or refine a single block.
+WordPress site engine with shared Gutenberg blocks, templates, patterns, design
+tokens, forms and seeding.
 
 ## Requirements
 
 - WordPress 6.9+, PHP 8.1+
 - A standalone client block theme
-- Anthropic API key
 
 ## Install
 
 Upload `pediment-plugin.zip` from the latest [GitHub Release](https://github.com/Bergert-Digital/pediment/releases) via **Plugins → Add New → Upload Plugin**, then activate. It installs as `pediment`; after the first install, updates arrive through the normal wp-admin Updates screen.
 
-Define `ANTHROPIC_API_KEY` in `wp-config.php` — the plugin reads the constant when set; otherwise it falls back to the key in Settings → Pediment AI, where it is stored encrypted.
+Upgrading from 3.x: read [Upgrade to 4.0](../docs/client-sites.md#upgrade-to-40) first.
 
-## Three flows
-
-- **Compose.** Document sidebar → "Compose with AI" → prompt + page type → fresh page generated from registered blocks.
-- **Edit.** Document sidebar → "Edit with AI" → instruction → page content replaced (use Undo to revert).
-- **Refine.** Select any Pediment block → Inspector → "AI refine" → quick actions or custom instruction → attributes update.
-
-The editor and PHP runtime use the `pediment/v1` REST namespace.
+The REST API uses the `pediment/v1` namespace.
 
 ## Seeding
 
 Client themes declare their pages, posts, media, navigation, and custom post types in a
 `seed/manifest.php` file; content itself lives in the theme's `patterns/` directory.
-`wp pediment seed` makes the database match the manifest without ever overwriting
-content a client has edited, and `wp pediment adopt <key>` exports a live page's edited
-markup back into its pattern file. A manifest that declares a `languages` section makes
-the site multilingual (via Polylang); `wp pediment languages` configures Polylang from
-that section before the first seed, and `wp pediment adopt <key> --language=de` adopts
-one language's translation. See [docs/seeding.md](../docs/seeding.md) for the full
-manifest reference, the arbitration rules, the languages section, and how to read a
-dry-run plan.
+`wp pediment seed` bootstraps a site: it creates what the manifest declares and the site
+does not have yet. It never changes an existing page's content, title or slug, never
+rewrites a menu, and keeps reading settings and a logo a person chose; it only fills empty
+settings, missing language tags and the translation links of pages it creates. Live pages
+change in the editor or through the MCP tools; `wp pediment adopt <key>` exports a live
+page's markup into its pattern file so new environments match. A manifest that declares a
+`languages` section makes the site multilingual (via Polylang); `wp pediment languages`
+configures Polylang from that section before the first seed, and
+`wp pediment adopt <key> --language=de` adopts one language's translation. See
+[docs/seeding.md](../docs/seeding.md) for the full manifest reference, what a seed does
+on a site that is already seeded, the languages section, and how to read a dry-run plan.
 
-## Web fetch
+## AI tools (MCP)
 
-The model has access to Anthropic's `web_fetch_20250910` server tool during Compose and Edit. It may fetch URLs the user mentions or that it decides are relevant. Fetched URLs appear as pills in the editor.
-
-## Models
-
-Defaults (configurable in Settings):
-
-- Compose / Edit: `claude-sonnet-4-6`
-- Refine: `claude-haiku-4-5`
-
-## Rate limits
-
-Per-user, per-hour defaults (configurable in Settings):
-
-- Compose: 30
-- Edit: 30
-- Refine: 200
+With the MCP Adapter plugin active, Pediment serves an MCP server at
+`/wp-json/pediment/v1/mcp` with nine tools to read, write and convert pages and to change design
+styles under Pediment's rules. See [docs/mcp.md](../docs/mcp.md).
 
 ## Local dev
 
@@ -96,7 +78,7 @@ npm run env:stop
 ### Day-to-day commands
 
 ```bash
-# Rebuild the editor bundle after JS/TS changes (from plugin/)
+# Rebuild the blocks after JS/TS changes (from plugin/)
 cd plugin && npm run build
 
 # Watch + rebuild on save (from plugin/)
@@ -106,7 +88,7 @@ cd plugin && npm run start
 npx wp-env run tests-wordpress --env-cwd=wp-content/plugins/pediment-ai ./vendor/bin/phpunit
 
 # Filter a single test class
-npx wp-env run tests-wordpress --env-cwd=wp-content/plugins/pediment-ai ./vendor/bin/phpunit --filter ComposeJobTest
+npx wp-env run tests-wordpress --env-cwd=wp-content/plugins/pediment-ai ./vendor/bin/phpunit --filter SmokeTest
 
 # Run Playwright E2E (needs wp-env running, from plugin/)
 cd plugin && npm run e2e
@@ -115,7 +97,3 @@ cd plugin && npm run e2e
 composer lint
 composer lint:fix
 ```
-
-Mock mode is on by default in `.wp-env.json` (`PEDIMENT_AI_MOCK=true`), so the plugin returns fixture responses instead of calling Anthropic. Toggle off in plugin settings to test against real Anthropic.
-
-See [docs/prompts.md](docs/prompts.md) for prompt tuning and [docs/privacy.md](docs/privacy.md) for data-handling disclosures clients should include in their privacy policies.

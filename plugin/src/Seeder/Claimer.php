@@ -8,10 +8,9 @@
  * such a site plans a CREATE for every entry and duplicates the whole site.
  *
  * A claim is the one-time bridge: it matches by the things a legacy row and a
- * manifest entry can still agree on, and writes exactly one meta key. It never
- * writes a hash, so every claimed row stays protected under the Differ's rule
- * 2 (missing hash = treat as edited); bringing a page under git's control is
- * still an explicit `wp pediment adopt`.
+ * manifest entry can still agree on, and writes exactly one meta key. The
+ * seed after a claim finds every claimed row and leaves it as it is — the
+ * seeder never writes to a row that exists.
  *
  * @package Pediment
  */
@@ -124,7 +123,6 @@ final class Claimer {
 				$language,
 				0,
 				[],
-				[],
 				sprintf(
 					'%d unclaimed %s posts share the slug "%s" (IDs %s) — claim nothing until one is deleted or re-slugged.',
 					count( $candidates ),
@@ -144,13 +142,12 @@ final class Claimer {
 			$language,
 			$postId,
 			[ 'seed_key' => [ 'from' => null, 'to' => $spec->key ] ],
-			[],
 			sprintf( '%s "%s" (ID %d)', $spec->postType, $slug, $postId )
 		);
 	}
 
 	private function noMatch( EntrySpec $spec, string $language, string $note ): PlanItem {
-		return new PlanItem( PlanItem::NO_MATCH, PlanItem::KIND_ENTRY, $spec->key, $language, 0, [], [], $note );
+		return new PlanItem( PlanItem::NO_MATCH, PlanItem::KIND_ENTRY, $spec->key, $language, 0, [], $note );
 	}
 
 	/**
@@ -249,7 +246,6 @@ final class Claimer {
 				$language,
 				0,
 				[],
-				[],
 				'no unclaimed navigation entity — the next seed will create it.'
 			);
 		}
@@ -260,7 +256,6 @@ final class Claimer {
 			$spec->key,
 			$language,
 			0,
-			[],
 			[],
 			sprintf(
 				'%d unclaimed navigation entities (IDs %s) and none whose slug is "%s" — re-slug the right one, or claim it by hand.',
@@ -279,7 +274,6 @@ final class Claimer {
 			$language,
 			$postId,
 			[ 'seed_key' => [ 'from' => null, 'to' => $spec->key ] ],
-			[],
 			sprintf( 'navigation "%s" (ID %d)', (string) get_the_title( $postId ), $postId )
 		);
 	}

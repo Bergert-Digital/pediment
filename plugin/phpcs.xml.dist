@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
-<ruleset name="Pediment AI">
-  <description>Coding standards for pediment-ai.</description>
+<ruleset name="Pediment">
+  <description>Coding standards for the Pediment plugin.</description>
 
   <file>plugin.php</file>
   <file>inc/</file>
@@ -61,7 +61,7 @@
   <!-- src/blocks/*/render.php (moved from the theme, Task 5) render via
        ob_get_clean() and carry no file @package tag — the theme's ruleset
        exempted both wholesale; scope the same exemption to src/blocks/ only so
-       the rest of the plugin (Anthropic/, Rest/, Chat/, Usage/, …) keeps
+       the rest of the plugin (Seeder/, Language/, Design/, …) keeps
        stricter escaping + docblock enforcement. -->
   <rule ref="Squiz.Commenting.FileComment.MissingPackageTag">
     <exclude-pattern>src/blocks/*</exclude-pattern>

@@ -15,9 +15,9 @@ The `lint:blocks` script enforces the three required files.
 
 ## block.json conventions
 
-For the AI plugin (Plan B) to compose with a block, `block.json` must include:
+For AI agents to compose with a block, `block.json` must include:
 
-- **`description`** — a one-sentence description of what the block does and when to use it. Goes directly into the AI tool schema.
+- **`description`** — a one-sentence description of what the block does and when to use it.
 - **Explicit `attributes`** — every attribute must be declared with a `type` and ideally a `default`. Don't rely on `supports` to declare implicit attributes.
 - **`name` namespaced under `pediment/`** — for starter blocks. Client themes use `client/`.
 
@@ -28,7 +28,7 @@ Example:
   "name": "pediment/my-block",
   "title": "My Block",
   "category": "pediment",
-  "description": "Short, action-oriented description used by the AI composer.",
+  "description": "Short, action-oriented description of what the block does.",
   "attributes": {
     "title": { "type": "string", "default": "" },
     "url":   { "type": "string", "default": "" }
@@ -72,6 +72,16 @@ Every block needs a test in `plugin/tests/phpunit/BlockRender/<Name>Test.php`. T
 
 - Render with valid attributes → output contains expected substrings.
 - Render with edge-case attributes (empty fields) → output handled gracefully (no PHP errors, no empty `<a href="">`).
+
+## Legacy blocks
+
+The 18 presentation blocks in `Pediment\Content\Policy::LEGACY` (hero, cta,
+feature-grid, faq and the others) are legacy. They still render, so existing
+pages keep working, but the inserter hides them (`supports.inserter` is set
+to false when they register) and Pediment 5 deletes them. Do not use them in
+new pages or patterns and do not add features to them. Build with core blocks
+and named styles ([design-layer.md](design-layer.md)), and convert existing
+content with the converter ([convert.md](convert.md)).
 
 ## Client blocks
 

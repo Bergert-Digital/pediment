@@ -20,7 +20,6 @@ use Pediment\Language\LanguageRegistry;
 use Pediment\Language\WpmlProvider;
 use Pediment\Seeder\Adopter;
 use Pediment\Seeder\Claimer;
-use Pediment\Seeder\ContentHash;
 use Pediment\Seeder\ContentResolver;
 use Pediment\Seeder\DesiredState;
 use Pediment\Seeder\Differ;
@@ -92,9 +91,10 @@ class SeedingBehaviorTest extends WpmlTestCase {
 		);
 
 		$lang    = new WpmlProvider();
-		$desired = ( new DesiredState( $lang, new ContentResolver( new MediaMap( [] ) ) ) )->build( $manifest );
 		$reader  = new StateReader( $lang );
-		$plan    = ( new Differ() )->diff( $desired, $reader->read(), $reader->duplicates() );
+		$actual  = $reader->read();
+		$desired = ( new DesiredState( $lang, new ContentResolver( new MediaMap( [] ) ) ) )->build( $manifest, $actual );
+		$plan    = ( new Differ() )->diff( $desired, $actual, $reader->duplicates() );
 
 		return [ ( new Applier( $lang ) )->apply( $plan, $desired ), $lang ];
 	}
@@ -170,9 +170,9 @@ class SeedingBehaviorTest extends WpmlTestCase {
 		$lang->setLanguage( $postId, 'de' );
 		update_post_meta( $postId, Meta::KEY, 'about' );
 
-		$entry   = new \Pediment\Seeder\DesiredEntry( 'about', 'en', 'page', 'About', 'about', null, '<p>x</p>', false, false, 0, [], ContentHash::compute( 'About', '<p>x</p>' ) );
+		$entry   = new \Pediment\Seeder\DesiredEntry( 'about', 'en', 'page', 'About', 'about', null, '<p>x</p>', false, false, 0, [] );
 		$desired = [ 'about|en' => $entry ];
-		$item    = new PlanItem( PlanItem::UPDATE, PlanItem::KIND_ENTRY, 'about', 'en', $postId, [ 'menu_order' => [ 'from' => 1, 'to' => 0 ] ] );
+		$item    = new PlanItem( PlanItem::UNCHANGED, PlanItem::KIND_ENTRY, 'about', 'en', $postId );
 		$plan    = new \Pediment\Seeder\Plan( [ $item ], [] );
 
 		( new Applier( $lang ) )->apply( $plan, $desired );
@@ -207,12 +207,6 @@ class SeedingBehaviorTest extends WpmlTestCase {
 		$this->assertSame( 'startseite', $desired['home|de']->slug );
 		$this->assertSame( 'Home', $desired['home|en']->title );
 		$this->assertSame( 'home', $desired['home|en']->slug );
-	}
-
-	public function test_the_hashes_differ_per_language() {
-		$desired = ( new DesiredState( new WpmlProvider(), new ContentResolver( new MediaMap( [] ) ) ) )->build( $this->desiredManifest() );
-
-		$this->assertNotSame( $desired['home|en']->sourceHash, $desired['home|de']->sourceHash );
 	}
 
 	// ---------------------------------------------------------------------

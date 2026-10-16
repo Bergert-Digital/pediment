@@ -9,23 +9,30 @@ holds only what is specific to __PEDIMENT_NAME__: brand tokens, page content, an
 ```bash
 npm install
 npm run env:start     # http://localhost:8888
-npm run seed:plan     # see what a seed would change
+npm run seed:plan     # see what a seed would create
 npm run seed
 ```
 
 ## Changing content
 
-Structure — which pages exist, their slugs, nesting, nav membership — lives in
-`seed/manifest.php`. Content lives in `patterns/*.php`. Edit either, then run `npm run seed`.
+The seed bootstraps the site: it creates the pages, posts, menus and media that
+`seed/manifest.php` and `patterns/*.php` declare and the site does not have yet. It never
+changes the content, title or slug of a page that exists, never rewrites a menu, and keeps the
+reading settings and logo you chose. It only fills gaps: an empty front page, posts page or
+logo, a missing language tag, and the translation links of pages it creates.
 
-A page a client has edited in the editor is protected: the seeder compares a content hash and
-leaves edited pages alone, reconciling structure only. To bring a client's live edit back into
-git, run `npm run adopt -- <page-key>`.
+- **New page:** declare it in `seed/manifest.php`, add `patterns/<key>.php`, run `npm run seed`.
+- **Existing page:** change it in the block editor, or with the Pediment MCP tools (see the
+  Pediment repo's `docs/mcp.md`). Editing its pattern file does not change the site.
+- **New environments should match a live page:** run `npm run adopt -- <page-key>` and commit
+  the pattern file.
 
 ## Deploying
 
 Push a `v*` tag. The release workflow builds `__PEDIMENT_SLUG__.zip` with the version header
 stamped, and attaches it to the GitHub release. Install it via Appearance → Themes → Add New →
-Upload, then re-seed from Settings → Pediment Theme → Seeding.
+Upload, then use Settings → Pediment Theme → Seeding → Apply plan to create any page or menu
+the release added. It adds only what is missing (pages, menus, media, missing language tags,
+empty reading settings) and never changes anything a person made.
 
 The Pediment plugin updates itself through wp-admin; this theme does not, by design.

@@ -79,10 +79,7 @@ final class StateReader {
 			(string) $post->post_name,
 			(int) $post->post_parent,
 			(string) $post->post_status,
-			(int) $post->menu_order,
-			(string) get_post_meta( $post->ID, Meta::HASH, true ),
-			ContentHash::forPost( (int) $post->ID ),
-			(string) get_post_meta( $post->ID, Meta::SOURCE, true )
+			(int) $post->menu_order
 		);
 	}
 

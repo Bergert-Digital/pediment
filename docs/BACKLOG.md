@@ -59,15 +59,10 @@ _(none currently known — verify by running a user-journey audit)_
   own spec; the design rationale is in
   [2026-08-05-licensing-and-hygiene-design.md](superpowers/specs/2026-08-05-licensing-and-hygiene-design.md#35-backlog-entry-for-commercial-protection).
   A licence check inside shipped PHP is a speed bump — it gates updates and support (which is what
-  drives renewals) and cannot gate execution, which is how every premium WordPress plugin works. The
-  part that is actually defensible is moving `plugin/src/Chat/PromptBuilder.php`,
-  `plugin/src/Chat/TurnRunner.php` and `plugin/src/Anthropic/SchemaBuilder.php` behind an API so
-  they stop shipping: today `plugin/src/Anthropic/Client.php:30` calls `api.anthropic.com` directly
-  from the customer's server, so 100% of the prompt tuning lands on their disk. Protection is
-  proportional to the work the server does — a proxy that forwards prompts the plugin already
-  contains protects nothing. Weigh two costs: the token bill moves to Bergert Digital unless
-  bring-your-own-key is kept with only the prompts gated, and the endpoint becomes an availability
-  dependency for client sites. Platform decision unmade — Freemius, EDD + Software Licensing,
+  drives renewals) and cannot gate execution, which is how every premium WordPress plugin works. The in-plugin AI chat was removed in 4.0.0
+  (spec 2026-10-14-core-blocks-mcp-design), so there are no shipped prompts left to protect;
+  revisit this entry when the MCP tools gain server-side logic worth gating. Platform decision
+  unmade — Freemius, EDD + Software Licensing,
   SureCart, or a merchant of record such as Paddle, the last of which absorbs EU VAT filing.
 
 ## 🟢 Medium
@@ -107,10 +102,6 @@ _(none currently known — verify by running a user-journey audit)_
   step 5's Task 5 review; the template carries no literals today, so the gap is latent rather
   than active. Widening the scan root is the obvious fix; decide whether client repos should be
   linted at all first, since they are the ones that multiply.
-- [ ] **Brand voice is captured but not consumed.** `/pediment:start` writes positioning and tone
-  into `docs/brief.md`; `PromptBuilder` still builds a fully static prompt and reads no options.
-  Deliberate (step-5 design decision 7) — close the loop when the AI side is next worked on, and
-  until then keep the skill honest about it.
 - [ ] **The client theme has no auto-updater.** Step 5 decision 8: `ThemeUpdater`/`UpdateToken` did
   not come across, so client themes update by admin zip upload. Revisit if step 6 shows it hurts.
 - [ ] **Seeding follow-ups from the step-3 final review.** Neither blocks a merge, both
@@ -220,7 +211,7 @@ _(none currently known — verify by running a user-journey audit)_
   header it needs (`docs/seeding.md#the-translations-section-of-a-dry-run-plan`); today
   closing that gap is manual (write the file, or translate in the editor and
   `wp pediment adopt --language`). A command that drafts the missing file via the
-  existing AI editor plumbing would close the loop end to end.
+  MCP tools (Plan 3) would close the loop end to end.
 - [ ] **Language-aware `Verifier` post-conditions.** The Verifier re-reads the database
   after every apply and reports what it claims to own that doesn't actually hold (see
   `docs/seeding.md`'s "Verification problems"), but nothing today checks that a

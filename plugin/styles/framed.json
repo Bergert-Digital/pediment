@@ -1,0 +1,13 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/theme.json",
+	"version": 3,
+	"title": "Framed",
+	"slug": "framed",
+	"blockTypes": [ "core/image" ],
+	"styles": {
+		"border": { "radius": "var(--wp--custom--radius--md)" },
+		"shadow": "var:preset|shadow|medium",
+		"elements": { "caption": { "typography": { "fontSize": "var:preset|font-size|sm", "fontStyle": "italic" }, "color": { "text": "var:preset|color|foreground-muted" } } },
+		"css": "& figcaption{text-align:center}"
+	}
+}

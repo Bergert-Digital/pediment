@@ -1,0 +1,11 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/theme.json",
+	"version": 3,
+	"title": "Stat",
+	"slug": "stat",
+	"blockTypes": [ "core/group" ],
+	"styles": {
+		"spacing": { "padding": { "top": "var:preset|spacing|30", "right": "var:preset|spacing|30", "bottom": "var:preset|spacing|30", "left": "var:preset|spacing|30" } },
+		"css": "text-align:center;&>*{margin-block:0}&>*+*{margin-block-start:var(--wp--preset--spacing--20)}&>:first-child:not(.pediment-stat-label){font-size:var(--wp--preset--font-size--4-xl);font-weight:800;line-height:1;letter-spacing:-0.03em;color:var(--wp--preset--color--accent)}&>:nth-child(2):not(.pediment-stat-context){font-weight:600}&>.pediment-stat-label{font-weight:600}&>:nth-child(3){font-size:var(--wp--preset--font-size--sm);color:var(--wp--preset--color--foreground-muted)}&>.pediment-stat-context{font-size:var(--wp--preset--font-size--sm);color:var(--wp--preset--color--foreground-muted)}"
+	}
+}

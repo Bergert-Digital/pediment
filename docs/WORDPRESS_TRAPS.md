@@ -367,22 +367,6 @@ the metrics agree numerically.
 
 ---
 
-## Hashing seeded content before the write disables all future updates
-
-**Symptom.** Every page reports "protected" on the first re-seed after the initial seed,
-even though nothing was ever edited in the editor.
-**Cause.** WordPress normalizes markup on write (KSES, wptexturize, block-comment
-round-trips), so a hash computed from the intended input never matches a hash computed
-from the persisted row — the two diverge on the very first write, and every page looks
-client-edited forever after.
-**Fix.** Hash the row WordPress actually stored, after the write:
-`ContentHash::forPost()` (`plugin/src/Seeder/ContentHash.php`). A separate hash,
-`_pediment_seed_source`, is computed from the git-side input and answers a different
-question ("did the manifest change?") — never conflate the two.
-**Catch it early.** `ApplierTest::test_reseeding_unchanged_content_plans_nothing`.
-
----
-
 ## KSES is active under WP-CLI and mangles block-comment JSON
 
 **Symptom.** Seeded pages render as raw markup on the front end, or the request fatals
@@ -404,36 +388,32 @@ goes through `wp_slash()` first — seeded content is git-authored, not user inp
 error anywhere in the seed report.
 **Cause.** `wp_unique_post_slug()` silently renames a colliding slug instead of
 erroring; a plan/apply step that only checks for a WP_Error return sees success.
-**Fix.** The Verifier re-reads `post_name` after the write and compares it against the
-manifest's declared slug, reporting a problem instead of retrying forever (a retry would
-rewrite the row — and get uniquified again — on every single run without converging).
+**Fix.** The Applier and the Verifier re-read `post_name` after the create and compare it
+against the manifest's declared slug, reporting a problem on the run that creates the
+page. The seeder never writes that row again, so this is the only chance to say so.
 See `Applier::assertSlug()` and `Verifier::verify()` in `plugin/src/Seeder/`.
-**Catch it early.** `VerifierTest::test_a_uniquified_slug_is_a_problem`.
+**Catch it early.** `VerifierTest::test_a_uniquified_slug_on_a_new_page_is_a_problem`.
 
 ---
 
 ## `get_post_status()` resolves an unattached attachment's raw status to `publish`
 
-**Symptom.** A test asserts an attachment was "restored from trash" by checking
-`get_post_status()`, and the assertion passes even when the restore silently failed to
-flip the row back to `inherit`.
+**Symptom.** A test asserts an attachment's status by checking `get_post_status()`,
+and the assertion passes even when the stored status is not what the test claims.
 **Cause.** `get_post_status()` has special-case logic for attachments: an `inherit`
 status with no living parent post resolves to `publish` for display purposes. That
 resolution hides the real stored value from anything that trusts the helper.
-**Fix.** Read the raw column instead: `get_post_field( 'post_status', $id )`. Restoring
-a trashed attachment writes `post_status = 'inherit'` directly
-(`plugin/src/Seeder/MediaSeeder.php`); assert against that literal value, not the
-resolved one.
-**Catch it early.** `MediaSeederTest::test_a_trashed_attachment_is_restored_rather_than_re_uploaded`.
+**Fix.** Read the raw column instead: `get_post_field( 'post_status', $id )`, and assert
+against the literal stored value (`inherit`, `trash`), not the resolved one.
+**Catch it early.** `MediaSeederTest::test_a_trashed_attachment_stays_in_the_trash_and_is_not_uploaded_again`.
 
 ---
 
 ## A theme's `patterns/` header metadata is cached for 30 minutes
 
 **Symptom.** `wp pediment adopt` writes a brand-new pattern file to the theme's
-`patterns/` directory, but the very next request (including the next `wp pediment seed`
-in the same test run) still can't find it — `ContentResolver` reports the pattern as
-unregistered.
+`patterns/` directory, but the very next request still can't find it — the pattern
+registry reports it as unregistered.
 **Cause.** WordPress caches a theme's scanned pattern-file headers in a site transient
 for 30 minutes so it isn't re-reading every pattern file's docblock on every request. A
 file written after that scan populated is invisible until the transient expires or is
@@ -444,8 +424,9 @@ writing the file, before returning.
 models a fresh request's pattern re-scan and asserts the follow-up `Runner` run plans
 nothing. PHPUnit runs the write and the re-seed in one process, so it can't reproduce the
 real cross-process cache staleness — after touching `Adopter`, also manually verify with
-two separate `wp` invocations: `wp pediment adopt <key>` then `wp pediment seed --dry-run`
-and confirm the adopted pattern resolves instead of reporting "not registered".
+two separate `wp` invocations: `wp pediment adopt <key>`, then
+`wp eval 'var_dump( WP_Block_Patterns_Registry::get_instance()->is_registered( "<slug>" ) );'`
+and confirm it prints `bool(true)`.
 
 ---
 
@@ -573,9 +554,8 @@ without the binding and GREEN with it.
 
 **Symptom.** Two languages declaring the same top-level slug (e.g. both wanting
 `about`) land as `about` and `about-2` — a real slug collision the seeder cannot
-distinguish from any other — and a slug-enforcing engine rewrites the row on every
-single run without ever converging, because the rewrite gets re-uniquified identically
-every time.
+distinguish from any other — and the Verifier can only report the collision on the run
+that creates the page, because a retry would get re-uniquified identically every time.
 **Cause.** WordPress's slug uniquification (`wp_unique_post_slug()`) checks across the
 whole `post_name` namespace, not scoped per language. Polylang gives every language its
 own URL prefix but does not extend slug uniqueness checks to be language-aware, so
@@ -591,7 +571,7 @@ language, including the default. Both exist so identity has a `post_name` no oth
 language's row will ever ask for — `EntrySpec`'s version additionally keeps the
 default language's own URL unsuffixed, `NavSeeder`'s does not.
 **Catch it early.** `ManifestTest::test_a_missing_slug_derives_a_distinct_one`
-(`plugin/tests/phpunit/Seeder/ManifestTest.php`); `VerifierTest::test_a_uniquified_slug_is_a_problem`
+(`plugin/tests/phpunit/Seeder/ManifestTest.php`); `VerifierTest::test_a_uniquified_slug_on_a_new_page_is_a_problem`
 covers the same-slug-collision failure mode this rule exists to avoid in the first place.
 
 ---
@@ -725,3 +705,38 @@ and `::test_skips_entries_with_empty_platform_or_url` — both regressed to a fu
 `links` array the one time `platform` briefly carried an `enum` during development; run
 the full PHPUnit suite after adding or changing any `items.properties` entry, not just a
 lint pass, since no linter in this repo checks block-attribute schemas for this hazard.
+
+## The Abilities REST route picks the HTTP method from the annotations
+
+**Symptom.** `POST …/wp-abilities/v1/abilities/<name>/run` answers 405 ("Abilities
+that perform destructive actions require DELETE method.") for an ability that works
+through MCP and through `wp_get_ability( $name )->execute()`.
+**Cause.** `WP_REST_Abilities_V1_Run_Controller` derives the method from the
+ability's annotations: `readonly` → GET, `destructive` and `idempotent` → DELETE,
+everything else → POST. GET and DELETE read the input from the `input` query
+parameter, so every value arrives as a string (`"false"`, `"12"`). The input schema
+check accepts those strings for `boolean` and `integer`, so the ability's `execute()`
+receives them unchanged.
+**Fix.** Call `pediment/convert-legacy` (destructive, idempotent) as
+`DELETE …/pediment/convert-legacy/run&input[ids][0]=12&input[dry_run]=false`, and read
+booleans in `execute()` with `rest_sanitize_boolean()`. A check such as
+`false !== $input['dry_run']` treats the string `"false"` as true and silently turns
+a real run into a dry run.
+**Catch it early.** `ConvertLegacyTest::test_string_booleans_from_the_rest_route_are_read_as_booleans`
+and `plugin/tests/e2e/convert-legacy.spec.ts`.
+
+---
+
+## Re-asserting seed data on a live site overrules the people who run it
+
+**Symptom.** A site owner renames a page, edits the header menu or picks another front
+page, and the next deploy's seed puts the old value back. On a site whose pages an AI
+agent builds through MCP, every re-seed fights the agent.
+**Cause.** Pediment 3.x treated the manifest as the owner of structure (slug, parent,
+order, menu links, reading settings, logo) and re-asserted it on every run, with content
+hashes deciding when a page body could be overwritten.
+**Fix.** 4.0 seeds bootstrap-only: a row that exists is never written again
+(`Differ`, `Applier`, `NavSeeder`, `MediaSeeder` in `plugin/src/Seeder/`), and the
+Verifier checks drift only for rows the same run created. The 3.x hash meta is deleted
+once by `Pediment\Upgrade\SeedHashCleanup`.
+**Catch it early.** `RunnerTest::test_a_reseed_never_updates_existing_content`.

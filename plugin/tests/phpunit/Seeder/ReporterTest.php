@@ -14,17 +14,16 @@ class ReporterTest extends WP_UnitTestCase {
 				new PlanItem( PlanItem::CREATE, PlanItem::KIND_MEDIA, 'hero-bg', '', 0, [ 'file' => [ 'from' => null, 'to' => 'hero-bg.jpg' ] ] ),
 				new PlanItem( PlanItem::CREATE, PlanItem::KIND_ENTRY, 'home', '', 0, [ 'slug' => [ 'from' => null, 'to' => 'home' ] ] ),
 				new PlanItem(
-					PlanItem::UPDATE,
+					PlanItem::UNCHANGED,
 					PlanItem::KIND_ENTRY,
 					'contact',
 					'',
 					9,
-					[ 'slug' => [ 'from' => 'kontakt', 'to' => 'contact' ] ],
-					[ 'content' => [ 'from' => '(database)', 'to' => '(manifest)' ] ],
-					'edited in the editor — content and title left alone'
+					[],
+					'in the trash — left alone; restore it in the editor, or empty the trash and the next seed creates it again'
 				),
 				new PlanItem( PlanItem::UNCHANGED, PlanItem::KIND_ENTRY, 'guide', '', 11 ),
-				new PlanItem( PlanItem::ORPHAN, PlanItem::KIND_ENTRY, 'legacy', '', 42, [], [], '"Legacy offer" (ID 42) — left in place' ),
+				new PlanItem( PlanItem::ORPHAN, PlanItem::KIND_ENTRY, 'legacy', '', 42, [], '"Legacy offer" (ID 42) — left in place' ),
 			]
 		);
 		return new RunResult( $plan, $applied, '/themes/acme/seed/manifest.php' );
@@ -36,13 +35,13 @@ class ReporterTest extends WP_UnitTestCase {
 		$this->assertStringContainsString( '/themes/acme/seed/manifest.php', $text );
 		$this->assertStringContainsString( 'create', $text );
 		$this->assertStringContainsString( 'hero-bg.jpg', $text );
-		$this->assertStringContainsString( 'kontakt', $text );
+		$this->assertStringContainsString( 'in the trash', $text );
 		$this->assertStringContainsString( 'unchanged', $text );
 		$this->assertStringContainsString( 'orphan', $text );
 	}
 
-	public function test_protected_fields_are_called_out_under_their_entry() {
-		$this->assertStringContainsString( 'protected: content', Reporter::text( $this->result() ) );
+	public function test_the_report_has_no_protected_wording_left() {
+		$this->assertStringNotContainsString( 'protected', Reporter::text( $this->result() ) );
 	}
 
 	public function test_a_dry_run_says_nothing_was_written() {
@@ -61,9 +60,14 @@ class ReporterTest extends WP_UnitTestCase {
 		$this->assertStringContainsString( 'home-2', $text );
 	}
 
-	public function test_summary_line_counts_writes_protections_and_orphans() {
-		// 2 creates (media hero-bg + page home) + 1 update (contact) = 3 writes.
-		$this->assertSame( '3 to write, 1 protected, 1 orphan, 1 unchanged.', Reporter::summaryLine( $this->result( true ) ) );
+	public function test_summary_line_counts_writes_orphans_and_unchanged() {
+		// 2 creates (media hero-bg + page home) = 2 writes.
+		$this->assertSame( '2 to write, 1 orphan, 2 unchanged.', Reporter::summaryLine( $this->result( true ) ) );
+	}
+
+	public function test_the_summary_keeps_the_seed_check_contract() {
+		// .github/actions/seed-check greps for this exact prefix, comma included.
+		$this->assertMatchesRegularExpression( '/(^|\s)0 to write,/', Reporter::summaryLine( new RunResult( new Plan(), false ) ) );
 	}
 
 	public function test_a_partial_apply_does_not_claim_nothing_was_applied() {
@@ -75,30 +79,6 @@ class ReporterTest extends WP_UnitTestCase {
 		$this->assertStringNotContainsString( 'nothing was applied', $text );
 	}
 
-	public function test_a_protected_item_states_its_note_once() {
-		$plan = new Plan(
-			[
-				new PlanItem(
-					PlanItem::PROTECTED,
-					PlanItem::KIND_ENTRY,
-					'about',
-					'',
-					9,
-					[],
-					[
-						'title'   => [ 'from' => 'About', 'to' => 'About us' ],
-						'content' => [ 'from' => '(database)', 'to' => '(manifest)' ],
-					],
-					'edited in the editor — content and title left alone'
-				),
-			]
-		);
-
-		$text = Reporter::text( new RunResult( $plan, false, '' ) );
-
-		$this->assertSame( 1, substr_count( $text, 'edited in the editor' ), 'one item, one explanation' );
-	}
-
 	public function test_notices_print_without_failing_the_run() {
 		$result = new RunResult( new Plan(), true, '/x/manifest.php', [], [], [], [ 'home (de): no pattern `x/home-de` is registered — the German page carries the default language content.' ] );
 
@@ -107,5 +87,15 @@ class ReporterTest extends WP_UnitTestCase {
 		$this->assertStringContainsString( 'TRANSLATIONS', $text );
 		$this->assertStringContainsString( 'x/home-de', $text );
 		$this->assertTrue( $result->ok(), 'A missing translation must not fail the run.' );
+	}
+
+	public function test_menu_notices_print_in_their_own_section_without_failing_the_run() {
+		$result = new RunResult( new Plan(), true, '/x/manifest.php', [], [], [], [], [ 'menu footer|: about is in the trash, left out' ] );
+
+		$text = Reporter::text( $result );
+
+		$this->assertStringContainsString( "MENUS\n  - menu footer|: about is in the trash, left out", $text );
+		$this->assertStringNotContainsString( 'TRANSLATIONS', $text );
+		$this->assertTrue( $result->ok() );
 	}
 }

@@ -2,7 +2,6 @@
 
 use Pediment\Language\PolylangProvider;
 use Pediment\Seeder\Applier;
-use Pediment\Seeder\ContentHash;
 use Pediment\Seeder\ContentResolver;
 use Pediment\Seeder\DesiredEntry;
 use Pediment\Seeder\DesiredState;
@@ -49,9 +48,10 @@ class ApplierTranslationTest extends PolylangTestCase {
 		);
 
 		$lang    = new PolylangProvider();
-		$desired = ( new DesiredState( $lang, new ContentResolver( new MediaMap( [] ) ) ) )->build( $manifest );
 		$reader  = new StateReader( $lang );
-		$plan    = ( new Differ() )->diff( $desired, $reader->read(), $reader->duplicates() );
+		$actual  = $reader->read();
+		$desired = ( new DesiredState( $lang, new ContentResolver( new MediaMap( [] ) ) ) )->build( $manifest, $actual );
+		$plan    = ( new Differ() )->diff( $desired, $actual, $reader->duplicates() );
 
 		return [ ( new Applier( $lang ) )->apply( $plan, $desired ), $lang ];
 	}
@@ -83,6 +83,39 @@ class ApplierTranslationTest extends PolylangTestCase {
 		[ $applied, $lang ] = $this->seed();
 
 		$this->assertSame( $applied->ids['guide|de'], $lang->translationOf( $applied->ids['guide|en'], 'de' ) );
+	}
+
+	/**
+	 * A person (or pediment-write-page with translation_of) linked their own
+	 * German page to the English one. The seeded German page is still there,
+	 * but a re-seed that creates nothing for this key leaves the group alone.
+	 */
+	public function test_a_translation_a_person_relinked_is_left_alone_by_a_reseed() {
+		[ $applied, $lang ] = $this->seed();
+		$en     = $applied->ids['guide|en'];
+		$theirs = self::factory()->post->create( [ 'post_type' => 'page', 'post_title' => 'Unsere Anleitung' ] );
+		$lang->setLanguage( $theirs, 'de' );
+		$lang->linkTranslations( [ 'en' => $en, 'de' => $theirs ] );
+		$this->assertSame( $theirs, $lang->translationOf( $en, 'de' ), 'Precondition: the person linked their own page.' );
+
+		$this->seed();
+
+		$this->assertSame( $theirs, $lang->translationOf( $en, 'de' ), 'the translation a person linked stays' );
+		$this->assertSame( $en, $lang->translationOf( $theirs, 'en' ) );
+	}
+
+	public function test_a_trashed_page_is_not_linked_into_a_new_translation_group() {
+		[ $applied ] = $this->seed();
+		$en = $applied->ids['guide|en'];
+		wp_delete_post( $applied->ids['guide|de'], true );
+		wp_trash_post( $en );
+
+		[ $second, $lang ] = $this->seed();
+
+		$de = $second->ids['guide|de'];
+		$this->assertGreaterThan( 0, $de, 'Precondition: the German guide page is created again.' );
+		$this->assertNotSame( $en, $lang->translationOf( $de, 'en' ), 'A page a person trashed is not pulled into a group.' );
+		$this->assertNotSame( $de, $lang->translationOf( $en, 'de' ) );
 	}
 
 	public function test_the_front_page_option_holds_the_default_language_page() {
@@ -134,12 +167,12 @@ class ApplierTranslationTest extends PolylangTestCase {
 		$lang->setLanguage( $postId, 'de' );
 		update_post_meta( $postId, Meta::KEY, 'about' );
 
-		$entry   = new DesiredEntry( 'about', 'en', 'page', 'About', 'about', null, '<p>x</p>', false, false, 0, [], ContentHash::compute( 'About', '<p>x</p>' ) );
+		$entry   = new DesiredEntry( 'about', 'en', 'page', 'About', 'about', null, '<p>x</p>', false, false, 0, [] );
 		$desired = [ 'about|en' => $entry ];
-		// A structure-only UPDATE on the same already-tagged post, planned
-		// under the 'en' map key — models a post whose Polylang language
-		// disagrees with what the manifest currently declares for it.
-		$item = new PlanItem( PlanItem::UPDATE, PlanItem::KIND_ENTRY, 'about', 'en', $postId, [ 'menu_order' => [ 'from' => 1, 'to' => 0 ] ] );
+		// The same already-tagged post, planned UNCHANGED under the 'en' map
+		// key — models a post whose Polylang language disagrees with what the
+		// manifest currently declares for it.
+		$item = new PlanItem( PlanItem::UNCHANGED, PlanItem::KIND_ENTRY, 'about', 'en', $postId );
 		$plan = new Plan( [ $item ], [] );
 
 		( new Applier( $lang ) )->apply( $plan, $desired );
@@ -175,9 +208,10 @@ class ApplierTranslationTest extends PolylangTestCase {
 		);
 
 		$lang    = new PolylangProvider();
-		$desired = ( new DesiredState( $lang, new ContentResolver( new MediaMap( [] ) ) ) )->build( $manifest );
 		$reader  = new StateReader( $lang );
-		$plan    = ( new Differ() )->diff( $desired, $reader->read(), $reader->duplicates() );
+		$actual  = $reader->read();
+		$desired = ( new DesiredState( $lang, new ContentResolver( new MediaMap( [] ) ) ) )->build( $manifest, $actual );
+		$plan    = ( new Differ() )->diff( $desired, $actual, $reader->duplicates() );
 
 		$fail = static function ( $maybe_empty, $postarr ) {
 			return ( $postarr['post_name'] ?? '' ) === 'home-fr' ? true : $maybe_empty;
@@ -254,9 +288,10 @@ class ApplierTranslationTest extends PolylangTestCase {
 			);
 
 			$lang    = new PolylangProvider();
-			$desired = ( new DesiredState( $lang, new ContentResolver( new MediaMap( [] ) ) ) )->build( $manifest );
 			$reader  = new StateReader( $lang );
-			$plan    = ( new Differ() )->diff( $desired, $reader->read(), $reader->duplicates() );
+			$actual  = $reader->read();
+			$desired = ( new DesiredState( $lang, new ContentResolver( new MediaMap( [] ) ) ) )->build( $manifest, $actual );
+			$plan    = ( new Differ() )->diff( $desired, $actual, $reader->duplicates() );
 			$applied = ( new Applier( $lang ) )->apply( $plan, $desired );
 		} finally {
 			remove_filter( 'wp_unique_post_slug', $sharePostSlug, 10 );
@@ -268,5 +303,58 @@ class ApplierTranslationTest extends PolylangTestCase {
 			'The German home shares the English home\'s slug under Pro; the seed must re-assert it once the post has a language, not leave WordPress\'s uniquified "home-2".'
 		);
 		$this->assertSame( [], $applied->errors, 'A shared slug that lands is not a collision to report.' );
+	}
+
+	/**
+	 * A manifest that adds a language later creates that language's pages and
+	 * links them into the existing groups — and touches nothing else. The
+	 * English page a person rewrote stays exactly as they left it.
+	 */
+	public function test_a_language_added_later_creates_only_its_own_pages() {
+		$run = static function ( array $languages, string $homeContent = '<p>home</p>' ): array {
+			$manifest = Manifest::fromArray(
+				[
+					'languages' => $languages,
+					'pages'     => [ 'home' => [ 'title' => 'Home', 'content' => $homeContent ] ],
+				],
+				get_stylesheet_directory()
+			);
+			$lang     = new PolylangProvider();
+			$reader   = new StateReader( $lang );
+			$actual   = $reader->read();
+			$desired  = ( new DesiredState( $lang, new ContentResolver( new MediaMap( [] ) ) ) )->build( $manifest, $actual );
+			$plan     = ( new Differ() )->diff( $desired, $actual, $reader->duplicates() );
+
+			return [ $plan, ( new Applier( $lang ) )->apply( $plan, $desired ), $lang ];
+		};
+		$two = [
+			'en' => [ 'name' => 'English', 'locale' => 'en_US', 'default' => true ],
+			'de' => [ 'name' => 'Deutsch', 'locale' => 'de_DE' ],
+		];
+
+		[ , $first ] = $run( $two );
+		$en          = $first->ids['home|en'];
+		$de          = $first->ids['home|de'];
+		wp_update_post( [ 'ID' => $en, 'post_content' => '<p>edited live</p>' ] );
+		$edited = get_post( $en )->post_content;
+
+		$fr                    = PLL()->model->add_language( [ 'slug' => 'fr', 'name' => 'Français', 'locale' => 'fr_FR', 'flag' => 'fr', 'rtl' => 0, 'term_group' => 2 ] );
+		$this->addedLanguageId = $fr instanceof WP_Error ? null : (int) $fr->term_id;
+		PLL()->model->clean_languages_cache();
+
+		// The manifest moved on for the existing home page too. A seeder that
+		// updates would overwrite the live edit with this copy.
+		[ $plan, $second, $lang ] = $run( $two + [ 'fr' => [ 'name' => 'Français', 'locale' => 'fr_FR' ] ], '<p>home from git</p>' );
+
+		$actions = [];
+		foreach ( $plan->items() as $item ) {
+			$actions[ $item->mapKey() ] = $item->action;
+		}
+		ksort( $actions );
+		$this->assertSame( [ 'home|de' => PlanItem::UNCHANGED, 'home|en' => PlanItem::UNCHANGED, 'home|fr' => PlanItem::CREATE ], $actions );
+		$this->assertSame( [], $second->errors );
+		$this->assertSame( $edited, get_post( $en )->post_content, 'the page a person rewrote is untouched' );
+		$this->assertSame( $second->ids['home|fr'], $lang->translationOf( $en, 'fr' ), 'the new language joins the existing group' );
+		$this->assertSame( $de, $lang->translationOf( $en, 'de' ) );
 	}
 }

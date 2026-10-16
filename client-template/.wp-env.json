@@ -2,7 +2,8 @@
   "core": "WordPress/WordPress#6.9",
   "phpVersion": "8.1",
   "plugins": [
-    "https://github.com/Bergert-Digital/pediment/releases/download/v__PEDIMENT_PLUGIN_VERSION__/pediment-plugin.zip"
+    "https://github.com/Bergert-Digital/pediment/releases/download/v__PEDIMENT_PLUGIN_VERSION__/pediment-plugin.zip",
+    "https://downloads.wordpress.org/plugin/mcp-adapter.0.7.0.zip"
   ],
   "config": {
     "WP_DEBUG": true,

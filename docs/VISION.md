@@ -3,7 +3,7 @@
 ## What this is
 
 Pediment is the shared WordPress site engine. The plugin supplies 24 blocks,
-templates, patterns, default design tokens, forms, assets, and AI authoring.
+templates, patterns, default design tokens, forms, assets, and seeding.
 Every client site pairs it with a standalone client theme that owns that site's
 brand and customizations.
 
@@ -19,16 +19,15 @@ plugin must never require a client theme to patch its source.
 
 1. **Agency developers** need a predictable standalone theme starting point,
    token overrides, and a reliable block contract.
-2. **Site editors** need solid blocks, sensible defaults, and optional AI help
-   to compose or refine content in Gutenberg.
+2. **Site editors** need solid blocks and sensible defaults in Gutenberg.
 
 ## Principles
 
 - **Design tokens are law.** `plugin/tokens/theme.json` is the default token
   layer; client `theme.json` entries override matching preset slugs.
 - **Server-side rendering.** Every shared block renders through `render.php`.
-- **AI-consumable by construction.** Complete `block.json` metadata lets the
-  editor discover the same registered blocks that sites use.
+- **AI-consumable by construction.** Complete `block.json` metadata lets AI
+  agents discover the same registered blocks that sites use.
 - **Independent client themes.** Themes use ordinary WordPress extension points
   without inheriting from or modifying Pediment.
 - **Quality is non-negotiable.** PHPUnit and the merged Playwright suite gate

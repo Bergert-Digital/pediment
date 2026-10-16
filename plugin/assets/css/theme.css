@@ -47,6 +47,13 @@
   color: #fff;
 }
 .is-style-band-navy :where(h1,h2,h3,h4){ color:#fff; }
+/* Stat style on the navy band: the accent figure is too dark here, so figure and
+   label read white and the sub-text takes the on-dark text colour (as the legacy
+   stat block did). */
+.is-style-band-navy .is-style-stat > :first-child,
+.is-style-band-navy .is-style-stat > :nth-child(2){ color: var(--wp--preset--color--surface); }
+.is-style-band-navy .is-style-stat > :nth-child(3),
+.is-style-band-navy .is-style-stat > .pediment-stat-context{ color: var(--wp--custom--color--text-on-dark); }
 
 /* Site shell: header → main → footer should butt against each other. WP's
    global block-gap (--wp--preset--spacing--40) otherwise inserts a visible

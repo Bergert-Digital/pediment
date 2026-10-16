@@ -13,6 +13,7 @@ final class RunResult {
 	 * @param string[]          $problems
 	 * @param array<string,int> $ids
 	 * @param string[]          $notices
+	 * @param string[]          $menuNotices Entries left out of a menu created in this run.
 	 */
 	public function __construct(
 		public readonly Plan $plan,
@@ -21,7 +22,8 @@ final class RunResult {
 		public readonly array $errors = [],
 		public readonly array $problems = [],
 		public readonly array $ids = [],
-		public readonly array $notices = []
+		public readonly array $notices = [],
+		public readonly array $menuNotices = []
 	) {}
 
 	public function ok(): bool {

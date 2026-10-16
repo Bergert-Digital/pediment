@@ -15,12 +15,12 @@ class FormsTabsTest extends WP_UnitTestCase {
 	}
 
 	public function test_forms_registers_three_tabs_in_order() {
-		// Since the forms engine, the seeding tab, and the AI settings tab now
-		// ship in the same plugin, admin_menu also mounts 'seed' (priority 20,
-		// so it sorts between 'general' and 'destinations') and 'ai' via
-		// Pediment\Settings\Page::addMenu() (priority 100, so it sorts last).
+		// The seeding tab ships in the same plugin, so admin_menu also mounts
+		// 'seed' (priority 20, between 'general' and 'destinations').
 		$tabs = pediment_settings_get_tabs();
-		$this->assertSame( array( 'general', 'seed', 'destinations', 'secrets', 'ai' ), array_keys( $tabs ) );
+		// 'design' comes from Pediment\Design\AdminTab (priority 40), 'convert'
+		// from Pediment\Convert\AdminTab (priority 50).
+		$this->assertSame( array( 'general', 'seed', 'destinations', 'secrets', 'design', 'convert' ), array_keys( $tabs ) );
 	}
 
 	public function test_forms_tab_labels() {

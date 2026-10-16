@@ -13,15 +13,14 @@ class SeedCommandTest extends \WP_UnitTestCase {
 		$plan = new Plan(
 			[
 				new PlanItem(
-					PlanItem::UPDATE,
+					PlanItem::CREATE,
 					PlanItem::KIND_ENTRY,
 					'about',
 					'',
-					9,
-					[ 'slug' => [ 'from' => 'ueber-uns', 'to' => 'about' ] ],
-					[ 'title' => [ 'from' => 'About', 'to' => 'About us' ] ],
-					'edited in the editor'
+					0,
+					[ 'slug' => [ 'from' => null, 'to' => 'about' ] ]
 				),
+				new PlanItem( PlanItem::UNCHANGED, PlanItem::KIND_ENTRY, 'home', '', 7 ),
 			]
 		);
 		return new RunResult( $plan, false, '/themes/acme/seed/manifest.php' );
@@ -40,11 +39,13 @@ class SeedCommandTest extends \WP_UnitTestCase {
 		$this->assertArrayHasKey( 'ok', $data );
 		$this->assertArrayHasKey( 'counts', $data );
 		$this->assertArrayHasKey( 'items', $data );
+		$this->assertArrayNotHasKey( 'protected', $data['counts'] );
 
-		$this->assertCount( 1, $data['items'] );
+		$this->assertCount( 2, $data['items'] );
 		$item = $data['items'][0];
-		$this->assertSame( PlanItem::UPDATE, $item['action'] );
+		$this->assertSame( PlanItem::CREATE, $item['action'] );
 		$this->assertSame( 'about', $item['key'] );
-		$this->assertSame( [ 'title' ], $item['protected'] );
+		$this->assertSame( [ 'slug' ], $item['changes'] );
+		$this->assertArrayNotHasKey( 'protected', $item );
 	}
 }

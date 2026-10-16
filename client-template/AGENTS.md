@@ -5,11 +5,13 @@ A standalone Pediment client theme. The engine lives in the Pediment plugin, not
 ## Hard rules
 
 - **Never write pages with `wp post create` or `wp post update`.** The seeder owns identity
-  (`_pediment_seed_key`) and the content-arbitration hashes; a hand-written post bypasses both.
-- Structure goes in `seed/manifest.php`; content goes in `patterns/*.php`. Run
-  `npm run seed:plan` before `npm run seed`, always.
-- To capture an edit made in the block editor, run `npm run adopt -- <key>` — never copy markup
-  out of the database by hand.
+  (`_pediment_seed_key`); a hand-written post has none, and the next seed creates a duplicate.
+- A new page goes in `seed/manifest.php` plus `patterns/<key>.php`; `npm run seed` creates it.
+  Run `npm run seed:plan` before `npm run seed`, always. A seed only adds what is missing and
+  never changes a page, menu, translation or setting a person made.
+- Change a page that exists with the `pediment-write-page` MCP tool (validate the markup with
+  client-kit's `validate-blocks` first) or in the block editor. To make new environments match
+  it, run `npm run adopt -- <key>` — never copy markup out of the database by hand.
 - Never edit plugin files to get client-specific behaviour. Use theme.json, patterns, template
   overrides in `templates/`, and the plugin's filters.
 - Colours come from `theme.json` presets. Use `var(--wp--preset--color--…)`, never literals.

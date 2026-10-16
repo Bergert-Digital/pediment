@@ -37,11 +37,11 @@ test.describe( 'multilingual seeding', () => {
 		expect( wp( `pediment seed --dry-run` ) ).toContain( '0 to write' );
 	} );
 
-	test( 'the untranslated posts are reported, not failed', () => {
-		const plan = wp( `pediment seed --dry-run` );
-
-		expect( plan ).toContain( 'TRANSLATIONS' );
-		expect( plan ).toContain( 'sample-insight-one' );
+	test( 'a re-seed does not re-report translations of pages that exist', () => {
+		// Translation notices belong to the run that creates a page; the
+		// seeder never writes that page again. PHPUnit pins the notice on
+		// creation (DesiredStateLanguageTest).
+		expect( wp( `pediment seed --dry-run` ) ).not.toContain( 'TRANSLATIONS' );
 	} );
 
 	test( 'the German page is reachable at its own slug', async ( { page } ) => {
