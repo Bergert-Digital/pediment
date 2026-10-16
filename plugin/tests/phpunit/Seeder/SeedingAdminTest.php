@@ -155,7 +155,10 @@ class SeedingAdminTest extends WP_UnitTestCase {
 		pediment_seed_admin_render_tab();
 		$html = (string) ob_get_clean();
 
-		$this->assertStringContainsString( 'never changes anything that already exists', $html );
+		$this->assertStringContainsString( 'missing language tags', $html );
+		$this->assertStringContainsString( 'empty reading settings', $html );
+		$this->assertStringContainsString( 'never changes anything a person made', $html );
+		$this->assertStringNotContainsString( 'never changes anything that already exists', $html, 'language tags and empty settings are written to rows that exist' );
 		$this->assertStringNotContainsString( 'protected', $html );
 		$this->assertStringNotContainsString( 'rewrites', $html );
 	}
