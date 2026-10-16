@@ -179,6 +179,29 @@ test('port-page and start send changes to an existing page through MCP, not a re
   assert.doesNotMatch(start, /`npm run seed` re-applies them/);
 });
 
+test('port-page finds seeded pages by identity and updates every language by id', async () => {
+  const port = await readFile(path.join(kit, 'skills', 'port-page', 'SKILL.md'), 'utf8');
+  const multilingual = port.slice(port.indexOf('## Multilingual pages'));
+
+  assert.doesNotMatch(port, /--name=<key>/, 'a slug lookup misses nested keys, custom slugs and other languages');
+  assert.match(port, /wp pediment seed --dry-run --format=json/);
+  assert.match(port, /one `create` line for `<key>` per declared language/);
+  assert.match(multilingual, /pediment-write-page/);
+  assert.match(multilingual, /`id`/);
+  assert.doesNotMatch(multilingual, /`translation_of` = the default-language page ID/);
+  assert.match(multilingual, /`translation_of` only for a language the seed did not create/);
+});
+
+test('port-page says how to add the MCP Adapter to an older scaffold', async () => {
+  const port = await readFile(path.join(kit, 'skills', 'port-page', 'SKILL.md'), 'utf8');
+  const preconditions = port.slice(0, port.indexOf('## 2. Capture the source'));
+
+  assert.match(preconditions, /mcp-adapter\.0\.7\.0\.zip/);
+  assert.match(preconditions, /\.wp-env\.json/);
+  assert.match(preconditions, /npm run env:start/);
+  assert.match(preconditions, /wp plugin is-active mcp-adapter/);
+});
+
 test('visual-qa no longer recommends the legacy cta block', async () => {
   const body = await readFile(path.join(kit, 'shared', 'visual-qa.md'), 'utf8');
   assert.doesNotMatch(body, /A conversion band → `cta`/);
