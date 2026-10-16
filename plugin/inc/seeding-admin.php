@@ -132,7 +132,7 @@ function pediment_seed_admin_render_tab(): void {
 	echo '<hr />';
 	echo '<h3>' . esc_html__( 'Claim existing content', 'pediment' ) . '</h3>';
 	echo '<p>' . esc_html__(
-		'For a site whose pages were built before Pediment. Matches existing pages, posts and menus to the manifest by slug and language and gives them the identity the seeder resolves by. The claim writes nothing but that identity, and the seed after it leaves every claimed page and menu as it is, apart from a missing language tag. Run this once, and preview first.',
+		'For a site whose pages were built before Pediment. Matches existing pages, posts and menus to the manifest by slug and language, and existing media by file name, and gives them the identity the seeder resolves by. The claim writes nothing but that identity, and the seed after it leaves every claimed page, menu and image as it is, apart from a missing language tag. Run this once, and preview first.',
 		'pediment'
 	) . '</p>';
 

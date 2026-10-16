@@ -668,7 +668,8 @@ agree on, and writes exactly one meta key, `_pediment_seed_key`
 
 That's the only thing it writes. The seed after a claim finds every claimed
 row by its key and plans it `unchanged`: content, title, slug and status stay
-exactly as they were. Claimed menus are left as they are too.
+exactly as they were. Claimed menus are left as they are too, and a claimed
+attachment is never uploaded again (see [Media](#media) below).
 
 ### Precondition: configure languages before you claim
 
@@ -763,6 +764,62 @@ see a menu there and will not guess.
 > it was built for — so the safeguard is you, reading the
 > `navigation "<title>" (ID <n>)` note in `wp pediment claim --dry-run` and
 > confirming it names the menu you meant.
+
+### Media
+
+Without a media claim, the seed after a claim plans a `create` for every
+`media` entry, and applying it uploads every image a second time. So
+`Claimer::planMedia()` matches media too, by **file name**: the basename of
+the manifest `file` against the name an attachment was uploaded under.
+
+- **The names an attachment answers to.** The basename of its
+  `_wp_attached_file`, and, when WordPress stored a `-scaled` (or `-rotated`)
+  copy of a big upload, the uploaded original's name from the metadata's
+  `original_image` (the file `wp_get_original_image_path()` resolves). So
+  `seed/media/team.jpg` matches an attachment stored as
+  `2026/06/team-scaled.jpg`.
+- **How names compare.** Both sides go through `sanitize_file_name()` (what
+  an upload does to a name) and lower case: `Team Photo.JPG` matches
+  `team-photo.jpg`. The folder never counts: `2026/05/hero.jpg` and
+  `2026/06/hero.jpg` are both `hero.jpg`.
+- **Never trash, never keyed.** Only `inherit` and `private` attachments
+  are candidates, and only those that carry no `_pediment_seed_key`. A
+  media key that an attachment already carries (trash included, the same
+  lookup `MediaSeeder` uses) is absent from the plan.
+- **One attachment, one key.** An attachment claimed for one media key in a
+  run is not a candidate for a later key in the same run.
+- **No language.** Media identity has no language (`PolylangSetup` keeps
+  Polylang's `media_support` off), so each media key is planned once, with no
+  language code, also on a multilingual site.
+
+Exactly one candidate is claimed: the claim writes `_pediment_seed_key` =
+the media key, which is exactly the identity `MediaSeeder` gives an
+attachment it uploads, and nothing else (no file, title or metadata change).
+None is `no-match`, and the next seed uploads the file. Two or more is
+`ambiguous` and nothing is written: delete the duplicate in the Media
+Library, then claim again.
+
+After the claim, `wp pediment seed --dry-run` plans every claimed media key
+`unchanged`, with 0 media creates. From the fixture site, with the seed key
+removed from the logo attachment first:
+
+```
+$ wp pediment seed --dry-run
+MEDIA
+  create      logo             file=logo.svg
+1 to write, 0 orphan, 24 unchanged. Nothing was written (--dry-run).
+
+$ wp pediment claim
+MEDIA
+  claim      logo             attachment "logo.svg" (ID 5)
+1 to claim, 0 without a match, 0 ambiguous.
+Success: Claim applied.
+
+$ wp pediment seed --dry-run
+MEDIA
+  unchanged   logo
+0 to write, 0 orphan, 25 unchanged. Nothing was written (--dry-run).
+```
 
 ### Re-running claim
 

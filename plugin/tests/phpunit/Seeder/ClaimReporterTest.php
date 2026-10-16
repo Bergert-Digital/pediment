@@ -60,4 +60,20 @@ class ClaimReporterTest extends WP_UnitTestCase {
 		$this->assertStringContainsString( 'ERRORS', $text );
 		$this->assertStringContainsString( 'post 12 already carries a seed key', $text );
 	}
+
+	public function test_media_items_are_reported_under_their_own_heading() {
+		$plan = new Plan(
+			[
+				new PlanItem( PlanItem::CLAIM, PlanItem::KIND_MEDIA, 'hero', '', 21, [ 'seed_key' => [ 'from' => null, 'to' => 'hero' ] ], 'attachment "hero.jpg" (ID 21)' ),
+				new PlanItem( PlanItem::AMBIGUOUS, PlanItem::KIND_MEDIA, 'logo', '', 0, [], '2 unclaimed attachments share the file name "logo.svg" (IDs 4, 9)' ),
+			]
+		);
+
+		$text = Reporter::claimText( new ClaimResult( $plan, false, '/srv/theme/seed/manifest.php' ) );
+
+		$this->assertStringContainsString( "MEDIA\n", $text );
+		$this->assertMatchesRegularExpression( '/^  claim\s+hero\s+attachment "hero.jpg" \(ID 21\)$/m', $text );
+		$this->assertStringContainsString( 'IDs 4, 9', $text );
+		$this->assertStringContainsString( '1 to claim, 0 without a match, 1 ambiguous.', $text );
+	}
 }
