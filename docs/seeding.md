@@ -474,8 +474,11 @@ section (next to `TRANSLATIONS`, in the text report of a real run):
 
 ```
 MENUS
-  - menu primary: contact is in the trash, left out
+  - menu primary|de: contact is in the trash, left out
 ```
+
+Each line names the menu as `key|language`, so a five-language site can tell
+its copies apart (on a monolingual site the language is empty: `primary|`).
 
 It is a notice, not an error: the run stays clean, and the menu is edited in
 the Site Editor like any other. A page that has no post at all yet (its own

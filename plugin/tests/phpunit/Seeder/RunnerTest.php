@@ -120,8 +120,8 @@ class RunnerTest extends WP_UnitTestCase {
 		$second = ( new Runner() )->run();
 
 		$this->assertTrue( $second->ok(), implode( "\n", array_merge( $second->errors, $second->problems ) ) );
-		$this->assertSame( [ 'menu footer: about is in the trash, left out' ], $second->menuNotices );
-		$this->assertStringContainsString( "MENUS\n  - menu footer: about is in the trash, left out", \Pediment\Seeder\Reporter::text( $second ) );
+		$this->assertSame( [ 'menu footer|: about is in the trash, left out' ], $second->menuNotices );
+		$this->assertStringContainsString( "MENUS\n  - menu footer|: about is in the trash, left out", \Pediment\Seeder\Reporter::text( $second ) );
 		$footer = get_posts( [ 'post_type' => 'wp_navigation', 'meta_key' => Meta::KEY, 'meta_value' => 'footer', 'posts_per_page' => 1 ] )[0];
 		$this->assertStringNotContainsString( '"id":' . $first->ids['about|'], $footer->post_content );
 	}

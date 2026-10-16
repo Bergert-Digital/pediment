@@ -120,9 +120,10 @@ final class NavSeeder {
 				// A page a person put in the trash is not a link for a new
 				// menu. It is not unresolved either: the seeder knows the
 				// post, and trashing it was a decision. The item is left out
-				// and the run says so.
+				// and the run says so, per language (key|language, like the
+				// Verifier), or five languages print five identical lines.
 				foreach ( $this->trashedEntries( $spec, $item->language, $entryIds ) as $trashedKey ) {
-					$this->notices[] = sprintf( 'menu %s: %s is in the trash, left out', $spec->key, $trashedKey );
+					$this->notices[] = sprintf( 'menu %s: %s is in the trash, left out', $item->mapKey(), $trashedKey );
 				}
 
 				$postId = wp_insert_post(

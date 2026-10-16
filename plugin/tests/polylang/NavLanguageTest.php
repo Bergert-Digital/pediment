@@ -142,6 +142,17 @@ class NavLanguageTest extends PolylangTestCase {
 		$this->assertSame( $first['primary|de'], $lang->translationOf( $first['primary|en'], 'de' ) );
 	}
 
+	public function test_a_menu_notice_names_the_language() {
+		$manifest = $this->manifest();
+		$seeder   = new NavSeeder( new PolylangProvider() );
+		$entryIds = [ 'about|en' => $this->page( 'en' ), 'about|de' => $this->page( 'de' ) ];
+		wp_trash_post( $entryIds['about|de'] );
+
+		$seeder->apply( $seeder->plan( $manifest ), $manifest, $entryIds );
+
+		$this->assertSame( [ 'menu primary|de: about is in the trash, left out' ], $seeder->notices() );
+	}
+
 	/**
 	 * NavSeeder::linkTranslationGroups() has the same partial-map guard as
 	 * Applier's, fixed for the same reason, in its own method by explicit

@@ -353,7 +353,7 @@ class NavSeederTest extends WP_UnitTestCase {
 		$content = get_post( $navIds['primary|'] )->post_content;
 		$this->assertStringContainsString( '"id":' . $ids['home|'], $content );
 		$this->assertStringNotContainsString( '"id":' . $ids['about|'], $content );
-		$this->assertSame( [ 'menu primary: about is in the trash, left out' ], $seeder->notices() );
+		$this->assertSame( [ 'menu primary|: about is in the trash, left out' ], $seeder->notices() );
 		$this->assertSame( [], $seeder->errors(), 'a trashed page is left out, not unresolved' );
 		$this->assertSame( [ 'primary|' ], $seeder->created() );
 	}
@@ -372,7 +372,7 @@ class NavSeederTest extends WP_UnitTestCase {
 		$content = get_post( $navIds['primary|'] )->post_content;
 		$this->assertStringContainsString( '"id":' . $ids['guide|'], $content );
 		$this->assertStringNotContainsString( '"id":' . $ids['faq|'], $content );
-		$this->assertSame( [ 'menu primary: faq is in the trash, left out' ], $seeder->notices() );
+		$this->assertSame( [ 'menu primary|: faq is in the trash, left out' ], $seeder->notices() );
 	}
 
 	public function test_a_trashed_submenu_parent_takes_its_children_with_it() {
@@ -387,7 +387,7 @@ class NavSeederTest extends WP_UnitTestCase {
 		$navIds = $seeder->apply( $seeder->plan( $m ), $m, $ids );
 
 		$this->assertStringNotContainsString( 'navigation-submenu', get_post( $navIds['primary|'] )->post_content );
-		$this->assertSame( [ 'menu primary: guide is in the trash, left out' ], $seeder->notices() );
+		$this->assertSame( [ 'menu primary|: guide is in the trash, left out' ], $seeder->notices() );
 	}
 
 	public function test_a_trashed_mega_link_is_left_out_and_reported() {
@@ -404,7 +404,7 @@ class NavSeederTest extends WP_UnitTestCase {
 		$content = get_post( $navIds['primary|'] )->post_content;
 		$this->assertStringNotContainsString( 'Who we are', $content );
 		$this->assertStringContainsString( '"label":"Savings"', $content );
-		$this->assertSame( [ 'menu primary: about is in the trash, left out' ], $seeder->notices() );
+		$this->assertSame( [ 'menu primary|: about is in the trash, left out' ], $seeder->notices() );
 	}
 
 	public function test_the_notices_start_over_on_every_apply() {
