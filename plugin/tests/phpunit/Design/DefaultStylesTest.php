@@ -33,6 +33,7 @@ class DefaultStylesTest extends WP_UnitTestCase {
 		$css = $this->render_variation_css( '<!-- wp:group {"className":"is-style-card"} --><div class="wp-block-group is-style-card"><p>x</p></div><!-- /wp:group -->' );
 		$this->assertStringContainsString( 'is-style-card--', $css );
 		$this->assertStringContainsString( 'border-radius: var(--wp--custom--radius--md)', $css );
+		$this->assertMatchesRegularExpression( '/\.wp-block-group\.is-style-card--\d+\)\{text-align:center\}/', $css, 'the card centres its content; converted cards carry no alignment' );
 	}
 
 	public function test_converter_styles_are_registered_for_their_blocks(): void {

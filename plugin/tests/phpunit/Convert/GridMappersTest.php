@@ -108,6 +108,17 @@ class GridMappersTest extends WP_UnitTestCase {
 		$this->assertStringContainsString( '<!-- wp:pediment/icon ' . wp_json_encode( $first['attrs'] ) . ' /-->', $result->markup );
 	}
 
+	/**
+	 * The card style centres the card; its children carry no alignment, so a
+	 * client theme's card style can align the whole card.
+	 */
+	public function test_card_children_carry_no_alignment(): void {
+		$markup = $this->convert( '<!-- wp:pediment/feature {"imageId":55,"title":"T","text":"X","linkText":"Go","linkUrl":"/go"} /--><!-- wp:pediment/feature {"title":"T","text":"X"} /-->' )->markup;
+		foreach ( array( 'textAlign', '"align"', 'has-text-align-', 'aligncenter' ) as $needle ) {
+			$this->assertStringNotContainsString( $needle, $markup );
+		}
+	}
+
 	public function test_icon_outside_the_set_is_kept_and_noted(): void {
 		$known   = $this->convert( '<!-- wp:pediment/feature {"icon":"cube","title":"T"} /-->' );
 		$unknown = $this->convert( '<!-- wp:pediment/feature {"icon":"no-such-icon","title":"T"} /-->' );

@@ -21,7 +21,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * Grid (at most 3 columns, 2 for exactly four cards, one on phones) of group.is-style-card
  * → image or pediment/icon in the tile style, h3, text, link paragraph. An
- * image wins over the icon, as in the legacy render.
+ * image wins over the icon, as in the legacy render. The card style centres
+ * the content, so a client theme's card style can align it another way.
  */
 final class FeatureGridMapper implements Mapper {
 
@@ -78,7 +79,6 @@ final class FeatureGridMapper implements Mapper {
 					'scale'           => 'cover',
 					'sizeSlug'        => 'medium',
 					'linkDestination' => 'none',
-					'align'           => 'center',
 					'style'           => array( 'border' => array( 'radius' => 'var(--wp--custom--radius--md)' ) ),
 				),
 				$url,
@@ -94,15 +94,15 @@ final class FeatureGridMapper implements Mapper {
 			}
 		}
 		if ( '' !== $title ) {
-			$inner[] = Build::heading( 3, $title, array( 'textAlign' => 'center' ) );
+			$inner[] = Build::heading( 3, $title );
 		}
 		if ( '' !== $text ) {
-			$inner[] = Build::paragraph( $text, array( 'align' => 'center' ) );
+			$inner[] = Build::paragraph( $text );
 		}
 		$link_text = Attrs::rich( $attrs, 'linkText' );
 		$link_url  = Attrs::url( $attrs, 'linkUrl' );
 		if ( '' !== $link_text && '' !== $link_url ) {
-			$inner[] = Build::paragraph( "<a href=\"{$link_url}\">{$link_text}</a>", array( 'align' => 'center' ) );
+			$inner[] = Build::paragraph( "<a href=\"{$link_url}\">{$link_text}</a>" );
 		}
 
 		$group = array(
