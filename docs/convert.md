@@ -18,7 +18,7 @@ default styles (see [design-layer.md](design-layer.md)):
 | `hero` media-bg | `media-card` cover (the image, primary overlay) → h1, `lead`, `pill` button |
 | `hero` stat-card | columns: copy, `pill` + `pill-ghost` buttons, ticks list · `media-card` cover with a `card` group that holds a `stat` group and the metrics |
 | `cta` | `panel` section group → h2, paragraph, `pill` + `pill-ghost` buttons |
-| `feature-grid` + `feature` | grid group (up to 3 columns, 2 for four cards) of `card` groups → image or `tile` icon (`pediment/icon`), h3, text, link |
+| `feature-grid` + `feature` | grid group (up to 3 columns, 2 for four cards) of `card` groups → image or `tile` icon (`pediment/icon`), h3, text, link paragraph with the plain class `pediment-card-link` |
 | `stat-grid` + `stat` | grid group (one column per stat, up to 4) of `stat` groups → value, label, context (only the parts that are set) |
 | `steps` + `step` | `steps` grid group (up to 3 columns, 2 for four steps; numbers the steps) of groups → h3, text |
 | `media-text` | `media-row` media & text block; inner blocks move unchanged |
@@ -35,6 +35,10 @@ Grids collapse on phones. The converter writes `minimumColumnWidth` as
 minimum when `columnCount` is set, and the grid would never collapse. On wide
 screens the grid holds N columns; below about N times the floor it drops to
 fewer columns, down to one.
+
+The plain classes `pediment-section-head` and `pediment-card-link` let a
+client theme select a converted section head and a card's link paragraph
+without a structural selector such as `> p:last-child`.
 
 The `card` style centres the card's content. The converter writes no
 alignment on the card's heading, paragraphs or image, so a client theme's
