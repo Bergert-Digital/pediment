@@ -9,6 +9,6 @@
 		"border": { "radius": "var(--wp--custom--radius--md)", "width": "1px", "style": "solid", "color": "var:preset|color|border" },
 		"shadow": "var:preset|shadow|subtle",
 		"spacing": { "padding": { "top": "var:preset|spacing|50", "right": "var:preset|spacing|50", "bottom": "var:preset|spacing|50", "left": "var:preset|spacing|50" } },
-		"css": "text-align:center"
+		"typography": { "textAlign": "center" }
 	}
 }

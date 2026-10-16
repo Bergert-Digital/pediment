@@ -33,7 +33,25 @@ class DefaultStylesTest extends WP_UnitTestCase {
 		$css = $this->render_variation_css( '<!-- wp:group {"className":"is-style-card"} --><div class="wp-block-group is-style-card"><p>x</p></div><!-- /wp:group -->' );
 		$this->assertStringContainsString( 'is-style-card--', $css );
 		$this->assertStringContainsString( 'border-radius: var(--wp--custom--radius--md)', $css );
-		$this->assertMatchesRegularExpression( '/\.wp-block-group\.is-style-card--\d+\)\{text-align:center\}/', $css, 'the card centres its content; converted cards carry no alignment' );
+		$this->assertMatchesRegularExpression( '/\.wp-block-group\.is-style-card--\d+\)\{[^}]*text-align: center;/', $css, 'the card centres its content; converted cards carry no alignment' );
+	}
+
+	/**
+	 * The centring is a style property, not css: theme partials merge
+	 * property by property, so a theme card keeps it unless it sets
+	 * typography.textAlign, while a theme css string would replace css.
+	 */
+	public function test_card_centres_through_the_text_align_property(): void {
+		$card = null;
+		foreach ( DefaultStyles::specs() as $spec ) {
+			if ( 'card' === $spec['slug'] ) {
+				$card = $spec;
+			}
+		}
+		$this->assertNotNull( $card );
+		$this->assertSame( 'center', $card['styles']['typography']['textAlign'] );
+		$this->assertArrayNotHasKey( 'css', $card['styles'] );
+		$this->assertSame( array(), ( new StyleValidator() )->validate( $card ) );
 	}
 
 	public function test_converter_styles_are_registered_for_their_blocks(): void {
