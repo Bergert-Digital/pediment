@@ -38,7 +38,13 @@ Check all four. Stop on the first failure with the stated message.
 3. **The source URL is publicly reachable** — load it in the browser (Chrome). Stop on an error or
    a redirect loop.
 4. **The Pediment MCP server is connected** — the `pediment-get-vocabulary` tool is available. If
-   it is not, create an application password with
+   it is not, first check that the MCP Adapter plugin is active:
+   `npx wp-env run cli wp plugin is-active mcp-adapter`. A site scaffolded before the client
+   template shipped the adapter does not have it, and the MCP endpoint does not exist there. Add
+   `"https://downloads.wordpress.org/plugin/mcp-adapter.0.7.0.zip"` to the `plugins` array in
+   `.wp-env.json`, run `npm run env:start`, then
+   `npx wp-env run cli wp plugin activate mcp-adapter` (an older `env:start` does not activate it).
+   Then create an application password with
    `npx wp-env run cli wp user application-password create admin claude --porcelain`, then run
    `claude mcp add --transport http pediment "<siteurl>/?rest_route=/pediment/v1/mcp" --header "Authorization: Basic $(printf 'admin:<password>' | base64)"`
    with the site URL from check 1, and stop: "The Pediment MCP server is now configured —
@@ -122,12 +128,21 @@ The first run installs a pinned WordPress runtime (about 700 MB, once) into
 does not run WordPress 6.9. Exit code 2 means the tool itself failed (for example no network on
 the first run), not that the page is invalid.
 
-Then `npm run seed:plan` — expect exactly one `create` line for `<key>` — and `npm run seed`. Note
-the new page's ID:
+Then `npm run seed:plan` — expect one `create` line for `<key>` per declared language (one line on
+a monolingual site) — and `npm run seed`. On a multilingual site the seed creates the page in every
+declared language, with the default-language content where no translation pattern exists, and links
+them into one translation group.
+
+Note the ID of each new page. Read them from the seed's own plan, which finds pages by their seed
+key and language, never by slug (a slug lookup misses a nested key, a custom slug and every other
+language):
 
 ```bash
-npx wp-env run cli wp post list --post_type=page --name=<key> --field=ID
+npx wp-env run cli wp pediment seed --dry-run --format=json
 ```
+
+Each item with `"kind": "entry"` and `"key": "<key>"` is one page: `language` is its language code
+(empty on a monolingual site) and `post_id` is its ID.
 
 ---
 
@@ -175,9 +190,16 @@ Commit `seed/manifest.php` and `patterns/<key>.php` together.
 
 ## Multilingual pages
 
-Port the default language first. For each additional language, write the translation with
-`pediment-write-page` (`language` = the code, `translation_of` = the default-language page ID) or
-translate it in the editor, then run `npm run adopt -- <key> --language=<code>` — note the single
+Port the default language first. The seed in step 5 already created the page in every other
+declared language and linked it into the translation group. Never create a second page for one of
+these languages: the seeder does not know it, and the group then holds the wrong page.
+
+For each additional language, take that language's `post_id` from the step 5 JSON. Write the
+translation with `pediment-write-page` (`id` = that page ID, `title`, `markup`), or translate that
+page in the editor. Use `language` and `translation_of` only for a language the seed did not create
+(the step 5 JSON has no item for it); that creates a new page without a seed key, so tell the user.
+
+Then run `npm run adopt -- <key> --language=<code>` — note the single
 `--`; npm forwards everything after it verbatim, and a second `--` would arrive at
 `wp pediment adopt` as a literal extra positional argument, which WP-CLI rejects with "Too many
 positional arguments: --". This writes
