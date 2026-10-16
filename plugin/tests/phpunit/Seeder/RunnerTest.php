@@ -364,4 +364,43 @@ class RunnerTest extends WP_UnitTestCase {
 		$this->assertFalse( $result->ok() );
 		$this->assertSame( 1, substr_count( implode( "\n", $result->errors ), 'media.notes' ), 'reported once, not once per channel' );
 	}
+
+	/**
+	 * End to end: a page seeded from a registered pattern whose block JSON
+	 * holds `{{media_id:…}}` keeps every attribute of that block, and the id
+	 * is the seeded attachment's. Before the fix the page got `<!-- wp:image -->`
+	 * with no attributes at all.
+	 */
+	public function test_a_media_id_placeholder_in_pattern_block_json_survives_seeding() {
+		$dir = get_temp_dir() . 'pediment-runner-pattern-media';
+		wp_mkdir_p( $dir . '/seed/media' );
+		copy( DIR_TESTDATA . '/images/canola.jpg', $dir . '/seed/media/hero.jpg' );
+		register_block_pattern(
+			'client/placeholder-page',
+			[
+				'title'   => 'Placeholder page',
+				'content' => '<!-- wp:image {"id":{{media_id:hero}},"sizeSlug":"large","linkDestination":"none"} --><figure class="wp-block-image size-large"><img src="{{media_url:hero}}" alt="" class="wp-image-{{media_id:hero}}"/></figure><!-- /wp:image -->',
+			]
+		);
+		$this->manifest = [
+			'media' => [ 'hero' => [ 'file' => $dir . '/seed/media/hero.jpg', 'title' => 'Hero' ] ],
+			'pages' => [ 'team' => [ 'title' => 'Team', 'pattern' => 'client/placeholder-page' ] ],
+		];
+		\Pediment\Seeder\Manifest::resetCache();
+
+		$result = ( new Runner() )->run();
+		unregister_block_pattern( 'client/placeholder-page' );
+
+		$this->assertSame( [], $result->errors );
+		$hero  = get_posts( [ 'post_type' => 'attachment', 'post_status' => 'inherit', 'meta_key' => Meta::KEY, 'meta_value' => 'hero', 'fields' => 'ids' ] );
+		$pages = get_posts( [ 'post_type' => 'page', 'post_status' => 'any', 'meta_key' => Meta::KEY, 'meta_value' => 'team' ] );
+		$this->assertCount( 1, $hero );
+		$this->assertCount( 1, $pages );
+		$blocks = parse_blocks( $pages[0]->post_content );
+		$this->assertSame( 'core/image', $blocks[0]['blockName'] );
+		$this->assertSame(
+			[ 'id' => (int) $hero[0], 'sizeSlug' => 'large', 'linkDestination' => 'none' ],
+			$blocks[0]['attrs']
+		);
+	}
 }

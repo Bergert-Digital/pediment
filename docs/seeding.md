@@ -639,6 +639,12 @@ Concretely, it:
   manifest — a mismatched header would mean a seed in a new environment cannot
   find the pattern.
 
+A seed reads the pattern raw and resolves these placeholders before anything
+parses the blocks, so a placeholder inside block JSON
+(`{"id":{{media_id:hero}}}`) keeps every attribute of its block. Block Hooks
+run on the resolved markup, as core runs them for any pattern. See the trap
+in [WORDPRESS_TRAPS.md](WORDPRESS_TRAPS.md) for why the order matters.
+
 **Adopt takes the body into git, never the title.** The manifest is a
 hand-edited file and the engine does not rewrite it, so adopting a page a
 client renamed prints a warning naming both titles and leaves the manifest
