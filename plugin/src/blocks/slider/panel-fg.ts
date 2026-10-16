@@ -24,3 +24,54 @@ export function panelFg( bg: string ): string {
 	const lum = 0.2126 * r + 0.7152 * g + 0.0722 * b;
 	return lum < 0.55 ? light : dark;
 }
+
+/** The block.json default for `panelColor`. */
+export const DEFAULT_PANEL_COLOR = '#0A1B33';
+
+/** The slug shape render.php accepts as a palette reference. */
+const PALETTE_SLUG = /^[a-z0-9-]+$/;
+
+export type PaletteColor = { slug: string; color: string };
+
+/**
+ * Editor-side mirror of the colour resolution in render.php.
+ *
+ * `panelColor` is a palette slug or a colour. A slug in the palette resolves
+ * to that palette colour, and the text colour follows the resolved value —
+ * exactly what the front end does. The preview paints the resolved colour
+ * itself rather than the preset var: it is the value the var holds, and it
+ * spares the editor from re-deriving WordPress's kebab-cased var name.
+ *
+ * @param value   The `panelColor` attribute.
+ * @param palette Merged palette, highest origin first (custom, theme, default).
+ * @return Panel background, text colour, and the value the colour picker shows.
+ */
+export function panelColors(
+	value: string,
+	palette: PaletteColor[]
+): { bg: string; fg: string; picker: string } {
+	const entry = PALETTE_SLUG.test( value ?? '' )
+		? palette.find( ( c ) => c.slug === value )
+		: undefined;
+	const color = entry ? entry.color : value;
+	return { bg: color, fg: panelFg( color ), picker: color };
+}
+
+/**
+ * What to store when the user picks a colour: the palette slug for a
+ * palette colour, so the panel follows the palette; the colour itself for a
+ * custom one. Same lookup as `getColorObjectByColorValue()`.
+ *
+ * @param picked  The colour the picker returned; undefined when cleared.
+ * @param palette Merged palette, highest origin first (custom, theme, default).
+ */
+export function storedPanelColor(
+	picked: string | undefined,
+	palette: PaletteColor[]
+): string {
+	if ( ! picked ) {
+		return DEFAULT_PANEL_COLOR;
+	}
+	const entry = palette.find( ( c ) => c.color === picked );
+	return entry && PALETTE_SLUG.test( entry.slug ) ? entry.slug : picked;
+}

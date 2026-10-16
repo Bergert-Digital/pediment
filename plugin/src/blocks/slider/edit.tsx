@@ -5,6 +5,7 @@ import {
 	PanelColorSettings,
 	MediaUpload,
 	MediaUploadCheck,
+	useSettings,
 } from '@wordpress/block-editor';
 import {
 	PanelBody,
@@ -15,7 +16,12 @@ import {
 } from '@wordpress/components';
 import { useSelect } from '@wordpress/data';
 import { useState } from '@wordpress/element';
-import { panelFg } from './panel-fg';
+import {
+	DEFAULT_PANEL_COLOR,
+	panelColors,
+	storedPanelColor,
+	type PaletteColor,
+} from './panel-fg';
 
 type Slide = {
 	mediaId: number;
@@ -97,7 +103,24 @@ export default function Edit( {
 	setAttributes: ( a: Partial< Attrs > ) => void;
 } ) {
 	const position = attributes.mediaPosition === 'right' ? 'right' : 'left';
-	const bg = has( attributes.panelColor ) ? attributes.panelColor : '#0A1B33';
+	// Highest origin first, the order render.php resolves a slug in: a
+	// colour set in Global Styles beats the theme's, which beats core's.
+	const [ customPalette, themePalette, defaultPalette ] = useSettings(
+		'color.palette.custom',
+		'color.palette.theme',
+		'color.palette.default'
+	) as ( PaletteColor[] | undefined )[];
+	const palette: PaletteColor[] = [
+		...( customPalette ?? [] ),
+		...( themePalette ?? [] ),
+		...( defaultPalette ?? [] ),
+	];
+	const panel = panelColors(
+		has( attributes.panelColor )
+			? attributes.panelColor
+			: DEFAULT_PANEL_COLOR,
+		palette
+	);
 	const slides = attributes.slides ?? [];
 	const [ active, setActive ] = useState( 0 );
 	const [ autoOpen, setAutoOpen ] = useState( -1 );
@@ -113,8 +136,8 @@ export default function Edit( {
 	const blockProps = useBlockProps( {
 		className: `starter-slider is-editor is-media-${ position }`,
 		style: {
-			[ '--slide-panel-bg' as string ]: bg,
-			[ '--slide-panel-fg' as string ]: panelFg( bg ),
+			[ '--slide-panel-bg' as string ]: panel.bg,
+			[ '--slide-panel-fg' as string ]: panel.fg,
 		},
 	} );
 
@@ -142,9 +165,14 @@ export default function Edit( {
 					title={ __( 'Panel', 'pediment' ) }
 					colorSettings={ [
 						{
-							value: attributes.panelColor,
+							// The picker works in colours: show a stored
+							// slug as its palette colour, and store a
+							// palette pick as its slug.
+							value: panel.picker,
 							onChange: ( c?: string ) =>
-								setAttributes( { panelColor: c || '#0A1B33' } ),
+								setAttributes( {
+									panelColor: storedPanelColor( c, palette ),
+								} ),
 							label: __( 'Panel background', 'pediment' ),
 						},
 					] }

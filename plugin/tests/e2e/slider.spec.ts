@@ -1,5 +1,5 @@
 import { test, expect, type Page } from '@playwright/test';
-import { createPageWithContent, deletePageBySlug } from './utils';
+import { createPageWithContent, deletePageBySlug, login } from './utils';
 
 const SLUG = 'e2e-slider';
 
@@ -38,14 +38,70 @@ async function activeMediaPanelX(
 	return { mediaX: media.x, panelX: panel.x };
 }
 
+// A light palette slug, a dark palette slug, and a hex: the editor preview
+// must paint each panel exactly like the front end does.
+const PARITY_COLORS = [ 'accent-tint', 'primary', '#0E7490' ];
+const paritySlug = ( value: string ) =>
+	`${ SLUG }-parity-${ value.replace( /[^a-z0-9]/gi, '' ).toLowerCase() }`;
+
+type PanelLook = { bg: string; fg: string };
+
+async function frontPanelLook( page: Page, url: string ): Promise< PanelLook > {
+	await page.goto( url );
+	const panel = page
+		.locator( '.starter-slide.is-active .starter-slide__panel' )
+		.first();
+	await panel.waitFor();
+	return panel.evaluate( ( el ) => {
+		const style = getComputedStyle( el );
+		return { bg: style.backgroundColor, fg: style.color };
+	} );
+}
+
+async function editorPanelLook(
+	page: Page,
+	url: string
+): Promise< PanelLook > {
+	const postId = new URL( url, 'http://localhost' ).searchParams.get(
+		'page_id'
+	);
+	await page.goto( `/wp-admin/post.php?post=${ postId }&action=edit`, {
+		waitUntil: 'domcontentloaded',
+	} );
+	const handle = await page.waitForFunction(
+		() => {
+			const f = document.querySelector(
+				'iframe[name="editor-canvas"]'
+			) as HTMLIFrameElement | null;
+			const el = f?.contentDocument?.querySelector(
+				'.starter-slider .starter-slide__panel'
+			);
+			if ( ! el ) {
+				return null;
+			}
+			const style = f!.contentWindow!.getComputedStyle( el );
+			return { bg: style.backgroundColor, fg: style.color };
+		},
+		undefined,
+		{ timeout: 30_000 }
+	);
+	return ( await handle.jsonValue() ) as PanelLook;
+}
+
 test.describe( 'image/content slider', () => {
 	test.beforeAll( () => {
 		deletePageBySlug( SLUG );
 		deletePageBySlug( SLUG + '-color' );
+		for ( const value of [ ...PARITY_COLORS, 'picker' ] ) {
+			deletePageBySlug( paritySlug( value ) );
+		}
 	} );
 	test.afterAll( () => {
 		deletePageBySlug( SLUG );
 		deletePageBySlug( SLUG + '-color' );
+		for ( const value of [ ...PARITY_COLORS, 'picker' ] ) {
+			deletePageBySlug( paritySlug( value ) );
+		}
 	} );
 
 	test( 'enhances, shows first slide, and next/prev wrap around', async ( {
@@ -127,5 +183,87 @@ test.describe( 'image/content slider', () => {
 		// the RIGHT of the panel (regression guard — a class alone is not enough).
 		const { mediaX, panelX } = await activeMediaPanelX( page );
 		expect( mediaX ).toBeGreaterThan( panelX );
+	} );
+
+	for ( const value of PARITY_COLORS ) {
+		test( `panel colour "${ value }" looks the same in the editor and on the front end`, async ( {
+			page,
+		} ) => {
+			const url = createPageWithContent(
+				paritySlug( value ),
+				'Slider parity',
+				sliderMarkup( [ slideObj( 1 ) ], { panelColor: value } )
+			);
+
+			const front = await frontPanelLook( page, url );
+			await login( page );
+			const editor = await editorPanelLook( page, url );
+
+			// A slug that did not resolve would leave the panel transparent.
+			expect( front.bg ).not.toBe( 'rgba(0, 0, 0, 0)' );
+			expect( editor ).toEqual( front );
+		} );
+	}
+
+	test( 'picking a palette swatch stores its slug', async ( { page } ) => {
+		const url = createPageWithContent(
+			paritySlug( 'picker' ),
+			'Slider picker',
+			sliderMarkup( [ slideObj( 1 ) ] )
+		);
+		const postId = new URL( url, 'http://localhost' ).searchParams.get(
+			'page_id'
+		);
+		await login( page );
+		await page.goto( `/wp-admin/post.php?post=${ postId }&action=edit` );
+		await page.waitForFunction(
+			() =>
+				( window as any ).wp?.data
+					?.select( 'core/block-editor' )
+					?.getBlocks()
+					?.some( ( b: any ) => b.name === 'pediment/slider' ),
+			undefined,
+			{ timeout: 30_000 }
+		);
+		const panelColor = () =>
+			page.evaluate(
+				() =>
+					( window as any ).wp.data
+						.select( 'core/block-editor' )
+						.getBlocks()
+						.find( ( b: any ) => b.name === 'pediment/slider' )
+						.attributes.panelColor
+			);
+		await page.evaluate( () => {
+			const { select, dispatch } = ( window as any ).wp.data;
+			const block = select( 'core/block-editor' )
+				.getBlocks()
+				.find( ( b: any ) => b.name === 'pediment/slider' );
+			dispatch( 'core/block-editor' ).selectBlock( block.clientId );
+			dispatch( 'core/preferences' )?.set(
+				'core',
+				'welcomeGuide',
+				false
+			);
+		} );
+
+		await page.getByRole( 'tab', { name: 'Styles' } ).click();
+		await page.getByRole( 'button', { name: /Panel background/ } ).click();
+		await page
+			.getByRole( 'option', { name: /^Accent tint$/ } )
+			.or( page.getByRole( 'button', { name: /^Accent tint$/ } ) )
+			.first()
+			.click();
+		await expect.poll( panelColor ).toBe( 'accent-tint' );
+
+		// Pediment's tokens turn custom colours off (color.custom: false), so
+		// the picker offers palette swatches only; that a custom colour stays
+		// hex is covered by storedPanelColor() in panel-fg.test.ts.
+		await page
+			.getByRole( 'option', { name: /^Primary$/ } )
+			.or( page.getByRole( 'button', { name: /^Primary$/ } ) )
+			.first()
+			.click();
+		await expect.poll( panelColor ).toBe( 'primary' );
 	} );
 } );

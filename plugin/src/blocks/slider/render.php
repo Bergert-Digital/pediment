@@ -31,11 +31,53 @@ if ( ! function_exists( 'pediment_slider_panel_fg' ) ) {
 	}
 }
 
+if ( ! function_exists( 'pediment_slider_palette_color' ) ) {
+	/**
+	 * The colour a palette slug stands for, or '' when it names none.
+	 *
+	 * Looks in the merged global palette, highest origin first: a colour set
+	 * in Global Styles (custom) beats the theme's, which beats core's
+	 * (default). That is the order the preset vars cascade in, so the text
+	 * colour follows the colour the panel really shows.
+	 *
+	 * @param string $slug A palette slug, e.g. "accent".
+	 * @return string The palette colour, or '' when no palette colour has that slug.
+	 */
+	function pediment_slider_palette_color( $slug ) {
+		if ( ! is_string( $slug ) || 1 !== preg_match( '/^[a-z0-9-]+$/', $slug ) ) {
+			return '';
+		}
+		$palette = wp_get_global_settings( array( 'color', 'palette' ) );
+		if ( ! is_array( $palette ) ) {
+			return '';
+		}
+		foreach ( array( 'custom', 'theme', 'default' ) as $origin ) {
+			$entries = isset( $palette[ $origin ] ) && is_array( $palette[ $origin ] ) ? $palette[ $origin ] : array();
+			foreach ( $entries as $entry ) {
+				if ( is_array( $entry ) && isset( $entry['slug'], $entry['color'] ) && $slug === $entry['slug'] ) {
+					return (string) $entry['color'];
+				}
+			}
+		}
+		return '';
+	}
+}
+
 $position = ( isset( $attributes['mediaPosition'] ) && 'right' === $attributes['mediaPosition'] ) ? 'right' : 'left';
-$bg       = ( isset( $attributes['panelColor'] ) && '' !== $attributes['panelColor'] )
-	? (string) $attributes['panelColor']
-	: 'var(--wp--preset--color--primary)';
-$fg       = pediment_slider_panel_fg( $bg );
+$panel    = isset( $attributes['panelColor'] ) ? (string) $attributes['panelColor'] : '';
+$swatch   = pediment_slider_palette_color( $panel );
+if ( '' !== $swatch ) {
+	// A palette slug: paint the preset var, so the panel follows the palette,
+	// and pick the text colour from the colour that var holds. WordPress names
+	// the var after the kebab-cased slug (WP_Theme_JSON), so `accent2` is
+	// `--wp--preset--color--accent-2`.
+	$bg = 'var(--wp--preset--color--' . _wp_to_kebab_case( $panel ) . ')';
+	$fg = pediment_slider_panel_fg( $swatch );
+} else {
+	// A colour, an unknown slug, or nothing: as before slugs existed.
+	$bg = '' !== $panel ? $panel : 'var(--wp--preset--color--primary)';
+	$fg = pediment_slider_panel_fg( $bg );
+}
 $slides   = ( isset( $attributes['slides'] ) && is_array( $attributes['slides'] ) ) ? $attributes['slides'] : array();
 $count    = count( $slides );
 
