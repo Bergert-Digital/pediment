@@ -41,6 +41,7 @@ const isReference = ( name ) => /ids?$/i.test( name );
 const NON_PROSE = new Set( [
 	'pediment/blog-index.categorySlug', // taxonomy term slug used in a WP_Query, never shown to visitors
 	'pediment/feature.icon', // icon-library slug passed to pediment_icon(), not text
+	'pediment/icon.icon', // icon-library slug passed to pediment_icon(), not text
 	'pediment/form.destination', // id of a configured form destination (see inc/forms-destinations.php)
 	'pediment/form-field.fieldType', // closed set of field-kind tokens: text/email/tel/textarea/select/checkbox/radio/number/date
 	'pediment/form-field.fieldName', // a form-field identifier, slug-cased rather than prose (slugified into the rendered <input name>) — but render.php:29 falls back to it as the visible label when `label` is left empty, so it does surface to visitors on that path

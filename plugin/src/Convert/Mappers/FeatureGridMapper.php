@@ -20,8 +20,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 /**
  * Grid (at most 3 columns, 2 for exactly four cards, one on phones) of group.is-style-card
- * → image (when set), h3, text, link paragraph. The icon has no core
- * equivalent and is dropped (noted).
+ * → image or pediment/icon in the tile style, h3, text, link paragraph. An
+ * image wins over the icon, as in the legacy render.
  */
 final class FeatureGridMapper implements Mapper {
 
@@ -88,7 +88,10 @@ final class FeatureGridMapper implements Mapper {
 			if ( $id > 0 ) {
 				$context->note( "pediment/feature: image {$id} not found, left out" );
 			}
-			$context->note( 'pediment/feature: icon dropped, core blocks cannot show the icon set' );
+			$icon = $this->icon( $attrs, $context );
+			if ( null !== $icon ) {
+				$inner[] = $icon;
+			}
 		}
 		if ( '' !== $title ) {
 			$inner[] = Build::heading( 3, $title, array( 'textAlign' => 'center' ) );
@@ -107,5 +110,31 @@ final class FeatureGridMapper implements Mapper {
 			'layout'    => array( 'type' => 'constrained' ),
 		);
 		return Build::group( $group + $context->carry( $block, 'Feature' ), $inner );
+	}
+
+	/**
+	 * The card's icon as a pediment/icon block in the tile style; null when
+	 * the feature has an empty icon. The legacy block.json default is
+	 * trend-up, so a feature without the attribute rendered trend-up.
+	 *
+	 * @param array   $attrs   Legacy attributes.
+	 * @param Context $context Run.
+	 */
+	private function icon( array $attrs, Context $context ): ?array {
+		// The same normalisation as pediment_icon(), so the stored slug is the one it renders.
+		$slug = (string) preg_replace( '/[^a-z0-9-]/', '', strtolower( Attrs::string( $attrs, 'icon', 'trend-up' ) ) );
+		if ( '' === $slug ) {
+			return null;
+		}
+		if ( function_exists( 'pediment_icon_map' ) && ! isset( pediment_icon_map()[ $slug ] ) ) {
+			$context->note( "pediment/feature: icon {$slug} is not in the icon set, the card shows no icon" );
+		}
+		return Build::dynamic(
+			'pediment/icon',
+			array(
+				'icon'      => $slug,
+				'className' => 'is-style-tile',
+			)
+		);
 	}
 }

@@ -255,4 +255,8 @@ test( 'end to end against the real WordPress 6.9 runtime', { skip: ! e2e }, () =
 	const unknown = run( '<!-- wp:pediment/form {"id":"x"} /-->' );
 	assert.equal( unknown.code, 0 );
 	assert.deepEqual( JSON.parse( unknown.out ).notChecked, [ 'pediment/form' ] );
+
+	const icon = run( '<!-- wp:group {"className":"is-style-card","layout":{"type":"constrained"}} -->\n<div class="wp-block-group is-style-card"><!-- wp:pediment/icon {"icon":"key","className":"is-style-tile"} /-->\n\n<!-- wp:paragraph -->\n<p>x</p>\n<!-- /wp:paragraph --></div>\n<!-- /wp:group -->' );
+	assert.equal( icon.code, 0, icon.out );
+	assert.deepEqual( JSON.parse( icon.out ).notChecked, [ 'pediment/icon' ] );
 } );

@@ -121,7 +121,7 @@ with the result.
 
 - Only allowed blocks. `get-vocabulary` lists them under `allowedBlocks`:
   a set of core blocks, Pediment's functional blocks (form, slider, mega menu,
-  blog index, social links), and every block a client theme or another plugin
+  blog index, social links, icon), and every block a client theme or another plugin
   registers. `core/html` is never allowed, even if the
   `pediment_allowed_blocks` filter returns it. Text outside a block is an
   error, and so is a block comment whose JSON does not parse.

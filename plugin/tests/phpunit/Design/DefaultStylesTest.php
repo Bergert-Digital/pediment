@@ -15,7 +15,7 @@ class DefaultStylesTest extends WP_UnitTestCase {
 
 	public function test_every_default_style_passes_the_validator(): void {
 		$specs = DefaultStyles::specs();
-		$this->assertCount( 18, $specs );
+		$this->assertCount( 19, $specs );
 		foreach ( $specs as $spec ) {
 			$this->assertSame( array(), ( new StyleValidator() )->validate( $spec ), $spec['slug'] );
 		}
@@ -70,6 +70,13 @@ class DefaultStylesTest extends WP_UnitTestCase {
 		DefaultStyles::registerAll();
 		$css = $this->render_variation_css( '<!-- wp:image {"className":"is-style-framed"} --><figure class="wp-block-image is-style-framed"><img src="x.jpg" alt=""/></figure><!-- /wp:image -->' );
 		$this->assertMatchesRegularExpression( '/\.wp-block-image\.is-style-framed--\d+ img,[^{]*\)\{border-radius: var\(--wp--custom--radius--md\);box-shadow: var\(--wp--preset--shadow--medium\);/', $css );
+	}
+
+	public function test_tile_styles_the_icon_glyph_with_tokens(): void {
+		DefaultStyles::registerAll();
+		$css = $this->render_variation_css( '<!-- wp:pediment/icon {"icon":"cube","className":"is-style-tile"} /-->' );
+		$this->assertMatchesRegularExpression( '/\.wp-block-pediment-icon\.is-style-tile--\d+>\.wp-block-pediment-icon__glyph\)\{width:46px;height:46px;/', $css );
+		$this->assertStringContainsString( 'background:var(--wp--preset--color--accent-tint);color:var(--wp--preset--color--accent)', $css );
 	}
 
 	public function test_pill_text_uses_the_surface_token(): void {
