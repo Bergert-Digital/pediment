@@ -129,4 +129,64 @@ class ClaimRunnerTest extends WP_UnitTestCase {
 		$this->assertStringContainsString( 'No seed manifest found', $result->errors[0] );
 		$this->assertTrue( $result->plan->isEmpty() );
 	}
+
+	/** A manifest with the home page and one image, and a legacy attachment of that image. */
+	private function withLegacyImage(): int {
+		$dir = get_temp_dir() . 'pediment-claim-runner-media';
+		wp_mkdir_p( $dir . '/seed/media' );
+		copy( DIR_TESTDATA . '/images/canola.jpg', $dir . '/seed/media/hero.jpg' );
+
+		remove_all_filters( 'pediment_seed_manifest' );
+		add_filter(
+			'pediment_seed_manifest',
+			static fn() => [
+				'media' => [ 'hero' => [ 'file' => $dir . '/seed/media/hero.jpg', 'title' => 'Hero' ] ],
+				'pages' => [ 'home' => [ 'title' => 'Home', 'content' => '<p>hi</p>' ] ],
+			]
+		);
+		\Pediment\Seeder\Manifest::resetCache();
+
+		$id = self::factory()->attachment->create(
+			[ 'file' => '2026/06/hero.jpg', 'post_mime_type' => 'image/jpeg', 'post_title' => 'Legacy hero' ]
+		);
+		update_post_meta( $id, '_wp_attached_file', '2026/06/hero.jpg' );
+		return $id;
+	}
+
+	public function test_a_dry_run_plans_the_media_claim_but_writes_nothing() {
+		$image = $this->withLegacyImage();
+		$page  = $this->legacyHome();
+
+		$result = ( new ClaimRunner() )->run( [ 'dry_run' => true ] );
+
+		$media = $result->plan->byKind( PlanItem::KIND_MEDIA );
+		$this->assertCount( 1, $media );
+		$this->assertSame( PlanItem::CLAIM, $media[0]->action );
+		$this->assertSame( $image, $media[0]->postId );
+		$this->assertSame( '', (string) get_post_meta( $image, Meta::KEY, true ) );
+		$this->assertSame( '', (string) get_post_meta( $page, Meta::KEY, true ) );
+	}
+
+	/**
+	 * The point of claiming media: a seed after the claim must not upload the
+	 * image again. Before media claiming, this plan held one media `create`
+	 * and applying it duplicated every image on the site.
+	 */
+	public function test_after_a_claim_the_seed_plans_no_media_upload() {
+		$image = $this->withLegacyImage();
+		$this->legacyHome();
+
+		$claim = ( new ClaimRunner() )->run();
+		$this->assertSame( [], $claim->errors );
+		$this->assertSame( 'hero', get_post_meta( $image, Meta::KEY, true ) );
+
+		$seed  = ( new \Pediment\Seeder\Runner() )->run( [ 'dry_run' => true ] );
+		$media = $seed->plan->byKind( PlanItem::KIND_MEDIA );
+
+		$this->assertCount( 1, $media );
+		$this->assertSame( PlanItem::UNCHANGED, $media[0]->action );
+		$this->assertSame( $image, $media[0]->postId );
+		$this->assertSame( [], $seed->plan->byAction( PlanItem::CREATE ) );
+		$this->assertStringContainsString( '0 to write,', \Pediment\Seeder\Reporter::summaryLine( $seed ) );
+	}
 }

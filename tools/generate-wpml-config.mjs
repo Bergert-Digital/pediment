@@ -47,7 +47,7 @@ const NON_PROSE = new Set( [
 	'pediment/media-text.mediaPosition', // layout token: 'left' | 'right'
 	'pediment/section-head.maxWidth', // raw CSS length (e.g. "600px"), fed to safecss_filter_attr()
 	'pediment/slider.mediaPosition', // layout token: 'left' | 'right'
-	'pediment/slider.panelColor', // hex color value, not text
+	'pediment/slider.panelColor', // hex color value or palette slug, not text
 ] );
 
 function keysFor( name, schema, indent ) {
