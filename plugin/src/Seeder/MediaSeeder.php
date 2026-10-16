@@ -196,7 +196,8 @@ final class MediaSeeder {
 					'post_type'      => 'attachment',
 					// Trashed attachments still hold their seed key: ignoring them
 					// would re-upload and leave two attachments under one identity.
-					'post_status'    => [ 'inherit', 'trash' ],
+					// Private ones too — and Claimer::STATUSES_MEDIA claims them.
+					'post_status'    => [ 'inherit', 'private', 'trash' ],
 					'posts_per_page' => -1,
 					'no_found_rows'  => true,
 					'orderby'        => 'ID',

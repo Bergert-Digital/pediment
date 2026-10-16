@@ -782,9 +782,14 @@ the manifest `file` against the name an attachment was uploaded under.
   an upload does to a name) and lower case: `Team Photo.JPG` matches
   `team-photo.jpg`. The folder never counts: `2026/05/hero.jpg` and
   `2026/06/hero.jpg` are both `hero.jpg`.
+- **Numbered copies never match.** When WordPress uploads a file whose name
+  is taken, it stores `hero-1.jpg`, `hero-2.jpg`; those are other names and
+  never match `hero.jpg`.
 - **Never trash, never keyed.** Only `inherit` and `private` attachments
-  are candidates, and only those that carry no `_pediment_seed_key`. A
-  media key that an attachment already carries (trash included, the same
+  are candidates (`Claimer::STATUSES_MEDIA`), and only those that carry no
+  `_pediment_seed_key`. `MediaSeeder` finds a key on `inherit`, `private`
+  and `trash` attachments, so a claimed attachment is never uploaded again.
+  A media key that an attachment already carries (trash included, the same
   lookup `MediaSeeder` uses) is absent from the plan.
 - **One attachment, one key.** An attachment claimed for one media key in a
   run is not a candidate for a later key in the same run.
@@ -796,8 +801,18 @@ Exactly one candidate is claimed: the claim writes `_pediment_seed_key` =
 the media key, which is exactly the identity `MediaSeeder` gives an
 attachment it uploads, and nothing else (no file, title or metadata change).
 None is `no-match`, and the next seed uploads the file. Two or more is
-`ambiguous` and nothing is written: delete the duplicate in the Media
-Library, then claim again.
+`ambiguous` and nothing is written. The line lists each candidate's ID and
+stored file. Do not delete one at random: page content often points at an
+attachment by ID, so removing the one in use breaks live images. Find the one
+your pages use and keep it. Then make the other one stop matching, for
+example by renaming its file (WP-CLI, SFTP or a media-rename plugin; the
+Media Library itself cannot rename a file), or remove it only if nothing
+uses it. Then claim again.
+
+A `claim` line names the attachment's stored file (`_wp_attached_file`, for
+example `2026/06/team-scaled.jpg`), so you can find it in the Media Library.
+Read every MEDIA line of `wp pediment claim --dry-run` (or **Preview claim**)
+before you apply.
 
 After the claim, `wp pediment seed --dry-run` plans every claimed media key
 `unchanged`, with 0 media creates. From the fixture site, with the seed key
@@ -811,7 +826,7 @@ MEDIA
 
 $ wp pediment claim
 MEDIA
-  claim      logo             attachment "logo.svg" (ID 5)
+  claim      logo             attachment "2026/10/logo.svg" (ID 5)
 1 to claim, 0 without a match, 0 ambiguous.
 Success: Claim applied.
 

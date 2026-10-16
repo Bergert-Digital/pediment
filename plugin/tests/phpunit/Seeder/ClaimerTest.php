@@ -302,8 +302,7 @@ class ClaimerTest extends WP_UnitTestCase {
 		$this->assertSame( '', $media[0]->language );
 		$this->assertSame( $id, $media[0]->postId );
 		$this->assertTrue( $media[0]->writes() );
-		$this->assertStringContainsString( 'hero.jpg', $media[0]->note );
-		$this->assertStringContainsString( (string) $id, $media[0]->note );
+		$this->assertSame( sprintf( 'attachment "2026/06/hero.jpg" (ID %d)', $id ), $media[0]->note, 'the line names the stored file, so the owner can find it' );
 	}
 
 	/**
@@ -336,8 +335,12 @@ class ClaimerTest extends WP_UnitTestCase {
 		$this->assertSame( PlanItem::AMBIGUOUS, $media[0]->action );
 		$this->assertSame( 0, $media[0]->postId );
 		$this->assertFalse( $media[0]->writes() );
-		$this->assertStringContainsString( (string) $first, $media[0]->note );
-		$this->assertStringContainsString( (string) $second, $media[0]->note );
+		$this->assertStringContainsString( $first . ' (2026/05/hero.jpg)', $media[0]->note );
+		$this->assertStringContainsString( $second . ' (2026/06/hero.jpg)', $media[0]->note );
+		// Content often uses an attachment by ID: never advise deleting one blind.
+		$this->assertStringNotContainsString( 'delete', strtolower( $media[0]->note ) );
+		$this->assertStringContainsString( 'in use', $media[0]->note );
+		$this->assertStringContainsString( 'renaming its file', $media[0]->note );
 	}
 
 	public function test_a_media_entry_without_an_attachment_of_that_name_is_no_match() {
@@ -415,5 +418,85 @@ class ClaimerTest extends WP_UnitTestCase {
 		$this->assertSame( [], $plan->byAction( PlanItem::CREATE ) );
 		$this->assertSame( PlanItem::UNCHANGED, $plan->items()[0]->action );
 		$this->assertSame( $id, $plan->items()[0]->postId );
+	}
+
+	public function test_a_private_attachment_is_claimed_and_the_seed_leaves_it_alone() {
+		$id = $this->attachment( '2026/06/hero.jpg' );
+		wp_update_post( [ 'ID' => $id, 'post_status' => 'private' ] );
+		$manifest = $this->mediaManifest( [ 'hero' => 'hero.jpg' ] );
+		$claimer  = new Claimer( new NullProvider() );
+
+		$plan = $claimer->plan( $manifest, [] );
+		$this->assertSame( PlanItem::CLAIM, $plan->byKind( PlanItem::KIND_MEDIA )[0]->action );
+		$claimer->apply( $plan );
+
+		$seed = ( new \Pediment\Seeder\MediaSeeder() )->plan( $manifest );
+		$this->assertSame( [], $seed->byAction( PlanItem::CREATE ), 'a claimed private image must not be uploaded again' );
+		$this->assertSame( $id, $seed->items()[0]->postId );
+	}
+
+	/**
+	 * docs/seeding.md promises that names compare after sanitize_file_name()
+	 * and in lower case: what an upload does to a name.
+	 */
+	public function test_a_file_name_matches_its_sanitized_lower_case_upload() {
+		$id = $this->attachment( '2026/06/team-photo.jpg' );
+
+		$media = ( new Claimer( new NullProvider() ) )
+			->plan( $this->mediaManifest( [ 'team' => 'Team Photo.JPG' ] ), [] )
+			->byKind( PlanItem::KIND_MEDIA );
+
+		$this->assertSame( PlanItem::CLAIM, $media[0]->action );
+		$this->assertSame( $id, $media[0]->postId );
+	}
+
+	public function test_a_no_match_line_names_the_manifest_file_as_written() {
+		$media = ( new Claimer( new NullProvider() ) )
+			->plan( $this->mediaManifest( [ 'team' => 'Team Photo.JPG' ] ), [] )
+			->byKind( PlanItem::KIND_MEDIA );
+
+		$this->assertSame( PlanItem::NO_MATCH, $media[0]->action );
+		$this->assertStringContainsString( '"Team Photo.JPG"', $media[0]->note );
+	}
+
+	/** A WordPress dedupe copy (`hero-1.jpg`) is a different name and never matches. */
+	public function test_a_numbered_dedupe_copy_does_not_match() {
+		$this->attachment( '2026/06/hero-1.jpg' );
+
+		$media = ( new Claimer( new NullProvider() ) )
+			->plan( $this->mediaManifest( [ 'hero' => 'hero.jpg' ] ), [] )
+			->byKind( PlanItem::KIND_MEDIA );
+
+		$this->assertSame( PlanItem::NO_MATCH, $media[0]->action );
+	}
+
+	public function test_two_media_keys_with_the_same_file_name_claim_one_attachment_once() {
+		$id  = $this->attachment( '2026/06/hero.jpg' );
+		$dir = get_temp_dir() . 'pediment-claim-media-twice';
+		wp_mkdir_p( $dir . '/seed/media/alt' );
+		file_put_contents( $dir . '/seed/media/hero.jpg', 'x' );
+		file_put_contents( $dir . '/seed/media/alt/hero.jpg', 'x' );
+		$manifest = Manifest::fromArray(
+			[
+				'media' => [
+					'hero'     => [ 'file' => 'seed/media/hero.jpg' ],
+					'hero-alt' => [ 'file' => 'seed/media/alt/hero.jpg' ],
+				],
+			],
+			$dir
+		);
+		$claimer = new Claimer( new NullProvider() );
+
+		$plan  = $claimer->plan( $manifest, [] );
+		$items = $this->byMapKey( $plan );
+
+		$this->assertSame( PlanItem::CLAIM, $items['hero|']->action );
+		$this->assertSame( $id, $items['hero|']->postId );
+		$this->assertSame( PlanItem::NO_MATCH, $items['hero-alt|']->action );
+
+		$result = $claimer->apply( $plan );
+		$this->assertSame( [], $result['errors'] );
+		$this->assertSame( 1, $result['claimed'] );
+		$this->assertSame( [ 'hero' ], get_post_meta( $id, Meta::KEY ), 'one attachment, one key' );
 	}
 }
