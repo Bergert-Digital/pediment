@@ -206,7 +206,8 @@ final class HeroMapper implements Mapper {
 				static fn( string $part ): bool => '' !== $part
 			);
 			if ( array() !== $parts ) {
-				$metrics[] = Build::paragraph( implode( '<br>', $parts ) );
+				// Start-aligned as in the legacy render; the card style centres everything else.
+				$metrics[] = Build::paragraph( implode( '<br>', $parts ), array( 'align' => 'left' ) );
 			}
 		}
 

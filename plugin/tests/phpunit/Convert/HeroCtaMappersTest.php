@@ -62,6 +62,28 @@ class HeroCtaMappersTest extends WP_UnitTestCase {
 		$this->assertSame( array( '<p class="pediment-stat-label">happy guests</p>' ), array_map( static fn( array $block ): string => trim( $block['innerHTML'] ), $stat['innerBlocks'] ) );
 	}
 
+	/**
+	 * The card style centres its content; the legacy metrics were
+	 * start-aligned (value over label), so each metric paragraph keeps
+	 * that alignment while the stat stays centred.
+	 */
+	public function test_stat_card_metrics_stay_start_aligned(): void {
+		$columns = parse_blocks( $this->convert( '<!-- wp:pediment/hero {"variant":"stat-card","headline":"H","statValue":"98%","metrics":[{"value":"12+","label":"Metric one"},{"label":"Label only"}]} /-->' )->markup )[0];
+		$card    = $columns['innerBlocks'][1]['innerBlocks'][0]['innerBlocks'][0];
+		$this->assertSame( 'Hero stat', $card['attrs']['metadata']['name'] );
+		$stat    = $card['innerBlocks'][0];
+		$metrics = $card['innerBlocks'][1];
+		$this->assertSame( 'Metrics', $metrics['attrs']['metadata']['name'] );
+		$this->assertSame( array( '<p>98%</p>' ), array_map( static fn( array $block ): string => trim( $block['innerHTML'] ), $stat['innerBlocks'] ) );
+		$this->assertSame(
+			array( '<p class="has-text-align-left"><strong>12+</strong><br>Metric one</p>', '<p class="has-text-align-left">Label only</p>' ),
+			array_map( static fn( array $block ): string => trim( $block['innerHTML'] ), $metrics['innerBlocks'] )
+		);
+		foreach ( $metrics['innerBlocks'] as $metric ) {
+			$this->assertSame( array( 'align' => 'left' ), $metric['attrs'] );
+		}
+	}
+
 	public function test_an_empty_stat_card_hero_is_removed(): void {
 		$result = $this->convert( '<!-- wp:pediment/hero {"variant":"stat-card"} /-->' . '<!-- wp:pediment/hero {"variant":"stat-card","mediaId":4040} /-->' );
 		$this->assertSame( '', $result->markup );

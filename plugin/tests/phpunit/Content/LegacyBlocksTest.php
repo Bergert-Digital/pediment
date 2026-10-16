@@ -15,7 +15,7 @@ class LegacyBlocksTest extends WP_UnitTestCase {
 
 	public function test_functional_blocks_stay_in_the_inserter(): void {
 		$registry = WP_Block_Type_Registry::get_instance();
-		foreach ( array( 'pediment/form', 'pediment/slider', 'pediment/blog-index', 'pediment/social-links' ) as $name ) {
+		foreach ( array( 'pediment/form', 'pediment/slider', 'pediment/blog-index', 'pediment/social-links', 'pediment/icon' ) as $name ) {
 			$this->assertNotFalse( $registry->get_registered( $name )->supports['inserter'] ?? true, $name );
 		}
 	}

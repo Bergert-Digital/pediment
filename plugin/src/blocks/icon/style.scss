@@ -1,0 +1,25 @@
+// Unstyled default: a glyph in the text colour, about 1.5em, no tile.
+// Zero specificity, so a named style (for example `tile`) always wins.
+// The wrapper stays block-level and the glyph inline, so the glyph follows
+// the parent's text-align.
+:where(.wp-block-pediment-icon__glyph) {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  vertical-align: top;
+  font-size: 1.5em;
+  line-height: 1;
+  color: currentColor;
+}
+
+:where(.wp-block-pediment-icon__glyph) > svg {
+  display: block;
+  width: 1em;
+  height: 1em;
+  fill: currentColor;
+}
+
+:where(.wp-block-pediment-icon__empty) {
+  font-size: var(--wp--preset--font-size--sm);
+  color: var(--wp--preset--color--foreground-muted);
+}
