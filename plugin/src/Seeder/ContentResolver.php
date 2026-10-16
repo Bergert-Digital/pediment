@@ -56,10 +56,42 @@ final class ContentResolver {
 			if ( ! is_array( $pattern ) || ! isset( $pattern['content'] ) ) {
 				throw new ManifestError( "{$entry->key}: pattern '{$entry->pattern}' is not registered. Patterns register on `init`; check the slug and that the file lives in the theme's patterns/ directory." ); // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- exception message for the operator, not echoed output.
 			}
-			$content = (string) $pattern['content'];
+
+			// Resolve first, then run Block Hooks on valid markup — the order
+			// get_registered() cannot give us (see rawContent()).
+			return apply_block_hooks_to_content(
+				$this->rewriteMarkup( $this->rawContent( $registry, $pattern ) ),
+				$pattern,
+				'insert_hooked_blocks_and_set_ignored_hooked_blocks_metadata'
+			);
 		}
 
 		return $this->rewriteMarkup( $content );
+	}
+
+	/**
+	 * A registered pattern's markup as its author wrote it, before Block Hooks.
+	 *
+	 * Core's get_registered() and get_all_registered() (WP 6.4+) pass the content
+	 * through apply_block_hooks_to_content(), which always re-parses and
+	 * re-serializes it. A placeholder inside block JSON —
+	 * `{"id":{{media_id:hero}}}`, the form `wp pediment adopt` writes — is not
+	 * valid JSON until it is resolved, so the parser drops every attribute of
+	 * that block. The registry's own loader, get_content(), returns the raw
+	 * markup (it includes a `filePath` pattern file the way core does) but is
+	 * private; it exists, unchanged, from WP 6.5 to trunk (7.2). Should a
+	 * future core remove it, this falls back to the hooked content, and
+	 * ContentResolverTest's placeholder tests fail loudly.
+	 *
+	 * @param array<string,mixed> $pattern The get_registered() entry.
+	 */
+	private function rawContent( \WP_Block_Patterns_Registry $registry, array $pattern ): string {
+		$name = (string) ( $pattern['name'] ?? '' );
+		if ( '' !== $name && method_exists( $registry, 'get_content' ) ) {
+			$loader = new \ReflectionMethod( $registry, 'get_content' );
+			return (string) $loader->invoke( $registry, $name );
+		}
+		return (string) $pattern['content'];
 	}
 
 	/** @return string[] */

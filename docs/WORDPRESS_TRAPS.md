@@ -740,3 +740,30 @@ hashes deciding when a page body could be overwritten.
 Verifier checks drift only for rows the same run created. The 3.x hash meta is deleted
 once by `Pediment\Upgrade\SeedHashCleanup`.
 **Catch it early.** `RunnerTest::test_a_reseed_never_updates_existing_content`.
+
+---
+
+## `get_registered()` re-parses a pattern, so a placeholder in block JSON drops every attribute
+
+**Symptom.** A page seeded from a pattern whose block comment holds a media placeholder,
+`<!-- wp:pediment/media-text {"mediaId":{{media_id:team}},"headline":"…"} -->`, is written
+as `<!-- wp:pediment/media-text -->`: the block has lost all its attributes, not only
+`mediaId`. The same markup passed as literal `content` seeds correctly.
+**Cause.** Since WP 6.4, `WP_Block_Patterns_Registry::get_registered()` and
+`get_all_registered()` pass the content through `apply_block_hooks_to_content()`. That
+always runs `parse_blocks()` and re-serializes, even with no hooked blocks (the
+template-part theme visitor runs every time). `{{media_id:team}}` is not valid JSON until
+it is resolved, so the parser gives the block no attributes, and the serializer writes
+none. Any reader that resolves placeholders after `get_registered()` gets damaged
+markup. Seen on WP 6.9 (wp-env) and 7.1.3 (staging); core trunk 7.2 is unchanged.
+**Fix.** `ContentResolver::rawContent()` reads the raw markup through the registry's own
+loader, the private `get_content()` (WP 6.5+, also includes a `filePath` pattern file the
+way core does). It then resolves the placeholders, and only then calls
+`apply_block_hooks_to_content( $resolved, $pattern,
+'insert_hooked_blocks_and_set_ignored_hooked_blocks_metadata' )`, with the same arguments
+core uses. So hooked blocks still behave as before. A placeholder-bearing pattern must
+never go through `parse_blocks()` before it is resolved: `convert --patterns` swaps
+placeholders for stand-ins first, for the same reason (`PatternFiles::convertText()`).
+**Catch it early.** `ContentResolverTest::test_a_placeholder_in_the_block_json_of_a_registered_pattern_keeps_every_attribute`
+(also the `filePath` and Block Hooks variants) and
+`RunnerTest::test_a_media_id_placeholder_in_pattern_block_json_survives_seeding`.
