@@ -1,5 +1,22 @@
 # Changelog
 
+## [4.1.0](https://github.com/Bergert-Digital/pediment/compare/v4.0.0...v4.1.0) (2026-10-16)
+
+
+### Features
+
+* **blocks:** accept a palette slug as slider panelColor ([2b7cd98](https://github.com/Bergert-Digital/pediment/commit/2b7cd98076e439076056293345ad190dc9f22b82))
+* claim seed media, slider palette slugs, raw pattern seeding ([#124](https://github.com/Bergert-Digital/pediment/issues/124)) ([1099203](https://github.com/Bergert-Digital/pediment/commit/10992034242736f89fd5ecf53c40b593130221ef))
+* **seeder:** claim media by file name ([359ce94](https://github.com/Bergert-Digital/pediment/commit/359ce94549deb8cc646707173e9c53419467f59b))
+
+
+### Bug Fixes
+
+* **blocks:** accept only hex or palette slug as panelColor ([89b68f2](https://github.com/Bergert-Digital/pediment/commit/89b68f232d997d777aee63a30409b0b7997b79cf))
+* **seeder:** keep claimed private media and safe advice ([42de73c](https://github.com/Bergert-Digital/pediment/commit/42de73cabf1a8b3bd193781208783c055cdaa0cb))
+* **seeder:** resolve pattern placeholders before block hooks ([cbc07ae](https://github.com/Bergert-Digital/pediment/commit/cbc07aee5ec95ecef8ee31f3397df3ba75590fa7))
+* **seeder:** stop when the raw pattern loader is missing ([6a9b937](https://github.com/Bergert-Digital/pediment/commit/6a9b937a88a1f0d9b040e5a107ecbb73c15e1dcb))
+
 ## [4.0.0](https://github.com/Bergert-Digital/pediment/compare/v3.10.0...v4.0.0) (2026-10-16)
 
 
