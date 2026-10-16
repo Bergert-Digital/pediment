@@ -162,4 +162,15 @@ class SeedingAdminTest extends WP_UnitTestCase {
 		$this->assertStringNotContainsString( 'protected', $html );
 		$this->assertStringNotContainsString( 'rewrites', $html );
 	}
+
+	public function test_the_claim_section_asks_to_read_the_media_lines_first() {
+		wp_set_current_user( self::factory()->user->create( [ 'role' => 'administrator' ] ) );
+
+		ob_start();
+		pediment_seed_admin_render_tab();
+		$html = (string) ob_get_clean();
+
+		$this->assertStringContainsString( 'existing media by file name', $html );
+		$this->assertStringContainsString( 'Read every MEDIA line in the preview', $html );
+	}
 }

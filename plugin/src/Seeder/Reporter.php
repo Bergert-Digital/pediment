@@ -105,6 +105,7 @@ final class Reporter {
 
 		foreach (
 			[
+				PlanItem::KIND_MEDIA => 'MEDIA',
 				PlanItem::KIND_ENTRY => 'PAGES & POSTS',
 				PlanItem::KIND_NAV   => 'NAV',
 			] as $kind => $heading

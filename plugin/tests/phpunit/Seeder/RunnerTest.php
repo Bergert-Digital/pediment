@@ -22,6 +22,11 @@ class RunnerTest extends WP_UnitTestCase {
 	}
 
 	public function tear_down(): void {
+		// Registered by test_a_media_id_placeholder_in_pattern_block_json_survives_seeding;
+		// here so a failing assertion cannot leak it into later tests.
+		if ( WP_Block_Patterns_Registry::get_instance()->is_registered( 'client/placeholder-page' ) ) {
+			unregister_block_pattern( 'client/placeholder-page' );
+		}
 		remove_all_filters( 'pediment_seed_manifest' );
 		\Pediment\Seeder\Manifest::resetCache();
 		parent::tear_down();
@@ -363,5 +368,43 @@ class RunnerTest extends WP_UnitTestCase {
 		remove_all_filters( 'stylesheet_directory' );
 		$this->assertFalse( $result->ok() );
 		$this->assertSame( 1, substr_count( implode( "\n", $result->errors ), 'media.notes' ), 'reported once, not once per channel' );
+	}
+
+	/**
+	 * End to end: a page seeded from a registered pattern whose block JSON
+	 * holds `{{media_id:…}}` keeps every attribute of that block, and the id
+	 * is the seeded attachment's. Before the fix the page got `<!-- wp:image -->`
+	 * with no attributes at all.
+	 */
+	public function test_a_media_id_placeholder_in_pattern_block_json_survives_seeding() {
+		$dir = get_temp_dir() . 'pediment-runner-pattern-media';
+		wp_mkdir_p( $dir . '/seed/media' );
+		copy( DIR_TESTDATA . '/images/canola.jpg', $dir . '/seed/media/hero.jpg' );
+		register_block_pattern(
+			'client/placeholder-page',
+			[
+				'title'   => 'Placeholder page',
+				'content' => '<!-- wp:image {"id":{{media_id:hero}},"sizeSlug":"large","linkDestination":"none"} --><figure class="wp-block-image size-large"><img src="{{media_url:hero}}" alt="" class="wp-image-{{media_id:hero}}"/></figure><!-- /wp:image -->',
+			]
+		);
+		$this->manifest = [
+			'media' => [ 'hero' => [ 'file' => $dir . '/seed/media/hero.jpg', 'title' => 'Hero' ] ],
+			'pages' => [ 'team' => [ 'title' => 'Team', 'pattern' => 'client/placeholder-page' ] ],
+		];
+		\Pediment\Seeder\Manifest::resetCache();
+
+		$result = ( new Runner() )->run();
+
+		$this->assertSame( [], $result->errors );
+		$hero  = get_posts( [ 'post_type' => 'attachment', 'post_status' => 'inherit', 'meta_key' => Meta::KEY, 'meta_value' => 'hero', 'fields' => 'ids' ] );
+		$pages = get_posts( [ 'post_type' => 'page', 'post_status' => 'any', 'meta_key' => Meta::KEY, 'meta_value' => 'team' ] );
+		$this->assertCount( 1, $hero );
+		$this->assertCount( 1, $pages );
+		$blocks = parse_blocks( $pages[0]->post_content );
+		$this->assertSame( 'core/image', $blocks[0]['blockName'] );
+		$this->assertSame(
+			[ 'id' => (int) $hero[0], 'sizeSlug' => 'large', 'linkDestination' => 'none' ],
+			$blocks[0]['attrs']
+		);
 	}
 }

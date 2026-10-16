@@ -73,6 +73,38 @@ Every block needs a test in `plugin/tests/phpunit/BlockRender/<Name>Test.php`. T
 - Render with valid attributes → output contains expected substrings.
 - Render with edge-case attributes (empty fields) → output handled gracefully (no PHP errors, no empty `<a href="">`).
 
+## Slider panel colour
+
+`pediment/slider` takes its panel background from `panelColor`, in one of
+two forms:
+
+- **A palette slug** (`"accent"`, `"surface-elevated"`): the slug must match
+  `^[a-z0-9-]+$` and name a colour in the merged global palette
+  (`wp_get_global_settings( array( 'color', 'palette' ) )`). The panel
+  paints `var(--wp--preset--color--<slug>)` (kebab-cased the way WordPress
+  names the var), so it follows the palette. The text colour is computed
+  from the colour the slug resolves to, with the same luminance rule as for
+  a hex (`pediment_slider_panel_fg()`): light text on a dark colour, dark
+  text on a light one. When one slug is in several origins, the custom
+  (Global Styles) colour wins over the theme's, and the theme's over core's
+  default, which is the order the preset vars cascade in.
+- **A hex colour** (`#rgb` or `#rrggbb`, the default is `"#0A1B33"`): hex
+  values work as before.
+
+Anything else is invalid: a slug that is not in the palette, a named colour
+(`red`), an 8-digit hex, or a value such as `red;position:fixed`. An invalid
+value gets the default panel, `var(--wp--preset--color--primary)`, with the
+text colour computed from primary's palette colour. Nothing else is written
+into the `style` attribute. Prefer the slug in patterns: it keeps colour
+literals out of content.
+
+In the editor, picking a palette swatch stores its slug; a custom colour
+stays hex. A palette pick stores the **first** slug with that colour value
+(custom, then theme, then default origin): when two slugs share one hex, the
+first one wins, even if you clicked the other swatch. The preview resolves
+every form the same way `render.php` does (`panelColors()` in
+`plugin/src/blocks/slider/panel-fg.ts`).
+
 ## Legacy blocks
 
 The 18 presentation blocks in `Pediment\Content\Policy::LEGACY` (hero, cta,

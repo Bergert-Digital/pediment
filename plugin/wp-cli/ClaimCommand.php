@@ -21,7 +21,8 @@ if ( ! defined( 'ABSPATH' ) ) {
  * Gives existing content the seed identity the engine resolves by.
  *
  * Run once, on a site whose content predates Pediment's seeding engine, before
- * the first `wp pediment seed`. Writes `_pediment_seed_key` and nothing else,
+ * the first `wp pediment seed`. Matches pages, posts, navigation menus and
+ * media (by file name). Writes `_pediment_seed_key` and nothing else,
  * so every claimed row stays protected from content writes.
  */
 final class ClaimCommand {
