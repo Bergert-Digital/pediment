@@ -254,4 +254,166 @@ class ClaimerTest extends WP_UnitTestCase {
 		$this->assertSame( [], $navs );
 		$this->assertSame( '', (string) get_post_meta( $stray, Meta::KEY, true ) );
 	}
+
+	/*
+	 * Media. A claim matches a manifest media entry to an existing attachment
+	 * by the basename of the manifest `file`, the same way a page is matched
+	 * by its slug. Media identity is language-less (Pediment locks Polylang's
+	 * media_support off), so every media item is planned once, with ''.
+	 */
+
+	/** @param array<string,string> $files media key => file name under seed/media/ */
+	private function mediaManifest( array $files ): Manifest {
+		$dir = get_temp_dir() . 'pediment-claim-media';
+		wp_mkdir_p( $dir . '/seed/media' );
+		$media = [];
+		foreach ( $files as $key => $name ) {
+			file_put_contents( $dir . '/seed/media/' . $name, 'x' );
+			$media[ $key ] = [ 'file' => 'seed/media/' . $name, 'title' => ucfirst( $key ) ];
+		}
+		return Manifest::fromArray( [ 'media' => $media ], $dir );
+	}
+
+	/** An attachment whose `_wp_attached_file` is $relative, as an upload leaves it. */
+	private function attachment( string $relative, array $meta = [] ): int {
+		$id = self::factory()->attachment->create(
+			[
+				'file'           => $relative,
+				'post_mime_type' => 'image/jpeg',
+				'post_title'     => 'Legacy image',
+			]
+		);
+		update_post_meta( $id, '_wp_attached_file', $relative );
+		if ( [] !== $meta ) {
+			wp_update_attachment_metadata( $id, $meta );
+		}
+		return $id;
+	}
+
+	public function test_an_unkeyed_attachment_with_the_same_file_name_is_claimed() {
+		$id = $this->attachment( '2026/06/hero.jpg' );
+
+		$plan  = ( new Claimer( new NullProvider() ) )->plan( $this->mediaManifest( [ 'hero' => 'hero.jpg' ] ), [] );
+		$media = $plan->byKind( PlanItem::KIND_MEDIA );
+
+		$this->assertCount( 1, $media );
+		$this->assertSame( PlanItem::CLAIM, $media[0]->action );
+		$this->assertSame( 'hero', $media[0]->key );
+		$this->assertSame( '', $media[0]->language );
+		$this->assertSame( $id, $media[0]->postId );
+		$this->assertTrue( $media[0]->writes() );
+		$this->assertStringContainsString( 'hero.jpg', $media[0]->note );
+		$this->assertStringContainsString( (string) $id, $media[0]->note );
+	}
+
+	/**
+	 * WordPress stores a big upload as `<name>-scaled.<ext>` and keeps the
+	 * upload's own name in the metadata's `original_image`. The theme ships
+	 * the original, so that name has to match too.
+	 */
+	public function test_a_scaled_attachment_is_matched_by_its_original_file_name() {
+		$id = $this->attachment(
+			'2026/06/team-scaled.jpg',
+			[ 'file' => '2026/06/team-scaled.jpg', 'original_image' => 'team.jpg', 'width' => 2560, 'height' => 1707 ]
+		);
+
+		$media = ( new Claimer( new NullProvider() ) )
+			->plan( $this->mediaManifest( [ 'team' => 'team.jpg' ] ), [] )
+			->byKind( PlanItem::KIND_MEDIA );
+
+		$this->assertSame( PlanItem::CLAIM, $media[0]->action );
+		$this->assertSame( $id, $media[0]->postId );
+	}
+
+	public function test_two_attachments_with_the_same_file_name_are_ambiguous() {
+		$first  = $this->attachment( '2026/05/hero.jpg' );
+		$second = $this->attachment( '2026/06/hero.jpg' );
+
+		$media = ( new Claimer( new NullProvider() ) )
+			->plan( $this->mediaManifest( [ 'hero' => 'hero.jpg' ] ), [] )
+			->byKind( PlanItem::KIND_MEDIA );
+
+		$this->assertSame( PlanItem::AMBIGUOUS, $media[0]->action );
+		$this->assertSame( 0, $media[0]->postId );
+		$this->assertFalse( $media[0]->writes() );
+		$this->assertStringContainsString( (string) $first, $media[0]->note );
+		$this->assertStringContainsString( (string) $second, $media[0]->note );
+	}
+
+	public function test_a_media_entry_without_an_attachment_of_that_name_is_no_match() {
+		$this->attachment( '2026/06/other.jpg' );
+
+		$media = ( new Claimer( new NullProvider() ) )
+			->plan( $this->mediaManifest( [ 'hero' => 'hero.jpg' ] ), [] )
+			->byKind( PlanItem::KIND_MEDIA );
+
+		$this->assertSame( PlanItem::NO_MATCH, $media[0]->action );
+		$this->assertSame( 0, $media[0]->postId );
+		$this->assertFalse( $media[0]->writes() );
+	}
+
+	public function test_an_attachment_carrying_another_seed_key_is_never_taken() {
+		$id = $this->attachment( '2026/06/hero.jpg' );
+		update_post_meta( $id, Meta::KEY, 'banner' );
+
+		$media = ( new Claimer( new NullProvider() ) )
+			->plan( $this->mediaManifest( [ 'hero' => 'hero.jpg' ] ), [] )
+			->byKind( PlanItem::KIND_MEDIA );
+
+		$this->assertSame( PlanItem::NO_MATCH, $media[0]->action );
+		$this->assertSame( 'banner', get_post_meta( $id, Meta::KEY, true ) );
+	}
+
+	public function test_a_media_key_an_attachment_already_carries_is_absent_from_the_plan() {
+		$keyed = $this->attachment( '2026/05/hero.jpg' );
+		update_post_meta( $keyed, Meta::KEY, 'hero' );
+		$stray = $this->attachment( '2026/06/hero.jpg' );
+
+		$media = ( new Claimer( new NullProvider() ) )
+			->plan( $this->mediaManifest( [ 'hero' => 'hero.jpg' ] ), [] )
+			->byKind( PlanItem::KIND_MEDIA );
+
+		$this->assertSame( [], $media );
+		$this->assertSame( '', (string) get_post_meta( $stray, Meta::KEY, true ) );
+	}
+
+	public function test_a_trashed_attachment_is_never_claimed() {
+		$id = $this->attachment( '2026/06/hero.jpg' );
+		wp_trash_post( $id );
+
+		$media = ( new Claimer( new NullProvider() ) )
+			->plan( $this->mediaManifest( [ 'hero' => 'hero.jpg' ] ), [] )
+			->byKind( PlanItem::KIND_MEDIA );
+
+		$this->assertSame( PlanItem::NO_MATCH, $media[0]->action );
+	}
+
+	public function test_apply_writes_only_the_seed_key_onto_the_attachment() {
+		$id      = $this->attachment( '2026/06/hero.jpg' );
+		$claimer = new Claimer( new NullProvider() );
+		$meta    = get_post_meta( $id );
+
+		$result = $claimer->apply( $claimer->plan( $this->mediaManifest( [ 'hero' => 'hero.jpg' ] ), [] ) );
+
+		$this->assertSame( 1, $result['claimed'] );
+		$this->assertSame( [], $result['errors'] );
+		$this->assertSame( 'hero', get_post_meta( $id, Meta::KEY, true ) );
+		$after = get_post_meta( $id );
+		unset( $after[ Meta::KEY ] );
+		$this->assertSame( $meta, $after, 'a claim writes the seed key and nothing else' );
+		$this->assertSame( '2026/06/hero.jpg', get_post_meta( $id, '_wp_attached_file', true ) );
+	}
+
+	public function test_a_claimed_attachment_is_unchanged_in_the_next_seed_plan() {
+		$id       = $this->attachment( '2026/06/hero.jpg' );
+		$manifest = $this->mediaManifest( [ 'hero' => 'hero.jpg' ] );
+		$claimer  = new Claimer( new NullProvider() );
+		$claimer->apply( $claimer->plan( $manifest, [] ) );
+
+		$plan = ( new \Pediment\Seeder\MediaSeeder() )->plan( $manifest );
+
+		$this->assertSame( [], $plan->byAction( PlanItem::CREATE ) );
+		$this->assertSame( PlanItem::UNCHANGED, $plan->items()[0]->action );
+		$this->assertSame( $id, $plan->items()[0]->postId );
+	}
 }

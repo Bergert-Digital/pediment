@@ -240,4 +240,41 @@ class ClaimerLanguageTest extends PolylangTestCase {
 			'one navigation entity per configured language — a third means the seed duplicated the claimed one'
 		);
 	}
+
+	/**
+	 * Media identity has no language: Pediment keeps Polylang's media_support
+	 * off, so one attachment serves every language. A multilingual claim must
+	 * plan each media key once, not once per language — a second pass would
+	 * report the same attachment twice and race itself in apply().
+	 */
+	public function test_media_is_claimed_once_on_a_multilingual_site() {
+		$dir = get_temp_dir() . 'pediment-claim-media-pll';
+		wp_mkdir_p( $dir . '/seed/media' );
+		file_put_contents( $dir . '/seed/media/hero.jpg', 'x' );
+		$image = self::factory()->attachment->create(
+			[ 'file' => '2026/06/hero.jpg', 'post_mime_type' => 'image/jpeg', 'post_title' => 'Legacy hero' ]
+		);
+		update_post_meta( $image, '_wp_attached_file', '2026/06/hero.jpg' );
+
+		$manifest = Manifest::fromArray(
+			[
+				'languages' => [ 'en' => [ 'name' => 'English', 'locale' => 'en_US', 'default' => true ], 'de' => [ 'name' => 'Deutsch', 'locale' => 'de_DE' ] ],
+				'media'     => [ 'hero' => [ 'file' => 'seed/media/hero.jpg' ] ],
+				'pages'     => [ 'about' => [ 'title' => 'About', 'content' => '<p>a</p>' ] ],
+			],
+			$dir
+		);
+		$claimer = new Claimer( new PolylangProvider() );
+		$plan    = $claimer->plan( $manifest, [] );
+
+		$media = $plan->byKind( PlanItem::KIND_MEDIA );
+		$this->assertCount( 1, $media );
+		$this->assertSame( PlanItem::CLAIM, $media[0]->action );
+		$this->assertSame( '', $media[0]->language );
+		$this->assertSame( $image, $media[0]->postId );
+
+		$result = $claimer->apply( $plan );
+		$this->assertSame( [], $result['errors'] );
+		$this->assertSame( 'hero', get_post_meta( $image, Meta::KEY, true ) );
+	}
 }

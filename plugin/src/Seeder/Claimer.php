@@ -8,7 +8,9 @@
  * such a site plans a CREATE for every entry and duplicates the whole site.
  *
  * A claim is the one-time bridge: it matches by the things a legacy row and a
- * manifest entry can still agree on, and writes exactly one meta key. The
+ * manifest entry can still agree on (slug and language for pages and posts,
+ * file name for media), and writes exactly one meta key — the same
+ * `_pediment_seed_key` MediaSeeder gives an attachment it uploads. The
  * seed after a claim finds every claimed row and leaves it as it is — the
  * seeder never writes to a row that exists.
  *
@@ -82,7 +84,144 @@ final class Claimer {
 			}
 		}
 
-		return new Plan( $items );
+		return new Plan( array_merge( $this->planMedia( $manifest ), $items ) );
+	}
+
+	/**
+	 * Media is matched by file name: the basename of the manifest `file`
+	 * against the name an attachment was uploaded under. That is the one thing
+	 * a legacy upload of a theme-shipped image and the manifest still agree
+	 * on — titles and IDs differ per site.
+	 *
+	 * Media identity has no language (PolylangSetup keeps Polylang's
+	 * media_support off), so each media key is planned once, with ''.
+	 *
+	 * @return PlanItem[]
+	 */
+	private function planMedia( Manifest $manifest ): array {
+		$media = $manifest->media();
+		if ( [] === $media ) {
+			return []; // No attachment query for a manifest without media.
+		}
+
+		// The MediaSeeder's own lookup, trash included: a key an attachment
+		// already carries is resolved, exactly as the next seed will see it.
+		$keyed  = ( new MediaSeeder() )->map( $manifest );
+		$byName = $this->unclaimedAttachmentsByName();
+		$taken  = [];
+		$items  = [];
+
+		foreach ( $media as $key => $spec ) {
+			if ( $keyed->has( $key ) ) {
+				continue; // Already carries the key: nothing to claim.
+			}
+
+			$name = self::fileName( $spec->file );
+			// An attachment claimed for an earlier media key in this run is
+			// not a candidate again: one row never takes two keys.
+			$candidates = array_values( array_diff( $byName[ $name ] ?? [], $taken ) );
+
+			if ( [] === $candidates ) {
+				$items[] = new PlanItem(
+					PlanItem::NO_MATCH,
+					PlanItem::KIND_MEDIA,
+					$key,
+					'',
+					0,
+					[],
+					sprintf( 'no unclaimed attachment with the file name "%s" — the next seed will upload it.', $name )
+				);
+				continue;
+			}
+
+			if ( count( $candidates ) > 1 ) {
+				$items[] = new PlanItem(
+					PlanItem::AMBIGUOUS,
+					PlanItem::KIND_MEDIA,
+					$key,
+					'',
+					0,
+					[],
+					sprintf(
+						'%d unclaimed attachments share the file name "%s" (IDs %s) — claim nothing until one is deleted.',
+						count( $candidates ),
+						$name,
+						implode( ', ', $candidates )
+					)
+				);
+				continue;
+			}
+
+			$attachmentId = (int) $candidates[0];
+			$taken[]      = $attachmentId;
+			$items[]      = new PlanItem(
+				PlanItem::CLAIM,
+				PlanItem::KIND_MEDIA,
+				$key,
+				'',
+				$attachmentId,
+				[ 'seed_key' => [ 'from' => null, 'to' => $key ] ],
+				sprintf( 'attachment "%s" (ID %d)', $name, $attachmentId )
+			);
+		}
+
+		return $items;
+	}
+
+	/**
+	 * Unkeyed attachments, indexed by every file name they answer to: the
+	 * name in `_wp_attached_file` and, when WordPress stored a `-scaled` or
+	 * `-rotated` copy, the uploaded original's name from the metadata's
+	 * `original_image` (what wp_get_original_image_path() resolves). Trash is
+	 * excluded, as for posts.
+	 *
+	 * @return array<string,int[]> file name => attachment IDs, ID ascending
+	 */
+	private function unclaimedAttachmentsByName(): array {
+		$out = [];
+		foreach (
+			get_posts(
+				[
+					'post_type'      => 'attachment',
+					'post_status'    => [ 'inherit', 'private' ],
+					'posts_per_page' => -1,
+					'orderby'        => 'ID',
+					'order'          => 'ASC',
+					'no_found_rows'  => true,
+					// phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query -- one-time claim, not a front-end query.
+					'meta_query'     => [
+						[
+							'key'     => Meta::KEY,
+							'compare' => 'NOT EXISTS',
+						],
+					],
+				]
+			) as $attachment
+		) {
+			$id    = (int) $attachment->ID;
+			$names = [ self::fileName( (string) get_post_meta( $id, '_wp_attached_file', true ) ) ];
+
+			$metadata = wp_get_attachment_metadata( $id );
+			if ( is_array( $metadata ) && ! empty( $metadata['original_image'] ) ) {
+				$names[] = self::fileName( (string) $metadata['original_image'] );
+			}
+
+			foreach ( array_unique( array_filter( $names ) ) as $name ) {
+				$out[ $name ][] = $id;
+			}
+		}
+		return $out;
+	}
+
+	/**
+	 * The name a file is compared by. sanitize_file_name() is what an upload
+	 * applies to the name it stores, so a theme file called "Team Photo.jpg"
+	 * still matches its upload "Team-Photo.jpg"; lower case, because an
+	 * upload may lower-case the extension.
+	 */
+	private static function fileName( string $path ): string {
+		$base = wp_basename( $path );
+		return '' === $base ? '' : strtolower( sanitize_file_name( $base ) );
 	}
 
 	/** @param array<string,int> $resolved mapKey => post ID, including rows claimed earlier in this run. */
