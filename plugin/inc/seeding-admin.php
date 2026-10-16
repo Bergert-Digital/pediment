@@ -146,6 +146,14 @@ function pediment_seed_admin_render_tab(): void {
 		'pediment'
 	) . '</p>';
 
+	echo '<p><strong>' . esc_html__(
+		'Check the media lines.',
+		'pediment'
+	) . '</strong> ' . esc_html__(
+		'Media is matched by file name. Read every MEDIA line in the preview and confirm that each claimed attachment is the image you meant before you claim.',
+		'pediment'
+	) . '</p>';
+
 	echo '<div style="display:flex;gap:8px;align-items:center;">';
 	foreach ( array(
 		'claim-preview' => array( __( 'Preview claim', 'pediment' ), 'secondary' ),

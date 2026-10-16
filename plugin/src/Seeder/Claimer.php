@@ -31,6 +31,13 @@ final class Claimer {
 	/** Statuses a claim considers. Trash is deliberately absent. */
 	private const STATUSES = [ 'publish', 'draft', 'pending', 'private', 'future' ];
 
+	/**
+	 * Attachment statuses a claim considers. Every one of them is also in
+	 * MediaSeeder::keyed(), so a claimed attachment is found by the next seed
+	 * and never uploaded again. Trash is deliberately absent, as above.
+	 */
+	public const STATUSES_MEDIA = [ 'inherit', 'private' ];
+
 	public function __construct( private LanguageProvider $lang ) {}
 
 	/**
@@ -107,7 +114,8 @@ final class Claimer {
 		// The MediaSeeder's own lookup, trash included: a key an attachment
 		// already carries is resolved, exactly as the next seed will see it.
 		$keyed  = ( new MediaSeeder() )->map( $manifest );
-		$byName = $this->unclaimedAttachmentsByName();
+		$stored = [];
+		$byName = $this->unclaimedAttachmentsByName( $stored );
 		$taken  = [];
 		$items  = [];
 
@@ -129,7 +137,7 @@ final class Claimer {
 					'',
 					0,
 					[],
-					sprintf( 'no unclaimed attachment with the file name "%s" — the next seed will upload it.', $name )
+					sprintf( 'no unclaimed attachment with the file name "%s" — the next seed will upload it.', wp_basename( $spec->file ) )
 				);
 				continue;
 			}
@@ -143,10 +151,16 @@ final class Claimer {
 					0,
 					[],
 					sprintf(
-						'%d unclaimed attachments share the file name "%s" (IDs %s) — claim nothing until one is deleted.',
+						'%d unclaimed attachments share the file name "%s" (IDs %s) — nothing is claimed. Keep the one in use: content often points at an attachment by ID. Make the other stop matching by renaming its file, or remove it only if nothing uses it; then claim again.',
 						count( $candidates ),
-						$name,
-						implode( ', ', $candidates )
+						wp_basename( $spec->file ),
+						implode(
+							', ',
+							array_map(
+								static fn( int $id ): string => sprintf( '%d (%s)', $id, $stored[ $id ] ?? '' ),
+								$candidates
+							)
+						)
 					)
 				);
 				continue;
@@ -161,7 +175,7 @@ final class Claimer {
 				'',
 				$attachmentId,
 				[ 'seed_key' => [ 'from' => null, 'to' => $key ] ],
-				sprintf( 'attachment "%s" (ID %d)', $name, $attachmentId )
+				sprintf( 'attachment "%s" (ID %d)', $stored[ $attachmentId ] ?? $name, $attachmentId )
 			);
 		}
 
@@ -175,15 +189,17 @@ final class Claimer {
 	 * `original_image` (what wp_get_original_image_path() resolves). Trash is
 	 * excluded, as for posts.
 	 *
+	 * @param array<int,string> $stored Filled with attachment ID => its stored
+	 *                                  `_wp_attached_file`, for the report lines.
 	 * @return array<string,int[]> file name => attachment IDs, ID ascending
 	 */
-	private function unclaimedAttachmentsByName(): array {
+	private function unclaimedAttachmentsByName( array &$stored ): array {
 		$out = [];
 		foreach (
 			get_posts(
 				[
 					'post_type'      => 'attachment',
-					'post_status'    => [ 'inherit', 'private' ],
+					'post_status'    => self::STATUSES_MEDIA,
 					'posts_per_page' => -1,
 					'orderby'        => 'ID',
 					'order'          => 'ASC',
@@ -198,8 +214,9 @@ final class Claimer {
 				]
 			) as $attachment
 		) {
-			$id    = (int) $attachment->ID;
-			$names = [ self::fileName( (string) get_post_meta( $id, '_wp_attached_file', true ) ) ];
+			$id            = (int) $attachment->ID;
+			$stored[ $id ] = (string) get_post_meta( $id, '_wp_attached_file', true );
+			$names         = [ self::fileName( $stored[ $id ] ) ];
 
 			$metadata = wp_get_attachment_metadata( $id );
 			if ( is_array( $metadata ) && ! empty( $metadata['original_image'] ) ) {

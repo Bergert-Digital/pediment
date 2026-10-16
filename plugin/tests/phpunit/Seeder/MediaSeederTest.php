@@ -99,6 +99,24 @@ class MediaSeederTest extends WP_UnitTestCase {
 		);
 	}
 
+	/**
+	 * A private attachment is still the attachment that carries the key.
+	 * Claimer counts private attachments as candidates; if keyed() did not
+	 * see them, a claimed private image would be uploaded a second time.
+	 */
+	public function test_a_private_attachment_holds_its_key_and_is_not_uploaded_again() {
+		$seeder = new MediaSeeder();
+		$m      = $this->manifest();
+		$first  = $seeder->apply( $seeder->plan( $m ), $m );
+		wp_update_post( [ 'ID' => $first->id( 'hero' ), 'post_status' => 'private' ] );
+
+		$plan = $seeder->plan( $m );
+
+		$this->assertSame( 'private', get_post_field( 'post_status', $first->id( 'hero' ) ) );
+		$this->assertSame( [], $plan->byAction( PlanItem::CREATE ) );
+		$this->assertSame( $first->id( 'hero' ), $seeder->map( $m )->id( 'hero' ) );
+	}
+
 	public function test_a_logo_a_person_chose_is_kept() {
 		$seeder = new MediaSeeder();
 		$m      = $this->manifest();
