@@ -81,6 +81,14 @@ class FaqTestimonialLogoMappersTest extends WP_UnitTestCase {
 		$this->assertSame( array(), $result->problems );
 	}
 
+	public function test_a_named_testimonial_without_avatar_notes_the_dropped_initials(): void {
+		$named = $this->convert( '<!-- wp:pediment/testimonial {"quote":"Q","authorName":"Ann Lee"} /-->' );
+		$this->assertSame( array( 'pediment/testimonial: initials badge dropped, core blocks cannot show it' ), $named->notes );
+
+		$role_only = $this->convert( '<!-- wp:pediment/testimonial {"quote":"Q","authorRole":"Guest"} /-->' );
+		$this->assertSame( array(), $role_only->notes, 'no name, so the legacy block drew no initials' );
+	}
+
 	public function test_block_html_other_than_paragraphs_refuses_the_conversion(): void {
 		$answer = '<!-- wp:pediment/faq-item {"question":"Q","answer":"<ul><li>A</li></ul>"} /-->';
 		$quote  = '<!-- wp:pediment/testimonial {"quote":"<h3>Wow</h3>"} /-->';
