@@ -1,5 +1,26 @@
 # Changelog
 
+## [4.3.0](https://github.com/Bergert-Digital/pediment/compare/v4.2.0...v4.3.0) (2026-10-19)
+
+
+### Features
+
+* add pediment/icon and convert feature icons to it ([d249f10](https://github.com/Bergert-Digital/pediment/commit/d249f1044a5c8a7761d7c369579d84934af654ea))
+* **convert:** mark converted card links with a class ([ed9f6cf](https://github.com/Bergert-Digital/pediment/commit/ed9f6cfdaf88413e7ac2042a681f46c03a560bf9))
+* pediment/icon block and centred cards for conversion ([#128](https://github.com/Bergert-Digital/pediment/issues/128)) ([6ab0acd](https://github.com/Bergert-Digital/pediment/commit/6ab0acdb44f2414e4d1c72519bb89427149a9bf7))
+* reveal converted cards, steps and FAQ on scroll ([8039a5e](https://github.com/Bergert-Digital/pediment/commit/8039a5e58f8cd561b386abe7299a167301a0e00f))
+
+
+### Bug Fixes
+
+* **convert:** keep hero stat metrics start-aligned ([dd33e9b](https://github.com/Bergert-Digital/pediment/commit/dd33e9b11e9ac283c4b9ef90a13fb9a46ce736df))
+* **styles:** centre the card through typography.textAlign ([8ccd9a7](https://github.com/Bergert-Digital/pediment/commit/8ccd9a798f6fa822f6596bf0b8ab1bce62ebc361))
+
+
+### Refactors
+
+* **convert:** centre feature cards in the card style ([678d398](https://github.com/Bergert-Digital/pediment/commit/678d39833bd8aaa4543096658dbda66622d31733))
+
 ## [4.2.0](https://github.com/Bergert-Digital/pediment/compare/v4.1.0...v4.2.0) (2026-10-16)
 
 
