@@ -64,6 +64,10 @@ final class TestimonialGridMapper implements Mapper {
 		if ( $id > 0 && '' === $url ) {
 			$context->note( "pediment/testimonial: avatar {$id} not found, left out" );
 		}
+		// The legacy block drew an initials badge only without an avatar id.
+		if ( 0 === $id && '' !== trim( wp_strip_all_tags( $name ) ) ) {
+			$context->note( 'pediment/testimonial: initials badge dropped, core blocks cannot show it' );
+		}
 
 		$inner = array( Build::quote( array(), $context->paragraphs( $quote, 'pediment/testimonial quote' ), '' === $url ? $byline : '' ) );
 		if ( '' !== $url ) {
