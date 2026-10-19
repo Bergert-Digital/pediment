@@ -64,7 +64,7 @@ test( 'version lines and arguments', () => {
 	assert.equal( wpLine( '6.9.4' ), '6.9' );
 	assert.equal( wpLine( '7.0' ), '7.0' );
 	assert.throws( () => wpLine( 'trunk' ) );
-	assert.deepEqual( supportedLines(), [ '6.9', '7.0' ] );
+	assert.deepEqual( supportedLines(), [ '6.9', '7.0', '7.1' ] );
 	assert.deepEqual( parseArgs( [ '--wp', '7.0', '--file', 'a.html', '--json' ] ), { wp: '7.0', file: 'a.html', json: true, pattern: false } );
 	assert.deepEqual( parseArgs( [] ), { wp: '6.9', file: null, json: false, pattern: false } );
 	assert.equal( parseArgs( [ '--pattern' ] ).pattern, true );
@@ -227,36 +227,38 @@ test( 'npmInstall explains a missing npm and a failed install', () => {
 
 const e2e = process.env.PEDIMENT_VALIDATOR_E2E === '1';
 
-test( 'end to end against the real WordPress 6.9 runtime', { skip: ! e2e }, () => {
-	const run = ( markup, extra = [] ) => {
-		try {
-			return { code: 0, out: execFileSync( 'node', [ cli, '--json', ...extra ], { input: markup, encoding: 'utf8' } ) };
-		} catch ( error ) {
-			return { code: error.status, out: error.stdout };
-		}
-	};
-	const valid = run( '<!-- wp:group {"className":"is-style-card","layout":{"type":"constrained"}} --><div class="wp-block-group is-style-card"><!-- wp:paragraph --><p>x</p><!-- /wp:paragraph --></div><!-- /wp:group -->' );
-	assert.equal( valid.code, 0, valid.out );
+for ( const line of supportedLines() ) {
+	test( `end to end against the real WordPress ${ line } runtime`, { skip: ! e2e }, () => {
+		const run = ( markup, extra = [] ) => {
+			try {
+				return { code: 0, out: execFileSync( 'node', [ cli, '--json', '--wp', line, ...extra ], { input: markup, encoding: 'utf8' } ) };
+			} catch ( error ) {
+				return { code: error.status, out: error.stdout };
+			}
+		};
+		const valid = run( '<!-- wp:group {"className":"is-style-card","layout":{"type":"constrained"}} --><div class="wp-block-group is-style-card"><!-- wp:paragraph --><p>x</p><!-- /wp:paragraph --></div><!-- /wp:group -->' );
+		assert.equal( valid.code, 0, valid.out );
 
-	const migrated = run( '<!-- wp:paragraph --><div>Hi</div><!-- /wp:paragraph -->' );
-	assert.equal( migrated.code, 1 );
-	assert.equal( JSON.parse( migrated.out ).migrated.length, 1 );
+		const migrated = run( '<!-- wp:paragraph --><div>Hi</div><!-- /wp:paragraph -->' );
+		assert.equal( migrated.code, 1 );
+		assert.equal( JSON.parse( migrated.out ).migrated.length, 1 );
 
-	const invalid = run( '<!-- wp:group --><div class="wp-block-nope"><!-- wp:paragraph --><p>x</p><!-- /wp:paragraph --></div><!-- /wp:group -->' );
-	assert.equal( invalid.code, 1 );
-	assert.equal( JSON.parse( invalid.out ).invalid[ 0 ].name, 'core/group' );
+		const invalid = run( '<!-- wp:group --><div class="wp-block-nope"><!-- wp:paragraph --><p>x</p><!-- /wp:paragraph --></div><!-- /wp:group -->' );
+		assert.equal( invalid.code, 1 );
+		assert.equal( JSON.parse( invalid.out ).invalid[ 0 ].name, 'core/group' );
 
-	const adopted = run( ADOPTED_IMAGE, [ '--pattern' ] );
-	assert.equal( adopted.code, 0, adopted.out );
-	const adoptedBroken = run( ADOPTED_IMAGE.replace( 'wp-block-image size-full', 'wp-block-nope' ), [ '--pattern' ] );
-	assert.equal( adoptedBroken.code, 1 );
-	assert.equal( JSON.parse( adoptedBroken.out ).invalid[ 0 ].name, 'core/image' );
+		const adopted = run( ADOPTED_IMAGE, [ '--pattern' ] );
+		assert.equal( adopted.code, 0, adopted.out );
+		const adoptedBroken = run( ADOPTED_IMAGE.replace( 'wp-block-image size-full', 'wp-block-nope' ), [ '--pattern' ] );
+		assert.equal( adoptedBroken.code, 1 );
+		assert.equal( JSON.parse( adoptedBroken.out ).invalid[ 0 ].name, 'core/image' );
 
-	const unknown = run( '<!-- wp:pediment/form {"id":"x"} /-->' );
-	assert.equal( unknown.code, 0 );
-	assert.deepEqual( JSON.parse( unknown.out ).notChecked, [ 'pediment/form' ] );
+		const unknown = run( '<!-- wp:pediment/form {"id":"x"} /-->' );
+		assert.equal( unknown.code, 0 );
+		assert.deepEqual( JSON.parse( unknown.out ).notChecked, [ 'pediment/form' ] );
 
-	const icon = run( '<!-- wp:group {"className":"is-style-card","layout":{"type":"constrained"}} -->\n<div class="wp-block-group is-style-card"><!-- wp:pediment/icon {"icon":"key","className":"is-style-tile"} /-->\n\n<!-- wp:paragraph -->\n<p>x</p>\n<!-- /wp:paragraph --></div>\n<!-- /wp:group -->' );
-	assert.equal( icon.code, 0, icon.out );
-	assert.deepEqual( JSON.parse( icon.out ).notChecked, [ 'pediment/icon' ] );
-} );
+		const icon = run( '<!-- wp:group {"className":"is-style-card","layout":{"type":"constrained"}} -->\n<div class="wp-block-group is-style-card"><!-- wp:pediment/icon {"icon":"key","className":"is-style-tile"} /-->\n\n<!-- wp:paragraph -->\n<p>x</p>\n<!-- /wp:paragraph --></div>\n<!-- /wp:group -->' );
+		assert.equal( icon.code, 0, icon.out );
+		assert.deepEqual( JSON.parse( icon.out ).notChecked, [ 'pediment/icon' ] );
+	} );
+}
