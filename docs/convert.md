@@ -247,7 +247,7 @@ parent/child pair. Each output shape has a fixture pair in
 `<name>.expected.html`). PHPUnit checks that the converter produces the
 expected markup and that it passes the content rules;
 `node tools/validate-convert-fixtures.mjs` checks every expected file with
-the block validator on WordPress 6.9 and 7.0 (CI job `validator`). The
+the block validator on WordPress 6.9, 7.0 and 7.1 (CI job `validator`). The
 mappers read parsed markup only, so they keep working after Pediment 5
 deletes the legacy block registrations.
 
