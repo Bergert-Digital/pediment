@@ -1,5 +1,19 @@
 # Changelog
 
+## [4.4.0](https://github.com/Bergert-Digital/pediment/compare/v4.3.0...v4.4.0) (2026-10-19)
+
+
+### Features
+
+* **kit:** validate blocks against WordPress 7.1 ([c6637e9](https://github.com/Bergert-Digital/pediment/commit/c6637e9adcb30972d70e738ca2b277f53eeaed9c))
+* **kit:** validate blocks against WordPress 7.1 ([#130](https://github.com/Bergert-Digital/pediment/issues/130)) ([c314809](https://github.com/Bergert-Digital/pediment/commit/c314809855bfef0eeb4f965944172408371e17d6))
+
+
+### Bug Fixes
+
+* **convert:** note dropped testimonial initials ([dd135b7](https://github.com/Bergert-Digital/pediment/commit/dd135b7d73451f5792fa65a9712b6fbf6a7ded9b))
+* **kit:** pin WordPress 7.0 validator to element 6.40.1 ([686425e](https://github.com/Bergert-Digital/pediment/commit/686425e21f667507d86c296f951f0c3d7c53b358))
+
 ## [4.3.0](https://github.com/Bergert-Digital/pediment/compare/v4.2.0...v4.3.0) (2026-10-19)
 
 
