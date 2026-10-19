@@ -9,6 +9,14 @@
 		'.starter-faq-item',
 		'.starter-media-card',
 		'.starter-cta',
+		// The same elements after conversion to core blocks and named styles.
+		'.is-style-card',
+		'.is-style-steps > *',
+		'.is-style-stat',
+		'.is-style-logos .wp-block-image',
+		'.is-style-accordion',
+		'.is-style-media-card',
+		'.is-style-panel',
 	];
 	const nodes = document.querySelectorAll( sels.join( ',' ) );
 	if ( ! nodes.length || ! ( 'IntersectionObserver' in window ) ) {
