@@ -81,6 +81,9 @@ Some things have no core equivalent and are dropped:
 - Hero tick icons and the FAQ toggle icon. The new blocks use the default list
   bullet and the details arrow. The report does not name these.
 - Hover effects (card lift, link arrow).
+- The initials badge of a testimonial without an avatar. The byline keeps
+  the name. The report names it ("pediment/testimonial: initials badge
+  dropped …").
 - `maxWidth` of a section head. The report names it.
 - An `is-style-*` class on a legacy block that is not registered for the new
   block. The report names it ("dropped style is-style-align-center on
@@ -104,6 +107,15 @@ The scroll-in animation stays: `reveal.js` animates elements with the
 feature cards, steps, stats, logos, FAQ items, media cards and CTAs. The
 converted hero's children do not animate. Visitors who prefer reduced motion
 get no animation.
+
+A post whose text was inside legacy blocks (for example a `prose` block) can
+get an automatic excerpt after the conversion. WordPress builds an automatic
+excerpt only from some core blocks (paragraphs, headings, lists, quotes and
+others), also inside groups and columns (`excerpt_remove_blocks()`). It
+skipped the legacy blocks and everything inside them. After the conversion
+the text is in core blocks inside a group, so a blog list or search result
+that shows excerpts now shows one for that post. Set a manual excerpt if the
+automatic one is wrong.
 
 ## Before you convert production
 
@@ -247,7 +259,7 @@ parent/child pair. Each output shape has a fixture pair in
 `<name>.expected.html`). PHPUnit checks that the converter produces the
 expected markup and that it passes the content rules;
 `node tools/validate-convert-fixtures.mjs` checks every expected file with
-the block validator on WordPress 6.9 and 7.0 (CI job `validator`). The
+the block validator on WordPress 6.9, 7.0 and 7.1 (CI job `validator`). The
 mappers read parsed markup only, so they keep working after Pediment 5
 deletes the legacy block registrations.
 
