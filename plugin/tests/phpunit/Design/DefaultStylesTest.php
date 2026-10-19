@@ -15,7 +15,7 @@ class DefaultStylesTest extends WP_UnitTestCase {
 
 	public function test_every_default_style_passes_the_validator(): void {
 		$specs = DefaultStyles::specs();
-		$this->assertCount( 18, $specs );
+		$this->assertCount( 19, $specs );
 		foreach ( $specs as $spec ) {
 			$this->assertSame( array(), ( new StyleValidator() )->validate( $spec ), $spec['slug'] );
 		}
@@ -33,6 +33,25 @@ class DefaultStylesTest extends WP_UnitTestCase {
 		$css = $this->render_variation_css( '<!-- wp:group {"className":"is-style-card"} --><div class="wp-block-group is-style-card"><p>x</p></div><!-- /wp:group -->' );
 		$this->assertStringContainsString( 'is-style-card--', $css );
 		$this->assertStringContainsString( 'border-radius: var(--wp--custom--radius--md)', $css );
+		$this->assertMatchesRegularExpression( '/\.wp-block-group\.is-style-card--\d+\)\{[^}]*text-align: center;/', $css, 'the card centres its content; converted cards carry no alignment' );
+	}
+
+	/**
+	 * The centring is a style property, not css: theme partials merge
+	 * property by property, so a theme card keeps it unless it sets
+	 * typography.textAlign, while a theme css string would replace css.
+	 */
+	public function test_card_centres_through_the_text_align_property(): void {
+		$card = null;
+		foreach ( DefaultStyles::specs() as $spec ) {
+			if ( 'card' === $spec['slug'] ) {
+				$card = $spec;
+			}
+		}
+		$this->assertNotNull( $card );
+		$this->assertSame( 'center', $card['styles']['typography']['textAlign'] );
+		$this->assertArrayNotHasKey( 'css', $card['styles'] );
+		$this->assertSame( array(), ( new StyleValidator() )->validate( $card ) );
 	}
 
 	public function test_converter_styles_are_registered_for_their_blocks(): void {
@@ -70,6 +89,13 @@ class DefaultStylesTest extends WP_UnitTestCase {
 		DefaultStyles::registerAll();
 		$css = $this->render_variation_css( '<!-- wp:image {"className":"is-style-framed"} --><figure class="wp-block-image is-style-framed"><img src="x.jpg" alt=""/></figure><!-- /wp:image -->' );
 		$this->assertMatchesRegularExpression( '/\.wp-block-image\.is-style-framed--\d+ img,[^{]*\)\{border-radius: var\(--wp--custom--radius--md\);box-shadow: var\(--wp--preset--shadow--medium\);/', $css );
+	}
+
+	public function test_tile_styles_the_icon_glyph_with_tokens(): void {
+		DefaultStyles::registerAll();
+		$css = $this->render_variation_css( '<!-- wp:pediment/icon {"icon":"cube","className":"is-style-tile"} /-->' );
+		$this->assertMatchesRegularExpression( '/\.wp-block-pediment-icon\.is-style-tile--\d+>\.wp-block-pediment-icon__glyph\)\{width:46px;height:46px;/', $css );
+		$this->assertStringContainsString( 'background:var(--wp--preset--color--accent-tint);color:var(--wp--preset--color--accent)', $css );
 	}
 
 	public function test_pill_text_uses_the_surface_token(): void {

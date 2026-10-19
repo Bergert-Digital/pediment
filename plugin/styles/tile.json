@@ -1,0 +1,10 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/theme.json",
+	"version": 3,
+	"title": "Tile",
+	"slug": "tile",
+	"blockTypes": [ "pediment/icon" ],
+	"styles": {
+		"css": "&>.wp-block-pediment-icon__glyph{width:46px;height:46px;margin-block-end:4px;border-radius:var(--wp--custom--radius--md);background:var(--wp--preset--color--accent-tint);color:var(--wp--preset--color--accent);font-size:22px}"
+	}
+}
