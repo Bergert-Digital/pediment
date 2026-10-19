@@ -165,7 +165,7 @@ runs the editor's own check in Node:
 
 | Option | Meaning |
 | --- | --- |
-| `--wp` | WordPress version or line of the target site (default 6.9). Lines 6.9 and 7.0 are supported. |
+| `--wp` | WordPress version or line of the target site (default 6.9). Lines 6.9, 7.0 and 7.1 are supported. |
 | `--file` | Markup file. A `.php` pattern file has its leading `<?php … ?>` header removed. Without it the validator reads stdin. |
 | `--pattern` | The markup is a seeder pattern. A `.php` file is always treated as one. |
 | `--json` | Machine-readable report. |
@@ -200,7 +200,9 @@ block packages and jsdom, about 700 MB) into `~/.cache/pediment/validator`
 `PEDIMENT_VALIDATOR_CACHE` to use another folder. The install needs `npm`
 on the PATH and network access, and it runs in a temporary directory that is
 renamed into place, so two parallel first runs do not break each other. Later
-runs reuse the cache. Node 20 or later is required.
+runs reuse the cache. Node 20 or later is required. Where each line's
+package versions come from, and how to add a line, is in
+`client-kit/validator/README.md`.
 
 After writing, open the page in the block editor once (or ask a person to).
 `pediment-check-page` then also reports any block the editor rejected under
