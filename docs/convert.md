@@ -98,6 +98,13 @@ name) move to the new outer block, so a hidden block stays hidden. A client
 theme that styled the legacy `starter-*` classes needs matching styles for
 the new blocks.
 
+The scroll-in animation stays: `reveal.js` animates elements with the
+`card`, `stat`, `accordion`, `media-card` and `panel` styles, the children of a
+`steps` group and the images in a `logos` group, as it animated the legacy
+feature cards, steps, stats, logos, FAQ items, media cards and CTAs. The
+converted hero's children do not animate. Visitors who prefer reduced motion
+get no animation.
+
 ## Before you convert production
 
 The new blocks look like the plugin's default styles, not like the client
