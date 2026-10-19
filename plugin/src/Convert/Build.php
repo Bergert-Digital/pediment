@@ -40,6 +40,23 @@ final class Build {
 	}
 
 	/**
+	 * A dynamic block without inner blocks. Only its comment is stored
+	 * (`<!-- wp:name {…} /-->`); the block's render.php builds the HTML.
+	 *
+	 * @param string $name  Block name.
+	 * @param array  $attrs Comment attributes.
+	 */
+	public static function dynamic( string $name, array $attrs ): array {
+		return array(
+			'blockName'    => $name,
+			'attrs'        => $attrs,
+			'innerBlocks'  => array(),
+			'innerHTML'    => '',
+			'innerContent' => array(),
+		);
+	}
+
+	/**
 	 * A block with inner blocks: $open, the inner blocks separated by blank
 	 * lines, $close.
 	 *

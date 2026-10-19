@@ -64,12 +64,74 @@ class GridMappersTest extends WP_UnitTestCase {
 		$result = $this->convert( '<!-- wp:pediment/feature {"imageId":4040,"title":"T","linkText":"Go","linkUrl":"javascript:alert(1)"} /-->' );
 		$this->assertStringNotContainsString( 'wp:image', $result->markup );
 		$this->assertStringNotContainsString( 'javascript', $result->markup, 'an unsafe link is dropped with its paragraph' );
-		$this->assertContains( 'pediment/feature: image 4040 not found, left out', $result->notes );
-		$this->assertContains( 'pediment/feature: icon dropped, core blocks cannot show the icon set', $result->notes );
+		$this->assertSame( array( 'pediment/feature: image 4040 not found, left out' ), $result->notes );
+		$this->assertStringContainsString( '<!-- wp:pediment/icon {"icon":"trend-up","className":"is-style-tile"} /-->', $result->markup, 'a missing image falls back to the icon, as the legacy render did' );
 
-		$with = $this->convert( '<!-- wp:pediment/feature {"imageId":55,"title":"T"} /-->' );
+		$with = $this->convert( '<!-- wp:pediment/feature {"imageId":55,"icon":"cube","title":"T"} /-->' );
 		$this->assertStringContainsString( 'photo-55-medium.jpg', $with->markup );
-		$this->assertSame( array(), $with->notes, 'no icon note when an image replaces the icon' );
+		$this->assertStringNotContainsString( 'wp:pediment/icon', $with->markup, 'an image wins over the icon' );
+		$this->assertSame( array(), $with->notes );
+	}
+
+	/**
+	 * @return array<string,array{string,string|null}>
+	 */
+	public function icons(): array {
+		return array(
+			'set'           => array( '"icon":"key",', 'key' ),
+			'absent'        => array( '', 'trend-up' ),
+			'empty'         => array( '"icon":"",', null ),
+			'not a string'  => array( '"icon":["key"],', 'trend-up' ),
+			'normalised'    => array( '"icon":"Key\\"><b>",', 'keyb' ),
+			'only symbols'  => array( '"icon":"<>",', null ),
+		);
+	}
+
+	/**
+	 * The icon becomes the card's first child: pediment/icon in the tile
+	 * style. The legacy block.json default (trend-up) applies when the
+	 * attribute is absent; an empty icon rendered no icon and gets none.
+	 *
+	 * @dataProvider icons
+	 */
+	public function test_feature_icon_becomes_a_tile_icon_block( string $attr, ?string $slug ): void {
+		$result = $this->convert( '<!-- wp:pediment/feature {' . $attr . '"title":"T"} /-->' );
+		$card   = parse_blocks( $result->markup )[0];
+		$first  = $card['innerBlocks'][0];
+		if ( null === $slug ) {
+			$this->assertSame( 'core/heading', $first['blockName'] );
+			$this->assertStringNotContainsString( 'wp:pediment/icon', $result->markup );
+			return;
+		}
+		$this->assertSame( 'pediment/icon', $first['blockName'] );
+		$this->assertSame( array( 'icon' => $slug, 'className' => 'is-style-tile' ), $first['attrs'] );
+		$this->assertStringContainsString( '<!-- wp:pediment/icon ' . wp_json_encode( $first['attrs'] ) . ' /-->', $result->markup );
+	}
+
+	/**
+	 * The card style centres the card; its children carry no alignment, so a
+	 * client theme's card style can align the whole card.
+	 */
+	public function test_card_children_carry_no_alignment(): void {
+		$markup = $this->convert( '<!-- wp:pediment/feature {"imageId":55,"title":"T","text":"X","linkText":"Go","linkUrl":"/go"} /--><!-- wp:pediment/feature {"title":"T","text":"X"} /-->' )->markup;
+		foreach ( array( 'textAlign', '"align"', 'has-text-align-', 'aligncenter' ) as $needle ) {
+			$this->assertStringNotContainsString( $needle, $markup );
+		}
+	}
+
+	public function test_card_link_paragraph_carries_a_plain_class(): void {
+		$card = parse_blocks( $this->convert( '<!-- wp:pediment/feature {"title":"T","text":"X","linkText":"Go","linkUrl":"/go"} /-->' )->markup )[0];
+		$link = end( $card['innerBlocks'] );
+		$this->assertSame( array( 'className' => 'pediment-card-link' ), $link['attrs'] );
+		$this->assertSame( "\n<p class=\"pediment-card-link\"><a href=\"/go\">Go</a></p>\n", $link['innerHTML'] );
+	}
+
+	public function test_icon_outside_the_set_is_kept_and_noted(): void {
+		$known   = $this->convert( '<!-- wp:pediment/feature {"icon":"cube","title":"T"} /-->' );
+		$unknown = $this->convert( '<!-- wp:pediment/feature {"icon":"no-such-icon","title":"T"} /-->' );
+		$this->assertSame( array(), $known->notes );
+		$this->assertSame( array( 'pediment/feature: icon no-such-icon is not in the icon set, the card shows no icon' ), $unknown->notes );
+		$this->assertStringContainsString( '{"icon":"no-such-icon","className":"is-style-tile"}', $unknown->markup );
 	}
 
 	/**

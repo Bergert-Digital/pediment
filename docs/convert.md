@@ -18,7 +18,7 @@ default styles (see [design-layer.md](design-layer.md)):
 | `hero` media-bg | `media-card` cover (the image, primary overlay) → h1, `lead`, `pill` button |
 | `hero` stat-card | columns: copy, `pill` + `pill-ghost` buttons, ticks list · `media-card` cover with a `card` group that holds a `stat` group and the metrics |
 | `cta` | `panel` section group → h2, paragraph, `pill` + `pill-ghost` buttons |
-| `feature-grid` + `feature` | grid group (up to 3 columns, 2 for four cards) of `card` groups → image, h3, text, link |
+| `feature-grid` + `feature` | grid group (up to 3 columns, 2 for four cards) of `card` groups → image or `tile` icon (`pediment/icon`), h3, text, link paragraph with the plain class `pediment-card-link` |
 | `stat-grid` + `stat` | grid group (one column per stat, up to 4) of `stat` groups → value, label, context (only the parts that are set) |
 | `steps` + `step` | `steps` grid group (up to 3 columns, 2 for four steps; numbers the steps) of groups → h3, text |
 | `media-text` | `media-row` media & text block; inner blocks move unchanged |
@@ -35,6 +35,29 @@ Grids collapse on phones. The converter writes `minimumColumnWidth` as
 minimum when `columnCount` is set, and the grid would never collapse. On wide
 screens the grid holds N columns; below about N times the floor it drops to
 fewer columns, down to one.
+
+The plain classes `pediment-section-head` and `pediment-card-link` let a
+client theme select a converted section head and a card's link paragraph
+without a structural selector such as `> p:last-child`.
+
+The `card` style centres the card's content. The converter writes no
+alignment on the card's heading, paragraphs or image, so a client theme's
+`card` style with `"typography": { "textAlign": "left" }` left-aligns the
+whole card, the icon and the image included. The centring is the style
+property `typography.textAlign`, and theme partials merge property by
+property: a theme `card` partial keeps the centring unless it sets
+`typography.textAlign` itself, even when it has its own `css`. The hero
+stat card is a `card` group too: its `stat` group is centred, and each metric
+paragraph is aligned left (value over label), as the legacy block rendered it.
+
+A feature's icon becomes a `pediment/icon` block in the `tile` style, the
+first block of the card. A feature with an image keeps the image and gets no
+icon, as the legacy block rendered it. A feature without an `icon` attribute
+gets `trend-up`, the legacy default; a feature with an empty icon gets none.
+An icon that is not in the icon set stays in the block, and the report names
+it ("pediment/feature: icon … is not in the icon set, the card shows no
+icon"). A client theme restyles the tile with its own `tile` style for
+`pediment/icon` (see [design-layer.md](design-layer.md)).
 
 A child block outside its parent (a lone FAQ item, stat, step, feature or
 testimonial) converts on its own. A legacy block inside another block, at any
@@ -55,9 +78,6 @@ says so ("pediment/hero: variant … has no mapping, converted as default").
 
 Some things have no core equivalent and are dropped:
 
-- Feature icons. The report names them once per page, with a count
-  ("pediment/feature: icon dropped … (3 times)"). A feature with an image
-  keeps the image.
 - Hero tick icons and the FAQ toggle icon. The new blocks use the default list
   bullet and the details arrow. The report does not name these.
 - Hover effects (card lift, link arrow).
@@ -77,6 +97,13 @@ metadata (the list-view name, the "Hide" setting `blockVisibility`, a pattern
 name) move to the new outer block, so a hidden block stays hidden. A client
 theme that styled the legacy `starter-*` classes needs matching styles for
 the new blocks.
+
+The scroll-in animation stays: `reveal.js` animates elements with the
+`card`, `stat`, `accordion`, `media-card` and `panel` styles, the children of a
+`steps` group and the images in a `logos` group, as it animated the legacy
+feature cards, steps, stats, logos, FAQ items, media cards and CTAs. The
+converted hero's children do not animate. Visitors who prefer reduced motion
+get no animation.
 
 ## Before you convert production
 

@@ -55,6 +55,9 @@
 				</key>
 			</key>
 		</gutenberg-block>
+		<gutenberg-block type="pediment/icon" translate="1">
+			<key name="label"/>
+		</gutenberg-block>
 		<gutenberg-block type="pediment/image-caption" translate="1">
 			<key name="caption"/>
 			<key name="altOverride"/>

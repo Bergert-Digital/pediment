@@ -20,6 +20,16 @@ test.describe( 'Pediment foundation', () => {
 		await expect( page.locator( 'svg use' ) ).toHaveCount( 0 );
 	} );
 
+	test( 'converted cards reveal on scroll like the legacy feature cards', async ( {
+		page,
+	} ) => {
+		await page.goto( '/' );
+		const card = page.locator( '.wp-block-group.is-style-card' ).first();
+		await expect( card ).toHaveAttribute( 'data-reveal', '' );
+		await card.scrollIntoViewIfNeeded();
+		await expect( card ).toHaveClass( /\bis-in\b/ );
+	} );
+
 	test( 'anim gate class is set on <html>', async ( { page } ) => {
 		await page.goto( '/' );
 		await expect( page.locator( 'html' ) ).toHaveClass( /\banim\b/ );

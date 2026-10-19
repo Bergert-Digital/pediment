@@ -105,6 +105,29 @@ first one wins, even if you clicked the other swatch. The preview resolves
 every form the same way `render.php` does (`panelColors()` in
 `plugin/src/blocks/slider/panel-fg.ts`).
 
+## Icon
+
+`pediment/icon` shows one icon from the plugin's Phosphor set (the slugs in
+`plugin/assets/icons/`, the set `pediment_icon()` renders). It has two
+attributes: `icon` (the slug) and `label`. An empty or unknown slug renders
+nothing. Without a label the icon is decorative (`aria-hidden="true"`); with
+a label the glyph gets `role="img"` and the label as `aria-label`.
+
+```html
+<div class="wp-block-pediment-icon is-style-tile">
+  <span class="wp-block-pediment-icon__glyph" aria-hidden="true"><svg …></svg></span>
+</div>
+```
+
+The wrapper is block-level and the glyph is inline, so the glyph follows the
+parent's `text-align`: centred in a centred card, left in a left-aligned
+one. Size and look belong on the glyph, not on the wrapper: a constrained
+layout centres a block child with a fixed width. Without a style the glyph
+is about 1.5em in the text colour. The plugin's `tile` style puts it on a
+46px accent-tint square; a client theme overrides it with a `tile` partial
+for `pediment/icon` in its `styles/blocks/` that targets
+`&>.wp-block-pediment-icon__glyph`.
+
 ## Legacy blocks
 
 The 18 presentation blocks in `Pediment\Content\Policy::LEGACY` (hero, cta,
