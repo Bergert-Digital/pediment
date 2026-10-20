@@ -43,7 +43,7 @@ require_once PEDIMENT_AI_PLUGIN_DIR . '/inc/forms-delivery.php';
 require_once PEDIMENT_AI_PLUGIN_DIR . '/inc/forms-settings.php';
 
 // Blocks + presentation modules moved from the theme (Task 5 of the
-// plugin-absorbs-theme migration): the 24 pediment/* blocks now register from
+// plugin-absorbs-theme migration): the 7 pediment/* blocks now register from
 // PEDIMENT_AI_PLUGIN_DIR . '/build/blocks' regardless of which theme is active.
 require_once PEDIMENT_AI_PLUGIN_DIR . '/inc/register-blocks.php';
 require_once PEDIMENT_AI_PLUGIN_DIR . '/inc/icons.php';

@@ -3,11 +3,12 @@ import { execSync } from 'node:child_process';
 import { createPageWithContent, login } from './utils';
 
 /**
- * Plan 4a: legacy blocks are hidden from the inserter, and a page converted
- * by the pediment/convert-legacy ability opens in the block editor with zero
- * invalid blocks. The abilities run over the Abilities REST route, the same
- * callbacks the MCP server calls. convert-legacy is destructive and
- * idempotent, so core's route wants DELETE with the input in the query.
+ * Pediment 5 removed the legacy blocks, so the editor no longer registers
+ * them, and a page converted by the pediment/convert-legacy ability opens in
+ * the block editor with zero invalid blocks. The abilities run over the
+ * Abilities REST route, the same callbacks the MCP server calls.
+ * convert-legacy is destructive and idempotent, so core's route wants DELETE
+ * with the input in the query.
  * write-page rejects legacy blocks since Pediment 5, so WP-CLI seeds the
  * legacy page.
  */
@@ -38,20 +39,20 @@ async function restNonce( page: Page ): Promise< string > {
 	return ( await response.text() ).trim();
 }
 
-test( 'legacy blocks are hidden from the inserter', async ( { page } ) => {
+test( 'a legacy block is not registered', async ( { page } ) => {
 	await login( page );
 	await page.goto( '/wp-admin/post-new.php?post_type=page' );
+	// Wait on a block that stays registered, never on the removed one.
 	await page.waitForFunction(
-		() => !! ( window as any ).wp?.blocks?.getBlockType?.( 'pediment/hero' )
+		() => !! ( window as any ).wp?.blocks?.getBlockType?.( 'pediment/form' )
 	);
-	const inserter = await page.evaluate( () =>
-		[ 'pediment/hero', 'pediment/faq', 'pediment/prose', 'pediment/form' ].map(
+	const unregistered = await page.evaluate( () =>
+		[ 'pediment/hero', 'pediment/faq', 'pediment/prose' ].map(
 			( name ) =>
-				( window as any ).wp.blocks.getBlockType( name )?.supports?.inserter
+				( window as any ).wp.blocks.getBlockType( name ) === undefined
 		)
 	);
-	expect( inserter.slice( 0, 3 ) ).toEqual( [ false, false, false ] );
-	expect( inserter[ 3 ] ).not.toBe( false );
+	expect( unregistered ).toEqual( [ true, true, true ] );
 } );
 
 test( 'a converted page opens with zero invalid blocks', async ( { page } ) => {
