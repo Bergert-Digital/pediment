@@ -39,6 +39,7 @@ class ConvertAdminTabTest extends WP_UnitTestCase {
 		$this->assertStringContainsString( 'name="ids[]" value="' . $id . '"', $html );
 		$this->assertStringContainsString( 'Convert 1 post', $html );
 		$this->assertStringContainsString( '&lt;!-- wp:quote', $html, 'the diff is escaped' );
+		$this->assertStringNotContainsString( 'was removed in Pediment 5', $html, 'the Policy error for the legacy block is not a reason shown in the preview' );
 		$this->assertSame( self::LEGACY, get_post_field( 'post_content', $id ) );
 	}
 

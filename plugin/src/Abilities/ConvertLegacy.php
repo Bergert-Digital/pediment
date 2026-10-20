@@ -36,7 +36,7 @@ final class ConvertLegacy extends Ability {
 	}
 
 	protected function description(): string {
-		return __( 'Replaces the 18 legacy Pediment blocks (hero, cta, feature-grid, faq, …) with core blocks and named styles. Pass ids (pages, posts, synced patterns, templates) or all: true (the posts in every language that hold a legacy block, at most 25 per call; remaining says how many come after this batch; pass after: <last id> to move on past posts that failed). dry_run defaults to true and returns a diff per post without writing; run again with dry_run false to write. Every written post keeps a revision first (restoreRevision; use rollback-page to undo a page). A post that cannot be converted safely is not written (status failed, errors says why). notes lists what changed beyond the swap, such as dropped icons or styles.', 'pediment' );
+		return __( 'Replaces the 18 legacy Pediment blocks (hero, cta, feature-grid, faq, …), which Pediment 5.0 removed and which no longer render, with core blocks and named styles. Pass ids (pages, posts, synced patterns, templates) or all: true (the posts in every language that hold a legacy block, at most 25 per call; remaining says how many come after this batch; pass after: <last id> to move on past posts that failed). dry_run defaults to true and returns a diff per post without writing; run again with dry_run false to write. Every written post keeps a revision first (restoreRevision; use rollback-page to undo a page). A post that cannot be converted safely is not written (status failed, errors says why). notes lists what changed beyond the swap, such as dropped icons or styles.', 'pediment' );
 	}
 
 	protected function inputSchema(): array {

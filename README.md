@@ -1,6 +1,6 @@
 # Pediment
 
-Pediment is a WordPress plugin that ships the shared site engine: 24 Gutenberg
+Pediment is a WordPress plugin that ships the shared site engine: 7 Gutenberg
 blocks, templates, patterns, design tokens, forms and seeding.
 Each site uses its own standalone client theme for branding and client-owned
 customizations. The release artifact is `pediment-plugin.zip`.

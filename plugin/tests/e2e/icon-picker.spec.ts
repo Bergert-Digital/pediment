@@ -15,15 +15,15 @@ test.describe( 'icon picker discoverability', () => {
 		const url = createPageWithContent(
 			SLUG,
 			'Icon Picker E2E',
-			'<!-- wp:pediment/feature {"icon":"trend-up","title":"T","text":"x"} /-->'
+			'<!-- wp:pediment/icon {"icon":"trend-up"} /-->'
 		);
 		const id = url.replace( /[^0-9]/g, '' );
 		await login( page );
 		await page.goto( `/wp-admin/post.php?post=${ id }&action=edit` );
 
-		// Select the feature block so its inspector panel renders.
+		// Select the icon block so its inspector panel renders.
 		const canvas = page.frameLocator( 'iframe[name="editor-canvas"]' );
-		const block = canvas.locator( '.starter-feature' ).first();
+		const block = canvas.locator( '.wp-block-pediment-icon' ).first();
 		await expect( block ).toBeVisible( { timeout: 20000 } );
 		await block.click();
 

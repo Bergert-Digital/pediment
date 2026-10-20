@@ -72,6 +72,32 @@ class PostConverterTest extends WP_UnitTestCase {
 		$this->assertNotEmpty( array_filter( $report['existingErrors'], static fn( string $e ): bool => str_contains( $e, '#ff0000' ) ) );
 	}
 
+	public function test_the_policy_error_for_a_legacy_block_does_not_stop_its_conversion(): void {
+		$content = self::LEGACY . "\n\n" . '<!-- wp:group {"metadata":{"name":"Box"}} --><div class="wp-block-group"><!-- wp:pediment/faq --><!-- wp:pediment/faq-item {"question":"Q","answer":"A"} /--><!-- /wp:pediment/faq --></div><!-- /wp:group -->';
+		$this->assertTrue( $this->has_removed_error( ( new Policy() )->check( $content )['errors'] ), 'the Policy rejects the legacy blocks' );
+		$id = $this->page( $content );
+
+		$preview = $this->service()->run( $id, true );
+		$this->assertSame( 'preview', $preview['status'], implode( "\n", $preview['errors'] ) );
+		$this->assertSame( array(), $preview['errors'] );
+		$this->assertTrue( $this->has_removed_error( $preview['existingErrors'] ) );
+
+		$report = $this->service()->run( $id, false );
+		$this->assertSame( 'converted', $report['status'], implode( "\n", $report['errors'] ) );
+		$this->assertSame( array(), $report['errors'] );
+		$this->assertSame( array(), ( new Policy() )->legacyBlocksIn( get_post_field( 'post_content', $id ) ) );
+		$this->assertFalse( $this->has_removed_error( ( new Policy() )->check( get_post_field( 'post_content', $id ) )['errors'] ) );
+	}
+
+	/**
+	 * Whether a Policy error says a block was removed in Pediment 5.
+	 *
+	 * @param list<string> $errors Policy errors.
+	 */
+	private function has_removed_error( array $errors ): bool {
+		return array() !== array_filter( $errors, static fn( string $e ): bool => str_contains( $e, 'was removed in Pediment 5' ) );
+	}
+
 	public function test_a_conversion_that_adds_a_rule_error_is_not_written(): void {
 		$content = '<!-- wp:pediment/pull-quote {"quote":"Type javascript:void(0) here"} /-->';
 		$id      = $this->page( $content );

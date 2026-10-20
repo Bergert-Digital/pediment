@@ -3,10 +3,10 @@
  * MCP smoke test. Talks to the Pediment MCP server of the running root
  * wp-env exactly like Claude Code does (JSON-RPC over HTTP, Basic auth with
  * an application password) and checks: the tool list, get-vocabulary, a
- * write-page → check-page round trip, a convert-legacy preview and conversion
- * of a legacy page, and that a write breaking two rules comes back as one tool
- * error naming both. Removes every page and the
- * application password it created, even when a step fails.
+ * write-page → check-page round trip, that write-page rejects a legacy block,
+ * a convert-legacy preview and conversion of a legacy page, and that a write
+ * breaking two rules comes back as one tool error naming both. Removes every
+ * page and the application password it created, even when a step fails.
  *
  * Usage: node tools/mcp-smoke.mjs   (wp-env must be running)
  */
@@ -112,13 +112,16 @@ async function main() {
 		const checked = await call( 'pediment-check-page', { id: pageId } );
 		assert( ! checked.isError && checked.structuredContent.errors.length === 0, `check-page reported errors: ${ text( checked ) }` );
 
-		// A legacy page: the dry run previews it, the real run converts it.
-		const legacy = await call( 'pediment-write-page', {
-			title: 'MCP smoke legacy',
-			markup: '<!-- wp:pediment/pull-quote {"quote":"Converted through MCP."} /-->',
-		} );
-		assert( ! legacy.isError, `write-page (legacy markup) failed: ${ text( legacy ) }` );
-		const legacyId = legacy.structuredContent.id;
+		// A legacy page: write-page rejects legacy blocks (Pediment 5), so WP-CLI
+		// stores it; the dry run previews it, the real run converts it.
+		const legacyMarkup = '<!-- wp:pediment/pull-quote {"quote":"Converted through MCP."} /-->';
+		const refused = await call( 'pediment-write-page', { title: 'MCP smoke legacy', markup: legacyMarkup } );
+		if ( ! refused.isError && refused.structuredContent?.id ) {
+			pageIds.push( refused.structuredContent.id );
+		}
+		assert( refused.isError && /was removed in Pediment 5/.test( text( refused ) ), `write-page accepted a legacy block: ${ text( refused ) }` );
+		const legacyId = Number( wp( 'post', 'create', '--post_type=page', '--post_status=draft', '--post_title=MCP smoke legacy', `--post_content=${ legacyMarkup }`, '--porcelain' ) );
+		assert( legacyId > 0, 'wp post create did not return the legacy page id' );
 		pageIds.push( legacyId );
 		const preview = await call( 'pediment-convert-legacy', { ids: [ legacyId ] } );
 		assert( ! preview.isError && preview.structuredContent.posts[ 0 ].status === 'preview', `convert-legacy dry run failed: ${ text( preview ) }` );

@@ -11,6 +11,7 @@ namespace Pediment\Convert;
 
 use Pediment\Abilities\PageData;
 use Pediment\Content\InvalidBlockLog;
+use Pediment\Content\LegacyContentNotice;
 use Pediment\Content\Policy;
 use Pediment\Language\LanguageRegistry;
 use Pediment\Seeder\Kses;
@@ -238,8 +239,10 @@ final class PostConverter {
 			$report['errors'] = array( $updated->get_error_message() );
 			return $report;
 		}
-		// The content changed, so the editor's invalid-block report is stale.
+		// The content changed, so the editor's invalid-block report and the
+		// admin notice's legacy count are stale.
 		InvalidBlockLog::clear( $id );
+		LegacyContentNotice::clear();
 		if ( ! $this->isBackup( $restore, $id ) ) {
 			// The revision limit pruned the backup after the write.
 			$report['status'] = 'failed';
