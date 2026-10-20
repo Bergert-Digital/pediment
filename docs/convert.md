@@ -1,10 +1,11 @@
 # Converting legacy blocks
 
-Pediment 4 replaces 18 presentation blocks (`pediment/hero`, `cta`,
+Pediment 4 replaced 18 presentation blocks (`pediment/hero`, `cta`,
 `feature-grid`, `faq` and the others in `Policy::LEGACY`) with core blocks and
-named styles. The converter rewrites stored content. The legacy blocks still
-render, but the block inserter no longer offers them, and Pediment 5 deletes
-them.
+named styles. Pediment 5 removed the 18 blocks. A post that still holds one
+shows it empty or unstyled, and administrators see a notice that links to the
+Convert tab. The converter rewrites stored content. It stays until Pediment 6,
+so a site can also convert after the update to 5.0.
 
 ## What the converter does
 
@@ -75,6 +76,9 @@ variant, as the legacy block rendered it. When a client theme registers a
 variant with the `pediment_hero_variants` filter and the converter has no
 mapping for it, the hero converts as the default variant too, and the report
 says so ("pediment/hero: variant … has no mapping, converted as default").
+The `pediment_hero_variants()` function and its filter stay in Pediment 5
+only for the converter, which reads them. The block editor no longer does.
+They go in Pediment 6, together with the converter.
 
 Some things have no core equivalent and are dropped:
 
@@ -104,9 +108,11 @@ the new blocks.
 The scroll-in animation stays: `reveal.js` animates elements with the
 `card`, `stat`, `accordion`, `media-card` and `panel` styles, the children of a
 `steps` group and the images in a `logos` group, as it animated the legacy
-feature cards, steps, stats, logos, FAQ items, media cards and CTAs. The
-converted hero's children do not animate. Visitors who prefer reduced motion
-get no animation.
+feature cards, steps, stats, logos, FAQ items, media cards and CTAs. Since
+Pediment 5 it names only these converted styles and the children of a
+`starter-band`; the legacy `starter-*` selectors are gone. The converted
+hero's children do not animate. Visitors who prefer reduced motion get no
+animation.
 
 A post whose text was inside legacy blocks (for example a `prose` block) can
 get an automatic excerpt after the conversion. WordPress builds an automatic
@@ -126,7 +132,8 @@ theme's styles for the legacy blocks. Convert a site in this order:
 2. Where the client theme styled a legacy block (`starter-*` classes, a
    legacy `is-style-*` class), add client-theme styles for the new blocks.
 3. Compare the converted pages with the old ones (screenshots at phone,
-   tablet and desktop width).
+   tablet and desktop width). On Pediment 5 the old pages no longer render,
+   so take the "before" screenshots on a copy that still runs Pediment 4.
 4. Only then convert production through wp-admin.
 
 The wp-admin tab shows this order above the preview.
@@ -260,8 +267,10 @@ parent/child pair. Each output shape has a fixture pair in
 expected markup and that it passes the content rules;
 `node tools/validate-convert-fixtures.mjs` checks every expected file with
 the block validator on WordPress 6.9, 7.0 and 7.1 (CI job `validator`). The
-mappers read parsed markup only, so they keep working after Pediment 5
-deletes the legacy block registrations.
+mappers read parsed markup only, so they work without the legacy block
+registrations, which Pediment 5 removed. `HeroMapper` reads
+`pediment_hero_variants()` (`plugin/inc/hero-variants.php`). The converter,
+its mappers, fixtures and tests and that function go in Pediment 6.
 
 `PostConverter` is the one service behind the ability, the wp-admin tab and
 WP-CLI; `PatternFiles` handles pattern files. The end-to-end check is

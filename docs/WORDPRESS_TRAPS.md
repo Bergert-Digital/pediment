@@ -119,17 +119,18 @@ between them — every structural element, every BEM class on a RichText, and ev
 non-editable wrapper has to be hand-mirrored in `edit.tsx`. The moment one side gets a
 new wrapper div or class, the other silently drifts.
 **Fix.** Match the DOM structure in `edit.tsx` to `render.php` exactly. That includes
-(a) wrapper divs that CSS grid/flex layouts depend on (`.starter-hero__col`,
-`.starter-section-head__inner`), (b) BEM classNames on RichText tags
-(`className="starter-cta__title"` on the title RichText, etc.), and (c) non-editable
+(a) wrapper divs that CSS grid/flex layouts depend on (`.starter-slider__rail`,
+`.starter-slider__track`), (b) BEM classNames on RichText tags, and (c) non-editable
 visual chrome rendered via stateful JSX that reads the same attributes `render.php`
-reads (figure → glass card with stat/metrics, image preview via `useSelect` against
-`core` entities).
-**Catch it early.** [tests/e2e/edit-render-parity.spec.ts](../tests/e2e/edit-render-parity.spec.ts)
-asserts that a curated list of BEM selectors is present in both the editor canvas iframe
-AND the front-end HTML for every block on the home page. Add new selectors there
-whenever a block grows new visible structure; the test fails if a class lands on one
-side and not the other.
+reads (image preview via `useSelect` against `core` entities). The trap was first
+seen on the legacy hero, section-head and CTA blocks, which Pediment 5 removed. It
+still holds for every block with its own `render.php`, for example the slider and
+the mega menu.
+**Catch it early.** [plugin/tests/e2e/edit-render-parity.spec.ts](../plugin/tests/e2e/edit-render-parity.spec.ts)
+asserts that a curated list of selectors (the named styles the home page uses) is
+present in both the editor canvas iframe AND the front-end HTML. Add selectors there
+whenever the home page gains new visible structure; the test fails if a class lands
+on one side and not the other.
 
 ---
 
@@ -137,7 +138,8 @@ side and not the other.
 
 **Symptom.** Calling `wp_update_post` with `post_content` containing a block markup
 comment like `<!-- wp:pediment/hero {"headline":"<span class=\"accent\">…</span>"} -->`
-results in stored content with stripped backslashes (`u003c` literal text or unbalanced
+(the hero is a legacy block that Pediment 5 removed; any block whose attribute JSON
+holds escapes is affected) results in stored content with stripped backslashes (`u003c` literal text or unbalanced
 quotes), and the page crashes with
 `PHP Fatal error: array_key_exists(): Argument #2 ($array) must be of type array, null given in block-supports/align.php`.
 **Cause.** WordPress treats `post_content` as form input and applies `wp_unslash` before
@@ -237,9 +239,12 @@ toolbar for a specific RichText field, even though it's registered correctly glo
 empty array means no formats. Custom formats are not auto-included.
 **Fix.** Either omit `allowedFormats` entirely (allows all registered formats), or pass an
 explicit list including the custom: `allowedFormats={['core/bold', 'core/italic', 'pediment/accent']}`.
-For the section-head block's eyebrow / headline / lead, we keep `allowedFormats={[]}`
-intentionally — those fields should stay plaintext. The hero `headline` omits it so the
-Accent button is reachable.
+`pediment/accent` is registered by the shared editor script
+(`plugin/src/editor/accent-format.tsx`, built to `plugin/build/editor/` and enqueued on
+`enqueue_block_editor_assets` in `plugin/inc/assets.php`), not by a block. Core headings
+and paragraphs set no `allowedFormats`, so the Accent button is reachable there. Before
+Pediment 5 the format lived in the hero block; the legacy section-head block kept
+`allowedFormats={[]}` on its plaintext fields.
 **Catch it early.** When registering a new format, grep for `allowedFormats={[]}` in the
 blocks you expect it to appear in — those are the ones suppressing it.
 
@@ -247,7 +252,7 @@ blocks you expect it to appear in — those are the ones suppressing it.
 
 ## Editor canvas narrows with the inspector open; alignwide content fills it
 
-**Symptom.** In the block editor, an `align:wide` block (e.g., the hero) spans the entire
+**Symptom.** In the block editor, an `align:wide` block (e.g., a wide group) spans the entire
 canvas with no visible margins, contradicting the effective token `wideSize: 1200px`.
 **Cause.** With the right Page/Block inspector open, the editor canvas iframe is often
 narrower than 1200 px (measured: ~999 px on a 1440-wide viewport). `alignwide` is "up to
@@ -746,9 +751,10 @@ once by `Pediment\Upgrade\SeedHashCleanup`.
 ## `get_registered()` re-parses a pattern, so a placeholder in block JSON drops every attribute
 
 **Symptom.** A page seeded from a pattern whose block comment holds a media placeholder,
-`<!-- wp:pediment/media-text {"mediaId":{{media_id:team}},"headline":"…"} -->`, is written
-as `<!-- wp:pediment/media-text -->`: the block has lost all its attributes, not only
-`mediaId`. The same markup passed as literal `content` seeds correctly.
+`<!-- wp:media-text {"mediaId":{{media_id:team}},"mediaType":"image"} -->`, is written
+as `<!-- wp:media-text -->`: the block has lost all its attributes, not only
+`mediaId`. (First seen on the legacy `pediment/media-text` block, which Pediment 5
+removed; the trap holds for every block.) The same markup passed as literal `content` seeds correctly.
 **Cause.** Since WP 6.4, `WP_Block_Patterns_Registry::get_registered()` and
 `get_all_registered()` pass the content through `apply_block_hooks_to_content()`. That
 always runs `parse_blocks()` and re-serializes, even with no hooked blocks (the
