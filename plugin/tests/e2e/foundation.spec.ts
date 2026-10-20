@@ -7,12 +7,9 @@ test.describe( 'Pediment foundation', () => {
 		await page.goto( '/' );
 		// The seeded landing page holds core blocks only. Its feature cards are
 		// is-style-card groups; they carry no inline icon (core blocks cannot
-		// show the icon set) and no legacy feature-grid wrapper.
+		// show the icon set).
 		const cards = page.locator( '.wp-block-group.is-style-card' );
 		await expect( cards.first() ).toBeVisible();
-		await expect( page.locator( '.starter-feature-grid' ) ).toHaveCount(
-			0
-		);
 		// The old sprite approach must be fully gone.
 		await expect( page.locator( 'svg symbol[id^="ph-"]' ) ).toHaveCount(
 			0

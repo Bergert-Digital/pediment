@@ -7,7 +7,7 @@ test.afterEach( () => {
 	deletePageBySlug( SLUG );
 } );
 
-test( 'the accent format is registered without a hero block', async ( {
+test( 'the shared editor script registers the accent format', async ( {
 	page,
 } ) => {
 	deletePageBySlug( SLUG );
@@ -41,8 +41,8 @@ test( 'the accent format is registered without a hero block', async ( {
 		};
 	} );
 
-	// The shared editor script registers the format. While the hero block
-	// exists, its editor script loads too, so check the shared one is there.
+	// No block script registers the format. The shared editor script does,
+	// so the format works on core headings and paragraphs.
 	await expect(
 		page.locator( 'script#pediment-editor-formats-js' )
 	).toHaveCount( 1 );
