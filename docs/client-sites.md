@@ -216,10 +216,10 @@ Pediment 4.0 is a breaking release. On each site, in this order:
    Theme → Convert legacy blocks. The tab works in batches of 25 posts. Run
    the preview first and read the per-page diff, then convert. Revisions must
    be enabled (at least 2 per post): every page gets a backup revision first,
-   and the result table links each converted page to a **Restore** link. The
-   legacy `pediment/*` presentation blocks still render in 4.0, but the
-   inserter hides them, and 5.0 deletes them. [convert.md](convert.md) has the
-   full order for a production site.
+   and the result table links each converted page to a **Restore** link. In
+   4.x the legacy `pediment/*` presentation blocks still render, but the
+   inserter hides them. 5.0 removes them (see "Upgrade to 5.0").
+   [convert.md](convert.md) has the full order for a production site.
 
    On admin-only hosting you cannot change the revision limit yourself. If the
    preview reports that revisions are disabled or limited to fewer than 2,
@@ -250,6 +250,51 @@ Pediment 4.0 is a breaking release. On each site, in this order:
    changes through `pediment-write-page` or the editor, then
    `npm run adopt -- <key>` refreshes its pattern for new environments.
 
+## Upgrade to 5.0
+
+Pediment 5.0 removes the 18 legacy presentation blocks (`pediment/hero`,
+`cta`, `feature-grid`, `faq` and the others in `Policy::LEGACY`). A post that
+still holds one shows it empty or unstyled. The converter stays until 6.0, so
+you can also convert after the update. The steps below need wp-admin only, so
+they work on admin-only hosting.
+
+1. **Check for legacy content.** Go to Settings → Pediment Theme → Convert
+   legacy blocks. The preview must list no posts. It covers pages, posts,
+   drafts, private posts, synced patterns and templates. If it lists posts,
+   convert them first (step 3 of "Upgrade to 4.0" and
+   [convert.md](convert.md)).
+2. **Check the client theme's patterns.** The seeder writes a pattern file
+   as it is. A page seeded from a pattern that still holds a legacy block
+   renders it empty, and `pediment-check-page` reports it as an error. The
+   site's developer
+   converts the pattern files in the client repo first
+   (`wp pediment convert --patterns=…`, see [convert.md](convert.md),
+   "Pattern files") and releases the theme. Then upload the new theme zip
+   ("Deploying").
+3. **Update the plugin.** wp-admin → Plugins → update Pediment (or upload
+   `pediment-plugin.zip`).
+4. **Read the admin notice.** While posts still hold a legacy block,
+   administrators see a notice at the top of the wp-admin screens: "N posts
+   still contain blocks that Pediment 5 removed. They no longer render." Its
+   link opens the Convert tab, which shows no notice. Convert the posts
+   there. The notice disappears after the conversion. The count is kept for
+   up to 12 hours and is cleared when a post is saved or deleted and after
+   each conversion.
+5. **Know what changed for AI agents.** `pediment-write-page` rejects a page
+   that holds a legacy block, and `pediment-check-page` reports a stored page
+   that holds one as an error, not a warning. The message names the cause:
+   "`pediment/hero` was removed in Pediment 5; convert it with
+   pediment-convert-legacy". The `pediment-convert-legacy` tool still works
+   ([mcp.md](mcp.md)).
+6. **Know what stays.** The accent format still works: editors apply
+   **Accent** to text in core headings and paragraphs, and existing accent
+   text keeps its look. The converter (the Convert tab, the
+   `pediment-convert-legacy` tool and `wp pediment convert`) and the
+   `pediment_hero_variants()` function and filter stay until 6.0. The
+   converter reads the filter; the block editor no longer does. Pediment 6
+   removes them, so a client theme that uses the filter removes that code
+   after its content is converted.
+
 ## Moving an existing site onto Pediment
 
 A site that already exists — built on the parent theme, a page builder, or
@@ -276,9 +321,12 @@ it. The order (`docs/superpowers/specs/2026-08-05-migration-step6-design.md`
      any other theme, then activate the client theme again; only then
      activate the plugin.
    - Between the theme switch and the plugin activation the site renders
-     broken (no header, fallback fonts, empty legacy blocks), because the
+     broken (no header, fallback fonts, empty blocks), because the
      parent's `theme.json` and blocks are gone and the plugin's are not yet
      loaded. Do the two steps back to back, or under maintenance mode.
+   - Pediment 5 has no legacy blocks. The parent theme's pages stay empty or
+     unstyled after the plugin is active, until you convert them (Settings →
+     Pediment Theme → Convert legacy blocks, see "Upgrade to 5.0").
 3. Settings → Pediment Theme → Seeding → **Preview claim** — read the plan,
    including every MEDIA line (claim matches media by file name since 4.1).
 4. **Claim content** — identity only; see

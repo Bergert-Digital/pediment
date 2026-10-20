@@ -40,7 +40,7 @@ two rules comes back as one tool error that names both.
 | `pediment-get-vocabulary` | Tokens, named styles (with layer), allowed blocks, rules, WordPress version, languages. Call it first. |
 | `pediment-list-pages` | Pages of every language. Filters: language, parent, status. At most 500 pages; `truncated` is true when more matched. |
 | `pediment-read-page` | One page with raw block markup and translations. |
-| `pediment-check-page` | Content-rule errors and warnings, blocks the editor reported invalid, legacy blocks still on the page. |
+| `pediment-check-page` | Content-rule errors and warnings, blocks the editor reported invalid, legacy blocks still on the page (errors since Pediment 5). |
 | `pediment-write-page` | Create (draft by default) or update a page. Rejected with every violation listed if a rule fails. Keeps a revision. |
 | `pediment-rollback-page` | Restore one of the page's own revisions. |
 | `pediment-upsert-style` | Create or change a site-layer style (see [design-layer.md](design-layer.md)). |
