@@ -1,7 +1,8 @@
 <?php
 /**
- * Global front-end assets: theme.css, reveal.js, the editor stylesheet, and
- * the no-FOUC inline script that adds the .anim class before first paint.
+ * Global assets: theme.css, reveal.js, the editor stylesheet, the shared
+ * block-editor script, and the no-FOUC inline script that adds the .anim class
+ * before first paint.
  * Moved from the theme's functions.php (Task 6 of the plugin-absorbs-theme
  * migration) now that assets/ ships from the plugin.
  *
@@ -42,6 +43,28 @@ add_action(
 		wp_print_inline_script_tag( "document.documentElement.classList.add('anim')" );
 	},
 	0
+);
+
+// Shared block-editor script (plugin/src/editor → build/editor): RichText
+// formats such as pediment/accent, loaded for every block so they work on core
+// headings and paragraphs. Skipped quietly when the build is missing.
+add_action(
+	'enqueue_block_editor_assets',
+	function () {
+		$asset_path = PEDIMENT_AI_PLUGIN_DIR . '/build/editor/index.asset.php';
+		if ( ! file_exists( $asset_path ) ) {
+			return;
+		}
+		$asset = require $asset_path;
+		wp_enqueue_script(
+			'pediment-editor-formats',
+			PEDIMENT_AI_PLUGIN_URL . 'build/editor/index.js',
+			$asset['dependencies'] ?? array(),
+			$asset['version'] ?? PEDIMENT_AI_VERSION,
+			true
+		);
+		wp_set_script_translations( 'pediment-editor-formats', 'pediment' );
+	}
 );
 
 add_action(

@@ -90,6 +90,21 @@ class WriteAbilitiesTest extends AbilityTestCase {
 		}
 	}
 
+	public function test_write_page_rejects_a_legacy_block(): void {
+		$admin  = $this->user( 'administrator' );
+		$result = $this->run_as( $admin, 'pediment/write-page', array( 'title' => 'Legacy', 'markup' => '<!-- wp:pediment/pull-quote {"quote":"Q"} /-->' ) );
+
+		$this->assertWPError( $result );
+		$this->assertSame( 'pediment_content_invalid', $result->get_error_code() );
+		$this->assertStringContainsString( 'pediment/pull-quote was removed in Pediment 5; convert it with pediment-convert-legacy', $result->get_error_message() );
+		$this->assertSame( 0, (int) ( new WP_Query( array( 'post_type' => 'page', 'title' => 'Legacy', 'post_status' => 'any' ) ) )->found_posts );
+
+		$page   = $this->run_as( $admin, 'pediment/write-page', array( 'title' => 'Kept', 'markup' => self::GOOD ) );
+		$update = $this->run_as( $admin, 'pediment/write-page', array( 'id' => $page['id'], 'title' => 'Kept', 'markup' => self::GOOD . '<!-- wp:pediment/pull-quote {"quote":"Q"} /-->' ) );
+		$this->assertWPError( $update, 'an update cannot add a legacy block either' );
+		$this->assertSame( self::GOOD, get_post( $page['id'] )->post_content );
+	}
+
 	public function test_admin_cannot_put_markup_in_a_page_title(): void {
 		$admin = $this->user( 'administrator' );
 		$this->assertTrue( user_can( $admin, 'unfiltered_html' ), 'kses does not filter this user' );

@@ -52,7 +52,7 @@ PHPCS sniff `Starter.NoColorLiteralSniff` and the `lint:colors` script will fail
 
 ## Server-side rendering
 
-Always render via `render.php`. For non-InnerBlocks blocks, the `save()` function returns no markup (handled by `registerBlockType` with no `save`). For InnerBlocks containers (`faq`, `prose`), `save` returns `<InnerBlocks.Content />` so child markup persists. This keeps content compatible across attribute changes and makes server-side variations (date formats, queries) trivial.
+Always render via `render.php`. For non-InnerBlocks blocks, the `save()` function returns no markup (handled by `registerBlockType` with no `save`). For InnerBlocks containers (`form`), `save` returns `<InnerBlocks.Content />` so child markup persists. This keeps content compatible across attribute changes and makes server-side variations (date formats, queries) trivial.
 
 ```php
 // render.php
@@ -130,13 +130,13 @@ for `pediment/icon` in its `styles/blocks/` that targets
 
 ## Legacy blocks
 
-The 18 presentation blocks in `Pediment\Content\Policy::LEGACY` (hero, cta,
-feature-grid, faq and the others) are legacy. They still render, so existing
-pages keep working, but the inserter hides them (`supports.inserter` is set
-to false when they register) and Pediment 5 deletes them. Do not use them in
-new pages or patterns and do not add features to them. Build with core blocks
-and named styles ([design-layer.md](design-layer.md)), and convert existing
-content with the converter ([convert.md](convert.md)).
+Pediment 5 removed the 18 presentation blocks in
+`Pediment\Content\Policy::LEGACY` (hero, cta, feature-grid, faq and the
+others). They are no longer registered. A post that still holds one shows it
+empty or unstyled, and the content rules treat it as an error. Build with core
+blocks and named styles ([design-layer.md](design-layer.md)), and convert
+existing content with the converter ([convert.md](convert.md)). The converter
+and `Policy::LEGACY`, its list of names, stay until Pediment 6.
 
 ## Client blocks
 

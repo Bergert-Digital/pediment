@@ -1,8 +1,9 @@
 *, *::before, *::after { box-sizing: border-box; }
 
 /* Accent highlight inside headings: <span class="accent">word</span>. Inserted via
-   the starter/accent RichText format (plugin/src/blocks/hero/accent-format.ts) and
-   round-tripped through wp_kses_post on render. */
+   the pediment/accent RichText format (plugin/src/editor/accent-format.tsx, loaded
+   for every block by the shared editor script) and round-tripped through
+   wp_kses_post on render. */
 .accent{ color:var(--wp--preset--color--accent); }
 
 :root{
@@ -39,7 +40,7 @@
 /* Mockup mapping: --bg #FFFFFF, --surface #F5F8FC, --navy #0A1B33.
    Most bands are plain white; only the Steps/approach band is tinted;
    only the Stats band is navy full-bleed. The CTA band is white — the
-   navy gradient rounded card is rendered by starter/cta itself. */
+   navy rounded card comes from the is-style-panel group inside it. */
 .is-style-band-surface{ background: var(--wp--preset--color--surface); }
 .is-style-band-elevated{ background: var(--wp--preset--color--surface-elevated); }
 .is-style-band-navy{
@@ -48,8 +49,7 @@
 }
 .is-style-band-navy :where(h1,h2,h3,h4){ color:#fff; }
 /* Stat style on the navy band: the accent figure is too dark here, so figure and
-   label read white and the sub-text takes the on-dark text colour (as the legacy
-   stat block did). */
+   label read white and the sub-text takes the on-dark text colour. */
 .is-style-band-navy .is-style-stat > :first-child,
 .is-style-band-navy .is-style-stat > :nth-child(2){ color: var(--wp--preset--color--surface); }
 .is-style-band-navy .is-style-stat > :nth-child(3),

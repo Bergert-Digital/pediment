@@ -81,7 +81,7 @@ async function auditRendered(page) {
       pick(el, 'band');
       pick(el.querySelector(':scope > .head, :scope .head'), 'head');
       pick(el.querySelector(':scope > .alignwide:not(.head), :scope .alignwide:not(.head)'), 'firstAlignwide');
-      pick(el.querySelector(':scope .starter-feature-grid'), 'featureGrid');
+      pick(el.querySelector(':scope .is-layout-grid'), 'grid');
       pick(el.querySelector(':scope .wp-block-columns'), 'columns');
       pick(el.querySelector(':scope h2'), 'h2');
       pick(el.querySelector(':scope .kicker'), 'kicker');

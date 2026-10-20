@@ -33,7 +33,7 @@ final class Bootstrap {
 		);
 		\Pediment\Design\AdminTab::register();
 		\Pediment\Content\InvalidBlockLog::register();
-		\Pediment\Content\LegacyBlocks::register();
+		\Pediment\Content\LegacyContentNotice::register();
 		\Pediment\Convert\AdminTab::register();
 		\Pediment\Abilities\Registrar::register();
 		\Pediment\Mcp\Server::register();

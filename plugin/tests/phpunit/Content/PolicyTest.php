@@ -51,12 +51,19 @@ class PolicyTest extends WP_UnitTestCase {
 		$this->assertTrue( $this->has( $result['errors'], 'core/group: block comment attributes are not valid JSON' ) );
 	}
 
-	public function test_warnings_for_unnamed_containers_external_images_and_legacy_blocks(): void {
-		$result = $this->check( '<!-- wp:group --><div class="wp-block-group"><!-- wp:image --><figure class="wp-block-image"><img src="https://elsewhere.example/a.jpg" alt=""/></figure><!-- /wp:image --></div><!-- /wp:group --><!-- wp:pediment/section-head /-->' );
+	public function test_warnings_for_unnamed_containers_and_external_images(): void {
+		$result = $this->check( '<!-- wp:group --><div class="wp-block-group"><!-- wp:image --><figure class="wp-block-image"><img src="https://elsewhere.example/a.jpg" alt=""/></figure><!-- /wp:image --></div><!-- /wp:group -->' );
 		$this->assertSame( array(), $result['errors'] );
 		$this->assertTrue( $this->has( $result['warnings'], 'core/group: give it a readable metadata.name' ) );
 		$this->assertTrue( $this->has( $result['warnings'], 'elsewhere.example' ) );
-		$this->assertTrue( $this->has( $result['warnings'], 'pediment/section-head: legacy block' ) );
+	}
+
+	public function test_a_legacy_block_is_an_error_that_names_the_converter(): void {
+		$result = $this->check( '<!-- wp:group {"metadata":{"name":"Intro"}} --><div class="wp-block-group"><!-- wp:pediment/faq-item {"question":"Q","answer":"A"} /--></div><!-- /wp:group --><!-- wp:pediment/section-head /-->' );
+		$this->assertContains( 'blocks[1] pediment/section-head: pediment/section-head was removed in Pediment 5; convert it with pediment-convert-legacy', $result['errors'] );
+		$this->assertTrue( $this->has( $result['errors'], 'core/group > [0] pediment/faq-item: pediment/faq-item was removed in Pediment 5' ), wp_json_encode( $result['errors'] ) );
+		$this->assertFalse( $this->has( $result['errors'], 'not registered' ), 'the message names the cause, not the registry' );
+		$this->assertFalse( $this->has( $result['warnings'], 'legacy' ) );
 	}
 
 	public function test_allowed_blocks_filter_and_functional_blocks(): void {
