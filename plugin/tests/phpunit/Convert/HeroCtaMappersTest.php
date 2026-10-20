@@ -29,6 +29,30 @@ class HeroCtaMappersTest extends WP_UnitTestCase {
 		$this->assertStringContainsString( '<h1 class="wp-block-heading">H</h1>', $result->markup );
 	}
 
+	public function test_pediment_hero_variants_returns_the_four_mapped_variants(): void {
+		$this->assertSame( array( 'default', 'centered', 'media-bg', 'stat-card' ), pediment_hero_variants() );
+	}
+
+	public function test_a_site_variant_added_by_the_filter_keeps_the_mapped_variants(): void {
+		$add = static fn( array $variants ): array => array_merge( $variants, array( 'split' ) );
+		add_filter( 'pediment_hero_variants', $add );
+		$result = $this->convert( '<!-- wp:pediment/hero {"variant":"stat-card","headline":"H","statValue":"98%"} /-->' );
+		remove_filter( 'pediment_hero_variants', $add );
+		$this->assertSame( array(), $result->notes );
+		$this->assertSame( 'core/columns', parse_blocks( $result->markup )[0]['blockName'] );
+	}
+
+	public function test_a_variant_removed_by_the_filter_converts_as_default(): void {
+		$remove = static fn( array $variants ): array => array_values( array_diff( $variants, array( 'stat-card' ) ) );
+		add_filter( 'pediment_hero_variants', $remove );
+		$result = $this->convert( '<!-- wp:pediment/hero {"variant":"stat-card","headline":"H","statValue":"98%"} /-->' );
+		remove_filter( 'pediment_hero_variants', $remove );
+		$block = parse_blocks( $result->markup )[0];
+		$this->assertSame( 'core/group', $block['blockName'] );
+		$this->assertSame( 'section', $block['attrs']['tagName'] );
+		$this->assertStringNotContainsString( '98%', $result->markup );
+	}
+
 	public function test_button_needs_text_and_a_safe_url(): void {
 		$markup = $this->convert( '<!-- wp:pediment/hero {"headline":"H","ctaText":"Go"} /--><!-- wp:pediment/cta {"title":"T","primaryText":"Go","primaryUrl":"javascript:alert(1)","secondaryText":"Read","secondaryUrl":"/read"} /-->' )->markup;
 		$this->assertSame( 1, substr_count( $markup, '<!-- wp:button ' ) );
