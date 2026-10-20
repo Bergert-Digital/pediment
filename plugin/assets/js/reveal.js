@@ -1,15 +1,7 @@
 ( function () {
 	const sels = [
 		'.starter-band > *',
-		'.starter-hero > *',
-		'.starter-feature-grid .starter-feature',
-		'.starter-steps .starter-step',
-		'.starter-stat',
-		'.starter-logo-cloud .starter-logo',
-		'.starter-faq-item',
-		'.starter-media-card',
-		'.starter-cta',
-		// The same elements after conversion to core blocks and named styles.
+		// Core blocks with the named styles the converter writes.
 		'.is-style-card',
 		'.is-style-steps > *',
 		'.is-style-stat',
