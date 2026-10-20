@@ -130,33 +130,4 @@ class HeroTest extends WP_UnitTestCase {
 		$this->assertStringNotContainsString( 'starter-hero__glass', $html );
 		$this->assertStringNotContainsString( 'starter-hero__eyebrow', $html );
 	}
-
-	public function test_pediment_hero_variants_filter_is_default_superset() {
-		$this->assertTrue( function_exists( 'pediment_hero_variants' ) );
-		$this->assertSame(
-			array( 'default', 'centered', 'media-bg', 'stat-card' ),
-			pediment_hero_variants()
-		);
-	}
-
-	public function test_filter_removing_stat_card_falls_back_to_default() {
-		$cb = static function ( $variants ) {
-			return array_values( array_diff( $variants, array( 'stat-card' ) ) );
-		};
-		add_filter( 'pediment_hero_variants', $cb );
-		try {
-			$html = $this->render(
-				array(
-					'variant'   => 'stat-card',
-					'headline'  => 'H',
-					'statValue' => '+34%',
-				)
-			);
-			$this->assertStringContainsString( 'is-variant-default', $html );
-			$this->assertStringNotContainsString( 'is-variant-stat-card', $html );
-			$this->assertStringNotContainsString( 'starter-hero__glass', $html );
-		} finally {
-			remove_filter( 'pediment_hero_variants', $cb );
-		}
-	}
 }

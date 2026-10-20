@@ -1,14 +1,17 @@
 <?php
 /**
- * Hero variant registry — the fork-friendly extension point.
+ * Hero variant registry, kept for the legacy-block converter.
  *
- * The parent ships an opinionated set of hero variants. A child theme can
- * remove one with a single line, e.g.:
+ * The converter's HeroMapper (plugin/src/Convert/Mappers/HeroMapper.php)
+ * reads pediment_hero_variants() to decide how a legacy pediment/hero block
+ * converts: a variant the filter removed converts as "default", and a variant
+ * a site added without a converter mapping is noted and converts as "default".
+ * A client theme can still remove a variant with one line, e.g.:
  *
  *   add_filter( 'pediment_hero_variants', fn( $v ) => array_diff( $v, [ 'stat-card' ] ) );
  *
- * render.php normalizes any variant not in this list to "default", and the
- * block editor only offers the filtered list.
+ * The block editor no longer reads this list. The function and the filter
+ * go in 6.0.0, together with the converter.
  *
  * @package Pediment
  */
@@ -31,18 +34,3 @@ function pediment_hero_variants() {
 	}
 	return $variants;
 }
-
-/**
- * Expose the filtered variant list to the block editor so the Hero
- * inspector only offers variants the site actually ships.
- */
-add_action(
-	'enqueue_block_editor_assets',
-	function () {
-		wp_add_inline_script(
-			'wp-blocks',
-			'window.pedimentHeroVariants = ' . wp_json_encode( pediment_hero_variants() ) . ';',
-			'after'
-		);
-	}
-);
