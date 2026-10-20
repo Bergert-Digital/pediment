@@ -1,5 +1,26 @@
 # Changelog
 
+## [5.0.0](https://github.com/Bergert-Digital/pediment/compare/v4.4.0...v5.0.0) (2026-10-20)
+
+
+### ⚠ BREAKING CHANGES
+
+* Pediment 5 removes the 18 legacy blocks ([#132](https://github.com/Bergert-Digital/pediment/issues/132))
+* the 18 legacy pediment/* presentation blocks are removed. Convert leftover content with Settings → Pediment Theme → Convert legacy blocks before or after updating.
+
+### Features
+
+* Pediment 5 removes the 18 legacy blocks ([#132](https://github.com/Bergert-Digital/pediment/issues/132)) ([2fd4afe](https://github.com/Bergert-Digital/pediment/commit/2fd4afe8cbbc02f0417d0921d8859b09ccc89a12))
+* **policy:** reject legacy blocks in page writes ([83644e2](https://github.com/Bergert-Digital/pediment/commit/83644e2ab6b11cb637b73c364df4e240e98bde47))
+* remove the 18 legacy blocks ([93c600d](https://github.com/Bergert-Digital/pediment/commit/93c600d57dbb00f54e1dfa714804cfe935a6526a))
+* warn admins about leftover legacy content ([a462f07](https://github.com/Bergert-Digital/pediment/commit/a462f077d4e9d3e1eac81f5eb29301d8a6a87a58))
+
+
+### Refactors
+
+* **editor:** load the accent format for all blocks ([405ffbf](https://github.com/Bergert-Digital/pediment/commit/405ffbfc127e103217f12fb4cebb6c7b4043d49b))
+* keep hero variants for the converter only ([2c641ac](https://github.com/Bergert-Digital/pediment/commit/2c641ac08b43d4a5891ccfb46cf5eb60e6bd84f6))
+
 ## [4.4.0](https://github.com/Bergert-Digital/pediment/compare/v4.3.0...v4.4.0) (2026-10-19)
 
 
