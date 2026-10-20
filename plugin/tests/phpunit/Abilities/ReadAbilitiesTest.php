@@ -137,6 +137,7 @@ class ReadAbilitiesTest extends AbilityTestCase {
 		$result = $this->run_as( $this->user( 'editor' ), 'pediment/check-page', array( 'id' => $page ) );
 
 		$this->assertNotEmpty( array_filter( $result['errors'], static fn( string $e ): bool => str_contains( $e, '78px' ) ) );
+		$this->assertContains( 'blocks[1] pediment/hero: pediment/hero was removed in Pediment 5; convert it with pediment-convert-legacy', $result['errors'] );
 		$this->assertSame( array( 'core/group' ), $result['invalidBlocks']['blocks'] );
 		$this->assertSame( array( 'pediment/hero' ), $result['legacyBlocks'] );
 	}
