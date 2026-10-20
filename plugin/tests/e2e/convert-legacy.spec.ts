@@ -1,6 +1,6 @@
 import { test, expect, type Page } from '@playwright/test';
 import { execSync } from 'node:child_process';
-import { login } from './utils';
+import { createPageWithContent, login } from './utils';
 
 /**
  * Plan 4a: legacy blocks are hidden from the inserter, and a page converted
@@ -8,6 +8,8 @@ import { login } from './utils';
  * invalid blocks. The abilities run over the Abilities REST route, the same
  * callbacks the MCP server calls. convert-legacy is destructive and
  * idempotent, so core's route wants DELETE with the input in the query.
+ * write-page rejects legacy blocks since Pediment 5, so WP-CLI seeds the
+ * legacy page.
  */
 
 const WP_ENV_CWD = process.env.WP_ENV_CWD || process.cwd();
@@ -58,13 +60,22 @@ test( 'a converted page opens with zero invalid blocks', async ( { page } ) => {
 	let id = 0;
 
 	try {
-		const written = await page.request.post(
+		const rejected = await page.request.post(
 			ability( 'pediment/write-page' ),
 			{ headers, data: { input: { title: 'E2E legacy page', markup: LEGACY } } }
 		);
-		const created = await written.json();
-		expect( written.ok(), JSON.stringify( created ) ).toBe( true );
-		id = created.id;
+		expect( rejected.ok() ).toBe( false );
+		expect( await rejected.text() ).toContain(
+			'was removed in Pediment 5; convert it with pediment-convert-legacy'
+		);
+
+		const url = createPageWithContent(
+			`e2e-legacy-${ Date.now() }`,
+			'E2E legacy page',
+			LEGACY
+		);
+		id = Number( new URL( url, 'http://localhost' ).searchParams.get( 'page_id' ) );
+		expect( id ).toBeGreaterThan( 0 );
 
 		const converted = await page.request.delete(
 			`${ ability( 'pediment/convert-legacy' ) }&input[ids][0]=${ id }&input[dry_run]=false`,

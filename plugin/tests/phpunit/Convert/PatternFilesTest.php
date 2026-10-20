@@ -47,6 +47,17 @@ class PatternFilesTest extends WP_UnitTestCase {
 		$this->assertStringNotContainsString( '__PEDIMENT_PHP_', $out['text'] );
 	}
 
+	public function test_the_policy_error_for_a_legacy_block_does_not_stop_a_file_conversion(): void {
+		$body = '<!-- wp:pediment/pull-quote {"quote":"Q"} /-->' . "\n";
+		$this->assertNotSame( array(), ( new Policy() )->check( $body )['errors'], 'the Policy rejects the legacy block' );
+
+		$out = $this->files()->convertText( self::HEADER . $body );
+
+		$this->assertSame( 'preview', $out['status'], implode( "\n", $out['errors'] ) );
+		$this->assertSame( array(), $out['errors'] );
+		$this->assertStringContainsString( 'is-style-pull-quote', $out['text'] );
+	}
+
 	public function test_inline_php_that_would_be_lost_fails_the_file(): void {
 		$text = self::HEADER . '<!-- wp:pediment/image-caption {"mediaId":<?php echo (int) acme_media_id( \'lake.jpg\' ); ?>,"caption":"Lake"} /-->' . "\n";
 		$out  = $this->files()->convertText( $text );

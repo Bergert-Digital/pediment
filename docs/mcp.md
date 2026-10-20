@@ -125,8 +125,12 @@ with the result.
   registers. `core/html` is never allowed, even if the
   `pediment_allowed_blocks` filter returns it. Text outside a block is an
   error, and so is a block comment whose JSON does not parse.
-- The 18 legacy Pediment blocks only produce a warning. Do not use them in new
-  pages: `pediment-convert-legacy` replaces them with core blocks.
+- The 18 legacy Pediment blocks were removed in Pediment 5. Each one is an
+  error ("`pediment/hero` was removed in Pediment 5; convert it with
+  pediment-convert-legacy"), so `write-page` rejects them and `check-page`
+  reports a stored page that still holds one. `pediment-convert-legacy`
+  replaces them with core blocks. The legacy error does not stop a
+  conversion: the converter refuses only errors that the conversion adds.
 - No literal design values in block attributes. Every value under
   `attrs.style.color` and `attrs.style.spacing` must be a token, and so must
   font size, font family, border radius and shadow. Use presets
