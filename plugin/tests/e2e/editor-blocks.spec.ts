@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { createPageWithContent, deletePageBySlug } from './utils';
+import { createPageWithContent, deletePageBySlug, login } from './utils';
 
 const BLOCKS_TO_VERIFY: Array< { name: string; cls: string; markup: string } > =
 	[
@@ -29,4 +29,21 @@ test( 'every pediment block renders on the front end', async ( { page } ) => {
 	}
 
 	deletePageBySlug( SLUG );
+} );
+
+// Pediment 5 removed the 18 legacy blocks; the editor must not register them.
+test( 'a legacy block is not registered', async ( { page } ) => {
+	await login( page );
+	await page.goto( '/wp-admin/post-new.php?post_type=page' );
+	// Wait on a block that stays registered, never on the removed one.
+	await page.waitForFunction(
+		() => !! ( window as any ).wp?.blocks?.getBlockType?.( 'pediment/form' )
+	);
+	const unregistered = await page.evaluate( () =>
+		[ 'pediment/hero', 'pediment/faq', 'pediment/prose' ].map(
+			( name ) =>
+				( window as any ).wp.blocks.getBlockType( name ) === undefined
+		)
+	);
+	expect( unregistered ).toEqual( [ true, true, true ] );
 } );
