@@ -41,10 +41,11 @@ scaffolder). See [docs/client-sites.md](docs/client-sites.md).
   [docs/mcp.md](docs/mcp.md)); validate markup with client-kit's validate-blocks before writing.
 - Page content never carries literal design values. Looks come from named
   block styles in the design layer — see [docs/design-layer.md](docs/design-layer.md).
-- Pediment 5 removed the 18 legacy presentation blocks (`Policy::LEGACY`).
-  The content rules reject them. Never put them in new content or patterns;
-  convert existing content with the converter, which stays until Pediment 6
-  — see [docs/convert.md](docs/convert.md).
+- Pediment 5 removed the 18 legacy presentation blocks (`Policy::LEGACY`),
+  and Pediment 6 removed their converter. The content rules reject them.
+  Never put them in new content or patterns; rebuild old content with core
+  blocks and named styles — see
+  [docs/blocks.md](docs/blocks.md#what-to-build-instead).
 
 ## Environment and verification
 

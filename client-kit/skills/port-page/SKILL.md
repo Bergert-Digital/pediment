@@ -105,7 +105,8 @@ Author the page's markup in `patterns/<key>.php`, below the header. Call `pedime
 first and use the blocks and named styles it lists. Never set custom colours, font sizes or
 spacing — the brand is in `theme.json` and the named styles, and hardcoding defeats it. Do not
 use the legacy `pediment/*` presentation blocks (the ones `pediment-check-page` reports as
-legacy): Pediment 4.0 hides them from the inserter, and 5.0 removes them.
+legacy): Pediment 4.0 hides them from the inserter, 5.0 removes them, and 6.0 removes their
+converter.
 
 ---
 
