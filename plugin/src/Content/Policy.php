@@ -180,11 +180,10 @@ final class Policy {
 			}
 			$here = "{$path}[{$i}] {$name}";
 
-			// Checked before the registry, so the message names the cause. The
-			// converter refuses only errors a conversion adds (PostConverter::addedErrors()),
-			// so this error never stops a legacy post or pattern from being converted.
+			// Checked before the registry, so the message names the cause, not
+			// only "block type is not registered".
 			if ( in_array( $name, self::LEGACY, true ) ) {
-				$errors[] = "{$here}: {$name} was removed in Pediment 5; convert it with pediment-convert-legacy";
+				$errors[] = "{$here}: {$name} was removed in Pediment 5; rebuild it with core blocks and named styles (pediment-get-vocabulary)";
 			} elseif ( ! in_array( $name, $allowed, true ) ) {
 				$errors[] = \WP_Block_Type_Registry::get_instance()->is_registered( $name )
 					? "{$here}: block is not allowed"

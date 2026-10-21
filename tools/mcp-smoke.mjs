@@ -4,7 +4,7 @@
  * wp-env exactly like Claude Code does (JSON-RPC over HTTP, Basic auth with
  * an application password) and checks: the tool list, get-vocabulary, a
  * write-page → check-page round trip, that write-page rejects a legacy block,
- * a convert-legacy preview and conversion of a legacy page, and that a write
+ * that check-page reports a stored legacy page, and that a write
  * breaking two rules comes back as one tool error naming both. Removes every
  * page and the application password it created, even when a step fails.
  *
@@ -21,7 +21,6 @@ const EXPECTED = [
 	'pediment-rollback-page',
 	'pediment-upsert-style',
 	'pediment-delete-style',
-	'pediment-convert-legacy',
 ];
 
 function wp( ...args ) {
@@ -113,8 +112,8 @@ async function main() {
 		assert( ! checked.isError && checked.structuredContent.errors.length === 0, `check-page reported errors: ${ text( checked ) }` );
 
 		// A legacy page: write-page rejects legacy blocks (Pediment 5), so WP-CLI
-		// stores it; the dry run previews it, the real run converts it.
-		const legacyMarkup = '<!-- wp:pediment/pull-quote {"quote":"Converted through MCP."} /-->';
+		// stores it; check-page reports it as an error and in legacyBlocks.
+		const legacyMarkup = '<!-- wp:pediment/pull-quote {"quote":"Left over from Pediment 4."} /-->';
 		const refused = await call( 'pediment-write-page', { title: 'MCP smoke legacy', markup: legacyMarkup } );
 		if ( ! refused.isError && refused.structuredContent?.id ) {
 			pageIds.push( refused.structuredContent.id );
@@ -123,12 +122,9 @@ async function main() {
 		const legacyId = Number( wp( 'post', 'create', '--post_type=page', '--post_status=draft', '--post_title=MCP smoke legacy', `--post_content=${ legacyMarkup }`, '--porcelain' ) );
 		assert( legacyId > 0, 'wp post create did not return the legacy page id' );
 		pageIds.push( legacyId );
-		const preview = await call( 'pediment-convert-legacy', { ids: [ legacyId ] } );
-		assert( ! preview.isError && preview.structuredContent.posts[ 0 ].status === 'preview', `convert-legacy dry run failed: ${ text( preview ) }` );
-		const converted = await call( 'pediment-convert-legacy', { ids: [ legacyId ], dry_run: false } );
-		assert( ! converted.isError && converted.structuredContent.posts[ 0 ].status === 'converted', `convert-legacy failed: ${ text( converted ) }` );
-		const after = await call( 'pediment-check-page', { id: legacyId } );
-		assert( ! after.isError && after.structuredContent.legacyBlocks.length === 0, `check-page still finds legacy blocks: ${ text( after ) }` );
+		const legacy = await call( 'pediment-check-page', { id: legacyId } );
+		assert( ! legacy.isError && legacy.structuredContent.legacyBlocks.join() === 'pediment/pull-quote', `check-page does not list the legacy block: ${ text( legacy ) }` );
+		assert( legacy.structuredContent.errors.some( ( e ) => /was removed in Pediment 5; rebuild it/.test( e ) ), `check-page does not report the legacy block as an error: ${ text( legacy ) }` );
 
 		// Two rules broken at once: the error must list both (Policy reports every violation).
 		const rejected = await call( 'pediment-write-page', {
@@ -145,7 +141,7 @@ async function main() {
 		assert( /core\/html: block is not allowed/.test( why ), `write-page error does not name core/html: ${ why }` );
 		assert( /fontSize has the literal value "78px"/.test( why ), `write-page error does not name the literal font size: ${ why }` );
 
-		console.log( `MCP smoke OK — ${ names.length } tools, page ${ pageId } written and checked, legacy page ${ legacyId } converted, both violations reported.` );
+		console.log( `MCP smoke OK — ${ names.length } tools, page ${ pageId } written and checked, legacy page ${ legacyId } reported, both violations reported.` );
 	} finally {
 		// Each step on its own, so a failing cleanup neither hides the real
 		// error nor skips the steps after it.
