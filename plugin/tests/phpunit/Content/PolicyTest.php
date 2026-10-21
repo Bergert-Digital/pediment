@@ -58,9 +58,9 @@ class PolicyTest extends WP_UnitTestCase {
 		$this->assertTrue( $this->has( $result['warnings'], 'elsewhere.example' ) );
 	}
 
-	public function test_a_legacy_block_is_an_error_that_names_the_converter(): void {
+	public function test_a_legacy_block_is_an_error_that_names_the_cause(): void {
 		$result = $this->check( '<!-- wp:group {"metadata":{"name":"Intro"}} --><div class="wp-block-group"><!-- wp:pediment/faq-item {"question":"Q","answer":"A"} /--></div><!-- /wp:group --><!-- wp:pediment/section-head /-->' );
-		$this->assertContains( 'blocks[1] pediment/section-head: pediment/section-head was removed in Pediment 5; convert it with pediment-convert-legacy', $result['errors'] );
+		$this->assertContains( 'blocks[1] pediment/section-head: pediment/section-head was removed in Pediment 5; rebuild it with core blocks and named styles (pediment-get-vocabulary)', $result['errors'] );
 		$this->assertTrue( $this->has( $result['errors'], 'core/group > [0] pediment/faq-item: pediment/faq-item was removed in Pediment 5' ), wp_json_encode( $result['errors'] ) );
 		$this->assertFalse( $this->has( $result['errors'], 'not registered' ), 'the message names the cause, not the registry' );
 		$this->assertFalse( $this->has( $result['warnings'], 'legacy' ) );

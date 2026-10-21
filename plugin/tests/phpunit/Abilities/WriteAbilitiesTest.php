@@ -96,7 +96,7 @@ class WriteAbilitiesTest extends AbilityTestCase {
 
 		$this->assertWPError( $result );
 		$this->assertSame( 'pediment_content_invalid', $result->get_error_code() );
-		$this->assertStringContainsString( 'pediment/pull-quote was removed in Pediment 5; convert it with pediment-convert-legacy', $result->get_error_message() );
+		$this->assertStringContainsString( 'pediment/pull-quote was removed in Pediment 5; rebuild it with core blocks and named styles (pediment-get-vocabulary)', $result->get_error_message() );
 		$this->assertSame( 0, (int) ( new WP_Query( array( 'post_type' => 'page', 'title' => 'Legacy', 'post_status' => 'any' ) ) )->found_posts );
 
 		$page   = $this->run_as( $admin, 'pediment/write-page', array( 'title' => 'Kept', 'markup' => self::GOOD ) );

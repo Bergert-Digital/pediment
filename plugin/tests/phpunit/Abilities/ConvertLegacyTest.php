@@ -25,7 +25,7 @@ class ConvertLegacyTest extends AbilityTestCase {
 		$this->assertSame( 'preview', $result['posts'][0]['status'] );
 		$this->assertNotSame( '', $result['posts'][0]['diff'] );
 		$this->assertSame( array(), $result['posts'][0]['errors'] );
-		$this->assertSame( array( 'blocks[0] pediment/pull-quote: pediment/pull-quote was removed in Pediment 5; convert it with pediment-convert-legacy' ), $result['posts'][0]['existingErrors'] );
+		$this->assertSame( array( 'blocks[0] pediment/pull-quote: pediment/pull-quote was removed in Pediment 5; rebuild it with core blocks and named styles (pediment-get-vocabulary)' ), $result['posts'][0]['existingErrors'] );
 		$this->assertSame( self::LEGACY, get_post_field( 'post_content', $id ) );
 	}
 
