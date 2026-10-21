@@ -1,5 +1,23 @@
 # Changelog
 
+## [6.0.0](https://github.com/Bergert-Digital/pediment/compare/v5.0.0...v6.0.0) (2026-10-21)
+
+
+### ⚠ BREAKING CHANGES
+
+* Pediment 6 removes the legacy-block converter ([#139](https://github.com/Bergert-Digital/pediment/issues/139))
+* the legacy-block converter is removed: the Convert tab, the pediment/convert-legacy ability, wp pediment convert, the legacy content notice, and pediment_hero_variants() with its filter. Convert leftover content on Pediment 5.x before you update.
+
+### Features
+
+* Pediment 6 removes the legacy-block converter ([#139](https://github.com/Bergert-Digital/pediment/issues/139)) ([fca82ff](https://github.com/Bergert-Digital/pediment/commit/fca82ff8ffad47c5cf35083c6fe87d4687519130))
+* remove the legacy-block converter ([48cf13c](https://github.com/Bergert-Digital/pediment/commit/48cf13c6cf99f33c9089b039798d55c559e5dcee))
+
+
+### Refactors
+
+* **policy:** stop naming the converter ([4ba89ee](https://github.com/Bergert-Digital/pediment/commit/4ba89ee6a3e36670d1ef82cbbfe96a5100e2935a))
+
 ## [5.0.0](https://github.com/Bergert-Digital/pediment/compare/v4.4.0...v5.0.0) (2026-10-20)
 
 
