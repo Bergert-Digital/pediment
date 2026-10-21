@@ -10,9 +10,6 @@ declare(strict_types=1);
 namespace Pediment\Abilities;
 
 use Pediment\Content\Policy;
-use Pediment\Convert\AttachmentMedia;
-use Pediment\Convert\Converter;
-use Pediment\Convert\PostConverter;
 use Pediment\Design\SiteStyles;
 use Pediment\Design\StyleValidator;
 use Pediment\Design\Vocabulary;
@@ -54,7 +51,6 @@ final class Registrar {
 			new RollbackPage(),
 			new UpsertStyle( $store ),
 			new DeleteStyle( $store ),
-			new ConvertLegacy( new PostConverter( Converter::withDefaults(), $policy, new AttachmentMedia() ) ),
 		);
 	}
 

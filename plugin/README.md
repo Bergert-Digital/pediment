@@ -35,7 +35,7 @@ on a site that is already seeded, the languages section, and how to read a dry-r
 ## AI tools (MCP)
 
 With the MCP Adapter plugin active, Pediment serves an MCP server at
-`/wp-json/pediment/v1/mcp` with nine tools to read, write and convert pages and to change design
+`/wp-json/pediment/v1/mcp` with eight tools to read and write pages and to change design
 styles under Pediment's rules. See [docs/mcp.md](../docs/mcp.md).
 
 ## Local dev

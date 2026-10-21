@@ -25,9 +25,9 @@ class WriteAbilitiesTest extends AbilityTestCase {
 		return $user;
 	}
 
-	public function test_all_nine_abilities_are_registered(): void {
+	public function test_all_eight_abilities_are_registered(): void {
 		$this->assertSame(
-			array( 'pediment/get-vocabulary', 'pediment/list-pages', 'pediment/read-page', 'pediment/check-page', 'pediment/write-page', 'pediment/rollback-page', 'pediment/upsert-style', 'pediment/delete-style', 'pediment/convert-legacy' ),
+			array( 'pediment/get-vocabulary', 'pediment/list-pages', 'pediment/read-page', 'pediment/check-page', 'pediment/write-page', 'pediment/rollback-page', 'pediment/upsert-style', 'pediment/delete-style' ),
 			Registrar::names()
 		);
 		foreach ( Registrar::names() as $name ) {
@@ -96,7 +96,7 @@ class WriteAbilitiesTest extends AbilityTestCase {
 
 		$this->assertWPError( $result );
 		$this->assertSame( 'pediment_content_invalid', $result->get_error_code() );
-		$this->assertStringContainsString( 'pediment/pull-quote was removed in Pediment 5; convert it with pediment-convert-legacy', $result->get_error_message() );
+		$this->assertStringContainsString( 'pediment/pull-quote was removed in Pediment 5; rebuild it with core blocks and named styles (pediment-get-vocabulary)', $result->get_error_message() );
 		$this->assertSame( 0, (int) ( new WP_Query( array( 'post_type' => 'page', 'title' => 'Legacy', 'post_status' => 'any' ) ) )->found_posts );
 
 		$page   = $this->run_as( $admin, 'pediment/write-page', array( 'title' => 'Kept', 'markup' => self::GOOD ) );
@@ -138,10 +138,6 @@ class WriteAbilitiesTest extends AbilityTestCase {
 			'pediment/rollback-page'  => array( 'id' => $page, 'revision' => max( 1, $revision ) ),
 			'pediment/upsert-style'   => array( 'slug' => 'denied', 'label' => 'Denied', 'blockTypes' => array( 'core/group' ), 'styles' => array() ),
 			'pediment/delete-style'   => array( 'slug' => 'card' ),
-			'pediment/convert-legacy' => array(
-				'ids'     => array( $page ),
-				'dry_run' => false,
-			),
 		);
 		$this->assertSame( Registrar::names(), array_keys( $inputs ), 'every ability has an input here' );
 		$pages = (int) wp_count_posts( 'page' )->publish + (int) wp_count_posts( 'page' )->draft;
