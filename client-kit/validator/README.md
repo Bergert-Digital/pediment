@@ -4,7 +4,7 @@ Each `wp-<line>/` folder pins the WordPress block packages that
 `scripts/validate-blocks.mjs --wp <line>` loads. `scripts/lib/wp-runtime.mjs`
 installs a folder with `npm ci` into `~/.cache/pediment/validator` on first
 use. A folder with a `package-lock.json` is a supported line: the CLI, the
-tests and `tools/validate-convert-fixtures.mjs` find it automatically.
+tests and `tools/validate-core-trees.mjs` find it automatically.
 
 ## Where the versions come from
 
@@ -59,7 +59,7 @@ Known deviations:
    transitive dependency (seen with `@wordpress/rich-text` on 7.1), so pin
    only what the override needs.
 6. Copy `package.json` and `package-lock.json` into `wp-<line>/`, then run
-   `node tools/validate-convert-fixtures.mjs --wp <line>` and
+   `node tools/validate-core-trees.mjs --wp <line>` and
    `PEDIMENT_VALIDATOR_E2E=1 node --test client-kit/tests/validate-blocks.test.mjs`.
 7. Update the line list in the `supportedLines()` test, `docs/mcp.md` and
    `docs/convert.md`.
