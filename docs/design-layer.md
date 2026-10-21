@@ -45,8 +45,8 @@ AI agents change the site layer with the `pediment-upsert-style` tool — see [m
 | `tile` | Pediment icon | The icon on a small rounded square: accent glyph on the accent tint. Styles the inner `.wp-block-pediment-icon__glyph` |
 
 `stat` styles its children by position: keep the value first and the label
-second. The converter ([convert.md](convert.md)) uses these styles for the
-legacy blocks.
+second. These styles replace the legacy blocks that Pediment 5 removed; see
+[blocks.md](blocks.md#what-to-build-instead) for the tree of each one.
 
 ## Rules (checked on every layer)
 

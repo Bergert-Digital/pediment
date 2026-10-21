@@ -132,11 +132,52 @@ for `pediment/icon` in its `styles/blocks/` that targets
 
 Pediment 5 removed the 18 presentation blocks in
 `Pediment\Content\Policy::LEGACY` (hero, cta, feature-grid, faq and the
-others). They are no longer registered. A post that still holds one shows it
-empty or unstyled, and the content rules treat it as an error. Build with core
-blocks and named styles ([design-layer.md](design-layer.md)), and convert
-existing content with the converter ([convert.md](convert.md)). The converter
-and `Policy::LEGACY`, its list of names, stay until Pediment 6.
+others). They are no longer registered. Pediment 6 removed the converter that
+rewrote them. A post that still holds one shows it empty or unstyled. The
+content rules treat it as an error ("`pediment/hero` was removed in Pediment 5;
+rebuild it with core blocks and named styles"), so `pediment-write-page`
+rejects it and `pediment-check-page` reports it, also in `legacyBlocks`.
+`Policy::LEGACY` stays only to name the cause. Build with core blocks and
+named styles ([design-layer.md](design-layer.md)).
+
+### What to build instead
+
+Rebuild a part of a page that still holds a legacy block with the tree in this
+table. It is the tree the converter wrote in Pediment 4 and 5, with the
+plugin's default styles:
+
+| Legacy block | Build instead |
+| --- | --- |
+| `section-head` | constrained group with the plain class `pediment-section-head` (preset bottom margin) → `eyebrow` paragraph, heading, `lead` paragraph |
+| `hero` default / centered | section group → h1, `lead` paragraph, `pill` button |
+| `hero` media-bg | `media-card` cover (the image, primary overlay) → h1, `lead`, `pill` button |
+| `hero` stat-card | columns: copy, `pill` + `pill-ghost` buttons, ticks list · `media-card` cover with a `card` group that holds a `stat` group and the metrics |
+| `cta` | `panel` section group → h2, paragraph, `pill` + `pill-ghost` buttons |
+| `feature-grid` + `feature` | grid group (up to 3 columns, 2 for four cards) of `card` groups → image or `tile` icon (`pediment/icon`), h3, text, link paragraph with the plain class `pediment-card-link` |
+| `stat-grid` + `stat` | grid group (one column per stat, up to 4) of `stat` groups → value, label, context (only the parts that are set) |
+| `steps` + `step` | `steps` grid group (up to 3 columns, 2 for four steps; numbers the steps) of groups → h3, text |
+| `media-text` | `media-row` media & text block; inner blocks move unchanged |
+| `testimonial-grid` + `testimonial` | grid group (up to 2 columns) of `quote-card` groups → quote with the byline, or a rounded avatar and byline |
+| `logo-cloud` | `logos` section group → caption, a wrapping row with the logo images |
+| `pull-quote` | `pull-quote` quote |
+| `image-caption` | `framed` image with its caption |
+| `prose` | `prose` constrained group; inner blocks move unchanged |
+| `faq` + `faq-item` | vertical group of `accordion` details blocks; an answer made of `<p>` elements gives one paragraph per element |
+| `testimonial` quote | a quote made of `<p>` elements gives one paragraph per element |
+
+On a converted page, and in a rebuild that follows the table:
+
+- Grids collapse on phones. Write `minimumColumnWidth` as
+  `max(<floor>, <90/N>%)` and no `columnCount`: WordPress 6.9 ignores the
+  minimum when `columnCount` is set, and the grid never collapses.
+- The plain classes `pediment-section-head` and `pediment-card-link` let a
+  client theme select a section head and a card's link paragraph without a
+  structural selector such as `> p:last-child`.
+- The `stat` style styles a stat's children by position: value, label,
+  context. A label or context that is not in its position carries the class
+  `pediment-stat-label` or `pediment-stat-context`, which the style reads.
+- A feature's icon is a `pediment/icon` block in the `tile` style, the first
+  block of the card.
 
 ## Client blocks
 
