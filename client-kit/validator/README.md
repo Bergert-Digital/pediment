@@ -61,5 +61,4 @@ Known deviations:
 6. Copy `package.json` and `package-lock.json` into `wp-<line>/`, then run
    `node tools/validate-core-trees.mjs --wp <line>` and
    `PEDIMENT_VALIDATOR_E2E=1 node --test client-kit/tests/validate-blocks.test.mjs`.
-7. Update the line list in the `supportedLines()` test, `docs/mcp.md` and
-   `docs/convert.md`.
+7. Update the line list in the `supportedLines()` test and `docs/mcp.md`.

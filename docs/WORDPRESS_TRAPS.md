@@ -722,13 +722,15 @@ everything else → POST. GET and DELETE read the input from the `input` query
 parameter, so every value arrives as a string (`"false"`, `"12"`). The input schema
 check accepts those strings for `boolean` and `integer`, so the ability's `execute()`
 receives them unchanged.
-**Fix.** Call `pediment/convert-legacy` (destructive, idempotent) as
-`DELETE …/pediment/convert-legacy/run&input[ids][0]=12&input[dry_run]=false`, and read
-booleans in `execute()` with `rest_sanitize_boolean()`. A check such as
-`false !== $input['dry_run']` treats the string `"false"` as true and silently turns
-a real run into a dry run.
-**Catch it early.** `ConvertLegacyTest::test_string_booleans_from_the_rest_route_are_read_as_booleans`
-and `plugin/tests/e2e/convert-legacy.spec.ts`.
+**Fix.** Call a readonly ability such as `pediment/check-page` as
+`GET …/pediment/check-page/run&input[id]=12`, and a destructive, idempotent one with
+`DELETE` and the same query input. In `execute()`, cast integers (`(int) $input['id']`)
+and read booleans with `rest_sanitize_boolean()`. A check such as
+`false !== $input['dry_run']` treats the string `"false"` as true. (First seen on
+`pediment/convert-legacy`, which Pediment 6 removed: it silently turned a real run into
+a dry run.)
+**Catch it early.** `plugin/tests/e2e/ability-write-page.spec.ts` calls
+`pediment/check-page` over `GET` with the id as a string.
 
 ---
 
@@ -771,8 +773,7 @@ core uses, and the context core builds (raw `content`, no `filePath`). So hooked
 still behave as before. There is deliberately no fallback to `get_registered()`: on a
 core without the loader the seed stops with a `ManifestError` that says to update
 Pediment, because the fallback is this bug. A placeholder-bearing pattern must
-never go through `parse_blocks()` before it is resolved: `convert --patterns` swaps
-placeholders for stand-ins first, for the same reason (`PatternFiles::convertText()`).
+never go through `parse_blocks()` before it is resolved.
 **Catch it early.** `ContentResolverTest::test_a_placeholder_in_the_block_json_of_a_registered_pattern_keeps_every_attribute`
 (also the `filePath` and Block Hooks variants) and
 `RunnerTest::test_a_media_id_placeholder_in_pattern_block_json_survives_seeding`.
