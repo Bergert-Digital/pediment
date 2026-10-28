@@ -1,5 +1,6 @@
 /**
- * Reports blocks the editor could not validate on this page to
+ * Reports blocks the editor could not validate on this page (or post of a
+ * type the MCP tools serve, listed in window.pedimentInvalidBlocks) to
  * POST /pediment/v1/invalid-blocks/<id>, once per editor load, so AI agents
  * see them through the pediment/check-page ability. An empty list is sent
  * too: it replaces an earlier report once the page is fixed.
@@ -10,6 +11,9 @@
 	if ( ! wp || ! wp.data || ! wp.apiFetch ) {
 		return;
 	}
+	const types = ( window.pedimentInvalidBlocks || {} ).postTypes || [
+		'page',
+	];
 	let done = false;
 	const unsubscribe = wp.data.subscribe( function () {
 		if ( done ) {
@@ -24,7 +28,7 @@
 			return;
 		}
 		const id = editor.getCurrentPostId();
-		if ( ! id || 'page' !== editor.getCurrentPostType() ) {
+		if ( ! id || -1 === types.indexOf( editor.getCurrentPostType() ) ) {
 			done = true;
 			unsubscribe();
 			return;

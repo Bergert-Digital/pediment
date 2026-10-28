@@ -85,13 +85,14 @@ abstract class Ability {
 	}
 
 	/**
-	 * Shared schema fragment: a page summary.
+	 * Shared schema fragment: a post summary.
 	 */
 	protected static function pageSummarySchema(): array {
 		return array(
 			'type'       => 'object',
 			'properties' => array(
 				'id'       => array( 'type' => 'integer' ),
+				'type'     => array( 'type' => 'string' ),
 				'title'    => array( 'type' => 'string' ),
 				'slug'     => array( 'type' => 'string' ),
 				'parent'   => array( 'type' => 'integer' ),
@@ -100,7 +101,7 @@ abstract class Ability {
 				'link'     => array( 'type' => 'string' ),
 				'modified' => array( 'type' => 'string' ),
 			),
-			'required'   => array( 'id', 'title', 'slug', 'parent', 'status', 'language', 'link', 'modified' ),
+			'required'   => array( 'id', 'type', 'title', 'slug', 'parent', 'status', 'language', 'link', 'modified' ),
 		);
 	}
 

@@ -16,7 +16,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
- * Lists pages in every language.
+ * Lists pages (or posts of another served type) in every language.
  */
 final class ListPages extends Ability {
 
@@ -37,16 +37,17 @@ final class ListPages extends Ability {
 
 	protected function description(): string {
 		/* translators: %d: maximum number of pages returned. */
-		return sprintf( __( 'Lists pages of every language with id, title, slug, parent, status, language and link. Optional filters: language code, parent page id, status (default any). Returns at most %d pages; truncated is true when more pages matched, so narrow the filters before you conclude a page does not exist.', 'pediment' ), self::LIMIT );
+		return sprintf( __( 'Lists pages of every language with id, type, title, slug, parent, status, language and link. Optional: post_type (default page; get-vocabulary lists the served types) and filters language code, parent id, status (default any). Returns at most %d posts; truncated is true when more pages matched, so narrow the filters before you conclude a page does not exist.', 'pediment' ), self::LIMIT );
 	}
 
 	protected function inputSchema(): array {
 		return array(
 			'type'                 => 'object',
 			'properties'           => array(
-				'language' => array( 'type' => 'string' ),
-				'parent'   => array( 'type' => 'integer', 'minimum' => 0 ),
-				'status'   => array( 'type' => 'string', 'enum' => array_merge( array( 'any' ), self::STATUSES ) ),
+				'post_type' => PageData::postTypeSchema(),
+				'language'  => array( 'type' => 'string' ),
+				'parent'    => array( 'type' => 'integer', 'minimum' => 0 ),
+				'status'    => array( 'type' => 'string', 'enum' => array_merge( array( 'any' ), self::STATUSES ) ),
 			),
 			'additionalProperties' => false,
 			'default'              => array(),
@@ -69,16 +70,21 @@ final class ListPages extends Ability {
 	}
 
 	public function permission( $input ): bool {
-		return current_user_can( 'edit_pages' );
+		return PostTypes::can( PostTypes::fromInput( $input ), 'edit_posts' );
 	}
 
 	public function execute( $input ) {
-		$input    = (array) $input;
+		$input   = (array) $input;
+		$type    = PostTypes::fromInput( $input );
+		$refused = PostTypes::refusal( $type );
+		if ( null !== $refused ) {
+			return $refused;
+		}
 		$status   = (string) ( $input['status'] ?? 'any' );
 		$language = isset( $input['language'] ) ? (string) $input['language'] : null;
 		$provider = LanguageRegistry::provider();
 		$args     = array(
-			'post_type'      => 'page',
+			'post_type'      => $type,
 			'post_status'    => 'any' === $status ? self::STATUSES : $status,
 			// One more than the limit tells whether the list was cut. The
 			// language filter runs on IDs below, so it needs every match.

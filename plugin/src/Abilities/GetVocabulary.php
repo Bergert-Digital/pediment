@@ -38,7 +38,7 @@ final class GetVocabulary extends Ability {
 	}
 
 	protected function description(): string {
-		return __( 'Read this first. Returns the design tokens, every named block style (with the layer that provides it), the blocks a page may use, the content rules, the WordPress version (pass it to the client-kit validate-blocks tool) and the site languages.', 'pediment' );
+		return __( 'Read this first. Returns the design tokens, every named block style (with the layer that provides it), the blocks a page may use, the content rules, the WordPress version (pass it to the client-kit validate-blocks tool), the site languages, and the post types the page tools serve (pass one as post_type).', 'pediment' );
 	}
 
 	protected function inputSchema(): array {
@@ -61,8 +61,21 @@ final class GetVocabulary extends Ability {
 				'rules'           => array( 'type' => 'array', 'items' => array( 'type' => 'string' ) ),
 				'languages'       => array( 'type' => 'array', 'items' => array( 'type' => 'string' ) ),
 				'defaultLanguage' => array( 'type' => 'string' ),
+				'postTypes'       => array(
+					'type'  => 'array',
+					'items' => array(
+						'type'       => 'object',
+						'properties' => array(
+							'slug'         => array( 'type' => 'string' ),
+							'label'        => array( 'type' => 'string' ),
+							'hierarchical' => array( 'type' => 'boolean' ),
+							'revisions'    => array( 'type' => 'boolean' ),
+							'translated'   => array( 'type' => 'boolean' ),
+						),
+					),
+				),
 			),
-			'required'   => array( 'wordpress', 'tokens', 'styles', 'allowedBlocks', 'rules', 'languages', 'defaultLanguage' ),
+			'required'   => array( 'wordpress', 'tokens', 'styles', 'allowedBlocks', 'rules', 'languages', 'defaultLanguage', 'postTypes' ),
 		);
 	}
 
@@ -71,7 +84,7 @@ final class GetVocabulary extends Ability {
 	}
 
 	public function permission( $input ): bool {
-		return current_user_can( 'edit_pages' );
+		return PostTypes::canEditAny();
 	}
 
 	public function execute( $input ) {
@@ -91,6 +104,7 @@ final class GetVocabulary extends Ability {
 			'rules'           => Policy::RULES,
 			'languages'       => array_values( array_filter( $provider->languages(), static fn( string $code ): bool => '' !== $code ) ),
 			'defaultLanguage' => $provider->defaultLanguage(),
+			'postTypes'       => PostTypes::describe(),
 		);
 	}
 

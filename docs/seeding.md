@@ -257,10 +257,13 @@ Registered on every `init` (not only during seeding — a CPT that only existed
 while `wp pediment seed` ran would leave its already-seeded entries
 unreachable). Defaults layered under whatever you pass:
 `public => true`, `show_in_rest => true`, `has_archive => false`,
-`supports => ['title','editor','excerpt','thumbnail','custom-fields']`,
+`supports => ['title','editor','excerpt','thumbnail','custom-fields','revisions']`,
 `label => ucfirst($slug)`. If something else already registered the same slug,
 the manifest's settings are silently not applied — the Verifier catches and
-reports this (see below), it doesn't fail silently.
+reports this (see below), it doesn't fail silently. A `supports` you pass
+replaces the default list, so keep `revisions` in it: the MCP tools serve
+these types ([mcp.md](mcp.md#posts-and-custom-post-types)), and a type without
+revisions cannot be rolled back.
 
 ### `site.logo`
 

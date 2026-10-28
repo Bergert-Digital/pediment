@@ -113,4 +113,21 @@ class AbilitiesWriteLanguageTest extends PolylangTestCase {
 			$this->assertStringContainsString( "translation_of {$value}", $result->get_error_message() );
 		}
 	}
+
+	public function test_language_on_a_type_polylang_does_not_translate_is_refused(): void {
+		register_post_type( 'guide', array( 'public' => true, 'show_in_rest' => true, 'supports' => array( 'title', 'editor', 'revisions' ) ) );
+		$this->assertFalse( LanguageRegistry::provider()->translatesPostType( 'guide' ) );
+		$this->assertTrue( LanguageRegistry::provider()->translatesPostType( 'page' ) );
+
+		$editor = self::factory()->user->create( array( 'role' => 'editor' ) );
+		$result = $this->write( $editor, array( 'post_type' => 'guide', 'title' => 'Guide', 'markup' => self::GOOD, 'language' => 'de' ) );
+		$this->assertWPError( $result );
+		$this->assertSame( 'pediment_language_unsupported', $result->get_error_code() );
+		$this->assertStringContainsString( 'post_type "guide" is not translated', $result->get_error_message() );
+		$this->assertSame( 0, (int) ( new WP_Query( array( 'post_type' => 'guide', 'post_status' => 'any', 'lang' => '' ) ) )->found_posts );
+
+		$plain = $this->write( $editor, array( 'post_type' => 'guide', 'title' => 'Guide', 'markup' => self::GOOD ) );
+		$this->assertIsArray( $plain, 'without a language the guide is written' );
+		unregister_post_type( 'guide' );
+	}
 }
