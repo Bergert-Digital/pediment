@@ -29,15 +29,16 @@ final class RollbackPage extends Ability {
 	}
 
 	protected function description(): string {
-		return __( 'Restores the page with the given id to one of its own revisions (revision ids come from write-page results). Restoring saves a new revision that holds the restored content; the content it replaced stays available as an earlier revision.', 'pediment' );
+		return __( 'Restores the page (or post of the given post_type, default page) with the given id to one of its own revisions (revision ids come from write-page results). Restoring saves a new revision that holds the restored content; the content it replaced stays available as an earlier revision.', 'pediment' );
 	}
 
 	protected function inputSchema(): array {
 		return array(
 			'type'                 => 'object',
 			'properties'           => array(
-				'id'       => array( 'type' => 'integer', 'minimum' => 1 ),
-				'revision' => array( 'type' => 'integer', 'minimum' => 1 ),
+				'id'        => array( 'type' => 'integer', 'minimum' => 1 ),
+				'revision'  => array( 'type' => 'integer', 'minimum' => 1 ),
+				'post_type' => PageData::postTypeSchema(),
 			),
 			'required'             => array( 'id', 'revision' ),
 			'additionalProperties' => false,
@@ -65,8 +66,13 @@ final class RollbackPage extends Ability {
 	}
 
 	public function execute( $input ) {
+		$type    = PostTypes::fromInput( $input );
+		$refused = PostTypes::refusal( $type );
+		if ( null !== $refused ) {
+			return $refused;
+		}
 		$id   = (int) $input['id'];
-		$page = PageData::find( $id );
+		$page = PageData::find( $id, $type );
 		if ( ! $page instanceof \WP_Post ) {
 			return $page;
 		}
@@ -74,7 +80,7 @@ final class RollbackPage extends Ability {
 		// wp_get_post_revision() takes its argument by reference.
 		$revision = wp_get_post_revision( $revision_id );
 		if ( ! $revision instanceof \WP_Post || (int) $revision->post_parent !== $id ) {
-			return self::errorList( 'pediment_revision_mismatch', __( 'That revision does not belong to this page.', 'pediment' ), array( "revision {$input['revision']} is not a revision of page {$id}" ), 404 );
+			return self::errorList( 'pediment_revision_mismatch', __( 'That revision does not belong to this post.', 'pediment' ), array( "revision {$input['revision']} is not a revision of {$type} {$id}" ), 404 );
 		}
 		if ( ! wp_restore_post_revision( $revision->ID ) ) {
 			return new \WP_Error( 'pediment_rollback_failed', __( 'The revision could not be restored.', 'pediment' ), array( 'status' => 500 ) );

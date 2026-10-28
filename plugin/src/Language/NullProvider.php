@@ -58,6 +58,10 @@ class NullProvider implements LanguageProvider {
 		return '';
 	}
 
+	public function translatesPostType( string $postType ): bool {
+		return false;
+	}
+
 	public function permalinkInLanguage( int $postId, string $language ): string {
 		// Monolingual: no language context to switch, one permalink.
 		return (string) get_permalink( $postId );

@@ -37,13 +37,16 @@ final class CheckPage extends Ability {
 	}
 
 	protected function description(): string {
-		return __( 'Checks a stored page: content-rule errors and warnings, the blocks the block editor last reported as invalid (null when the page was not opened in the editor since its last write), and legacy Pediment blocks still on the page.', 'pediment' );
+		return __( 'Checks a stored page, or a post of the given post_type (default page): content-rule errors and warnings, the blocks the block editor last reported as invalid (null when the page was not opened in the editor since its last write), and legacy Pediment blocks still on the page.', 'pediment' );
 	}
 
 	protected function inputSchema(): array {
 		return array(
 			'type'                 => 'object',
-			'properties'           => array( 'id' => array( 'type' => 'integer', 'minimum' => 1 ) ),
+			'properties'           => array(
+				'id'        => array( 'type' => 'integer', 'minimum' => 1 ),
+				'post_type' => PageData::postTypeSchema(),
+			),
 			'required'             => array( 'id' ),
 			'additionalProperties' => false,
 		);
@@ -71,7 +74,12 @@ final class CheckPage extends Ability {
 	}
 
 	public function execute( $input ) {
-		$page = PageData::find( (int) $input['id'] );
+		$type    = PostTypes::fromInput( $input );
+		$refused = PostTypes::refusal( $type );
+		if ( null !== $refused ) {
+			return $refused;
+		}
+		$page = PageData::find( (int) $input['id'], $type );
 		if ( ! $page instanceof \WP_Post ) {
 			return $page;
 		}

@@ -3,10 +3,11 @@
  * MCP smoke test. Talks to the Pediment MCP server of the running root
  * wp-env exactly like Claude Code does (JSON-RPC over HTTP, Basic auth with
  * an application password) and checks: the tool list, get-vocabulary, a
- * write-page → check-page round trip, that write-page rejects a legacy block,
+ * write-page → check-page round trip, a blog post written and read through
+ * post_type, that write-page rejects a legacy block,
  * that check-page reports a stored legacy page, and that a write
  * breaking two rules comes back as one tool error naming both. Removes every
- * page and the application password it created, even when a step fails.
+ * post and the application password it created, even when a step fails.
  *
  * Usage: node tools/mcp-smoke.mjs   (wp-env must be running)
  */
@@ -99,6 +100,8 @@ async function main() {
 		const vocabulary = await call( 'pediment-get-vocabulary', {} );
 		assert( ! vocabulary.isError, `get-vocabulary failed: ${ text( vocabulary ) }` );
 		assert( vocabulary.structuredContent.styles.some( ( s ) => s.slug === 'card' ), 'get-vocabulary has no card style' );
+		const types = vocabulary.structuredContent.postTypes.map( ( t ) => t.slug );
+		assert( types.includes( 'page' ) && types.includes( 'post' ), `get-vocabulary postTypes lacks page or post: ${ types }` );
 
 		const written = await call( 'pediment-write-page', {
 			title: 'MCP smoke',
@@ -110,6 +113,19 @@ async function main() {
 
 		const checked = await call( 'pediment-check-page', { id: pageId } );
 		assert( ! checked.isError && checked.structuredContent.errors.length === 0, `check-page reported errors: ${ text( checked ) }` );
+
+		const post = await call( 'pediment-write-page', {
+			post_type: 'post',
+			title: 'MCP smoke post',
+			markup: '<!-- wp:paragraph -->\n<p>A post from MCP.</p>\n<!-- /wp:paragraph -->',
+		} );
+		assert( ! post.isError, `write-page with post_type post failed: ${ text( post ) }` );
+		const postId = post.structuredContent.id;
+		pageIds.push( postId );
+		const readPost = await call( 'pediment-read-page', { post_type: 'post', id: postId } );
+		assert( ! readPost.isError && readPost.structuredContent.type === 'post', `read-page with post_type post failed: ${ text( readPost ) }` );
+		const wrongType = await call( 'pediment-read-page', { id: postId } );
+		assert( wrongType.isError && /pass post_type "post"/.test( text( wrongType ) ), `read-page without post_type did not name the type: ${ text( wrongType ) }` );
 
 		// A legacy page: write-page rejects legacy blocks (Pediment 5), so WP-CLI
 		// stores it; check-page reports it as an error and in legacyBlocks.
@@ -141,7 +157,7 @@ async function main() {
 		assert( /core\/html: block is not allowed/.test( why ), `write-page error does not name core/html: ${ why }` );
 		assert( /fontSize has the literal value "78px"/.test( why ), `write-page error does not name the literal font size: ${ why }` );
 
-		console.log( `MCP smoke OK — ${ names.length } tools, page ${ pageId } written and checked, legacy page ${ legacyId } reported, both violations reported.` );
+		console.log( `MCP smoke OK — ${ names.length } tools, page ${ pageId } written and checked, post ${ postId } written and read, legacy page ${ legacyId } reported, both violations reported.` );
 	} finally {
 		// Each step on its own, so a failing cleanup neither hides the real
 		// error nor skips the steps after it.

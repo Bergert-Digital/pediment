@@ -113,4 +113,55 @@ class AbilitiesWriteLanguageTest extends PolylangTestCase {
 			$this->assertStringContainsString( "translation_of {$value}", $result->get_error_message() );
 		}
 	}
+
+	public function test_language_on_a_type_polylang_does_not_translate_is_refused(): void {
+		register_post_type( 'guide', array( 'public' => true, 'show_in_rest' => true, 'supports' => array( 'title', 'editor', 'revisions' ) ) );
+		$this->assertFalse( LanguageRegistry::provider()->translatesPostType( 'guide' ) );
+		$this->assertTrue( LanguageRegistry::provider()->translatesPostType( 'page' ) );
+
+		$editor = self::factory()->user->create( array( 'role' => 'editor' ) );
+		$result = $this->write( $editor, array( 'post_type' => 'guide', 'title' => 'Guide', 'markup' => self::GOOD, 'language' => 'de' ) );
+		$this->assertWPError( $result );
+		$this->assertSame( 'pediment_language_unsupported', $result->get_error_code() );
+		$this->assertStringContainsString( 'post_type "guide" is not translated', $result->get_error_message() );
+		$this->assertSame( 0, (int) ( new WP_Query( array( 'post_type' => 'guide', 'post_status' => 'any', 'lang' => '' ) ) )->found_posts );
+
+		$plain = $this->write( $editor, array( 'post_type' => 'guide', 'title' => 'Guide', 'markup' => self::GOOD ) );
+		$this->assertIsArray( $plain, 'without a language the guide is written' );
+		unregister_post_type( 'guide' );
+	}
+
+	public function test_translations_share_the_imported_image_and_keep_their_own_alt_text(): void {
+		register_post_type( 'activity', array( 'public' => true, 'show_in_rest' => true, 'supports' => array( 'title', 'editor', 'thumbnail', 'excerpt', 'page-attributes' ) ) );
+		$translated = static fn( $types ) => array_merge( (array) $types, array( 'activity' => 'activity' ) );
+		add_filter( 'pll_get_post_types', $translated );
+		PLL()->model->clean_languages_cache();
+		$this->assertTrue( LanguageRegistry::provider()->translatesPostType( 'activity' ) );
+		$this->assertFalse( LanguageRegistry::provider()->translatesPostType( 'attachment' ), 'Pediment keeps media translation off' );
+
+		$fetched = 0;
+		$serve   = static function ( $pre, $args ) use ( &$fetched ) {
+			++$fetched;
+			copy( DIR_TESTDATA . '/images/canola.jpg', $args['filename'] );
+			return array( 'headers' => array(), 'body' => '', 'response' => array( 'code' => 200, 'message' => 'OK' ), 'cookies' => array(), 'filename' => $args['filename'] );
+		};
+		add_filter( 'pre_http_request', $serve, 10, 2 );
+
+		$editor = self::factory()->user->create( array( 'role' => 'editor' ) );
+		$url    = 'https://images.example.test/lake.jpg';
+		$en     = $this->write( $editor, array( 'post_type' => 'activity', 'title' => 'Swimming', 'markup' => self::GOOD, 'language' => 'en', 'excerpt' => 'Swim.', 'menu_order' => 110, 'featured_image' => array( 'url' => $url, 'alt' => 'A lake' ) ) );
+		$de     = $this->write( $editor, array( 'post_type' => 'activity', 'title' => 'Schwimmen', 'markup' => self::GOOD, 'language' => 'de', 'translation_of' => $en['id'], 'excerpt' => 'Schwimmen.', 'menu_order' => 110, 'featured_image' => array( 'url' => $url, 'alt' => 'Ein See' ) ) );
+
+		remove_filter( 'pre_http_request', $serve, 10 );
+		remove_filter( 'pll_get_post_types', $translated );
+		unregister_post_type( 'activity' );
+
+		$this->assertIsArray( $en );
+		$this->assertIsArray( $de );
+		$this->assertSame( 1, $fetched, 'one download for both languages' );
+		$this->assertSame( $en['featured_image'], $de['featured_image'] );
+		$this->assertSame( $de['id'], LanguageRegistry::provider()->translationOf( $en['id'], 'de' ) );
+		$this->assertStringContainsString( 'alt="A lake"', get_the_post_thumbnail( $en['id'] ) );
+		$this->assertStringContainsString( 'alt="Ein See"', get_the_post_thumbnail( $de['id'] ) );
+	}
 }

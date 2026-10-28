@@ -42,7 +42,7 @@ final class Server {
 			self::REST_NAMESPACE,
 			self::ROUTE,
 			'Pediment',
-			__( 'Build and change pages and design styles on this site under Pediment’s content and design rules. Call pediment-get-vocabulary first.', 'pediment' ),
+			__( 'Build and change pages, posts and design styles on this site under Pediment’s content and design rules. Call pediment-get-vocabulary first.', 'pediment' ),
 			PEDIMENT_AI_VERSION,
 			array( 'WP\MCP\Transport\HttpTransport' ),
 			'WP\MCP\Infrastructure\ErrorHandling\ErrorLogMcpErrorHandler',
