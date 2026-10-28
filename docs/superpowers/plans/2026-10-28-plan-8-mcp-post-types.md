@@ -17,6 +17,7 @@
 - D7 — Types without `revisions` support are served. `write-page` then returns `revision: 0` and a warning that the write cannot be rolled back. The seeder's default `supports` for manifest `post_types` gains `revisions`.
 - D8 — The editor's invalid-block report covers every served type, not only pages.
 - D9 — Meta fields and taxonomies stay out of this plan. Add them later only for meta registered with `show_in_rest`.
+- D10 — Added after the workation thread `2026-10-28-mcp-custom-post-types` (R3, R4): `write-page` takes `excerpt`, `menu_order` and `featured_image`. An image URL is imported once and reused by source URL (`_pediment_source_url`). The alt text lives on the post (`_pediment_featured_image_alt`) and replaces the attachment's alt when the post's thumbnail renders, so translations share one attachment and keep their own alt text without Polylang media translation (which Pediment keeps off).
 
 ## Tasks
 
@@ -29,6 +30,7 @@
 - [x] T7 PHPUnit: a fixture CPT (served, refused, capability mapping, type mismatch, parent rule, revision warning, invalid-block route); Polylang: language on an untranslated CPT is refused.
 - [x] T8 `tools/mcp-smoke.mjs`: write and read a `post` through MCP.
 - [x] T9 Docs: `docs/mcp.md`, `docs/seeding.md`, roadmap.
+- [x] T10 `excerpt`, `menu_order`, `featured_image` on write and read (D10), with PHPUnit and a Polylang case.
 
 ## Verification
 
