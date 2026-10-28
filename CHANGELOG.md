@@ -1,5 +1,14 @@
 # Changelog
 
+## [6.1.0](https://github.com/Bergert-Digital/pediment/compare/v6.0.0...v6.1.0) (2026-10-28)
+
+
+### Features
+
+* **mcp:** serve posts and custom post types ([3ec23ec](https://github.com/Bergert-Digital/pediment/commit/3ec23ec3ef0ae760f55800a3aa4de27763565c88))
+* **mcp:** serve posts and custom post types ([#145](https://github.com/Bergert-Digital/pediment/issues/145)) ([fffff21](https://github.com/Bergert-Digital/pediment/commit/fffff211015ffc4b05839dee7164140bfcc19060))
+* **mcp:** write excerpt, menu order and featured image ([b571ccb](https://github.com/Bergert-Digital/pediment/commit/b571ccbf14ff2cc427f0a28d7269be0860560643))
+
 ## [6.0.0](https://github.com/Bergert-Digital/pediment/compare/v5.0.0...v6.0.0) (2026-10-21)
 
 
