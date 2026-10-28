@@ -18,7 +18,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
- * Creates or updates a page after the content rules pass.
+ * Creates or updates a page (or post of another served type) after the content rules pass.
  */
 final class WritePage extends Ability {
 
@@ -38,7 +38,7 @@ final class WritePage extends Ability {
 	}
 
 	protected function description(): string {
-		return __( 'Creates a page (status draft unless given) or updates the page with the given id. The markup must pass the content rules (see get-vocabulary) or nothing is written and every violation is listed. Validate static blocks with the client-kit validate-blocks tool first. Every update keeps a revision (see rollback-page). Optional: slug, parent, status, language code and translation_of (id of the page this one translates).', 'pediment' );
+		return __( 'Creates a page (status draft unless given) or updates the page with the given id. With post_type (default page; get-vocabulary lists the served types) it writes a post of that type instead, and an id must be of that type. The markup must pass the content rules (see get-vocabulary) or nothing is written and every violation is listed. Validate static blocks with the client-kit validate-blocks tool first. Every update keeps a revision (see rollback-page). Optional: slug, parent (hierarchical types only), status, language code and translation_of (id of the post of the same type this one translates; translated types only).', 'pediment' );
 	}
 
 	protected function inputSchema(): array {
@@ -46,6 +46,7 @@ final class WritePage extends Ability {
 			'type'                 => 'object',
 			'properties'           => array(
 				'id'             => array( 'type' => 'integer', 'minimum' => 1 ),
+				'post_type'      => PageData::postTypeSchema(),
 				'title'          => array( 'type' => 'string', 'minLength' => 1 ),
 				'slug'           => array( 'type' => 'string' ),
 				'parent'         => array( 'type' => 'integer', 'minimum' => 0 ),
@@ -79,25 +80,31 @@ final class WritePage extends Ability {
 
 	public function permission( $input ): bool {
 		$input = (array) $input;
+		$type  = PostTypes::fromInput( $input );
 		$id    = (int) ( $input['id'] ?? 0 );
-		$can   = $id > 0 ? PageData::canEditInput( $input ) : current_user_can( 'edit_pages' );
+		$can   = $id > 0 ? PageData::canEditInput( $input ) : PostTypes::can( $type, 'edit_posts' );
 		if ( ! $can ) {
 			return false;
 		}
 		// Linking rewrites the original's translation group, so the user must be able to edit it.
 		// An unknown id passes here; execute() answers with a named error.
 		$of = (int) ( $input['translation_of'] ?? 0 );
-		if ( $of > 0 && PageData::find( $of ) instanceof \WP_Post && ! current_user_can( 'edit_post', $of ) ) {
+		if ( $of > 0 && PageData::find( $of, $type ) instanceof \WP_Post && ! current_user_can( 'edit_post', $of ) ) {
 			return false;
 		}
 		// Core's REST controller also gates `private` on publish rights.
-		return ! in_array( $input['status'] ?? '', array( 'publish', 'private' ), true ) || current_user_can( 'publish_pages' );
+		return ! in_array( $input['status'] ?? '', array( 'publish', 'private' ), true ) || PostTypes::can( $type, 'publish_posts' );
 	}
 
 	public function execute( $input ) {
+		$type    = PostTypes::fromInput( $input );
+		$refused = PostTypes::refusal( $type );
+		if ( null !== $refused ) {
+			return $refused;
+		}
 		$id = (int) ( $input['id'] ?? 0 );
 		if ( $id > 0 ) {
-			$page = PageData::find( $id );
+			$page = PageData::find( $id, $type );
 			if ( ! $page instanceof \WP_Post ) {
 				return $page;
 			}
@@ -108,21 +115,28 @@ final class WritePage extends Ability {
 		if ( '' !== $language && ! in_array( $language, $provider->languages(), true ) ) {
 			return self::errorList( 'pediment_language_unknown', __( 'Unknown language code.', 'pediment' ), array( "language \"{$language}\" is not configured; use one of: " . implode( ', ', array_filter( $provider->languages() ) ) ) );
 		}
+		if ( '' !== $language && ! $provider->translatesPostType( $type ) ) {
+			return self::errorList( 'pediment_language_unsupported', __( 'This post type has no languages. Nothing was written.', 'pediment' ), array( "post_type \"{$type}\" is not translated; leave out language and translation_of, or make the type translatable in the language plugin" ) );
+		}
 		if ( isset( $input['translation_of'] ) ) {
 			if ( '' === $language ) {
 				return self::errorList( 'pediment_language_unknown', __( 'translation_of needs a language.', 'pediment' ), array( 'pass the language code of this translation together with translation_of' ) );
 			}
 			$of = (int) $input['translation_of'];
-			if ( ! PageData::find( $of ) instanceof \WP_Post ) {
-				return self::errorList( 'pediment_page_not_found', __( 'translation_of is not a page.', 'pediment' ), array( "translation_of {$of} is not a page" ), 404 );
+			if ( ! PageData::find( $of, $type ) instanceof \WP_Post ) {
+				return self::errorList( 'pediment_page_not_found', __( 'translation_of is not a post of this type.', 'pediment' ), array( "translation_of {$of} is not a {$type}" ), 404 );
 			}
 			$taken = $provider->translationOf( $of, $language );
 			if ( $taken > 0 && $taken !== $id && ! current_user_can( 'edit_post', $taken ) ) {
 				return self::errorList( 'pediment_translation_locked', __( 'The translation group holds a page you cannot edit. Nothing was written.', 'pediment' ), array( "translation_of {$of}: the {$language} translation is page {$taken}, which you cannot edit" ), 403 );
 			}
 		}
-		if ( isset( $input['parent'] ) && (int) $input['parent'] > 0 && ! PageData::find( (int) $input['parent'] ) instanceof \WP_Post ) {
-			return self::errorList( 'pediment_page_not_found', __( 'parent is not a page.', 'pediment' ), array( "parent {$input['parent']} is not a page" ), 404 );
+		$parent = (int) ( $input['parent'] ?? 0 );
+		if ( $parent > 0 && ! is_post_type_hierarchical( $type ) ) {
+			return self::errorList( 'pediment_parent_unsupported', __( 'This post type has no parents. Nothing was written.', 'pediment' ), array( "post_type \"{$type}\" is not hierarchical; leave out parent" ) );
+		}
+		if ( $parent > 0 && ! PageData::find( $parent, $type ) instanceof \WP_Post ) {
+			return self::errorList( 'pediment_page_not_found', __( 'parent is not a post of this type.', 'pediment' ), array( "parent {$parent} is not a {$type}" ), 404 );
 		}
 
 		$check  = $this->policy->check( (string) $input['markup'] );
@@ -138,7 +152,7 @@ final class WritePage extends Ability {
 		}
 
 		$postarr = array(
-			'post_type'    => 'page',
+			'post_type'    => $type,
 			'post_title'   => $title,
 			'post_content' => (string) $input['markup'],
 		);
@@ -186,12 +200,17 @@ final class WritePage extends Ability {
 
 		InvalidBlockLog::clear( $id );
 
+		$warnings = $check['warnings'];
+		if ( ! wp_revisions_enabled( get_post( $id ) ) ) {
+			$warnings[] = "post_type \"{$type}\" keeps no revisions on this site; this write cannot be rolled back";
+		}
+
 		return array(
 			'id'       => $id,
 			'status'   => (string) get_post_status( $id ),
 			'url'      => (string) get_permalink( $id ),
 			'revision' => PageData::latestRevision( $id ),
-			'warnings' => $check['warnings'],
+			'warnings' => $warnings,
 		);
 	}
 }

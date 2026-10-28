@@ -10,6 +10,8 @@ declare(strict_types=1);
 
 namespace Pediment\Content;
 
+use Pediment\Abilities\PostTypes;
+
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
@@ -52,8 +54,8 @@ final class InvalidBlockLog {
 				),
 				'callback'            => static function ( \WP_REST_Request $request ) {
 					$id = (int) $request['id'];
-					if ( 'page' !== get_post_type( $id ) ) {
-						return new \WP_Error( 'pediment_not_a_page', __( 'Not a page.', 'pediment' ), array( 'status' => 404 ) );
+					if ( ! PostTypes::isServed( (string) get_post_type( $id ) ) ) {
+						return new \WP_Error( 'pediment_not_a_page', __( 'Not a post the MCP tools serve.', 'pediment' ), array( 'status' => 404 ) );
 					}
 					return rest_ensure_response( self::record( $id, (array) $request['blocks'] ) );
 				},
@@ -73,6 +75,7 @@ final class InvalidBlockLog {
 			(string) filemtime( PEDIMENT_AI_PLUGIN_DIR . '/' . $rel ),
 			true
 		);
+		wp_add_inline_script( 'pediment-invalid-blocks', 'window.pedimentInvalidBlocks = ' . wp_json_encode( array( 'postTypes' => PostTypes::served() ) ) . ';', 'before' );
 	}
 
 	/**

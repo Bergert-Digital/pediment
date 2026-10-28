@@ -1,7 +1,7 @@
 # Building pages with AI through MCP
 
 Pediment exposes eight tools to AI agents through the WordPress MCP Adapter.
-Agents build and change pages on the live site; Pediment enforces the content
+Agents build and change pages, posts and custom post types on the live site; Pediment enforces the content
 and design rules on the server, so a page that breaks a rule is never written.
 
 ## Set up a site
@@ -30,31 +30,59 @@ URL with `npx wp-env run cli wp option get siteurl` (the port differs per
 workspace) and create a password with
 `npx wp-env run cli wp user application-password create admin claude --porcelain`.
 `node tools/mcp-smoke.mjs` runs the whole path against the running wp-env: it
-lists the tools, writes and checks a page, checks that a stored legacy page is reported, and confirms that a write breaking
+lists the tools, writes and checks a page, writes and reads a blog post, checks that a stored legacy page is reported, and confirms that a write breaking
 two rules comes back as one tool error that names both.
 
 ## Tools
 
 | Tool | Does |
 | --- | --- |
-| `pediment-get-vocabulary` | Tokens, named styles (with layer), allowed blocks, rules, WordPress version, languages. Call it first. |
-| `pediment-list-pages` | Pages of every language. Filters: language, parent, status. At most 500 pages; `truncated` is true when more matched. |
-| `pediment-read-page` | One page with raw block markup and translations. |
+| `pediment-get-vocabulary` | Tokens, named styles (with layer), allowed blocks, rules, WordPress version, languages, served post types. Call it first. |
+| `pediment-list-pages` | Pages (or posts of `post_type`) of every language. Filters: language, parent, status. At most 500; `truncated` is true when more matched. |
+| `pediment-read-page` | One page or post with raw block markup and translations. |
 | `pediment-check-page` | Content-rule errors and warnings, blocks the editor reported invalid, legacy blocks still on the page (errors since Pediment 5). |
-| `pediment-write-page` | Create (draft by default) or update a page. Rejected with every violation listed if a rule fails. Keeps a revision. |
-| `pediment-rollback-page` | Restore one of the page's own revisions. |
+| `pediment-write-page` | Create (draft by default) or update a page or post. Rejected with every violation listed if a rule fails. Keeps a revision. |
+| `pediment-rollback-page` | Restore one of the page's or post's own revisions. |
 | `pediment-upsert-style` | Create or change a site-layer style (see [design-layer.md](design-layer.md)). |
 | `pediment-delete-style` | Delete a site-layer style. |
+
+### Posts and custom post types
+
+The five page tools take an optional `post_type` input. Without it they work
+on pages, as before. `pediment-get-vocabulary` lists the served types under
+`postTypes`, each with `hierarchical`, `revisions` and `translated`.
+
+- Served types: `page`, `post`, and every type that a theme or plugin
+  registers with `show_in_rest`, `editor` support and the block editor. A
+  custom post type from the manifest's `post_types` qualifies. Other
+  built-in types (`wp_block`, `wp_template`, `wp_navigation`, `attachment`)
+  and `pediment_style` are never served.
+- The filter `pediment_mcp_post_types` receives the list of slugs. It can
+  remove a type, or add a type that meets the rules above. It cannot add one
+  that breaks them.
+- The type is never guessed. A tool that takes an `id` refuses a post of
+  another type, and the error names the type to pass ("It is a guide; pass
+  post_type \"guide\"").
+- `parent` works only on hierarchical types, and the parent must have the
+  same type. `language` and `translation_of` work only on types the language
+  plugin translates (Polylang: Languages → Settings → Custom post types).
+- A type without `revisions` support can be written, but the write returns
+  `revision: 0` and a warning that it cannot be rolled back. The seeder's
+  manifest `post_types` add `revisions` to `supports` by default.
+- Meta fields and taxonomies are not exposed yet.
 
 ### Permissions
 
 The tool list is fixed: the server exposes these eight abilities and nothing
 else. Each tool checks WordPress capabilities on every call.
 
-- Page tools need `edit_pages`. A tool that takes a page `id` also needs
-  `edit_post` on that page.
+- Page tools need the post type's `edit_posts` capability: `edit_pages` for
+  pages, `edit_posts` for posts, the mapped capability for a custom post
+  type. A tool that takes an `id` also needs `edit_post` on that post.
 - `pediment-write-page` sets `status` to `publish` or `private` only for users
-  with `publish_pages`. New pages are drafts unless `status` says otherwise.
+  with the type's `publish_posts` capability (`publish_pages` for pages).
+  New posts are drafts unless `status` says otherwise.
+- `pediment-get-vocabulary` needs `edit_posts` of at least one served type.
 - With `translation_of`, the user also needs `edit_post` on that page, and on
   any page already in the target language slot of the translation group that
   the write would replace. Otherwise nothing is written.

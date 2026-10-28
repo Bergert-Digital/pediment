@@ -179,7 +179,7 @@ final class Manifest {
 						'public'       => true,
 						'show_in_rest' => true,
 						'has_archive'  => false,
-						'supports'     => [ 'title', 'editor', 'excerpt', 'thumbnail', 'custom-fields' ],
+						'supports'     => [ 'title', 'editor', 'excerpt', 'thumbnail', 'custom-fields', 'revisions' ],
 						'label'        => ucfirst( $slug ),
 					],
 					(array) $declared

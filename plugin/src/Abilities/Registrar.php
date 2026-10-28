@@ -71,7 +71,7 @@ final class Registrar {
 			self::CATEGORY,
 			array(
 				'label'       => __( 'Pediment', 'pediment' ),
-				'description' => __( 'Build and change pages and design styles under Pediment’s content and design rules.', 'pediment' ),
+				'description' => __( 'Build and change pages, posts and design styles under Pediment’s content and design rules.', 'pediment' ),
 			)
 		);
 	}

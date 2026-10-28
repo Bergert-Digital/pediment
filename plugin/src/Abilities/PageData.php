@@ -28,6 +28,7 @@ final class PageData {
 	public static function summary( \WP_Post $post ): array {
 		return array(
 			'id'       => $post->ID,
+			'type'     => $post->post_type,
 			'title'    => $post->post_title,
 			'slug'     => $post->post_name,
 			'parent'   => (int) $post->post_parent,
@@ -81,28 +82,47 @@ final class PageData {
 	}
 
 	/**
-	 * The page for an ID, or a 404 WP_Error when the ID is not a page.
+	 * The post of that type for an ID, or a 404 WP_Error. The type is never
+	 * guessed: a post of another served type is refused, and the error names
+	 * the post_type to pass.
 	 *
-	 * @param int $id Post ID.
+	 * @param int    $id   Post ID.
+	 * @param string $type Post type slug.
 	 * @return \WP_Post|\WP_Error
 	 */
-	public static function find( int $id ) {
+	public static function find( int $id, string $type = PostTypes::DEFAULT ) {
 		$post = get_post( $id );
-		if ( $post instanceof \WP_Post && 'page' === $post->post_type ) {
+		if ( $post instanceof \WP_Post && $type === $post->post_type ) {
 			return $post;
 		}
-		return new \WP_Error( 'pediment_page_not_found', __( 'No page with that id.', 'pediment' ), array( 'status' => 404 ) );
+		$message = "No {$type} with id {$id}.";
+		if ( $post instanceof \WP_Post && PostTypes::isServed( $post->post_type ) ) {
+			$message .= " It is a {$post->post_type}; pass post_type \"{$post->post_type}\".";
+		}
+		return new \WP_Error( 'pediment_page_not_found', $message, array( 'status' => 404 ) );
 	}
 
 	/**
-	 * Permission check for abilities that take a page `id`: edit_pages, plus
-	 * edit_post on the page itself. An unknown id passes so execute() can
-	 * answer with a clear "page not found" instead of a bare refusal.
+	 * Permission check for abilities that take an `id`: the post type's
+	 * edit_posts (edit_pages for pages), plus edit_post on the post itself.
+	 * An unknown id passes so execute() can answer with a clear "not found"
+	 * instead of a bare refusal.
 	 *
 	 * @param mixed $input Ability input.
 	 */
 	public static function canEditInput( $input ): bool {
-		$id = (int) ( ( (array) $input )['id'] ?? 0 );
-		return current_user_can( 'edit_pages' ) && ( ! self::find( $id ) instanceof \WP_Post || current_user_can( 'edit_post', $id ) );
+		$id   = (int) ( ( (array) $input )['id'] ?? 0 );
+		$type = PostTypes::fromInput( $input );
+		return PostTypes::can( $type, 'edit_posts' ) && ( ! self::find( $id, $type ) instanceof \WP_Post || current_user_can( 'edit_post', $id ) );
+	}
+
+	/**
+	 * Shared schema fragment: the optional post_type input.
+	 */
+	public static function postTypeSchema(): array {
+		return array(
+			'type'        => 'string',
+			'description' => 'Post type slug (default "page"). get-vocabulary lists the served types under postTypes.',
+		);
 	}
 }
