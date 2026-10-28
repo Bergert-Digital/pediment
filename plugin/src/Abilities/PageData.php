@@ -59,9 +59,12 @@ final class PageData {
 			}
 		}
 		return self::summary( $post ) + array(
-			'translations' => (object) $translations,
-			'markup'       => $post->post_content,
-			'revisions'    => count( wp_get_post_revisions( $post->ID, array( 'fields' => 'ids' ) ) ),
+			'translations'   => (object) $translations,
+			'markup'         => $post->post_content,
+			'excerpt'        => $post->post_excerpt,
+			'menu_order'     => (int) $post->menu_order,
+			'featured_image' => FeaturedImage::describe( $post->ID ),
+			'revisions'      => count( wp_get_post_revisions( $post->ID, array( 'fields' => 'ids' ) ) ),
 		);
 	}
 

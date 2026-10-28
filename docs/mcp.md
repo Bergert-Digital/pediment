@@ -39,9 +39,9 @@ two rules comes back as one tool error that names both.
 | --- | --- |
 | `pediment-get-vocabulary` | Tokens, named styles (with layer), allowed blocks, rules, WordPress version, languages, served post types. Call it first. |
 | `pediment-list-pages` | Pages (or posts of `post_type`) of every language. Filters: language, parent, status. At most 500; `truncated` is true when more matched. |
-| `pediment-read-page` | One page or post with raw block markup and translations. |
+| `pediment-read-page` | One page or post with raw block markup, translations, excerpt, menu order and featured image. |
 | `pediment-check-page` | Content-rule errors and warnings, blocks the editor reported invalid, legacy blocks still on the page (errors since Pediment 5). |
-| `pediment-write-page` | Create (draft by default) or update a page or post. Rejected with every violation listed if a rule fails. Keeps a revision. |
+| `pediment-write-page` | Create (draft by default) or update a page or post, with optional excerpt, menu order and featured image. Rejected with every violation listed if a rule fails. Keeps a revision. |
 | `pediment-rollback-page` | Restore one of the page's or post's own revisions. |
 | `pediment-upsert-style` | Create or change a site-layer style (see [design-layer.md](design-layer.md)). |
 | `pediment-delete-style` | Delete a site-layer style. |
@@ -69,7 +69,40 @@ on pages, as before. `pediment-get-vocabulary` lists the served types under
 - A type without `revisions` support can be written, but the write returns
   `revision: 0` and a warning that it cannot be rolled back. The seeder's
   manifest `post_types` add `revisions` to `supports` by default.
+- `excerpt` (plain text) needs `excerpt` support, `menu_order` needs
+  `page-attributes` support. Pages have no excerpt by default; posts have no
+  menu order. A field the type does not support is refused, with every such
+  field listed in one error.
 - Meta fields and taxonomies are not exposed yet.
+
+### Featured images
+
+`pediment-write-page` takes `featured_image` on types with `thumbnail`
+support:
+
+| Input | Effect |
+| --- | --- |
+| `{ "url": "https://…", "alt": "…" }` | Imports the image into the media library and sets it. The attachment remembers the source URL (`_pediment_source_url`); a later write with the same URL reuses it and downloads nothing. |
+| `{ "id": 123, "alt": "…" }` | Sets an image that is already in the media library. |
+| `{ "id": 0 }` | Removes the featured image. |
+
+Leave `featured_image` out to keep the current image. `pediment-read-page`
+returns it as `featured_image` (`id`, `url`, `alt`, `source`) or `null`.
+
+- The alt text belongs to the post, not to the attachment. Translations
+  share one attachment and each keeps its own alt text: Pediment keeps
+  Polylang's media translation off, so an attachment has no language. The
+  post's alt text replaces the attachment's wherever the theme prints the
+  featured image through `get_the_post_thumbnail()` (which
+  `core/post-featured-image` uses). The attachment gets the first alt text
+  it is given, for the media library.
+- Imports accept JPEG, PNG, GIF, WebP and AVIF. A URL without a file
+  extension (many image CDNs) is named by the real image type.
+- The download runs through `download_url()`, which refuses local and
+  private addresses. Wikimedia serves thumbnails only in its standard
+  widths (for example 330px or 640px); another width returns "Bad Request".
+- The image is imported before the post is written, so a failed download
+  writes nothing.
 
 ### Permissions
 
@@ -83,6 +116,7 @@ else. Each tool checks WordPress capabilities on every call.
   with the type's `publish_posts` capability (`publish_pages` for pages).
   New posts are drafts unless `status` says otherwise.
 - `pediment-get-vocabulary` needs `edit_posts` of at least one served type.
+- A `featured_image` with `url` needs `upload_files`. One with `id` does not.
 - With `translation_of`, the user also needs `edit_post` on that page, and on
   any page already in the target language slot of the translation group that
   the write would replace. Otherwise nothing is written.
