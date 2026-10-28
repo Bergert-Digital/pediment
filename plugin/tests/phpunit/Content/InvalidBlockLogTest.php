@@ -38,12 +38,22 @@ class InvalidBlockLogTest extends WP_UnitTestCase {
 		wp_set_current_user( self::factory()->user->create( array( 'role' => 'administrator' ) ) );
 		$this->assertSame( 400, $this->post( $page, array( 'blocks' => array( 'Not A Block' ) ) )->get_status() );
 
-		$post = self::factory()->post->create( array( 'post_type' => 'post' ) );
-		$this->assertSame( 404, $this->post( $post, array( 'blocks' => array() ) )->get_status() );
+		$pattern = self::factory()->post->create( array( 'post_type' => 'wp_block' ) );
+		$this->assertSame( 404, $this->post( $pattern, array( 'blocks' => array() ) )->get_status(), 'the MCP tools do not serve synced patterns' );
 	}
 
-	public function test_editor_script_is_enqueued(): void {
+	public function test_posts_of_every_served_type_are_recorded(): void {
+		$post = self::factory()->post->create( array( 'post_type' => 'post' ) );
+		wp_set_current_user( self::factory()->user->create( array( 'role' => 'editor' ) ) );
+
+		$this->assertSame( 200, $this->post( $post, array( 'blocks' => array( 'core/group' ) ) )->get_status() );
+		$this->assertSame( array( 'core/group' ), InvalidBlockLog::get( $post )['blocks'] );
+	}
+
+	public function test_editor_script_is_enqueued_with_the_served_types(): void {
 		do_action( 'enqueue_block_editor_assets' );
 		$this->assertTrue( wp_script_is( 'pediment-invalid-blocks', 'enqueued' ) );
+		$before = implode( "\n", (array) wp_scripts()->get_data( 'pediment-invalid-blocks', 'before' ) );
+		$this->assertStringContainsString( 'window.pedimentInvalidBlocks = {"postTypes":["page","post"', $before );
 	}
 }

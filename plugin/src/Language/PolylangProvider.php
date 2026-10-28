@@ -83,6 +83,10 @@ final class PolylangProvider implements LanguageProvider {
 		return is_string( $code ) ? $code : '';
 	}
 
+	public function translatesPostType( string $postType ): bool {
+		return (bool) pll_is_translated_post_type( $postType );
+	}
+
 	/**
 	 * @param array<string,int> $map language code => post ID
 	 */

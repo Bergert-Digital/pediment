@@ -70,6 +70,9 @@ interface LanguageProvider {
 	/** The post's language code; '' when it has none or the site is monolingual. */
 	public function languageOf( int $postId ): string;
 
+	/** Whether the plugin keeps languages and translations for this post type. */
+	public function translatesPostType( string $postType ): bool;
+
 	/**
 	 * Serialized language-switcher block for the seeded header, or '' when the
 	 * active plugin has no switcher (monolingual). $config is the manifest's
