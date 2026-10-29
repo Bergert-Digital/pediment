@@ -42,6 +42,36 @@ post carries the key", which pointed at the key.
 2026-10-14 roadmap (Pediment 4.0 to 6.1) shipped with no entry here; the roadmap
 (`docs/superpowers/plans/2026-10-14-roadmap.md`) is their record.
 
+[--:--] ✅ Journey B check: `node tools/mcp-smoke.mjs` passes against the local wp-env
+(8 tools; page and post written, read and checked; legacy page and both rule violations
+reported).
+
+### Check-in
+
+#### Done this session
+- New `docs/PRODUCT_SENSE.md` (four journeys for the plugin-only product).
+- Backlog and session log tidied; 15 done or moot items removed, 3 re-scoped.
+- Seed and claim reports no longer call a real run that wrote nothing a dry run
+  (CLI, wp-admin Apply buttons, `--format=json` gains `dry_run`).
+- Planning problems print under `PROBLEMS (found while planning)`, not
+  `VERIFICATION FAILED`.
+- `adopt --language` rejects an unconfigured language by name.
+- `VISION.md` and `STANDARDS.md` brought up to Pediment 6.
+
+#### What I noticed
+- `plugin/package-lock.json` is modified in this workspace by the setup's
+  `npm install`, not by this session. Left unstaged; CI needs an npm-10 lockfile.
+- wp-env pins WordPress 6.9 while client-kit validates against 7.1 (backlog:
+  "Keep the WordPress floor current").
+
+#### Planned next
+- Block empty-state sweep of the 7 remaining blocks, in the editor and as a visitor.
+- Add the multilingual leg to the `scaffold` CI matrix (needs a push to prove).
+- Assert the expected create count in `seed-check`, not only convergence.
+
+#### Need a decision on
+_(none)_
+
 ---
 
 ## Session 2026-08-06 — nav submenus, step 6b plugin half (Tasks 1–5)
