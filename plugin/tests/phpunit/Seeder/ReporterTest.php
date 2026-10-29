@@ -71,8 +71,23 @@ class ReporterTest extends WP_UnitTestCase {
 
 		$this->assertStringContainsString( 'ERRORS', $text );
 		$this->assertStringContainsString( 'duplicate key "home"', $text );
-		$this->assertStringContainsString( 'VERIFICATION', $text );
+		$this->assertStringContainsString( 'PROBLEMS (found while planning)', $text );
 		$this->assertStringContainsString( 'home-2', $text );
+	}
+
+	/**
+	 * Phase 5 runs only after an apply. A dry run that finds an undeclared
+	 * media key must not report a verification that never happened.
+	 */
+	public function test_only_an_applied_run_reports_a_failed_verification() {
+		$problems = [ 'home: references media key "hreo", which the manifest does not declare' ];
+
+		$dry     = Reporter::text( new RunResult( new Plan(), false, '', [], $problems, dryRun: true ) );
+		$applied = Reporter::text( new RunResult( new Plan(), true, '', [], $problems ) );
+
+		$this->assertStringNotContainsString( 'VERIFICATION', $dry );
+		$this->assertStringContainsString( "PROBLEMS (found while planning)\n  - home: references media key", $dry );
+		$this->assertStringContainsString( "VERIFICATION FAILED\n  - home: references media key", $applied );
 	}
 
 	public function test_summary_line_counts_writes_orphans_and_unchanged() {

@@ -1036,7 +1036,9 @@ is false if either is non-empty, and WP-CLI's `wp pediment seed` exits non-zero
 in that case even though it may have applied a valid partial write. Reading
 the full report matters: "the run continued" and "nothing was applied" are
 distinguished in the ERRORS heading, but a `VERIFICATION FAILED` section can
-appear on top of either.
+appear on top of either. A dry run, or a run stopped before it wrote, never
+reaches phase 5: the problems planning found (an undeclared media key) appear
+under `PROBLEMS (found while planning)` instead.
 
 ### Ambiguous claim
 
