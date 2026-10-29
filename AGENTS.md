@@ -67,6 +67,11 @@ For layout or typography changes, also run `node tools/audit-landing.mjs` and
 check 375px, 768px, and 1440px plus the block editor. Before a WordPress-side
 fix, read `docs/WORDPRESS_TRAPS.md` and record any newly discovered trap.
 
+Install dependencies with `npm ci`, never `npm install`. CI runs npm 10, and a
+local npm 11 install rewrites the lockfiles into a form npm 10 rejects. Change
+a lockfile only on purpose, with npm 10: `npx -y npm@10 install <pkg>`. If
+`git status` shows an unexpected `package-lock.json` change, discard it.
+
 ## Commits and releases
 
 Use conventional commits, imperative summaries of 60 characters or fewer, and
