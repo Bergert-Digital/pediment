@@ -44,7 +44,7 @@ final class ClaimRunner {
 		try {
 			$manifest = Manifest::load();
 		} catch ( ManifestError $e ) {
-			return new ClaimResult( new Plan(), false, '', [ $e->getMessage() ] );
+			return new ClaimResult( new Plan(), false, '', [ $e->getMessage() ], dryRun: $dryRun );
 		}
 
 		if ( null === $manifest ) {
@@ -52,7 +52,8 @@ final class ClaimRunner {
 				new Plan(),
 				false,
 				'',
-				[ sprintf( 'No seed manifest found. Create %s/%s in the active theme.', get_stylesheet(), Manifest::RELATIVE_PATH ) ]
+				[ sprintf( 'No seed manifest found. Create %s/%s in the active theme.', get_stylesheet(), Manifest::RELATIVE_PATH ) ],
+				dryRun: $dryRun
 			);
 		}
 
@@ -66,7 +67,7 @@ final class ClaimRunner {
 		// re-run repairs.
 		$mismatch = LanguageGate::mismatch( $manifest, $this->lang );
 		if ( null !== $mismatch ) {
-			return new ClaimResult( new Plan(), false, $manifest->path(), [ $mismatch ] );
+			return new ClaimResult( new Plan(), false, $manifest->path(), [ $mismatch ], dryRun: $dryRun );
 		}
 
 		$claimer = new Claimer( $this->lang );
@@ -78,6 +79,6 @@ final class ClaimRunner {
 			$errors = $result['errors'];
 		}
 
-		return new ClaimResult( $plan, ! $dryRun, $manifest->path(), $errors );
+		return new ClaimResult( $plan, ! $dryRun, $manifest->path(), $errors, dryRun: $dryRun );
 	}
 }

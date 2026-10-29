@@ -17,7 +17,7 @@ final class Reporter {
 	public static function text( RunResult $result ): string {
 		$lines = [];
 
-		$lines[] = $result->applied ? 'Pediment seed' : 'Pediment seed — dry run';
+		$lines[] = $result->dryRun ? 'Pediment seed — dry run' : 'Pediment seed';
 		if ( '' !== $result->manifestPath ) {
 			$lines[] = 'manifest: ' . $result->manifestPath;
 		}
@@ -56,7 +56,10 @@ final class Reporter {
 
 		if ( [] !== $result->problems ) {
 			$lines[] = '';
-			$lines[] = 'VERIFICATION FAILED';
+			// Phase 5 runs only after an apply. Before that the only problems
+			// are the ones planning found (an undeclared media key), and
+			// calling them a failed verification names a step that never ran.
+			$lines[] = $result->applied ? 'VERIFICATION FAILED' : 'PROBLEMS (found while planning)';
 			foreach ( $result->problems as $problem ) {
 				$lines[] = '  - ' . $problem;
 			}
@@ -79,7 +82,7 @@ final class Reporter {
 		}
 
 		$lines[] = '';
-		$lines[] = self::summaryLine( $result ) . ( $result->applied ? '' : ' Nothing was written (--dry-run).' );
+		$lines[] = self::summaryLine( $result ) . self::nothingWritten( $result->applied, $result->dryRun );
 
 		return implode( "\n", $lines );
 	}
@@ -98,7 +101,7 @@ final class Reporter {
 		$errors       = $result->errors;
 
 		$lines   = [];
-		$lines[] = $applied ? 'Pediment claim' : 'Pediment claim — dry run';
+		$lines[] = $result->dryRun ? 'Pediment claim — dry run' : 'Pediment claim';
 		if ( '' !== $manifestPath ) {
 			$lines[] = 'manifest: ' . $manifestPath;
 		}
@@ -141,10 +144,23 @@ final class Reporter {
 			$counts[ PlanItem::CLAIM ],
 			$counts[ PlanItem::NO_MATCH ],
 			$counts[ PlanItem::AMBIGUOUS ],
-			$applied ? '' : ' Nothing was written (--dry-run).'
+			self::nothingWritten( $applied, $result->dryRun )
 		);
 
 		return implode( "\n", $lines );
+	}
+
+	/**
+	 * A real run can also write nothing: a missing or malformed manifest, a
+	 * language mismatch or an errored plan stops it before phase 4. Calling
+	 * that a dry run would tell the operator they forgot the button they
+	 * actually pressed.
+	 */
+	private static function nothingWritten( bool $applied, bool $dryRun ): string {
+		if ( $dryRun ) {
+			return ' Nothing was written (--dry-run).';
+		}
+		return $applied ? '' : ' Nothing was written.';
 	}
 
 	/**

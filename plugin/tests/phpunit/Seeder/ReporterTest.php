@@ -26,7 +26,7 @@ class ReporterTest extends WP_UnitTestCase {
 				new PlanItem( PlanItem::ORPHAN, PlanItem::KIND_ENTRY, 'legacy', '', 42, [], '"Legacy offer" (ID 42) — left in place' ),
 			]
 		);
-		return new RunResult( $plan, $applied, '/themes/acme/seed/manifest.php' );
+		return new RunResult( $plan, $applied, '/themes/acme/seed/manifest.php', dryRun: ! $applied );
 	}
 
 	public function test_every_action_appears_in_the_report() {
@@ -49,6 +49,21 @@ class ReporterTest extends WP_UnitTestCase {
 		$this->assertStringNotContainsString( 'Nothing was written', Reporter::text( $this->result( true ) ) );
 	}
 
+	/**
+	 * The wp-admin "Apply plan" button and `wp pediment seed` both stop before
+	 * phase 4 on an errored plan. That run applied nothing, but calling it a
+	 * dry run tells the operator they pressed the wrong button.
+	 */
+	public function test_a_real_run_stopped_by_errors_is_not_called_a_dry_run() {
+		$text = Reporter::text( new RunResult( new Plan(), false, '', [ 'duplicate key "home"' ] ) );
+
+		$this->assertStringStartsWith( "Pediment seed\n", $text );
+		$this->assertStringNotContainsString( 'dry run', $text );
+		$this->assertStringNotContainsString( '--dry-run', $text );
+		$this->assertStringContainsString( 'ERRORS (nothing was applied)', $text );
+		$this->assertStringEndsWith( 'unchanged. Nothing was written.', $text );
+	}
+
 	public function test_errors_and_problems_are_never_buried() {
 		$result = new RunResult( new Plan(), false, '', [ 'duplicate key "home"' ], [ 'home: slug is "home-2"' ] );
 
@@ -56,8 +71,23 @@ class ReporterTest extends WP_UnitTestCase {
 
 		$this->assertStringContainsString( 'ERRORS', $text );
 		$this->assertStringContainsString( 'duplicate key "home"', $text );
-		$this->assertStringContainsString( 'VERIFICATION', $text );
+		$this->assertStringContainsString( 'PROBLEMS (found while planning)', $text );
 		$this->assertStringContainsString( 'home-2', $text );
+	}
+
+	/**
+	 * Phase 5 runs only after an apply. A dry run that finds an undeclared
+	 * media key must not report a verification that never happened.
+	 */
+	public function test_only_an_applied_run_reports_a_failed_verification() {
+		$problems = [ 'home: references media key "hreo", which the manifest does not declare' ];
+
+		$dry     = Reporter::text( new RunResult( new Plan(), false, '', [], $problems, dryRun: true ) );
+		$applied = Reporter::text( new RunResult( new Plan(), true, '', [], $problems ) );
+
+		$this->assertStringNotContainsString( 'VERIFICATION', $dry );
+		$this->assertStringContainsString( "PROBLEMS (found while planning)\n  - home: references media key", $dry );
+		$this->assertStringContainsString( "VERIFICATION FAILED\n  - home: references media key", $applied );
 	}
 
 	public function test_summary_line_counts_writes_orphans_and_unchanged() {

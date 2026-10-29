@@ -85,6 +85,7 @@ final class SeedCommand {
 		return (string) wp_json_encode(
 			[
 				'applied'  => $result->applied,
+				'dry_run'  => $result->dryRun,
 				'ok'       => $result->ok(),
 				'manifest' => $result->manifestPath,
 				'counts'   => $result->plan->counts(),

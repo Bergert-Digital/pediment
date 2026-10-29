@@ -36,6 +36,7 @@ class RunnerTest extends WP_UnitTestCase {
 		$result = ( new Runner() )->run( [ 'dry_run' => true ] );
 
 		$this->assertFalse( $result->applied );
+		$this->assertTrue( $result->dryRun );
 		$this->assertCount( 2, $result->plan->byKind( PlanItem::KIND_ENTRY ) );
 		$this->assertSame( [], get_posts( [ 'post_type' => 'page', 'fields' => 'ids' ] ) );
 	}
@@ -45,6 +46,7 @@ class RunnerTest extends WP_UnitTestCase {
 
 		$this->assertTrue( $result->ok(), implode( "\n", array_merge( $result->errors, $result->problems ) ) );
 		$this->assertTrue( $result->applied );
+		$this->assertFalse( $result->dryRun );
 		$this->assertSame( 'Home', get_post( $result->ids['home|'] )->post_title );
 	}
 
