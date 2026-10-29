@@ -13,7 +13,7 @@ class ClaimCommandTest extends WP_UnitTestCase {
 			[ new PlanItem( PlanItem::CLAIM, PlanItem::KIND_ENTRY, 'home', '', 12, [ 'seed_key' => [ 'from' => null, 'to' => 'home' ] ], 'page "home" (ID 12)' ) ]
 		);
 
-		$out = ClaimCommand::render( new ClaimResult( $plan, false, '/srv/theme/seed/manifest.php', [] ) );
+		$out = ClaimCommand::render( new ClaimResult( $plan, false, '/srv/theme/seed/manifest.php', [], dryRun: true ) );
 
 		$this->assertStringContainsString( 'Pediment claim — dry run', $out );
 		$this->assertStringContainsString( '1 to claim, 0 without a match, 0 ambiguous.', $out );

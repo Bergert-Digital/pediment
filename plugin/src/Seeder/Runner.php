@@ -39,7 +39,7 @@ final class Runner {
 		try {
 			$manifest = Manifest::load();
 		} catch ( ManifestError $e ) {
-			return new RunResult( new Plan(), false, '', [ $e->getMessage() ] );
+			return new RunResult( new Plan(), false, '', [ $e->getMessage() ], dryRun: $dryRun );
 		}
 
 		if ( null === $manifest ) {
@@ -47,13 +47,14 @@ final class Runner {
 				new Plan(),
 				false,
 				'',
-				[ sprintf( 'No seed manifest found. Create %s/%s in the active theme.', get_stylesheet(), Manifest::RELATIVE_PATH ) ]
+				[ sprintf( 'No seed manifest found. Create %s/%s in the active theme.', get_stylesheet(), Manifest::RELATIVE_PATH ) ],
+				dryRun: $dryRun
 			);
 		}
 
 		$mismatch = LanguageGate::mismatch( $manifest, $this->lang );
 		if ( null !== $mismatch ) {
-			return new RunResult( new Plan(), false, $manifest->path(), [ $mismatch ] );
+			return new RunResult( new Plan(), false, $manifest->path(), [ $mismatch ], dryRun: $dryRun );
 		}
 
 		$mediaSeeder = new MediaSeeder();
@@ -70,7 +71,7 @@ final class Runner {
 		try {
 			$preview = $previewState->build( $manifest, $actual );
 		} catch ( ManifestError $e ) {
-			return new RunResult( $mediaPlan, false, $manifest->path(), [ $e->getMessage() ] );
+			return new RunResult( $mediaPlan, false, $manifest->path(), [ $e->getMessage() ], dryRun: $dryRun );
 		}
 
 		$entryPlan = ( new Differ() )->diff( $preview, $actual, $reader->duplicates() );
@@ -78,7 +79,7 @@ final class Runner {
 		$plan      = Plan::merge( $mediaPlan, $entryPlan, $navSeeder->plan( $manifest ) );
 
 		if ( $dryRun || $plan->hasErrors() ) {
-			return new RunResult( $plan, false, $manifest->path(), $plan->errors(), $this->undeclaredMediaProblems( $previewState ), $entryIds, $previewState->missingTranslations() );
+			return new RunResult( $plan, false, $manifest->path(), $plan->errors(), $this->undeclaredMediaProblems( $previewState ), $entryIds, $previewState->missingTranslations(), dryRun: $dryRun );
 		}
 
 		// Phase 4. Media goes first here, because page content references
