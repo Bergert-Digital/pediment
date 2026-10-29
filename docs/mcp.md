@@ -11,15 +11,33 @@ and design rules on the server, so a page that breaks a rule is never written.
    `https://downloads.wordpress.org/plugin/mcp-adapter.0.7.0.zip`). Pediment
    needs WordPress 6.9 or later. Without the adapter Pediment still works; the
    MCP server is simply not there.
-2. Create an application password: Users → Profile → Application Passwords →
-   name it "Claude", copy the password. WordPress only offers application
-   passwords over HTTPS (or on a local environment).
-3. Connect Claude Code (one line; replace SITE, USER and the password):
+2. Open Settings → Pediment → **AI agents**. The tab checks both
+   requirements (MCP Adapter active, application passwords available) and
+   shows the endpoint. **Create password and show setup** creates an
+   application password for the signed-in user and shows, once:
+   one tab per client:
+   - **Claude Code**: a `claude mcp add --scope user …` command with the
+     credentials filled in.
+   - **ChatGPT / Codex**: a `[mcp_servers.…]` block for `~/.codex/config.toml`
+     (read by the Codex CLI, app and IDE extension). `codex mcp add` only
+     sends Bearer tokens, so the Basic header goes into `http_headers`.
+     ChatGPT in the browser or desktop app connects custom MCP servers only
+     with OAuth or without authentication, so it cannot use this server.
+   - **Other clients**: the URL and `Authorization` header.
 
-       claude mcp add --transport http pediment "https://SITE/wp-json/pediment/v1/mcp" --header "Authorization: Basic $(printf 'USER:APP PASSWORD' | base64)"
+   WordPress only offers application passwords over HTTPS (or on a local
+   environment). Revoke a connection under Users → Profile → Application
+   Passwords. The tab needs `manage_options`; an Editor who wants a
+   connection without style tools follows the manual steps below.
 
-   On a site with plain permalinks use `https://SITE/?rest_route=/pediment/v1/mcp`.
-   `claude mcp list` shows whether it connected.
+Manual setup, without the tab: create an application password (Users →
+Profile → Application Passwords), then run (replace SITE, USER and the
+password):
+
+    claude mcp add --transport http pediment "https://SITE/wp-json/pediment/v1/mcp" --header "Authorization: Basic $(printf 'USER:APP PASSWORD' | base64)"
+
+On a site with plain permalinks use `https://SITE/?rest_route=/pediment/v1/mcp`.
+`claude mcp list` shows whether it connected.
 
 The server speaks JSON-RPC over HTTP and authenticates every request with the
 `Authorization: Basic` header. It runs as the user who owns the application

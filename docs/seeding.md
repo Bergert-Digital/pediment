@@ -919,7 +919,7 @@ by the next seed — read those lines before you apply.
 
 ### The wp-admin path
 
-Admin-only hosting has no WP-CLI, so Settings → Pediment Theme → Seeding
+Admin-only hosting has no WP-CLI, so Settings → Pediment → Seeding
 carries the identical claim under two buttons beneath "Claim existing
 content": **Preview claim** and **Claim content**
 (`plugin/inc/seeding-admin.php`). Preview first, the same way "Apply plan"
@@ -927,7 +927,7 @@ below has no confirmation step — **Claim content** runs on click.
 
 ## The wp-admin tab
 
-Settings → Pediment Theme → Seeding runs the identical `Runner` WP-CLI does —
+Settings → Pediment → Seeding runs the identical `Runner` WP-CLI does —
 one code path, not two — with PHP's time limit and memory limit lifted first
 (`set_time_limit(0)`, `wp_raise_memory_limit('admin')`), because a large site's
 seed can generate hundreds of rows and image sizes, and the same code silently

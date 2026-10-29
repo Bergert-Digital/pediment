@@ -1,6 +1,6 @@
 <?php
 /**
- * Forms settings tabs (General, Destinations, Secrets) for the Pediment Theme settings page.
+ * Forms settings tabs (General, Destinations, Secrets) for the Pediment settings page.
  *
  * @package Pediment
  */

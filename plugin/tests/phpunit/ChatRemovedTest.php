@@ -11,7 +11,8 @@ class ChatRemovedTest extends WP_UnitTestCase {
 	public function test_ai_settings_tab_is_gone_and_the_rest_remain(): void {
 		unset( $GLOBALS['pediment_settings_tabs'] );
 		do_action( 'admin_menu' );
-		$this->assertSame( array( 'general', 'seed', 'destinations', 'secrets', 'design' ), array_keys( pediment_settings_get_tabs() ) );
+		// 'mcp' is the MCP connection tab, not the removed chat settings.
+		$this->assertSame( array( 'general', 'seed', 'destinations', 'secrets', 'design', 'mcp' ), array_keys( pediment_settings_get_tabs() ) );
 	}
 
 	public function test_chat_classes_and_install_function_are_gone(): void {
