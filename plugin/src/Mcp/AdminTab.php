@@ -142,7 +142,27 @@ final class AdminTab {
 		}
 		?>
 
-		<h2><?php esc_html_e( 'Connect an agent', 'pediment' ); ?></h2>
+		<?php
+		if ( is_array( $result ) ) {
+			// The setup above is what the user acts on now; a second form in
+			// full view reads like a step they still have to take.
+			echo '<details class="pediment-mcp-another" style="margin-top:2em;"><summary style="cursor:pointer;font-weight:600;">' . esc_html__( 'Connect another agent', 'pediment' ) . '</summary>';
+			self::renderConnectForm( $user, $ready );
+			echo '</details>';
+		} else {
+			echo '<h2>' . esc_html__( 'Connect an agent', 'pediment' ) . '</h2>';
+			self::renderConnectForm( $user, $ready );
+		}
+	}
+
+	/**
+	 * Renders the form that creates an application password.
+	 *
+	 * @param WP_User $user  The signed-in user.
+	 * @param bool    $ready Whether every requirement is met.
+	 */
+	private static function renderConnectForm( WP_User $user, bool $ready ): void {
+		?>
 		<p>
 			<?php
 			echo esc_html(
@@ -294,13 +314,14 @@ final class AdminTab {
 	}
 
 	/**
-	 * A password name that is unique per minute, so a second click does not collide.
+	 * A password name that is unique per second. WordPress refuses a duplicate
+	 * name, and the collapsed form offers a second password right after the first.
 	 */
 	private static function defaultName(): string {
 		return sprintf(
 			/* translators: %s: date and time */
 			__( 'Pediment MCP %s', 'pediment' ),
-			wp_date( 'Y-m-d H:i' )
+			wp_date( 'Y-m-d H:i:s' )
 		);
 	}
 }
