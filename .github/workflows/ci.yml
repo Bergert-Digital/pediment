@@ -173,6 +173,12 @@ jobs:
             slug: ci-blocks
             flags: "--with-blocks"
             assert-block: "ci-blocks/example-notice"
+          # Two languages: boots Polylang, runs `wp pediment languages`, seeds
+          # translations, and seed-check asserts each language's front page.
+          - answers: client-kit/tests/fixtures/answers-multilingual.json
+            slug: bergwerk-hotel
+            flags: ""
+            assert-block: ""
     steps:
       - uses: actions/checkout@v4
 
