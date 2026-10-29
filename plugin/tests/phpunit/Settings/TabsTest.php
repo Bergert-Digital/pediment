@@ -43,4 +43,16 @@ class TabsTest extends WP_UnitTestCase {
 		$this->assertStringContainsString( 'page=' . PEDIMENT_SETTINGS_PAGE, $url );
 		$this->assertStringContainsString( 'tab=secrets', $url );
 	}
+
+	public function test_page_slug_is_pediment() {
+		$this->assertSame( 'pediment', PEDIMENT_SETTINGS_PAGE );
+		$this->assertStringContainsString( 'page=pediment&', pediment_settings_page_url( 'mcp' ) );
+	}
+
+	public function test_old_slug_redirects_to_the_same_tab() {
+		$this->assertSame( pediment_settings_page_url( 'mcp' ), pediment_settings_legacy_redirect_url( 'pediment-theme', 'mcp' ) );
+		$this->assertSame( pediment_settings_page_url(), pediment_settings_legacy_redirect_url( 'pediment-theme', '' ) );
+		$this->assertNull( pediment_settings_legacy_redirect_url( 'pediment', '' ) );
+		$this->assertNull( pediment_settings_legacy_redirect_url( 'other-plugin', 'mcp' ) );
+	}
 }
