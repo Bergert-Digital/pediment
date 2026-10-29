@@ -53,6 +53,25 @@ final class Adopter {
 			);
 		}
 
+		// Without this, a typo in --language fails further down as "No seeded
+		// post carries the key", which sends the operator looking at the key.
+		$languages = $this->lang->languages();
+		if ( ! in_array( $language, $languages, true ) ) {
+			$configured = array_filter( $languages, static fn( string $code ): bool => '' !== $code );
+			return array_merge(
+				$empty,
+				[
+					'errors' => [
+						sprintf(
+							'Language "%s" is not configured on this site (configured: %s).',
+							$language,
+							[] === $configured ? 'none — the site is monolingual' : implode( ', ', $configured )
+						),
+					],
+				]
+			);
+		}
+
 		$actual = ( new StateReader( $this->lang ) )->read()[ $seedKey . '|' . $language ] ?? null;
 		if ( ! $actual instanceof ActualEntry ) {
 			return array_merge( $empty, [ 'errors' => [ sprintf( 'No seeded post carries the key "%s".', $seedKey ) ] ] );

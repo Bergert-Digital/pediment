@@ -79,4 +79,14 @@ class AdopterLanguageTest extends PolylangTestCase {
 
 		$this->assertStringEndsWith( '/patterns/adoptme.php', $result['path'] );
 	}
+
+	public function test_an_unconfigured_language_is_named_as_the_problem() {
+		$this->manifest();
+		$this->page( 'en', '<p>english</p>' );
+
+		$result = ( new Adopter( new PolylangProvider() ) )->adopt( 'adoptme', 'fr' );
+
+		$this->assertSame( [ 'Language "fr" is not configured on this site (configured: en, de).' ], $result['errors'] );
+		$this->assertFileDoesNotExist( $this->dir . '/adoptme.fr.php' );
+	}
 }

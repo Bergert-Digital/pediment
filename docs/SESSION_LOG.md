@@ -34,6 +34,10 @@ the design layer, the MCP server or AI agents as users) and in `docs/STANDARDS.m
 problems under `VERIFICATION FAILED`, though phase 5 never ran. They now appear under
 `PROBLEMS (found while planning)`; an applied run keeps the old heading.
 
+[--:--] ✅ `wp pediment adopt --language=<code>` now rejects a code the site has not
+configured and names the configured ones. Before, a typo failed later as "No seeded
+post carries the key", which pointed at the key.
+
 [--:--] 🔍 This log jumps from 2026-08-06 to today. Plans 1–8 of the
 2026-10-14 roadmap (Pediment 4.0 to 6.1) shipped with no entry here; the roadmap
 (`docs/superpowers/plans/2026-10-14-roadmap.md`) is their record.

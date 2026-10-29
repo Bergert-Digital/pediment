@@ -147,13 +147,6 @@ _(none currently known — verify by running a user-journey audit)_
   `sanitize_title($slug) === $slug`), but worth a second look if that
   constraint ever loosens (e.g. a slug containing digits or extra hyphens
   sorting unintuitively next to a plain two-letter code).
-- [ ] **`wp pediment adopt --language=<code>` does not validate the code
-  against the site's configured languages.** Found by the final review of
-  migration step 4. Today an unrecognised code fails downstream, inside
-  `Adopter::adopt()`, with "No seeded post carries the key" — technically
-  correct but not the clearest message for what is actually a bad `--language`
-  value; validating against `LanguageRegistry::provider()->languages()` before
-  calling `Adopter` would fail faster and say so directly.
 - [ ] **`linkTranslationGroups()` sits on opposite sides of the Kses-suspended
   region in `Applier` and `NavSeeder`.** Found by the final review of
   migration step 4. `NavSeeder::apply()` calls it INSIDE the `try` block,

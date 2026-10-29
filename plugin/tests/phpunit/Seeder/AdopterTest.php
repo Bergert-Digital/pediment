@@ -84,6 +84,12 @@ class AdopterTest extends WP_UnitTestCase {
 		$this->assertStringContainsString( 'ghost', $result['errors'][0] );
 	}
 
+	public function test_a_language_on_a_monolingual_site_is_named_as_the_problem() {
+		$result = ( new Adopter( new NullProvider() ) )->adopt( 'home', 'de' );
+
+		$this->assertSame( [ 'Language "de" is not configured on this site (configured: none — the site is monolingual).' ], $result['errors'] );
+	}
+
 	public function test_an_entry_declared_with_literal_content_cannot_be_adopted() {
 		remove_all_filters( 'pediment_seed_manifest' );
 		add_filter( 'pediment_seed_manifest', static fn() => [ 'pages' => [ 'home' => [ 'title' => 'Home', 'content' => '<p>x</p>' ] ] ] );
