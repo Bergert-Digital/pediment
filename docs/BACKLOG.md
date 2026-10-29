@@ -101,10 +101,6 @@ _(none currently known — verify by running a user-journey audit)_
   workspaces are live. Do this as a deliberate, coordinated one-off, not casually.
 - [ ] **Keep the WordPress floor current.** `.wp-env.json` currently pins 6.9;
   upgrade only with a full PHPUnit and Playwright run.
-- [ ] **Block empty-state sweep.** Walk the 7 remaining Pediment blocks (`blog-index`, `form`,
-  `form-field`, `icon`, `mega-menu`, `slider`, `social-links`) in the editor with empty attributes
-  and as a visitor; confirm no broken markup, no `<a href="">`, no PHP notices. File any
-  failures as 🔴.
 - [ ] **Per-language media and taxonomy translation.** Migration step 4 deliberately
   ships one attachment and one term set per site, locked off in Polylang's own config
   (`media_support => 0`, `taxonomies => []`, see `docs/seeding.md#languages`). Revisit

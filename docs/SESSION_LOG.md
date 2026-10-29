@@ -53,6 +53,16 @@ own `<html lang>` and its own front-page translation; client CI inherits the che
 Proven locally on ports 8898/8899 (passes; fails when the expected page ID is wrong);
 not yet proven on GitHub Actions.
 
+[--:--] ✅ Empty-state sweep of the 7 blocks. New `BlockRender/EmptyStateTest` renders
+every block from its `block.json` with no attributes, blank values and hostile values,
+and fails on notices, `href=""`/`src=""`, unescaped script, `javascript:` URLs and
+unbalanced tags. It found three real bugs, now fixed: slider and mega-menu printed
+`href=""` for a `javascript:` URL (they tested the raw URL, then `esc_url()` emptied
+it); mega-menu leaked an unclosed `<b>` from `wp_kses_post()` labels into the page
+(now `force_balance_tags()`). A mega-menu link with a label and no usable URL now
+renders without `href`. New `empty-state.spec.ts` opens all 7 empty blocks in the
+editor (all valid, no error boundary, no JS error) and as a visitor (no PHP notice).
+
 ### Check-in
 
 #### Done this session

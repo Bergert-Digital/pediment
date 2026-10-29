@@ -142,7 +142,9 @@ ob_start();
 			$heading      = isset( $slide['heading'] ) ? (string) $slide['heading'] : '';
 			$body         = isset( $slide['body'] ) ? (string) $slide['body'] : '';
 			$btn_text     = isset( $slide['buttonText'] ) ? (string) $slide['buttonText'] : '';
-			$btn_url      = isset( $slide['buttonUrl'] ) ? (string) $slide['buttonUrl'] : '';
+			// Escaped once, up front: esc_url() empties a javascript: URL, and
+			// the button must then be left out rather than point at "".
+			$btn_href     = isset( $slide['buttonUrl'] ) ? esc_url( (string) $slide['buttonUrl'] ) : '';
 
 			$img_html = '';
 			if ( $media_id ) {
@@ -185,8 +187,8 @@ ob_start();
 					<?php if ( '' !== trim( $body ) ) : ?>
 						<p class="starter-slide__body"><?php echo nl2br( esc_html( $body ) ); // phpcs:ignore WordPress.Security.EscapeOutput -- esc_html escaped; nl2br only inserts <br /> ?></p>
 					<?php endif; ?>
-					<?php if ( '' !== trim( $btn_text ) && '' !== trim( $btn_url ) ) : ?>
-						<a class="starter-slide__button" href="<?php echo esc_url( $btn_url ); ?>"><?php echo esc_html( $btn_text ); ?></a>
+					<?php if ( '' !== trim( $btn_text ) && '' !== $btn_href ) : ?>
+						<a class="starter-slide__button" href="<?php echo $btn_href; // phpcs:ignore WordPress.Security.EscapeOutput -- esc_url above ?>"><?php echo esc_html( $btn_text ); ?></a>
 					<?php endif; ?>
 				</div>
 			</div>
