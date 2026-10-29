@@ -63,7 +63,7 @@ ob_start();
 		data-wp-on--focus="actions.onTriggerFocus"
 		data-wp-on--pointerdown="actions.onPointerDown"
 		data-wp-on--click="actions.toggle"
-	><?php echo wp_kses_post( $label ); ?>
+	><?php echo force_balance_tags( wp_kses_post( $label ) ); ?>
 		<?php if ( $has_panel ) : ?>
 			<span class="starter-mega-menu__caret" aria-hidden="true"></span>
 		<?php endif; ?>
@@ -103,7 +103,7 @@ ob_start();
 						if ( $has_icon ) {
 							echo pediment_icon( $c_icon, 'starter-mega-column__icon' ); // phpcs:ignore WordPress.Security.EscapeOutput -- theme-controlled icon markup
 						}
-							echo wp_kses_post( $heading );
+							echo force_balance_tags( wp_kses_post( $heading ) );
 						?>
 						</p>
 					<?php endif; ?>
@@ -113,11 +113,14 @@ ob_start();
 							$l_label = isset( $lnk['label'] ) ? trim( (string) $lnk['label'] ) : '';
 							$l_url   = isset( $lnk['url'] ) ? trim( (string) $lnk['url'] ) : '';
 							$l_desc  = isset( $lnk['description'] ) ? trim( (string) $lnk['description'] ) : '';
+							$l_href  = esc_url( $l_url );
+							// A label without a usable URL (none yet, or one esc_url()
+							// rejects) stays a placeholder link: no href, never href="".
 							?>
-							<a class="starter-mega-link" href="<?php echo esc_url( $l_url ); ?>">
-								<span class="starter-mega-link__label"><?php echo wp_kses_post( $l_label ); ?></span>
+							<a class="starter-mega-link"<?php echo '' !== $l_href ? ' href="' . $l_href . '"' : ''; // phpcs:ignore WordPress.Security.EscapeOutput -- esc_url above ?>>
+								<span class="starter-mega-link__label"><?php echo force_balance_tags( wp_kses_post( $l_label ) ); ?></span>
 								<?php if ( '' !== $l_desc ) : ?>
-									<span class="starter-mega-link__desc"><?php echo wp_kses_post( $l_desc ); ?></span>
+									<span class="starter-mega-link__desc"><?php echo force_balance_tags( wp_kses_post( $l_desc ) ); ?></span>
 								<?php endif; ?>
 							</a>
 						<?php endforeach; ?>
