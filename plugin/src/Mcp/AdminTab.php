@@ -94,12 +94,11 @@ final class AdminTab {
 	 *
 	 * @param WP_User $user     The password's owner.
 	 * @param string  $password The plain application password.
-	 * @return array{server:string,url:string,header:string,command:string,mcpJson:string,env:string}
+	 * @return array{server:string,url:string,header:string,command:string,codex:string}
 	 */
 	public static function connection( WP_User $user, string $password ): array {
 		$host   = (string) wp_parse_url( home_url(), PHP_URL_HOST );
 		$server = 'pediment-' . sanitize_title( str_replace( '.', '-', $host ) );
-		$var    = strtoupper( str_replace( '-', '_', $server ) ) . '_AUTH';
 		$url    = self::endpoint();
 		// phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_encode -- HTTP Basic auth.
 		$basic = base64_encode( $user->user_login . ':' . $password );
@@ -109,19 +108,8 @@ final class AdminTab {
 			'url'     => $url,
 			'header'  => 'Authorization: Basic ' . $basic,
 			'command' => sprintf( 'claude mcp add --transport http --scope user %s "%s" --header "Authorization: Basic %s"', $server, $url, $basic ),
-			'mcpJson' => (string) wp_json_encode(
-				array(
-					'mcpServers' => array(
-						$server => array(
-							'type'    => 'http',
-							'url'     => $url,
-							'headers' => array( 'Authorization' => 'Basic ${' . $var . '}' ),
-						),
-					),
-				),
-				JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES
-			),
-			'env'     => sprintf( 'export %s="%s"', $var, $basic ),
+			// `codex mcp add` only sends Bearer tokens, so Basic auth goes into config.toml.
+			'codex'   => sprintf( "[mcp_servers.%s]\nurl = \"%s\"\nhttp_headers = { \"Authorization\" = \"Basic %s\" }", $server, $url, $basic ),
 		);
 	}
 
@@ -139,7 +127,7 @@ final class AdminTab {
 			echo '<div class="notice notice-error"><p>' . esc_html( $result->get_error_message() ) . '</p></div>';
 		}
 		?>
-		<p><?php esc_html_e( 'AI agents such as Claude Code build and change pages and site styles through Pediment’s MCP server. Pediment checks every change against the content and design rules before it writes.', 'pediment' ); ?></p>
+		<p><?php esc_html_e( 'AI agents such as Claude Code or Codex build and change pages and site styles through Pediment’s MCP server. Pediment checks every change against the content and design rules before it writes.', 'pediment' ); ?></p>
 
 		<h2><?php esc_html_e( 'Requirements', 'pediment' ); ?></h2>
 		<ul>
@@ -195,6 +183,12 @@ final class AdminTab {
 		wp_add_inline_script(
 			'clipboard',
 			'new ClipboardJS(".pediment-mcp-copy").on("success",function(e){e.clearSelection();e.trigger.textContent=' . wp_json_encode( __( 'Copied', 'pediment' ) ) . ';});'
+			// Without JS every panel stays visible, one under the other.
+			. 'document.querySelectorAll(".pediment-mcp-clients").forEach(function(box){'
+			. 'var tabs=box.querySelectorAll("[role=tab]");'
+			. 'function show(tab){tabs.forEach(function(t){var on=t===tab;t.classList.toggle("nav-tab-active",on);t.setAttribute("aria-selected",on);box.querySelector(t.getAttribute("href")).hidden=!on;});}'
+			. 'tabs.forEach(function(t){t.addEventListener("click",function(e){e.preventDefault();show(t);});});'
+			. 'show(tabs[0]);});'
 		);
 		?>
 		<div class="notice notice-success inline">
@@ -213,21 +207,33 @@ final class AdminTab {
 			</p>
 		</div>
 
-		<h3><?php esc_html_e( 'Claude Code', 'pediment' ); ?></h3>
-		<p><?php esc_html_e( 'Run this once in a terminal. The server is then available in every folder. Check it with “claude mcp list”.', 'pediment' ); ?></p>
-		<?php self::field( 'command', $c['command'], 3 ); ?>
+		<div class="pediment-mcp-clients">
+			<nav class="nav-tab-wrapper" role="tablist">
+				<a href="#pediment-mcp-claude" class="nav-tab nav-tab-active" role="tab"><?php esc_html_e( 'Claude Code', 'pediment' ); ?></a>
+				<a href="#pediment-mcp-codex" class="nav-tab" role="tab"><?php esc_html_e( 'ChatGPT / Codex', 'pediment' ); ?></a>
+				<a href="#pediment-mcp-other" class="nav-tab" role="tab"><?php esc_html_e( 'Other clients', 'pediment' ); ?></a>
+			</nav>
 
-		<h3><?php esc_html_e( 'Claude Code, shared in a repository', 'pediment' ); ?></h3>
-		<p><?php esc_html_e( 'Commit this as .mcp.json. It holds no secret.', 'pediment' ); ?></p>
-		<?php self::field( 'json', $c['mcpJson'], 12 ); ?>
-		<p><?php esc_html_e( 'Each person puts this line in their shell profile (for example ~/.zshrc). Never commit it.', 'pediment' ); ?></p>
-		<?php self::field( 'env', $c['env'], 1 ); ?>
+			<div id="pediment-mcp-claude" role="tabpanel">
+				<p><?php esc_html_e( 'Run this once in a terminal. The server is then available in every folder. Check it with “claude mcp list”.', 'pediment' ); ?></p>
+				<?php self::field( 'command', $c['command'], 3 ); ?>
+			</div>
 
-		<h3><?php esc_html_e( 'Other MCP clients', 'pediment' ); ?></h3>
-		<p><?php esc_html_e( 'Use the HTTP transport with this URL and header.', 'pediment' ); ?></p>
+			<div id="pediment-mcp-codex" role="tabpanel">
+				<p><?php esc_html_e( 'Add this to ~/.codex/config.toml. The Codex CLI, the Codex app and the IDE extension read it. Check it with “codex mcp list”.', 'pediment' ); ?></p>
+				<?php self::field( 'codex', $c['codex'], 3 ); ?>
+				<p class="description"><?php esc_html_e( 'ChatGPT in the browser and the ChatGPT desktop app connect custom MCP servers only with OAuth or without authentication, so they cannot use an application password. Use Codex.', 'pediment' ); ?></p>
+			</div>
+
+			<div id="pediment-mcp-other" role="tabpanel">
+				<p><?php esc_html_e( 'Use the HTTP transport with this URL and header.', 'pediment' ); ?></p>
+				<?php
+				self::field( 'url', $c['url'], 1 );
+				self::field( 'header', $c['header'], 1 );
+				?>
+			</div>
+		</div>
 		<?php
-		self::field( 'url', $c['url'], 1 );
-		self::field( 'header', $c['header'], 1 );
 	}
 
 	/**
