@@ -26,6 +26,10 @@ explicit `dryRun` flag; the report says "Nothing was written." for a real run th
 wrote nothing, and `--format=json` gained `dry_run`. Backlog listed only the claim
 half; the seed half was the same bug on the operator's main button.
 
+[--:--] ✅ Fixed drift in `docs/VISION.md` (it still said 24 blocks and did not name
+the design layer, the MCP server or AI agents as users) and in `docs/STANDARDS.md`
+(block namespaces still said parent/child).
+
 [--:--] 🔍 This log jumps from 2026-08-06 to today. Plans 1–8 of the
 2026-10-14 roadmap (Pediment 4.0 to 6.1) shipped with no entry here; the roadmap
 (`docs/superpowers/plans/2026-10-14-roadmap.md`) is their record.
