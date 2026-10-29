@@ -120,6 +120,9 @@ class AdminTabTest extends WP_UnitTestCase {
 		$this->assertStringContainsString( '[mcp_servers.', $html );
 		$this->assertStringContainsString( 'href="#pediment-mcp-codex"', $html );
 		$this->assertStringNotContainsString( '.mcp.json', $html );
+		$this->assertStringContainsString( '<summary', $html );
+		$this->assertStringContainsString( 'Connect another agent', $html );
+		$this->assertStringNotContainsString( 'Connect an agent<', $html );
 		$this->assertStringContainsString( esc_html( rest_url( 'pediment/v1/mcp' ) ), $html );
 
 		$_POST = array();
@@ -127,6 +130,8 @@ class AdminTabTest extends WP_UnitTestCase {
 		AdminTab::render();
 		$html = ob_get_clean();
 		$this->assertStringNotContainsString( 'claude mcp add', $html );
+		$this->assertStringContainsString( 'Connect an agent<', $html );
+		$this->assertStringNotContainsString( '<details', $html );
 		$this->assertStringContainsString( 'name="pediment_mcp_action"', $html );
 	}
 }
