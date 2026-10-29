@@ -74,6 +74,9 @@ editor (all valid, no error boundary, no JS error) and as a visitor (no PHP noti
   `VERIFICATION FAILED`.
 - `adopt --language` rejects an unconfigured language by name.
 - `VISION.md` and `STANDARDS.md` brought up to Pediment 6.
+- Multilingual leg in the `scaffold` CI job; `seed-check` asserts each language's
+  front page.
+- Empty-state sweep of the 7 blocks (PHPUnit + e2e); 3 render bugs fixed.
 
 #### What I noticed
 - `plugin/package-lock.json` is modified in this workspace by the setup's
@@ -82,8 +85,7 @@ editor (all valid, no error boundary, no JS error) and as a visitor (no PHP noti
   "Keep the WordPress floor current").
 
 #### Planned next
-- Block empty-state sweep of the 7 remaining blocks, in the editor and as a visitor.
-- Add the multilingual leg to the `scaffold` CI matrix (needs a push to prove).
+- Prove the multilingual CI leg on GitHub Actions (needs a push).
 - Assert the expected create count in `seed-check`, not only convergence.
 
 #### Need a decision on
