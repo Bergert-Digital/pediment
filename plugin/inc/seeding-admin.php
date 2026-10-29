@@ -1,6 +1,6 @@
 <?php
 /**
- * Settings > Pediment Theme > Seeding.
+ * Settings > Pediment > Seeding.
  *
  * The same Runner the CLI uses, with PHP limits lifted: identical code passing
  * under WP-CLI and dying with a generic critical error in wp-admin is what

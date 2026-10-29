@@ -47,7 +47,7 @@ Production has no shell and no WP-CLI. Only wp-admin.
 
 1. Update the plugin. **Friction check:** does the update arrive through the built-in updater,
    with the right version number?
-2. Use Settings → Pediment Theme → Seeding. **Friction check:** does the preview tell the
+2. Use Settings → Pediment → Seeding. **Friction check:** does the preview tell the
    truth about what the apply button will do? Does every error say what to do next?
 
 A message that is wrong in wording is a real bug here: the operator has no other view.

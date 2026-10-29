@@ -11,7 +11,7 @@ and design rules on the server, so a page that breaks a rule is never written.
    `https://downloads.wordpress.org/plugin/mcp-adapter.0.7.0.zip`). Pediment
    needs WordPress 6.9 or later. Without the adapter Pediment still works; the
    MCP server is simply not there.
-2. Open Settings → Pediment Theme → **AI agents**. The tab checks both
+2. Open Settings → Pediment → **AI agents**. The tab checks both
    requirements (MCP Adapter active, application passwords available) and
    shows the endpoint. **Create password and show setup** creates an
    application password for the signed-in user and shows, once:
