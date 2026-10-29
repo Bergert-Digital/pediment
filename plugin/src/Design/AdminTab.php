@@ -1,6 +1,6 @@
 <?php
 /**
- * "Design" tab in Settings → Pediment Theme: lists the vocabulary and offers
+ * "Design" tab in Settings → Pediment: lists the vocabulary and offers
  * the theme-file download.
  *
  * @package Pediment

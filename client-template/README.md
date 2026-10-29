@@ -31,7 +31,7 @@ logo, a missing language tag, and the translation links of pages it creates.
 
 Push a `v*` tag. The release workflow builds `__PEDIMENT_SLUG__.zip` with the version header
 stamped, and attaches it to the GitHub release. Install it via Appearance → Themes → Add New →
-Upload, then use Settings → Pediment Theme → Seeding → Apply plan to create any page or menu
+Upload, then use Settings → Pediment → Seeding → Apply plan to create any page or menu
 the release added. It adds only what is missing (pages, menus, media, missing language tags,
 empty reading settings) and never changes anything a person made.
 

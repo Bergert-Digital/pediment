@@ -1,6 +1,6 @@
 <?php
 /**
- * Pediment Theme settings: a tabbed options page under Settings.
+ * Pediment settings: a tabbed options page under Settings.
  *
  * Register a tab with pediment_settings_register_tab(); the page shell (heading,
  * nav tabs, notices) is owned here and each tab supplies only its own body markup.
@@ -85,8 +85,8 @@ add_action(
 	'admin_menu',
 	function () {
 		add_options_page(
-			__( 'Pediment Theme', 'pediment' ),
-			__( 'Pediment Theme', 'pediment' ),
+			__( 'Pediment', 'pediment' ),
+			__( 'Pediment', 'pediment' ),
 			'manage_options',
 			PEDIMENT_SETTINGS_PAGE,
 			'pediment_settings_render_page'
@@ -107,7 +107,7 @@ function pediment_settings_render_page(): void {
 	$active    = pediment_settings_resolve_active_tab( $requested, $tabs );
 	?>
 	<div class="wrap">
-		<h1><?php esc_html_e( 'Pediment Theme', 'pediment' ); ?></h1>
+		<h1><?php esc_html_e( 'Pediment', 'pediment' ); ?></h1>
 		<?php settings_errors(); ?>
 		<h2 class="nav-tab-wrapper">
 			<?php

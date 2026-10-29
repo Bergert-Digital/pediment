@@ -1,6 +1,6 @@
 <?php
 /**
- * "AI agents" tab in Settings → Pediment Theme: checks what the MCP server
+ * "AI agents" tab in Settings → Pediment: checks what the MCP server
  * needs and connects an agent with one click.
  *
  * @package Pediment

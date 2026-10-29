@@ -189,7 +189,7 @@ attaches `<slug>.zip` to the GitHub release. From there:
 
 1. Download the zip from the release.
 2. Appearance → Themes → Add New → Upload in wp-admin, and activate it.
-3. Settings → Pediment Theme → Seeding → **Preview plan**, then **Apply plan**. It creates what
+3. Settings → Pediment → Seeding → **Preview plan**, then **Apply plan**. It creates what
    the new release declares and the site does not have yet (a new page, a new menu); it never
    changes anything a person made.
 
@@ -361,7 +361,7 @@ it. The order (`docs/superpowers/specs/2026-08-05-migration-step6-design.md`
      after the plugin is active, until you convert them (Settings → Pediment
      Theme → Convert legacy blocks, see "Upgrade to 5.0"). Then update to 6.x
      ("Upgrade to 6.0").
-3. Settings → Pediment Theme → Seeding → **Preview claim** — read the plan,
+3. Settings → Pediment → Seeding → **Preview claim** — read the plan,
    including every MEDIA line (claim matches media by file name since 4.1).
 4. **Claim content** — identity only; see
    [`wp pediment claim`](seeding.md#wp-pediment-claim) for what it matches
