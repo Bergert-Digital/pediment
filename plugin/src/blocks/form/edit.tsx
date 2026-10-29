@@ -107,7 +107,7 @@ export default function Edit( {
 					<SelectControl
 						label={ __( 'Destination', 'pediment' ) }
 						help={ __(
-							'Submissions are always saved. Pick a destination to also forward them (configured in Settings → Pediment Theme → Forms).',
+							'Submissions are always saved. Pick a destination to also forward them (configured in Settings → Pediment → Form Destinations).',
 							'pediment'
 						) }
 						value={ attributes.destination }

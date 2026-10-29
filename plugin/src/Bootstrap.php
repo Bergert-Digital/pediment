@@ -36,5 +36,6 @@ final class Bootstrap {
 		\Pediment\Abilities\FeaturedImage::register();
 		\Pediment\Abilities\Registrar::register();
 		\Pediment\Mcp\Server::register();
+		\Pediment\Mcp\AdminTab::register();
 	}
 }

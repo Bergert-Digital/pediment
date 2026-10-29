@@ -71,7 +71,7 @@ second. These styles replace the legacy blocks that Pediment 5 removed; see
 - Slugs `feed`, `rss`, `rss2`, `rdf`, `atom` and `embed` are reserved.
 
 Invalid plugin styles are skipped. Invalid theme styles still load but are
-listed with warnings under Settings → Pediment Theme → Design. Invalid site
+listed with warnings under Settings → Pediment → Design. Invalid site
 styles are rejected on save.
 
 ## Limits
@@ -96,7 +96,7 @@ Font sizes: `xs, sm, base, lg, xl, 2-xl, 3-xl, 4-xl`. Shadows: `subtle, medium, 
 
 ## Moving site styles into the theme
 
-1. Settings → Pediment Theme → Design → **Download site styles as theme files**,
+1. Settings → Pediment → Design → **Download site styles as theme files**,
    or `wp pediment design export` in a dev environment.
    When the theme already ships a partial with the same slug, the exported
    file keeps that partial's properties and block types and layers the site
