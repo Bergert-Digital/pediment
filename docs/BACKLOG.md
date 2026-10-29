@@ -12,49 +12,6 @@ _(none currently known — verify by running a user-journey audit)_
 
 ## 🟡 High
 
-- [ ] **Verify the v3 release pipeline end-to-end.** With user approval, confirm a
-  release produces only `pediment-plugin.zip`, installs as `plugins/pediment`,
-  and does not publish either legacy asset name.
-- [x] **Archive `pediment-child-theme`.** Done 2026-08-05 with explicit go-ahead. `Bergert-Digital/Pediment-Child-Theme`
-  now serves a deprecation README pointing at `docs/client-sites.md` (commit `c6e198b`) and is
-  archived; it stays public so existing links keep resolving. `Bergert-Digital/pediment-ai` was
-  closed in the same pass — unarchived, set private, re-archived — since it carried the plugin's
-  pre-merge history with no consumers.
-- [x] **Header template part scoping was a `WP_Query` singularity bug, not a tagging-order race.**
-  Found during migration step 5's Task 15 full-verification rehearsal; fixed on the same branch in
-  `plugin/inc/bootstrap.php`. The original diagnosis (activation-order tagging skipping recreation
-  of an already-existing part) was refuted: `pediment_bootstrap_header_template_part()`'s lookup
-  used the singular `name` query var, which makes `WP_Query::parse_query()` set `is_singular` —
-  and `WP_Query::get_posts()` only applies `tax_query` when the query is *not* singular. So the
-  theme-scoping check never actually ran the tax query and matched **any** existing "header" part
-  regardless of theme, on every site, not just fresh ones. Switching the lookup to
-  `post_name__in` (which keeps the query non-singular) makes the tax_query apply for real, so each
-  theme gets its own correctly-scoped header part; covered by
-  `BootstrapTest::test_bootstrap_scopes_header_part_to_each_active_theme`.
-  `.github/actions/seed-check/action.yml`'s front-page assertion remains as a standing regression
-  guard, checking for the exact missing-template-part string a recurrence would show.
-- [x] **The `--with-blocks` flag step 5 deferred is built, closing the "client theme has no
-  bespoke-block tooling" gap.** Step 5 decision 5 (`2026-08-03-scaffolder-and-start-step5-design.md`)
-  punted client-block tooling until a client needed one; migration step 6a's design
-  (`2026-08-05-migration-step6-design.md` decision 2) built it. `client-template/` gains an
-  optional `functions.php`, `src/blocks/example-notice/` and a `@wordpress/scripts` build;
-  `client-kit`'s scaffolder emits them behind `--with-blocks` and prunes them when not requested;
-  `seed-check` builds client blocks when `src/blocks/` exists and asserts one registers before
-  wp-env teardown, the `scaffold` CI matrix gained a second leg that scaffolds, builds, boots and
-  seeds a real with-blocks client theme, and `client-release.yml` builds blocks while keeping
-  `src/` out of the zip. Done 2026-08-06.
-- [ ] **The cutover plan is not written.** Migration step 6a built the capability — claim, header
-  ownership, client blocks — but the Workation production migration itself is a separate plan by
-  design (spec decision 4, `2026-08-05-migration-step6-design.md`). Workation still runs the
-  retired parent/child theme stack, and the claim path (`Pediment\Seeder\Claimer`) has only ever
-  run against fixtures and CI, never a real legacy database. Write the cutover plan, and rehearse
-  claim against a copy of Workation's actual content, before touching production.
-- [ ] **A multilingual claim is impossible on admin-only hosting without one-off CLI access.**
-  The claim path's language gate (`docs/seeding.md#precondition-configure-languages-before-you-claim`)
-  refuses to plan anything while the manifest's declared languages and Polylang's configured set
-  diverge, and `wp pediment languages` — the only way to configure them — is WP-CLI only with no
-  wp-admin equivalent. The cutover plan (entry above) must budget for arranging one-off CLI access
-  before a multilingual claim; it cannot be run entirely through wp-admin.
 - [ ] **Commercial protection — licence keys gate updates, a server gates capability.** Needs its
   own spec; the design rationale is in
   [2026-08-05-licensing-and-hygiene-design.md](superpowers/specs/2026-08-05-licensing-and-hygiene-design.md#35-backlog-entry-for-commercial-protection).
@@ -71,26 +28,6 @@ _(none currently known — verify by running a user-journey audit)_
   its version-stamping is unit-tested (`tools/stamp-theme-version.test.mjs`), but no client repo
   has pushed a `v*` tag through it yet. Verify it end to end on the first real client site, and
   treat a failure there as expected rather than surprising.
-- [x] **`/pediment:port-page` now says how to derive the theme slug.** Found during migration step
-  5's Task 12 review; fixed in `client-kit/skills/port-page/SKILL.md` Step 3, which now says to
-  derive it from `package.json`'s `name` or an existing `patterns/*.php` file's `Slug:` header.
-  Correction to the original framing: a wrong namespace is not silent for the default language —
-  `ContentResolver::resolve()` (`plugin/src/Seeder/ContentResolver.php:56-57`) throws
-  `ManifestError` when the default-language pattern for a page is not registered, aborting the run
-  loudly. Only a *translation* pattern (a non-default-language pattern that is missing) degrades
-  quietly, falling back to the default language's content. Still worth the line — a wrong
-  namespace is easy to type and easy to miss either way.
-- [x] **Installed kit resources resolve from the skill directory.** Claude Code prepends an
-  absolute base directory to each loaded skill. `/pediment:start` now anchors its manifest,
-  fixture, and scaffolder at that directory; `/pediment:port-page` anchors both shared review
-  prompts there. `CLAUDE_PLUGIN_ROOT` remains intentionally unused because Bash does not receive
-  it. Fixed by the external-distribution work designed on 2026-08-04.
-- [x] **The kit reference guard validates the complete path form.** It rejects checkout-prefixed
-  references even when their `scripts/...` tail exists, verifies every target, and carries the
-  original `client-kit/scripts/scaffold.mjs` form as a regression case.
-- [x] **Shipping `client-kit/tests/` is accepted.** Claude Code's marketplace schema provides no
-  supported file-exclusion field. The files are harmless, and moving them outside the plugin only
-  to reduce install size is not warranted.
 - [ ] **The scaffold CI job asserts convergence, not completeness.** `seed-check` proves the front
   page renders and that a second dry run reports `0 to write`, but nothing asserts an expected
   page or nav count — a scaffolder regression that silently emitted three pages instead of four
@@ -174,31 +111,12 @@ _(none currently known — verify by running a user-journey audit)_
   clone via history. A full purge (`git filter-repo` or similar) would force-push and
   invalidate every Conductor workspace's shared object store — deferred until no
   workspaces are live. Do this as a deliberate, coordinated one-off, not casually.
-- [ ] **`npm run test:js` has no tests.** Jest is wired via wp-scripts but there are no JS
-  unit tests. Either add coverage for the few bits of editor logic worth unit-testing, or
-  drop the script so CI/devs aren't misled. Decide and act.
 - [ ] **Keep the WordPress floor current.** `.wp-env.json` currently pins 6.9;
   upgrade only with a full PHPUnit and Playwright run.
-- [ ] **Block empty-state sweep.** Walk all 11 blocks in the editor with empty attributes
+- [ ] **Block empty-state sweep.** Walk the 7 remaining Pediment blocks (`blog-index`, `form`,
+  `form-field`, `icon`, `mega-menu`, `slider`, `social-links`) in the editor with empty attributes
   and as a visitor; confirm no broken markup, no `<a href="">`, no PHP notices. File any
   failures as 🔴.
-- [ ] **Sub-project B — full-Phosphor icon delivery.** Replace the hand-built sprite in
-  [plugin/inc/icons.php](../plugin/inc/icons.php) (printed per page via `wp_body_open`) with a
-  scalable mechanism for the full ~9000-icon Phosphor set — Phosphor webfont, or per-icon
-  inline SVG via `@phosphor-icons/core` emitting only icons actually used. Theme-wide:
-  touches `inc/icons.php`, build tooling, page weight, every block calling
-  `pediment_icon()`. Needs its own brainstorm/spec. Prereq for C. Deferred from the
-  2026-05-19 mega-menu-editor-layout spec (sub-project A).
-- [ ] **Sub-project C — searchable icon picker.** Block-editor picker over the full
-  Phosphor catalog (virtualized list + search from B's icon-name manifest), wired into
-  `pediment/mega-link`'s `icon` attribute and reusable across blocks. Depends on B; until
-  then the field is a relocated `TextControl`. Deferred from sub-project A.
-- [x] **A WPML adapter for the `LanguageProvider` seam.** Shipped: the
-  2026-08-28 `wpml-support` plan added `WpmlProvider`, `WpmlSetup`, and
-  `plugin/inc/wpml-compat.php` against the same `LanguageProvider`/
-  `LanguageSetup` interface `PolylangProvider`/`PolylangSetup` already used.
-  `LanguageRegistry` detects Polylang, then WPML, then falls back to
-  monolingual. See `docs/seeding.md#languages`.
 - [ ] **Per-language media and taxonomy translation.** Migration step 4 deliberately
   ships one attachment and one term set per site, locked off in Polylang's own config
   (`media_support => 0`, `taxonomies => []`, see `docs/seeding.md#languages`). Revisit
@@ -234,7 +152,7 @@ _(none currently known — verify by running a user-journey audit)_
   first-party declaration in `block.json` itself (e.g. an `x-translatable: false` flag on
   the attribute) over both the regex heuristic and the out-of-band list.
 
-- [ ] **`Runner::languageMismatch()` sorts language codes with plain `sort()`.**
+- [ ] **`LanguageGate::mismatch()` sorts language codes with plain `sort()`.**
   Found by the final review of migration step 4. Byte-order comparison, not
   locale-aware (`SORT_LOCALE_STRING`/`Collator`) — harmless today because every
   language slug is lowercase ASCII (`Manifest::parseLanguages()` requires
@@ -273,15 +191,6 @@ _(none currently known — verify by running a user-journey audit)_
   left by review. `client-kit/tests/fixtures/answers-multilingual.json` (de + en)
   already exists, so a second matrix entry over the fixture path — feeding both the
   scaffold step and the `seed-check` action — is the whole fix.
-- [x] **`npx wp-env start` failed to boot on macOS with Docker's containerd image store.** The
-  start failed with an OCI runtime error mounting the mu-plugin fixture to
-  `wp-content/mu-plugins/activate-pediment.php` (`mountpoint … is outside of rootfs`): Docker
-  Desktop's containerd image store cannot bind-mount a single host file over virtiofs. The failed
-  start also left MariaDB half-initialized, so retries then failed with "Error establishing a
-  database connection". **Fixed** by mounting the mu-plugin as a directory
-  (`plugin/tests/fixtures/mu-plugins/`) instead of a single file — see the commit that moved
-  `mu-activate-theme.php` to `mu-plugins/activate-pediment.php`. macOS Docker Desktop only; CI runs
-  on Linux runners and was unaffected.
 - [ ] **Decided: a nav orphaned by a dropped Polylang language collides with the default
   language and hard-blocks the seed, rather than being silently ignored.** Was recorded as an
   open design question by the untagged-nav fix in `NavSeeder::languageOf()` (migration step 6a
@@ -372,7 +281,7 @@ _(none currently known — verify by running a user-journey audit)_
 
 ## 🔵 Ideas / later
 
-- [ ] Pattern coverage: only 3 patterns exist (`contact-page`, `hero-cta-faq`,
-  `prose-article`). Consider a small library that showcases every block.
+- [ ] Pattern coverage: 6 plugin patterns exist. Since Pediment 5 pages are built from core
+  blocks and named styles; consider a small library that shows every default named style.
 - [ ] Accessibility pass: keyboard/focus and contrast audit across blocks against the
   default token palette.
