@@ -46,6 +46,13 @@ post carries the key", which pointed at the key.
 (8 tools; page and post written, read and checked; legacy page and both rule violations
 reported).
 
+[--:--] ✅ The `scaffold` CI job gained a multilingual leg (`answers-multilingual.json`,
+de + en): it boots Polylang, runs `wp pediment languages` and seeds translations.
+`seed-check` now asserts that every Polylang language's home URL returns 200 with its
+own `<html lang>` and its own front-page translation; client CI inherits the check.
+Proven locally on ports 8898/8899 (passes; fails when the expected page ID is wrong);
+not yet proven on GitHub Actions.
+
 ### Check-in
 
 #### Done this session
