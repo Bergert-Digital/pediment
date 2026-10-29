@@ -100,18 +100,14 @@ class AdminTabTest extends WP_UnitTestCase {
 		$this->assertMatchesRegularExpression( '/^pediment-[a-z0-9-]+$/', $c['server'] );
 	}
 
-	public function test_shared_config_keeps_the_secret_out(): void {
+	public function test_codex_config_sends_basic_auth_as_a_header(): void {
 		$c     = AdminTab::connection( $this->admin, 'secret' );
 		$basic = base64_encode( 'agentowner:secret' ); // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_encode
-		$json  = json_decode( $c['mcpJson'], true );
 
-		$this->assertStringNotContainsString( $basic, $c['mcpJson'] );
-		$server = $json['mcpServers'][ $c['server'] ];
-		$this->assertSame( 'http', $server['type'] );
-		$this->assertSame( $c['url'], $server['url'] );
-		$this->assertMatchesRegularExpression( '/^Basic \$\{([A-Z0-9_]+)\}$/', $server['headers']['Authorization'] );
-		preg_match( '/\$\{([A-Z0-9_]+)\}/', $server['headers']['Authorization'], $m );
-		$this->assertSame( sprintf( 'export %s="%s"', $m[1], $basic ), $c['env'] );
+		$this->assertSame(
+			"[mcp_servers.{$c['server']}]\nurl = \"{$c['url']}\"\nhttp_headers = { \"Authorization\" = \"Basic {$basic}\" }",
+			$c['codex']
+		);
 	}
 
 	public function test_render_shows_the_setup_once_after_creating(): void {
@@ -121,6 +117,9 @@ class AdminTabTest extends WP_UnitTestCase {
 		$html = ob_get_clean();
 
 		$this->assertStringContainsString( 'claude mcp add', $html );
+		$this->assertStringContainsString( '[mcp_servers.', $html );
+		$this->assertStringContainsString( 'href="#pediment-mcp-codex"', $html );
+		$this->assertStringNotContainsString( '.mcp.json', $html );
 		$this->assertStringContainsString( esc_html( rest_url( 'pediment/v1/mcp' ) ), $html );
 
 		$_POST = array();

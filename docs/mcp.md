@@ -15,11 +15,15 @@ and design rules on the server, so a page that breaks a rule is never written.
    requirements (MCP Adapter active, application passwords available) and
    shows the endpoint. **Create password and show setup** creates an
    application password for the signed-in user and shows, once:
-   - a `claude mcp add --scope user …` command with the credentials filled in;
-   - a `.mcp.json` for a repository, which reads the credentials from an
-     environment variable (`PEDIMENT_<HOST>_AUTH`), plus the `export` line
-     for the shell profile, so no secret is committed;
-   - the URL and `Authorization` header for any other MCP client.
+   one tab per client:
+   - **Claude Code**: a `claude mcp add --scope user …` command with the
+     credentials filled in.
+   - **ChatGPT / Codex**: a `[mcp_servers.…]` block for `~/.codex/config.toml`
+     (read by the Codex CLI, app and IDE extension). `codex mcp add` only
+     sends Bearer tokens, so the Basic header goes into `http_headers`.
+     ChatGPT in the browser or desktop app connects custom MCP servers only
+     with OAuth or without authentication, so it cannot use this server.
+   - **Other clients**: the URL and `Authorization` header.
 
    WordPress only offers application passwords over HTTPS (or on a local
    environment). Revoke a connection under Users → Profile → Application
