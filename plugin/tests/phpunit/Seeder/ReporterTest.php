@@ -26,7 +26,7 @@ class ReporterTest extends WP_UnitTestCase {
 				new PlanItem( PlanItem::ORPHAN, PlanItem::KIND_ENTRY, 'legacy', '', 42, [], '"Legacy offer" (ID 42) — left in place' ),
 			]
 		);
-		return new RunResult( $plan, $applied, '/themes/acme/seed/manifest.php' );
+		return new RunResult( $plan, $applied, '/themes/acme/seed/manifest.php', dryRun: ! $applied );
 	}
 
 	public function test_every_action_appears_in_the_report() {
@@ -47,6 +47,21 @@ class ReporterTest extends WP_UnitTestCase {
 	public function test_a_dry_run_says_nothing_was_written() {
 		$this->assertStringContainsString( 'Nothing was written', Reporter::text( $this->result( false ) ) );
 		$this->assertStringNotContainsString( 'Nothing was written', Reporter::text( $this->result( true ) ) );
+	}
+
+	/**
+	 * The wp-admin "Apply plan" button and `wp pediment seed` both stop before
+	 * phase 4 on an errored plan. That run applied nothing, but calling it a
+	 * dry run tells the operator they pressed the wrong button.
+	 */
+	public function test_a_real_run_stopped_by_errors_is_not_called_a_dry_run() {
+		$text = Reporter::text( new RunResult( new Plan(), false, '', [ 'duplicate key "home"' ] ) );
+
+		$this->assertStringStartsWith( "Pediment seed\n", $text );
+		$this->assertStringNotContainsString( 'dry run', $text );
+		$this->assertStringNotContainsString( '--dry-run', $text );
+		$this->assertStringContainsString( 'ERRORS (nothing was applied)', $text );
+		$this->assertStringEndsWith( 'unchanged. Nothing was written.', $text );
 	}
 
 	public function test_errors_and_problems_are_never_buried() {

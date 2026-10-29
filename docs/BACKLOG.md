@@ -93,15 +93,6 @@ _(none currently known — verify by running a user-journey audit)_
   say) will upload a duplicate rather than adopt the original. Deliberate for Workation's
   74 client-owned photos, which the manifest never declares; the same gap applies to any
   media a manifest does declare on a site being claimed.
-- [ ] **A real, non-dry-run `wp pediment claim` against a site with no manifest still prints
-  "Pediment claim — dry run" and "Nothing was written (--dry-run)".** `Reporter::claimText()`'s
-  wording comes from `ClaimResult->applied`, and `ClaimRunner::run()` returns `applied: false`
-  whenever no manifest is found, regardless of whether `--dry-run` was passed. The branch that
-  hardcodes `applied: false` is in `plugin/src/Seeder/ClaimRunner.php`, not in
-  `plugin/wp-cli/ClaimCommand.php` — the command only renders what the runner already decided.
-  The same is now true of the malformed-manifest and language-mismatch branches beside it.
-  Accurate in effect — nothing was applied because there was nothing to apply — but misleading
-  in wording for an operator who ran the command for real.
 - [ ] **The wp-admin missing-manifest message is untranslated.** `ClaimRunner::run()`'s "No seed
   manifest found. Create …" string (`plugin/src/Seeder/ClaimRunner.php`) has no `__()` wrapper,
   following `Runner::run()`'s existing precedent for the identical message, so it renders in

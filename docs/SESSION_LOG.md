@@ -19,6 +19,13 @@ Re-scoped the empty-state sweep to the 7 remaining blocks, pattern coverage to
 named styles, and the sort item to `LanguageGate::mismatch()`. The previous
 session's "Planned next" (step 6b theme half) is done and is not carried over.
 
+[--:--] ✅ A real `wp pediment seed` or `claim` (and the wp-admin Apply buttons) that
+stopped before writing — no manifest, malformed manifest, language mismatch, errored
+plan — reported itself as a dry run. `RunResult` and `ClaimResult` now carry an
+explicit `dryRun` flag; the report says "Nothing was written." for a real run that
+wrote nothing, and `--format=json` gained `dry_run`. Backlog listed only the claim
+half; the seed half was the same bug on the operator's main button.
+
 [--:--] 🔍 This log jumps from 2026-08-06 to today. Plans 1–8 of the
 2026-10-14 roadmap (Pediment 4.0 to 6.1) shipped with no entry here; the roadmap
 (`docs/superpowers/plans/2026-10-14-roadmap.md`) is their record.

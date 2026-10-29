@@ -602,8 +602,10 @@ wp pediment seed [--dry-run] [--format=<format>]
 
 Runs the same five phases WP-CLI and wp-admin both go through: resolve desired
 state → resolve actual state → diff into a plan → apply → verify. `--dry-run`
-stops after the plan and writes nothing. `--format=json` emits the same information
-machine-readably (`applied`, `ok`, `counts`, one object per plan item,
+stops after the plan and writes nothing. A real run that stops before it
+writes (no manifest, a language mismatch, an errored plan) ends with
+`Nothing was written.` and is never labelled a dry run. `--format=json` emits the same information
+machine-readably (`applied`, `dry_run`, `ok`, `counts`, one object per plan item,
 `errors`, `problems`) instead of the text report above. Since 4.0, `counts`
 has exactly the keys `create`, `unchanged` and `orphan`, and an item has no
 `protected` field.
