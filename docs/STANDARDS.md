@@ -8,7 +8,7 @@ Every block in `plugin/src/blocks/<name>/` has exactly: `block.json`, `index.tsx
 `render.php`, `style.scss`. Enforced by `npm run lint:blocks`.
 
 - `block.json` has an explicit one-sentence `description` and fully-typed `attributes` with
-  defaults. Namespace `pediment/` (parent) or `client/` (child). API version 3.
+  defaults. Namespace `pediment/` (plugin) or `client/` (client theme). API version 3.
 - Rendered server-side via `render.php`. No `save()` markup for atomic blocks;
   `<InnerBlocks.Content />` for containers.
 - Output is sanitized: `wp_kses_post()` for rich text, `esc_html()` for strings, `esc_url()`
