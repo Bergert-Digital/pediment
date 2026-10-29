@@ -30,6 +30,10 @@ half; the seed half was the same bug on the operator's main button.
 the design layer, the MCP server or AI agents as users) and in `docs/STANDARDS.md`
 (block namespaces still said parent/child).
 
+[--:--] ✅ A dry run (or a real run stopped before it wrote) printed undeclared-media
+problems under `VERIFICATION FAILED`, though phase 5 never ran. They now appear under
+`PROBLEMS (found while planning)`; an applied run keeps the old heading.
+
 [--:--] 🔍 This log jumps from 2026-08-06 to today. Plans 1–8 of the
 2026-10-14 roadmap (Pediment 4.0 to 6.1) shipped with no entry here; the roadmap
 (`docs/superpowers/plans/2026-10-14-roadmap.md`) is their record.

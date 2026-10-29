@@ -56,7 +56,10 @@ final class Reporter {
 
 		if ( [] !== $result->problems ) {
 			$lines[] = '';
-			$lines[] = 'VERIFICATION FAILED';
+			// Phase 5 runs only after an apply. Before that the only problems
+			// are the ones planning found (an undeclared media key), and
+			// calling them a failed verification names a step that never ran.
+			$lines[] = $result->applied ? 'VERIFICATION FAILED' : 'PROBLEMS (found while planning)';
 			foreach ( $result->problems as $problem ) {
 				$lines[] = '  - ' . $problem;
 			}

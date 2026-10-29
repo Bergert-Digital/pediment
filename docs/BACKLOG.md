@@ -41,13 +41,10 @@ _(none currently known — verify by running a user-journey audit)_
   linted at all first, since they are the ones that multiply.
 - [ ] **The client theme has no auto-updater.** Step 5 decision 8: `ThemeUpdater`/`UpdateToken` did
   not come across, so client themes update by admin zip upload. Revisit if step 6 shows it hurts.
-- [ ] **Seeding follow-ups from the step-3 final review.** Neither blocks a merge, both
-  were parked deliberately: (a) a site that already carries a trashed nav *and* a
-  re-created one under the same seed key now aborts the whole run on duplicate identity
-  until an operator deletes the trashed row — correct behaviour, but an upgrade surprise
-  worth a release note; (b) `--dry-run` prints unresolved-media problems under a
-  `VERIFICATION FAILED` heading even though phase 5 never ran — the finding is real and
-  pre-write, the heading is not.
+- [ ] **Seeding follow-up from the step-3 final review.** Parked deliberately: a site that
+  already carries a trashed nav *and* a re-created one under the same seed key aborts the
+  whole run on duplicate identity until an operator deletes the trashed row — correct
+  behaviour, but an upgrade surprise worth a release note.
 - [ ] **A coordinated language removal silently unlinks that language's translation
   groups.** Found by review during migration step 4, Task 10, for entries; the same
   outcome was confirmed for navigation entities during Task 11 review, reached by a
