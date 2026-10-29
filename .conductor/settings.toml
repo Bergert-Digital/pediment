@@ -3,7 +3,9 @@
 [scripts]
 # Prepare a freshly created workspace: root wp-env dependencies, then plugin
 # PHP/JS dependencies and its one-shot build.
-setup = "npm install && composer install -d plugin && (cd plugin && npm install && npm run build)"
+# `npm ci`, never `npm install`: a local npm 11 install rewrites the lockfiles
+# into a form CI's npm 10 rejects ("Missing: … from lock file").
+setup = "npm ci && composer install -d plugin && (cd plugin && npm ci && npm run build)"
 
 # Boot the wp-env Docker stack on this workspace's port range, then watch the
 # plugin editor bundle.

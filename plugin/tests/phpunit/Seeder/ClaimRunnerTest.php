@@ -33,6 +33,7 @@ class ClaimRunnerTest extends WP_UnitTestCase {
 		$result = ( new ClaimRunner() )->run( [ 'dry_run' => true ] );
 
 		$this->assertFalse( $result->applied );
+		$this->assertTrue( $result->dryRun );
 		$claims = array_filter(
 			$result->plan->byKind( PlanItem::KIND_ENTRY ),
 			static fn( PlanItem $item ) => PlanItem::CLAIM === $item->action
@@ -124,6 +125,7 @@ class ClaimRunnerTest extends WP_UnitTestCase {
 		$result = ( new ClaimRunner() )->run();
 
 		$this->assertFalse( $result->applied );
+		$this->assertFalse( $result->dryRun, 'a real run that found no manifest is still not a dry run' );
 		$this->assertSame( '', $result->manifestPath );
 		$this->assertNotEmpty( $result->errors );
 		$this->assertStringContainsString( 'No seed manifest found', $result->errors[0] );

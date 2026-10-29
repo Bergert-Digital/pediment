@@ -110,6 +110,51 @@ runs:
           exit 1
         fi
 
+    - name: Assert every language serves its own front page
+      shell: bash
+      working-directory: ${{ inputs.theme-path }}
+      # Polylang names each language's home URL (it follows the permalink
+      # setting, so nothing here assumes ?lang= or /en/) and the front page's
+      # translation in that language. A language root that serves the default
+      # language's page, or a language Polylang never got, fails here: the
+      # seed itself reports neither.
+      run: |
+        set -euo pipefail
+        if ! grep -q "'languages'" seed/manifest.php; then
+          echo "Monolingual manifest — skipping."
+          exit 0
+        fi
+        raw="$(npx wp-env run cli wp eval 'if ( ! function_exists( "pll_languages_list" ) ) { echo "NO_", "POLYLANG"; return; } $front = (int) get_option( "page_on_front" ); foreach ( pll_languages_list( array( "fields" => "" ) ) as $l ) { echo "LANG:", $l->slug, ":", str_replace( "_", "-", $l->locale ), ":", (int) pll_get_post( $front, $l->slug ), ":", pll_home_url( $l->slug ), "\n"; }')"
+        if printf '%s\n' "${raw}" | grep -q 'NO_POLYLANG'; then
+          echo "::notice::Polylang is not active — the per-language front-page check covers Polylang only."
+          exit 0
+        fi
+        langs="$(printf '%s\n' "${raw}" | grep -oE 'LANG:[a-z_-]+:[A-Za-z-]+:[0-9]+:https?://[^[:space:]]*' || true)"
+        echo "${langs}"
+        count=0
+        while IFS=: read -r _ slug lang id url; do
+          count=$((count + 1))
+          if [ "${id}" = "0" ]; then
+            echo "::error::Language ${slug} has no translation of the front page."
+            exit 1
+          fi
+          status=$(curl -s -o /tmp/front-${slug}.html -w '%{http_code}' "${url}")
+          echo "${slug}: ${url} -> HTTP ${status}"
+          test "${status}" = "200"
+          if ! grep -q "<html[^>]* lang=\"${lang}\"" /tmp/front-${slug}.html; then
+            echo "::error::${url} does not render <html lang=\"${lang}\"."
+            exit 1
+          fi
+          if ! grep -qE "<body[^>]* class=\"[^\"]*\bpage-id-${id}\b" /tmp/front-${slug}.html; then
+            echo "::error::${url} does not serve the ${slug} front page (post ${id})."
+            exit 1
+          fi
+        done <<< "${langs}"
+        if [ "${count}" -lt 2 ]; then
+          echo "::error::The manifest declares languages, but Polylang reports ${count}."
+          exit 1
+        fi
+
     - name: Re-seed and assert the plan is now empty of content writes
       shell: bash
       working-directory: ${{ inputs.theme-path }}

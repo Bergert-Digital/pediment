@@ -17,7 +17,7 @@ class ClaimReporterTest extends WP_UnitTestCase {
 			]
 		);
 
-		$text = Reporter::claimText( new ClaimResult( $plan, false, '/srv/theme/seed/manifest.php' ) );
+		$text = Reporter::claimText( new ClaimResult( $plan, false, '/srv/theme/seed/manifest.php', dryRun: true ) );
 
 		$this->assertStringContainsString( 'Pediment claim — dry run', $text );
 		$this->assertStringContainsString( 'manifest: /srv/theme/seed/manifest.php', $text );
@@ -52,6 +52,20 @@ class ClaimReporterTest extends WP_UnitTestCase {
 		$this->assertStringNotContainsString( 'dry run', $text );
 		$this->assertStringNotContainsString( '--dry-run', $text );
 		$this->assertStringContainsString( '0 to claim, 0 without a match, 0 ambiguous.', $text );
+	}
+
+	/**
+	 * A real claim that stops before it writes — no manifest, a malformed one,
+	 * a language mismatch — applies nothing, but it was not a dry run. The
+	 * operator pressed "apply"; the report must not say they did not.
+	 */
+	public function test_a_real_run_that_wrote_nothing_is_not_called_a_dry_run() {
+		$text = Reporter::claimText( new ClaimResult( new Plan( [] ), false, '', [ 'No seed manifest found.' ] ) );
+
+		$this->assertStringStartsWith( "Pediment claim\n", $text );
+		$this->assertStringNotContainsString( 'dry run', $text );
+		$this->assertStringNotContainsString( '--dry-run', $text );
+		$this->assertStringContainsString( '0 to claim, 0 without a match, 0 ambiguous. Nothing was written.', $text );
 	}
 
 	public function test_errors_are_printed_under_their_own_heading() {
