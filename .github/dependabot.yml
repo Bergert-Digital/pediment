@@ -1,0 +1,15 @@
+version: 2
+updates:
+  # The validator locks mirror what each WordPress release ships, so a security
+  # update must not move an @wordpress package. See client-kit/validator/README.md.
+  # A limit of 0 turns version updates off; security updates still run.
+  - package-ecosystem: npm
+    directories:
+      - /client-kit/validator/wp-6.9
+      - /client-kit/validator/wp-7.0
+      - /client-kit/validator/wp-7.1
+    schedule:
+      interval: monthly
+    open-pull-requests-limit: 0
+    ignore:
+      - dependency-name: "@wordpress/*"
