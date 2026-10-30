@@ -78,7 +78,7 @@ export function getCatalog(): Promise< IconData > {
 				? {
 						viewBox: setRaw.viewBox,
 						svgAttrs: setRaw.svgAttrs ?? {},
-				  }
+					}
 				: DEFAULT_SET;
 
 		cache = { markup, meta, set };

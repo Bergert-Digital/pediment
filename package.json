@@ -18,7 +18,10 @@
     "test:kit": "node --test client-kit/tests/*.test.mjs tools/*.test.mjs"
   },
   "devDependencies": {
-    "@wordpress/env": "^10.0.0"
+    "@wordpress/env": "^12.0.0"
   },
-  "license": "GPL-2.0-or-later"
+  "license": "GPL-2.0-or-later",
+  "overrides": {
+    "qs": "^6.17.1"
+  }
 }
