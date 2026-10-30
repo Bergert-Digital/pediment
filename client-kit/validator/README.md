@@ -39,6 +39,14 @@ Known deviations:
 - **7.1:** none. Every `@wordpress/*` package in the lock matches Gutenberg at
   the 7.1.3 sha (rich-text 7.51.0, data 10.51.0, block-editor 16.0.0).
 
+## Security alerts
+
+Never merge an update that moves an `@wordpress/*` package in these locks: it
+breaks the match with the WordPress release, and the end-to-end validator test
+fails. `.github/dependabot.yml` tells Dependabot to skip those packages. An
+alert whose fix needs such a move stays open until the line is retired. Other
+packages can move with `npx -y npm@10 update <name> --ignore-scripts`.
+
 ## Add a line
 
 1. Find the versions as described above.
