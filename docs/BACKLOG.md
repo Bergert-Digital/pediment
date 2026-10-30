@@ -87,8 +87,9 @@ _(none currently known)_
   clone via history. A full purge (`git filter-repo` or similar) would force-push and
   invalidate every Conductor workspace's shared object store — deferred until no
   workspaces are live. Do this as a deliberate, coordinated one-off, not casually.
-- [ ] **Keep the WordPress floor current.** `.wp-env.json` currently pins 6.9;
-  upgrade only with a full PHPUnit and Playwright run.
+- [ ] **Keep the WordPress pin current.** `.wp-env.json` pins the current release (7.1.4), and
+  CI's `phpunit-floor` job keeps `Requires at least` (6.9) tested. Move either one only with a
+  full PHPUnit and Playwright run.
 - [ ] **Per-language media and taxonomy translation.** Migration step 4 deliberately
   ships one attachment and one term set per site, locked off in Polylang's own config
   (`media_support => 0`, `taxonomies => []`, see `docs/seeding.md#languages`). Revisit
