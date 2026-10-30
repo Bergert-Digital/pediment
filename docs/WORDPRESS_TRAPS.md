@@ -777,3 +777,27 @@ never go through `parse_blocks()` before it is resolved.
 **Catch it early.** `ContentResolverTest::test_a_placeholder_in_the_block_json_of_a_registered_pattern_keeps_every_attribute`
 (also the `filePath` and Block Hooks variants) and
 `RunnerTest::test_a_media_id_placeholder_in_pattern_block_json_survives_seeding`.
+
+---
+
+## WordPress 7.1 adds `public => false` to every ability's meta
+
+**Symptom.** A test that asserts an ability's meta has no `public` key passes on 6.9 and
+fails on 7.1.
+**Cause.** `WP_Ability::prepare_properties()` in 7.1 fills in `$args['meta']['public']` with
+its default, `false`, so the key exists even when the ability never set it.
+**Fix.** Read it as a value: `$meta['public'] ?? false`. Pediment still does not set the
+flag; the MCP server names its eight abilities itself.
+**Catch it early.** `ReadAbilitiesTest` and `WriteAbilitiesTest`.
+
+---
+
+## Changing `core` in a running wp-env leaves the database behind
+
+**Symptom.** After `wp-env start --update` onto a newer WordPress, PHPUnit passes, but every
+Playwright test that opens the editor times out on `wp.data`. Front-end tests pass.
+**Cause.** The development site keeps its old database, so `wp-admin` redirects to
+`upgrade.php` and the editor never loads. A new CI env does not have this problem.
+**Fix.** Run `npx wp-env destroy --force`, then `npm run env:start`. If the data must stay,
+run `npx wp-env run cli wp core update-db`.
+**Catch it early.** Open `wp-admin` once after a core change, before you read e2e failures.

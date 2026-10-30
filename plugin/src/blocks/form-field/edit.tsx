@@ -121,7 +121,7 @@ export default function Edit( {
 					label: String( obj.label ?? obj.value ?? '' ),
 					value: String( obj.value ?? obj.label ?? '' ),
 				};
-		  } )
+			} )
 		: [];
 	const optionsText = safeOptions
 		.map( ( o ) =>

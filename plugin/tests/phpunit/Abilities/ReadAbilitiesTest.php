@@ -16,7 +16,7 @@ class ReadAbilitiesTest extends AbilityTestCase {
 			$this->assertTrue( $meta['show_in_rest'] );
 			$this->assertTrue( $meta['annotations']['readonly'] );
 			$this->assertArrayNotHasKey( 'mcp', $meta );
-			$this->assertArrayNotHasKey( 'public', $meta );
+			$this->assertFalse( $meta['public'] ?? false );
 		}
 		$this->assertContains( 'pediment/check-page', Registrar::names() );
 	}
