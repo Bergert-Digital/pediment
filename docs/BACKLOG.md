@@ -12,22 +12,10 @@ _(none currently known — verify by running a user-journey audit)_
 
 ## 🟡 High
 
-- [ ] **Commercial protection — licence keys gate updates, a server gates capability.** Needs its
-  own spec; the design rationale is in
-  [2026-08-05-licensing-and-hygiene-design.md](superpowers/specs/2026-08-05-licensing-and-hygiene-design.md#35-backlog-entry-for-commercial-protection).
-  A licence check inside shipped PHP is a speed bump — it gates updates and support (which is what
-  drives renewals) and cannot gate execution, which is how every premium WordPress plugin works. The in-plugin AI chat was removed in 4.0.0
-  (spec 2026-10-14-core-blocks-mcp-design), so there are no shipped prompts left to protect;
-  revisit this entry when the MCP tools gain server-side logic worth gating. Platform decision
-  unmade — Freemius, EDD + Software Licensing,
-  SureCart, or a merchant of record such as Paddle, the last of which absorbs EU VAT filing.
+_(none currently known)_
 
 ## 🟢 Medium
 
-- [ ] **`client-release.yml` has never run.** The reusable client release workflow is written and
-  its version-stamping is unit-tested (`tools/stamp-theme-version.test.mjs`), but no client repo
-  has pushed a `v*` tag through it yet. Verify it end to end on the first real client site, and
-  treat a failure there as expected rather than surprising.
 - [ ] **The scaffold CI job asserts convergence, not completeness.** `seed-check` proves the front
   page renders and that a second dry run reports `0 to write`, but nothing asserts an expected
   page or nav count — a scaffolder regression that silently emitted three pages instead of four
@@ -40,7 +28,7 @@ _(none currently known — verify by running a user-journey audit)_
   than active. Widening the scan root is the obvious fix; decide whether client repos should be
   linted at all first, since they are the ones that multiply.
 - [ ] **The client theme has no auto-updater.** Step 5 decision 8: `ThemeUpdater`/`UpdateToken` did
-  not come across, so client themes update by admin zip upload. Revisit if step 6 shows it hurts.
+  not come across, so client themes update by admin zip upload. Revisit if a client site shows it hurts.
 - [ ] **Seeding follow-up from the step-3 final review.** Parked deliberately: a site that
   already carries a trashed nav *and* a re-created one under the same seed key aborts the
   whole run on duplicate identity until an operator deletes the trashed row — correct
@@ -80,7 +68,7 @@ _(none currently known — verify by running a user-journey audit)_
   create-only by design, so a manifest-side term change is never applied to an existing
   entry; `post_author` is 0 for entries created under WP-CLI; `adopt` does not map sized
   image variants or `srcset` entries back to `{{media_*}}` placeholders. All are
-  documented in [docs/seeding.md](seeding.md) — revisit when migration step 6 shows which
+  documented in [docs/seeding.md](seeding.md) — revisit when a client site shows which
   actually hurt.
 - [ ] **Media and terms are never claimed** (migration step 6a design decision 6).
   `Pediment\Seeder\Claimer` backfills `_pediment_seed_key` onto pre-existing entries and
@@ -104,9 +92,8 @@ _(none currently known — verify by running a user-journey audit)_
 - [ ] **Per-language media and taxonomy translation.** Migration step 4 deliberately
   ships one attachment and one term set per site, locked off in Polylang's own config
   (`media_support => 0`, `taxonomies => []`, see `docs/seeding.md#languages`). Revisit
-  only if step 6 shows a real client site (Workation is the currently planned one)
-  actually needs per-language images or taxonomies — building it speculatively risks
-  guessing wrong about the shape client themes need.
+  only if a real client site actually needs per-language images or taxonomies — building it
+  speculatively risks guessing wrong about the shape client themes need.
 - [ ] **`wp pediment translate` — an AI command that writes the missing pattern file a
   seed notice names.** `wp pediment seed --dry-run`'s `TRANSLATIONS` section already
   names exactly which `patterns/<slug>.<lang>.php` file is missing and what `Slug:`
@@ -248,6 +235,15 @@ _(none currently known — verify by running a user-journey audit)_
 
 ## 🔵 Ideas / later
 
+- [ ] **Commercial protection — licence keys gate updates, a server gates capability.** Needs its
+  own spec; the design rationale is in
+  [2026-08-05-licensing-and-hygiene-design.md](superpowers/specs/2026-08-05-licensing-and-hygiene-design.md#35-backlog-entry-for-commercial-protection).
+  A licence check inside shipped PHP is a speed bump — it gates updates and support (which is what
+  drives renewals) and cannot gate execution, which is how every premium WordPress plugin works. The in-plugin AI chat was removed in 4.0.0
+  (spec 2026-10-14-core-blocks-mcp-design), so there are no shipped prompts left to protect;
+  revisit this entry when the MCP tools gain server-side logic worth gating. Platform decision
+  unmade — Freemius, EDD + Software Licensing,
+  SureCart, or a merchant of record such as Paddle, the last of which absorbs EU VAT filing.
 - [ ] Pattern coverage: 6 plugin patterns exist. Since Pediment 5 pages are built from core
   blocks and named styles; consider a small library that shows every default named style.
 - [ ] Accessibility pass: keyboard/focus and contrast audit across blocks against the
