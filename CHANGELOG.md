@@ -1,5 +1,26 @@
 # Changelog
 
+## [6.2.0](https://github.com/Bergert-Digital/pediment/compare/v6.1.0...v6.2.0) (2026-10-30)
+
+
+### Features
+
+* **mcp:** add an AI agents tab that connects an agent ([83bb6fe](https://github.com/Bergert-Digital/pediment/commit/83bb6fe4414407e86348599fdc6a2c70bf4d28b5))
+* **mcp:** collapse the connect form after a setup ([fc1d5f4](https://github.com/Bergert-Digital/pediment/commit/fc1d5f45d6c54cf032561a54380f33f4350c6644))
+* **mcp:** connect AI agents from the Pediment settings page ([#153](https://github.com/Bergert-Digital/pediment/issues/153)) ([c9de7ed](https://github.com/Bergert-Digital/pediment/commit/c9de7ed97f74138c7bd3ff969a40c6bf4c372058))
+* **mcp:** show agent setup in Claude and Codex tabs ([388e4f8](https://github.com/Bergert-Digital/pediment/commit/388e4f8bff3d02d5ff417ca653ed4c59c338b5ac))
+* **settings:** move the settings page to ?page=pediment ([4e9f851](https://github.com/Bergert-Digital/pediment/commit/4e9f8511553be6bed14dd1ecf684bbc062cd2e63))
+* **settings:** rename the settings entry to Pediment ([b8853bb](https://github.com/Bergert-Digital/pediment/commit/b8853bbca7f97dd4a75cdd92dfb24ec304e93c61))
+
+
+### Bug Fixes
+
+* **blocks:** no empty href or open tags from hostile input ([e76fcbe](https://github.com/Bergert-Digital/pediment/commit/e76fcbed4c49d3b4833ac9a8c077b5a09b7200b1))
+* honest seed reports, safe empty blocks, multilingual CI leg ([#148](https://github.com/Bergert-Digital/pediment/issues/148)) ([d53ef60](https://github.com/Bergert-Digital/pediment/commit/d53ef608e96208e943c50130215a59399812c58c))
+* **seeder:** name an unconfigured language in adopt ([b6f1e76](https://github.com/Bergert-Digital/pediment/commit/b6f1e76e925e889b74970faa198ed2bf03cba143))
+* **seeder:** name planning problems as such, not verification ([1b647e2](https://github.com/Bergert-Digital/pediment/commit/1b647e204793458c6f932d3bbaf2659add0606e3))
+* **seeder:** stop calling a real run that wrote nothing a dry run ([abcd650](https://github.com/Bergert-Digital/pediment/commit/abcd6503f01b3a727b350bbbbf6f7d3a290193c5))
+
 ## [6.1.0](https://github.com/Bergert-Digital/pediment/compare/v6.0.0...v6.1.0) (2026-10-28)
 
 
