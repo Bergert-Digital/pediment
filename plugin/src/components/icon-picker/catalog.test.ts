@@ -3,7 +3,7 @@ import { getCatalog, __resetCatalogForTests } from './catalog';
 type FetchMap = Record< string, unknown >;
 
 function mockFetch( map: FetchMap, failUrls: string[] = [] ) {
-	( global as unknown as { fetch: unknown } ).fetch = jest.fn(
+	( global as unknown as { fetch: unknown } ).fetch = vi.fn(
 		( url: string ) => {
 			if ( failUrls.includes( url ) ) {
 				return Promise.resolve( { ok: false, status: 500 } );
