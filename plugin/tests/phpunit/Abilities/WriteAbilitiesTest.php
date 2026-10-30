@@ -34,7 +34,7 @@ class WriteAbilitiesTest extends AbilityTestCase {
 			$this->assertTrue( wp_has_ability( $name ), $name );
 			$meta = wp_get_ability( $name )->get_meta();
 			$this->assertArrayNotHasKey( 'mcp', $meta, $name );
-			$this->assertArrayNotHasKey( 'public', $meta, $name );
+			$this->assertFalse( $meta['public'] ?? false, $name );
 		}
 	}
 
