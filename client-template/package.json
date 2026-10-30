@@ -16,6 +16,6 @@
     "adopt": "wp-env run cli wp pediment adopt"
   },
   "devDependencies": {
-    "@wordpress/env": "^10.0.0"
+    "@wordpress/env": "^12.0.0"
   }
 }

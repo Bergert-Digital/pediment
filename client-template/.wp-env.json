@@ -1,5 +1,5 @@
 {
-  "core": "WordPress/WordPress#6.9",
+  "core": "WordPress/WordPress#7.1.4",
   "phpVersion": "8.1",
   "plugins": [
     "https://github.com/Bergert-Digital/pediment/releases/download/v__PEDIMENT_PLUGIN_VERSION__/pediment-plugin.zip",

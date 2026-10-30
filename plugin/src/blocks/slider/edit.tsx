@@ -197,11 +197,11 @@ export default function Edit( {
 												? __(
 														'Replace image',
 														'pediment'
-												  )
+													)
 												: __(
 														'Select image',
 														'pediment'
-												  ) }
+													) }
 										</Button>
 										{ slide.mediaId ? (
 											<Button

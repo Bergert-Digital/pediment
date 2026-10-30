@@ -49,7 +49,7 @@ on every block change, not just new blocks.
 
 ## Linting & CI
 
-`composer lint` (WPCS 3.1 + PHPCompatibilityWP, PHP 8.1+), `npm run lint:js`,
+`composer lint` (WPCS 3.4 + PHPCompatibilityWP, PHP 8.1+), `npm run lint:js`,
 `npm run lint:blocks`, `npm run lint:colors`. CI (`.github/workflows/ci.yml`) runs phpcs,
 lint-blocks, phpunit, and e2e on every PR and push to main. Red CI never merges.
 
