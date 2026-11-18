@@ -27,6 +27,7 @@ final class Reporter {
 				PlanItem::KIND_MEDIA => 'MEDIA',
 				PlanItem::KIND_ENTRY => 'PAGES & POSTS',
 				PlanItem::KIND_NAV   => 'NAV',
+				PlanItem::KIND_FORM  => 'FORMS',
 			] as $kind => $heading
 		) {
 			$items = $result->plan->byKind( $kind );

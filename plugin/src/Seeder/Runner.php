@@ -59,7 +59,9 @@ final class Runner {
 
 		$mediaSeeder = new MediaSeeder();
 		$navSeeder   = new NavSeeder( $this->lang );
+		$formSeeder  = new FormSeeder();
 		$mediaPlan   = $mediaSeeder->plan( $manifest );
+		$formPlan    = $formSeeder->plan( $manifest );
 		$reader      = new StateReader( $this->lang );
 
 		// Phases 1-3 are planned against the media that exists NOW, so the whole
@@ -76,7 +78,7 @@ final class Runner {
 
 		$entryPlan = ( new Differ() )->diff( $preview, $actual, $reader->duplicates() );
 		$entryIds  = $this->resolvedIds( $entryPlan );
-		$plan      = Plan::merge( $mediaPlan, $entryPlan, $navSeeder->plan( $manifest ) );
+		$plan      = Plan::merge( $mediaPlan, $entryPlan, $navSeeder->plan( $manifest ), $formPlan );
 
 		if ( $dryRun || $plan->hasErrors() ) {
 			return new RunResult( $plan, false, $manifest->path(), $plan->errors(), $this->undeclaredMediaProblems( $previewState ), $entryIds, $previewState->missingTranslations(), dryRun: $dryRun );
@@ -103,8 +105,11 @@ final class Runner {
 		$navPlan = $navSeeder->plan( $manifest );
 		$navIds  = $navSeeder->apply( $navPlan, $manifest, $applied->ids );
 
+		// Form destinations are site settings, independent of pages and menus.
+		$formSeeder->apply( $formPlan, $manifest );
+
 		// Report the plan that actually ran, not the preview.
-		$plan = Plan::merge( $mediaPlan, $entryPlan, $navPlan );
+		$plan = Plan::merge( $mediaPlan, $entryPlan, $navPlan, $formPlan );
 
 		// Once, at the end, after every post type is registered. Soft flush: a
 		// hard flush rewrites .htaccess, and this engine never touches the
@@ -120,9 +125,10 @@ final class Runner {
 		// partial apply needs to know what actually landed.
 		$problems = array_merge(
 			( new Verifier( $this->lang, $navSeeder ) )->verify( $manifest, $desired, $applied->ids, $mediaMap, $navIds, $applied->created, $navSeeder->created() ),
+			$formSeeder->verify( $manifest ),
 			$this->undeclaredMediaProblems( $state )
 		);
-		$errors   = array_values( array_unique( array_merge( $mediaErrors, $applied->errors, $navSeeder->errors() ) ) );
+		$errors   = array_values( array_unique( array_merge( $mediaErrors, $applied->errors, $navSeeder->errors(), $formSeeder->errors() ) ) );
 
 		return new RunResult( $plan, true, $manifest->path(), $errors, $problems, $applied->ids, $state->missingTranslations(), $navSeeder->notices() );
 	}

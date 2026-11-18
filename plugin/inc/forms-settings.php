@@ -233,6 +233,11 @@ function pediment_form_save_destination( array $dest ): void {
 	$found  = false;
 	foreach ( $stored as $existing ) {
 		if ( is_array( $existing ) && (string) ( $existing['id'] ?? '' ) === $id ) {
+			// The seed identity survives an edit in the settings form, which
+			// never posts it; without it the next seed would create a duplicate.
+			if ( isset( $existing['seed_key'] ) && ! isset( $dest['seed_key'] ) ) {
+				$dest['seed_key'] = $existing['seed_key'];
+			}
 			$next[] = $dest;
 			$found  = true;
 		} else {
