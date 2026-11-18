@@ -16,19 +16,22 @@ add_action( 'pediment_form_stored', 'pediment_form_deliver', 10, 1 );
  * Build the render context (field name => value, plus meta) for a submission.
  *
  * @param int $submission_id form_submission post id.
- * @return array{fields:array<string,string>,meta:array<string,string>}
+ * @return array{fields:array<string,string>,labels:array<string,string>,meta:array<string,string>}
  */
 function pediment_form_build_context( int $submission_id ): array {
 	$decoded = json_decode( (string) get_post_meta( $submission_id, '_fields', true ), true );
 	$fields  = array();
+	$labels  = array();
 	if ( is_array( $decoded ) ) {
 		foreach ( $decoded as $name => $row ) {
 			$fields[ (string) $name ] = is_array( $row ) ? (string) ( $row['value'] ?? '' ) : (string) $row;
+			$labels[ (string) $name ] = is_array( $row ) ? (string) ( $row['label'] ?? '' ) : '';
 		}
 	}
 	$source = (int) get_post_meta( $submission_id, '_source_post_id', true );
 	return array(
 		'fields' => $fields,
+		'labels' => $labels,
 		'meta'   => array(
 			'post_id'      => (string) $source,
 			'page_url'     => $source > 0 ? (string) get_permalink( $source ) : '',
@@ -71,6 +74,10 @@ function pediment_form_deliver( int $submission_id ): array {
 
 	$dest    = (array) pediment_form_get_destination( $dest_id );
 	$context = pediment_form_build_context( $submission_id );
+
+	if ( 'email' === pediment_form_destination_type( $dest ) ) {
+		return pediment_form_deliver_email( $submission_id, $dest, $context );
+	}
 
 	$url = pediment_form_render_url( (string) ( $dest['url'] ?? '' ), $context );
 	if ( ! pediment_form_url_is_safe( $url ) ) {

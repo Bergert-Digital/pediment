@@ -54,6 +54,26 @@
 			presets = {};
 		}
 
+		// Show only the rows of the chosen destination type. Without JS every
+		// row stays visible and the server reads the fields of the posted type.
+		const type = form.querySelector( '.pf-field-type' );
+		const showType = function () {
+			const current = type ? type.value : 'http';
+			form.querySelectorAll( '.pf-type-http, .pf-type-email' ).forEach(
+				function ( row ) {
+					row.style.display = row.classList.contains(
+						'pf-type-' + current
+					)
+						? ''
+						: 'none';
+				}
+			);
+		};
+		if ( type ) {
+			type.addEventListener( 'change', showType );
+		}
+		showType();
+
 		const picker = form.querySelector( '.pediment-forms-preset' );
 		if ( picker ) {
 			picker.addEventListener( 'change', function () {
