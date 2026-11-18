@@ -1,5 +1,14 @@
 # Changelog
 
+## [6.3.0](https://github.com/Bergert-Digital/pediment/compare/v6.2.0...v6.3.0) (2026-11-18)
+
+
+### Features
+
+* **forms:** add e-mail destination type ([f2a8994](https://github.com/Bergert-Digital/pediment/commit/f2a899420590df191aa2e4cbeb6e8239b17f8f67))
+* **forms:** add e-mail form destinations ([#159](https://github.com/Bergert-Digital/pediment/issues/159)) ([7fb1ec5](https://github.com/Bergert-Digital/pediment/commit/7fb1ec5fc70067f1bc3dde9eec0bb3919387d8d1))
+* **seeder:** seed e-mail form destinations ([26968bf](https://github.com/Bergert-Digital/pediment/commit/26968bf512cf8c72abec553933b145364782db19))
+
 ## [6.2.0](https://github.com/Bergert-Digital/pediment/compare/v6.1.0...v6.2.0) (2026-10-30)
 
 
