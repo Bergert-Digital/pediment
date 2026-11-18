@@ -42,8 +42,8 @@ at the start of every `wp pediment seed` / `wp pediment adopt` run, so an
 operator who just edited the file always sees current results.
 
 "Strictly" includes rejecting keys it doesn't recognise, at both levels: the
-top-level sections are exactly `version`, `pages`, `posts`, `entries`, `media`,
-`navs`, `post_types`, `site`, and the per-entry keys are exactly the ones in
+top-level sections are exactly `version`, `languages`, `pages`, `posts`, `entries`, `media`,
+`navs`, `post_types`, `site`, `forms`, and the per-entry keys are exactly the ones in
 the table below. `'page' =>` instead of `'pages' =>`, or `'front-page' =>`
 instead of `'front_page' =>`, is a `ManifestError` naming the offending key —
 never a section that silently seeds nothing.
@@ -275,6 +275,40 @@ Names a `media` key; must already be declared there. That attachment becomes
 the site's custom logo (`theme_mod: custom_logo`) while the site has no logo
 (`0`, or a file that no longer exists or is in the trash). A logo a person
 chose later stays, even when the seeder uploads the seeded logo again.
+
+### `forms`
+
+Declares e-mail form destinations, so a new site sends its form requests to a
+mailbox from the first submission:
+
+```php
+'forms' => array(
+	'destinations'        => array(
+		'contact-mail' => array(
+			'label'          => 'Contact requests',
+			'to'             => 'sales@example.com, office@example.com',
+			'subject'        => 'Request from {{ field:name }}',
+			'reply_to_field' => 'email',
+		),
+	),
+	'default_destination' => 'contact-mail',
+),
+```
+
+A destination may declare `label`, `to`, `subject`, `reply_to_field` and
+`body_template` (and `type`, which must be `email`). Only e-mail destinations
+seed: an HTTP destination needs secrets, which never go into a theme. Without
+`to`, the destination mails the site's admin e-mail until the owner sets the
+real recipients. The manifest is validated like a destination saved in
+wp-admin: a bad address or a `{{ secret:… }}` token is a `ManifestError`.
+
+The seeder creates a destination once and gives it its identity (`seed_key`
+in the `pediment_form_destinations` option). After that it belongs to the
+site owner, who changes the recipients under Settings → Pediment → Form
+Destinations; the seeder never writes to it again. A deleted destination is
+created again by the next seed. `default_destination` is filled only while
+the site has no default destination that resolves; a default a person chose
+stays.
 
 ## Languages
 
