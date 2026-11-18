@@ -27,7 +27,13 @@ final class Manifest {
 	 * Silently ignoring the rest is a bad failure mode at migration scale:
 	 * `page` instead of `pages` seeds nothing and reports nothing.
 	 */
-	private const SECTIONS = [ 'version', 'languages', 'pages', 'posts', 'entries', 'media', 'navs', 'post_types', 'site' ];
+	private const SECTIONS = [ 'version', 'languages', 'pages', 'posts', 'entries', 'media', 'navs', 'post_types', 'site', 'forms' ];
+
+	/** Keys the `forms` section may declare. */
+	private const FORMS_KEYS = [ 'destinations', 'default_destination' ];
+
+	/** Keys a seeded form destination may declare. Only e-mail destinations seed. */
+	private const FORM_DESTINATION_KEYS = [ 'type', 'label', 'to', 'subject', 'reply_to_field', 'body_template' ];
 
 	/** Keys an entry may declare. Same reasoning: `front-page` must not be a no-op. */
 	private const ENTRY_KEYS = [ 'title', 'slug', 'parent', 'pattern', 'content', 'post_type', 'front_page', 'posts_page', 'menu_order', 'terms', 'languages' ];
@@ -50,6 +56,7 @@ final class Manifest {
 	 * @param array<string,NavSpec>      $navs
 	 * @param array<string,PostTypeSpec> $postTypes
 	 * @param array<string,LanguageSpec> $languages
+	 * @param array<string,array<string,mixed>> $formDestinations
 	 */
 	private function __construct(
 		private string $path,
@@ -60,7 +67,9 @@ final class Manifest {
 		private array $postTypes,
 		private string $siteLogo,
 		private array $languages,
-		private string $defaultLanguage
+		private string $defaultLanguage,
+		private array $formDestinations = [],
+		private string $formDefault = ''
 	) {}
 
 	/**
@@ -192,7 +201,64 @@ final class Manifest {
 			throw new ManifestError( "site.logo: '{$siteLogo}' is not a declared media key." ); // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- exception message for the operator, not echoed output.
 		}
 
-		return new self( $path, $baseDir, $entries, $media, $navs, $postTypes, $siteLogo, $languages, $defaultLanguage );
+		[ $formDestinations, $formDefault ] = self::parseForms( (array) ( $raw['forms'] ?? [] ) );
+
+		return new self( $path, $baseDir, $entries, $media, $navs, $postTypes, $siteLogo, $languages, $defaultLanguage, $formDestinations, $formDefault );
+	}
+
+	/**
+	 * Validate the `forms` section: e-mail destinations keyed by seed key, and
+	 * the key of the one that becomes the default destination.
+	 *
+	 * @param array<string,mixed> $raw
+	 * @return array{0:array<string,array<string,mixed>>,1:string}
+	 * @throws ManifestError When the section fails validation.
+	 */
+	private static function parseForms( array $raw ): array {
+		foreach ( array_keys( $raw ) as $key ) {
+			if ( ! in_array( (string) $key, self::FORMS_KEYS, true ) ) {
+				throw new ManifestError( "forms: unknown key '{$key}'. Allowed: " . implode( ', ', self::FORMS_KEYS ) . '.' ); // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- exception message for the operator, not echoed output.
+			}
+		}
+
+		$destinations = [];
+		foreach ( (array) ( $raw['destinations'] ?? [] ) as $key => $declared ) {
+			$key      = (string) $key;
+			$declared = (array) $declared;
+			$path     = "forms.destinations.{$key}";
+			if ( ! preg_match( '/^[a-z0-9_-]+$/', $key ) ) {
+				throw new ManifestError( "{$path}: the key must use lowercase letters, digits, '-' or '_'." ); // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- exception message for the operator, not echoed output.
+			}
+			foreach ( array_keys( $declared ) as $field ) {
+				if ( ! in_array( (string) $field, self::FORM_DESTINATION_KEYS, true ) ) {
+					throw new ManifestError( "{$path}: unknown key '{$field}'. Allowed: " . implode( ', ', self::FORM_DESTINATION_KEYS ) . '.' ); // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- exception message for the operator, not echoed output.
+				}
+			}
+			if ( 'email' !== ( $declared['type'] ?? 'email' ) ) {
+				throw new ManifestError( "{$path}: only e-mail destinations can be seeded (type 'email'). HTTP destinations need secrets — add them under Settings → Pediment." ); // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- exception message for the operator, not echoed output.
+			}
+
+			// No `to` is allowed: the seeder then sends to the site's admin
+			// e-mail until the owner sets the real recipients.
+			$record = [ 'type' => 'email' ] + array_intersect_key( $declared, array_flip( self::FORM_DESTINATION_KEYS ) );
+			if ( ! array_key_exists( 'to', $declared ) ) {
+				$record['to'] = 'admin@example.com';
+			}
+			foreach ( pediment_form_validate_destination( $record ) as $field => $error ) {
+				throw new ManifestError( "{$path}.{$field}: {$error}" ); // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- exception message for the operator, not echoed output.
+			}
+			if ( ! array_key_exists( 'to', $declared ) ) {
+				unset( $record['to'] );
+			}
+			$destinations[ $key ] = $record;
+		}
+
+		$default = (string) ( $raw['default_destination'] ?? '' );
+		if ( '' !== $default && ! isset( $destinations[ $default ] ) ) {
+			throw new ManifestError( "forms.default_destination: '{$default}' is not a declared form destination." ); // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- exception message for the operator, not echoed output.
+		}
+
+		return [ $destinations, $default ];
 	}
 
 	/**
@@ -577,6 +643,16 @@ final class Manifest {
 
 	public function siteLogo(): string {
 		return $this->siteLogo;
+	}
+
+	/** @return array<string,array<string,mixed>> Seeded form destinations by seed key; a record without `to` mails the admin e-mail. */
+	public function formDestinations(): array {
+		return $this->formDestinations;
+	}
+
+	/** Seed key of the form destination that becomes the default, or ''. */
+	public function formDefault(): string {
+		return $this->formDefault;
 	}
 
 	/** @return array<string,LanguageSpec> Declared site languages, default first; empty when monolingual. */

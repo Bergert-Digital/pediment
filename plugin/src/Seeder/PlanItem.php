@@ -19,6 +19,7 @@ final class PlanItem {
 	public const KIND_ENTRY = 'entry';
 	public const KIND_MEDIA = 'media';
 	public const KIND_NAV   = 'nav';
+	public const KIND_FORM  = 'form';
 
 	/**
 	 * @param array<string,array{from:mixed,to:mixed}> $changes
