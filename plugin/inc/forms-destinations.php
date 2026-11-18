@@ -2,8 +2,10 @@
 /**
  * Destinations registry + validation gate.
  *
- * A destination is a templated outbound HTTP request referenced by id. Admin
- * destinations live in an option; code can register more via filter.
+ * A destination is referenced by id and has a type: `http` (a templated
+ * outbound HTTP request; the default for a record without a type) or `email`
+ * (see forms-email.php). Admin destinations live in an option; code can
+ * register more via filter.
  *
  * @package Pediment
  */
@@ -123,6 +125,10 @@ add_action(
  * @return array<string,string>
  */
 function pediment_form_validate_destination( array $dest ): array {
+	if ( 'email' === pediment_form_destination_type( $dest ) ) {
+		return pediment_form_validate_email_destination( $dest );
+	}
+
 	$errors = array();
 
 	// Note: no id check — ids are auto-assigned on save (see
