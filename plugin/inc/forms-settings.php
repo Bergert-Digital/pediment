@@ -17,6 +17,10 @@ if ( ! defined( 'ABSPATH' ) ) {
  * @return array{ok:bool,message:string}
  */
 function pediment_form_test_destination( array $dest ): array {
+	if ( 'email' === pediment_form_destination_type( $dest ) ) {
+		return pediment_form_test_email_destination( $dest );
+	}
+
 	// Collect every field token referenced across url, body template, and headers.
 	$fields    = array();
 	$scan_srcs = array_merge(
@@ -88,6 +92,63 @@ function pediment_form_test_destination( array $dest ): array {
 }
 
 /**
+ * Test-send an e-mail destination with sample values for every field token.
+ *
+ * @param array<string,mixed> $dest Clean e-mail destination record.
+ * @return array{ok:bool,message:string}
+ */
+function pediment_form_test_email_destination( array $dest ): array {
+	$fields = array();
+	$labels = array();
+	foreach ( array( (string) ( $dest['subject'] ?? '' ), (string) ( $dest['body_template'] ?? '' ) ) as $hay ) {
+		foreach ( pediment_form_extract_tokens( $hay ) as $tok ) {
+			if ( 'field' === $tok['type'] ) {
+				$fields[ $tok['name'] ] = 'sample';
+				$labels[ $tok['name'] ] = $tok['name'];
+			}
+		}
+	}
+	if ( array() === $fields ) {
+		$fields = array( 'message' => __( 'This is a test message from Pediment.', 'pediment' ) );
+		$labels = array( 'message' => __( 'Message', 'pediment' ) );
+	}
+	$context = array(
+		'fields' => $fields,
+		'labels' => $labels,
+		'meta'   => array(
+			'post_id'      => '0',
+			'page_url'     => home_url( '/' ),
+			'submitted_at' => gmdate( 'Y-m-d H:i:s' ),
+			'destination'  => (string) ( $dest['id'] ?? '' ),
+		),
+	);
+
+	$args = pediment_form_mail_args( $dest, $context, 0 );
+	if ( empty( $args['to'] ) ) {
+		return array(
+			'ok'      => false,
+			'message' => __( 'Test not sent: the destination has no valid recipient.', 'pediment' ),
+		);
+	}
+	/* translators: %s: the mail subject. */
+	$args['subject'] = sprintf( __( '[Test] %s', 'pediment' ), $args['subject'] );
+
+	$error = pediment_form_send_mail( $args );
+	if ( '' !== $error ) {
+		return array(
+			'ok'      => false,
+			/* translators: %s: error message from the mail transport. */
+			'message' => sprintf( __( 'Test mail failed: %s', 'pediment' ), $error ),
+		);
+	}
+	return array(
+		'ok'      => true,
+		/* translators: %s: comma-separated recipient addresses. */
+		'message' => sprintf( __( 'Test mail sent to %s. Check the inbox (and the spam folder).', 'pediment' ), implode( ', ', $args['to'] ) ),
+	);
+}
+
+/**
  * Normalize raw destination POST input into a clean record + validation errors.
  *
  * @param array<string,mixed> $raw Raw input (header_keys[]/header_values[] paired).
@@ -117,8 +178,30 @@ function pediment_form_sanitize_destination( array $raw ): array {
 	}
 
 	$raw_id = (string) ( $raw['id'] ?? '' );
-	$dest   = array(
-		'id'            => sanitize_key( trim( (string) preg_replace( '/[^a-z0-9]+/i', '_', $raw_id ), '_' ) ),
+	$id     = sanitize_key( trim( (string) preg_replace( '/[^a-z0-9]+/i', '_', $raw_id ), '_' ) );
+
+	if ( 'email' === ( $raw['type'] ?? '' ) ) {
+		// The settings form posts the mail body as mail_body_template, because the
+		// HTTP body textarea (hidden for this type) posts body_template too.
+		$mail_body = array_key_exists( 'mail_body_template', $raw ) ? $raw['mail_body_template'] : ( $raw['body_template'] ?? '' );
+		$dest      = array(
+			'id'             => $id,
+			'type'           => 'email',
+			'label'          => sanitize_text_field( trim( (string) ( $raw['label'] ?? '' ) ) ),
+			'to'             => array_map( 'sanitize_text_field', pediment_form_split_recipients( $raw['to'] ?? '' ) ),
+			'subject'        => sanitize_text_field( (string) ( $raw['subject'] ?? '' ) ),
+			'reply_to_field' => sanitize_text_field( trim( (string) ( $raw['reply_to_field'] ?? '' ) ) ),
+			'body_template'  => sanitize_textarea_field( (string) $mail_body ),
+		);
+		return array(
+			'dest'   => $dest,
+			'errors' => pediment_form_validate_destination( $dest ),
+		);
+	}
+
+	$dest = array(
+		'id'            => $id,
+		'type'          => 'http',
 		'label'         => sanitize_text_field( trim( (string) ( $raw['label'] ?? '' ) ) ),
 		'method'        => strtoupper( sanitize_text_field( (string) ( $raw['method'] ?? 'POST' ) ) ),
 		'url'           => esc_url_raw( trim( (string) ( $raw['url'] ?? '' ) ), array( 'https' ) ),
@@ -150,6 +233,11 @@ function pediment_form_save_destination( array $dest ): void {
 	$found  = false;
 	foreach ( $stored as $existing ) {
 		if ( is_array( $existing ) && (string) ( $existing['id'] ?? '' ) === $id ) {
+			// The seed identity survives an edit in the settings form, which
+			// never posts it; without it the next seed would create a duplicate.
+			if ( isset( $existing['seed_key'] ) && ! isset( $dest['seed_key'] ) ) {
+				$dest['seed_key'] = $existing['seed_key'];
+			}
 			$next[] = $dest;
 			$found  = true;
 		} else {
@@ -286,18 +374,23 @@ function pediment_form_stash_destination( array $dest ): void {
  * Field defaults for the add/edit destination form.
  *
  * @param string $edit_id Destination id to edit, or '' for add mode.
- * @return array{id:string,label:string,method:string,url:string,content_type:string,headers:array<string,string>,body_template:string,is_edit:bool}
+ * @return array{id:string,type:string,label:string,method:string,url:string,content_type:string,headers:array<string,string>,body_template:string,to:string,subject:string,reply_to_field:string,mail_body_template:string,is_edit:bool}
  */
 function pediment_form_destination_form_values( string $edit_id ): array {
 	$blank = array(
-		'id'            => '',
-		'label'         => '',
-		'method'        => 'POST',
-		'url'           => '',
-		'content_type'  => 'application/json',
-		'headers'       => array(),
-		'body_template' => '',
-		'is_edit'       => false,
+		'id'                 => '',
+		'type'               => 'http',
+		'label'              => '',
+		'method'             => 'POST',
+		'url'                => '',
+		'content_type'       => 'application/json',
+		'headers'            => array(),
+		'body_template'      => '',
+		'to'                 => '',
+		'subject'            => '',
+		'reply_to_field'     => '',
+		'mail_body_template' => '',
+		'is_edit'            => false,
 	);
 
 	// Repopulate after a rejected save or a test send: show the admin's own
@@ -305,18 +398,8 @@ function pediment_form_destination_form_values( string $edit_id ): array {
 	$stash = get_transient( pediment_form_repopulate_key() );
 	if ( is_array( $stash ) ) {
 		delete_transient( pediment_form_repopulate_key() );
-		$sid     = (string) ( $stash['id'] ?? '' );
-		$headers = ( isset( $stash['headers'] ) && is_array( $stash['headers'] ) ) ? $stash['headers'] : array();
-		return array(
-			'id'            => $sid,
-			'label'         => (string) ( $stash['label'] ?? '' ),
-			'method'        => (string) ( $stash['method'] ?? 'POST' ),
-			'url'           => (string) ( $stash['url'] ?? '' ),
-			'content_type'  => (string) ( $stash['content_type'] ?? 'application/json' ),
-			'headers'       => $headers,
-			'body_template' => (string) ( $stash['body_template'] ?? '' ),
-			'is_edit'       => ( '' !== $sid && null !== pediment_form_get_destination( $sid ) ),
-		);
+		$sid = (string) ( $stash['id'] ?? '' );
+		return pediment_form_destination_values_from( $stash, $blank, '' !== $sid && null !== pediment_form_get_destination( $sid ) );
 	}
 
 	if ( '' === $edit_id ) {
@@ -327,17 +410,40 @@ function pediment_form_destination_form_values( string $edit_id ): array {
 		return $blank;
 	}
 	$d       = $destinations[ $edit_id ];
-	$headers = ( isset( $d['headers'] ) && is_array( $d['headers'] ) ) ? $d['headers'] : array();
-	return array(
-		'id'            => (string) ( $d['id'] ?? $edit_id ),
-		'label'         => (string) ( $d['label'] ?? '' ),
-		'method'        => (string) ( $d['method'] ?? 'POST' ),
-		'url'           => (string) ( $d['url'] ?? '' ),
-		'content_type'  => (string) ( $d['content_type'] ?? 'application/json' ),
-		'headers'       => $headers,
-		'body_template' => (string) ( $d['body_template'] ?? '' ),
-		'is_edit'       => true,
-	);
+	$d['id'] = (string) ( $d['id'] ?? $edit_id );
+	return pediment_form_destination_values_from( $d, $blank, true );
+}
+
+/**
+ * Map a destination record onto the form's field values. The body of an
+ * e-mail destination goes to the mail body field, not the HTTP one.
+ *
+ * @param array<string,mixed>  $d       Destination record (stored or stashed).
+ * @param array<string,mixed>  $blank   Defaults.
+ * @param bool                 $is_edit Whether the record is an existing destination.
+ * @return array<string,mixed>
+ */
+function pediment_form_destination_values_from( array $d, array $blank, bool $is_edit ): array {
+	$values            = $blank;
+	$values['id']      = (string) ( $d['id'] ?? '' );
+	$values['type']    = pediment_form_destination_type( $d );
+	$values['label']   = (string) ( $d['label'] ?? '' );
+	$values['is_edit'] = $is_edit;
+
+	if ( 'email' === $values['type'] ) {
+		$values['to']                 = implode( ', ', pediment_form_split_recipients( $d['to'] ?? '' ) );
+		$values['subject']            = (string) ( $d['subject'] ?? '' );
+		$values['reply_to_field']     = (string) ( $d['reply_to_field'] ?? '' );
+		$values['mail_body_template'] = (string) ( $d['body_template'] ?? '' );
+		return $values;
+	}
+
+	$values['method']        = (string) ( $d['method'] ?? 'POST' );
+	$values['url']           = (string) ( $d['url'] ?? '' );
+	$values['content_type']  = (string) ( $d['content_type'] ?? 'application/json' );
+	$values['headers']       = ( isset( $d['headers'] ) && is_array( $d['headers'] ) ) ? $d['headers'] : array();
+	$values['body_template'] = (string) ( $d['body_template'] ?? '' );
+	return $values;
 }
 
 /**
@@ -359,8 +465,8 @@ function pediment_form_render_destinations_tab(): void {
 		<thead><tr>
 			<th><?php esc_html_e( 'ID', 'pediment' ); ?></th>
 			<th><?php esc_html_e( 'Label', 'pediment' ); ?></th>
-			<th><?php esc_html_e( 'Method', 'pediment' ); ?></th>
-			<th><?php esc_html_e( 'URL', 'pediment' ); ?></th>
+			<th><?php esc_html_e( 'Type', 'pediment' ); ?></th>
+			<th><?php esc_html_e( 'Target', 'pediment' ); ?></th>
 			<th></th>
 		</tr></thead>
 		<tbody>
@@ -368,8 +474,13 @@ function pediment_form_render_destinations_tab(): void {
 				<tr>
 					<td><code><?php echo esc_html( $id ); ?></code></td>
 					<td><?php echo esc_html( (string) ( $d['label'] ?? '' ) ); ?></td>
-					<td><?php echo esc_html( (string) ( $d['method'] ?? '' ) ); ?></td>
-					<td><?php echo esc_html( (string) ( $d['url'] ?? '' ) ); ?></td>
+					<?php if ( 'email' === pediment_form_destination_type( $d ) ) : ?>
+						<td><?php esc_html_e( 'E-mail', 'pediment' ); ?></td>
+						<td><?php echo esc_html( implode( ', ', pediment_form_split_recipients( $d['to'] ?? '' ) ) ); ?></td>
+					<?php else : ?>
+						<td><?php esc_html_e( 'HTTP', 'pediment' ); ?></td>
+						<td><?php echo esc_html( trim( (string) ( $d['method'] ?? '' ) . ' ' . (string) ( $d['url'] ?? '' ) ) ); ?></td>
+					<?php endif; ?>
 					<td>
 						<a href="<?php echo esc_url( add_query_arg( 'edit', $id, pediment_settings_page_url( 'destinations' ) ) ); ?>" class="button-link"><?php esc_html_e( 'Edit', 'pediment' ); ?></a>
 						<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" style="display:inline">
@@ -402,6 +513,16 @@ function pediment_form_render_destinations_tab(): void {
 		<?php wp_nonce_field( 'pediment_form_save_destination' ); ?>
 		<table class="form-table" role="presentation">
 			<tr>
+				<th scope="row"><label for="pf-type"><?php esc_html_e( 'Type', 'pediment' ); ?></label></th>
+				<td>
+					<select id="pf-type" name="type" class="pf-field-type">
+						<option value="http" <?php selected( $values['type'], 'http' ); ?>><?php esc_html_e( 'HTTP request', 'pediment' ); ?></option>
+						<option value="email" <?php selected( $values['type'], 'email' ); ?>><?php esc_html_e( 'E-mail', 'pediment' ); ?></option>
+					</select>
+					<p class="description"><?php esc_html_e( 'E-mail sends each submission with the site\'s mail setup (wp_mail). Use a mail plugin to set SMTP.', 'pediment' ); ?></p>
+				</td>
+			</tr>
+			<tr class="pf-type-http">
 				<th scope="row"><label><?php esc_html_e( 'Start from preset', 'pediment' ); ?></label></th>
 				<td>
 					<select class="pediment-forms-preset">
@@ -427,7 +548,7 @@ function pediment_form_render_destinations_tab(): void {
 				<th scope="row"><label for="pf-label"><?php esc_html_e( 'Label', 'pediment' ); ?></label></th>
 				<td><input type="text" id="pf-label" name="label" class="regular-text" value="<?php echo esc_attr( $values['label'] ); ?>" /></td>
 			</tr>
-			<tr>
+			<tr class="pf-type-http">
 				<th scope="row"><label for="pf-method"><?php esc_html_e( 'Method', 'pediment' ); ?></label></th>
 				<td>
 					<select id="pf-method" name="method" class="pf-field-method">
@@ -437,11 +558,11 @@ function pediment_form_render_destinations_tab(): void {
 					</select>
 				</td>
 			</tr>
-			<tr>
+			<tr class="pf-type-http">
 				<th scope="row"><label for="pf-url"><?php esc_html_e( 'URL', 'pediment' ); ?></label></th>
 				<td><input type="url" id="pf-url" name="url" class="large-text code pf-field-url" placeholder="https://…" value="<?php echo esc_attr( $values['url'] ); ?>" /></td>
 			</tr>
-			<tr>
+			<tr class="pf-type-http">
 				<th scope="row"><label for="pf-ct"><?php esc_html_e( 'Content type', 'pediment' ); ?></label></th>
 				<td>
 					<select id="pf-ct" name="content_type" class="pf-field-content_type">
@@ -451,7 +572,7 @@ function pediment_form_render_destinations_tab(): void {
 					</select>
 				</td>
 			</tr>
-			<tr>
+			<tr class="pf-type-http">
 				<th scope="row"><?php esc_html_e( 'Headers', 'pediment' ); ?></th>
 				<td class="pf-headers">
 					<div class="pf-headers-rows">
@@ -465,11 +586,39 @@ function pediment_form_render_destinations_tab(): void {
 					<button type="button" class="button pf-add-header"><?php esc_html_e( 'Add header', 'pediment' ); ?></button>
 				</td>
 			</tr>
-			<tr>
+			<tr class="pf-type-http">
 				<th scope="row"><label for="pf-body"><?php esc_html_e( 'Body template', 'pediment' ); ?></label></th>
 				<td>
 					<textarea id="pf-body" name="body_template" rows="6" class="large-text code pf-field-body_template"><?php echo esc_textarea( $values['body_template'] ); ?></textarea>
 					<p class="description"><?php esc_html_e( 'Tokens: {{ field:NAME }} {{ all_fields }} {{ meta:post_id|page_url|submitted_at|destination }} {{ secret:NAME }}', 'pediment' ); ?></p>
+				</td>
+			</tr>
+			<tr class="pf-type-email">
+				<th scope="row"><label for="pf-to"><?php esc_html_e( 'Recipients', 'pediment' ); ?></label></th>
+				<td>
+					<input type="text" id="pf-to" name="to" class="large-text" placeholder="sales@example.com, office@example.com" value="<?php echo esc_attr( $values['to'] ); ?>" />
+					<p class="description"><?php esc_html_e( 'One or more addresses, separated by commas.', 'pediment' ); ?></p>
+				</td>
+			</tr>
+			<tr class="pf-type-email">
+				<th scope="row"><label for="pf-subject"><?php esc_html_e( 'Subject', 'pediment' ); ?></label></th>
+				<td>
+					<input type="text" id="pf-subject" name="subject" class="large-text" placeholder="<?php echo esc_attr( pediment_form_default_mail_subject() ); ?>" value="<?php echo esc_attr( $values['subject'] ); ?>" />
+					<p class="description"><?php esc_html_e( 'Empty uses the placeholder. Tokens allowed, e.g. {{ field:name }}.', 'pediment' ); ?></p>
+				</td>
+			</tr>
+			<tr class="pf-type-email">
+				<th scope="row"><label for="pf-reply-to"><?php esc_html_e( 'Reply-To field', 'pediment' ); ?></label></th>
+				<td>
+					<input type="text" id="pf-reply-to" name="reply_to_field" class="regular-text code" placeholder="email" value="<?php echo esc_attr( $values['reply_to_field'] ); ?>" />
+					<p class="description"><?php esc_html_e( 'Name of the form field with the visitor\'s e-mail address. A reply then goes to the visitor.', 'pediment' ); ?></p>
+				</td>
+			</tr>
+			<tr class="pf-type-email">
+				<th scope="row"><label for="pf-mail-body"><?php esc_html_e( 'Message', 'pediment' ); ?></label></th>
+				<td>
+					<textarea id="pf-mail-body" name="mail_body_template" rows="6" class="large-text code"><?php echo esc_textarea( $values['mail_body_template'] ); ?></textarea>
+					<p class="description"><?php esc_html_e( 'Plain text. Empty sends one "Label: value" line per field, then the page, the time and a link to the submission. Tokens: {{ field:NAME }} {{ all_fields }} {{ meta:post_id|page_url|submitted_at|destination }}', 'pediment' ); ?></p>
 				</td>
 			</tr>
 		</table>

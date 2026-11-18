@@ -171,7 +171,7 @@ function pediment_form_delivery_label( int $post_id ): string {
 		'no_destination' => __( 'No destination', 'pediment' ),
 	);
 	$text   = $labels[ $status ] ?? ( '' !== $status ? $status : __( 'Pending', 'pediment' ) );
-	if ( '' !== $http && 'sent' !== $status ) {
+	if ( '' !== $http && '0' !== $http && 'sent' !== $status ) {
 		$text .= ' (' . $http . ')';
 	}
 	return $text;
@@ -374,3 +374,139 @@ function pediment_form_handle_retry(): void {
 	wp_safe_redirect( add_query_arg( array( 'post_type' => PEDIMENT_FORM_CPT ), admin_url( 'edit.php' ) ) );
 	exit;
 }
+
+add_filter( 'bulk_actions-edit-' . PEDIMENT_FORM_CPT, 'pediment_form_register_bulk_retry' );
+
+/**
+ * Offer "Retry delivery" as a bulk action, so submissions stored before a
+ * destination existed can be sent in one step.
+ *
+ * @param array<string,string> $actions Bulk actions.
+ * @return array<string,string>
+ */
+function pediment_form_register_bulk_retry( array $actions ): array {
+	if ( current_user_can( 'manage_options' ) ) {
+		$actions['pediment_retry'] = __( 'Retry delivery', 'pediment' );
+	}
+	return $actions;
+}
+
+add_filter( 'handle_bulk_actions-edit-' . PEDIMENT_FORM_CPT, 'pediment_form_handle_bulk_retry', 10, 3 );
+
+/**
+ * Re-attempt delivery for every selected submission that is not sent yet.
+ *
+ * @param string     $redirect Redirect URL.
+ * @param string     $action   Bulk action.
+ * @param array<int> $ids      Selected post ids.
+ * @return string
+ */
+function pediment_form_handle_bulk_retry( string $redirect, string $action, array $ids ): string {
+	if ( 'pediment_retry' !== $action || ! current_user_can( 'manage_options' ) ) {
+		return $redirect;
+	}
+	$sent = 0;
+	foreach ( array_map( 'absint', $ids ) as $id ) {
+		if ( PEDIMENT_FORM_CPT !== get_post_type( $id ) || 'sent' === (string) get_post_meta( $id, '_delivery_status', true ) ) {
+			continue;
+		}
+		$result = pediment_form_deliver( $id );
+		if ( 'sent' === $result['status'] ) {
+			++$sent;
+		}
+	}
+	return add_query_arg( 'pediment_retried', $sent, $redirect );
+}
+
+/**
+ * Number of stored submissions that nobody was told about because no
+ * destination resolved when they came in.
+ *
+ * @return int
+ */
+function pediment_form_undelivered_count(): int {
+	$query = new WP_Query(
+		array(
+			'post_type'              => PEDIMENT_FORM_CPT,
+			'post_status'            => 'any',
+			'posts_per_page'         => 1,
+			'fields'                 => 'ids',
+			'update_post_meta_cache' => false,
+			'update_post_term_cache' => false,
+			// phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query -- admin-only count, runs only while no default destination is set.
+			'meta_query'             => array(
+				array(
+					'key'   => '_delivery_status',
+					'value' => 'no_destination',
+				),
+			),
+		)
+	);
+	return (int) $query->found_posts;
+}
+
+/**
+ * Text of the "submissions without destination" warning, or '' when there is
+ * nothing to warn about: a default destination exists, no submission is
+ * affected, or the site turned the warning off with the
+ * `pediment_form_warn_no_destination` filter (a store-only site).
+ *
+ * @return string
+ */
+function pediment_form_no_destination_notice(): string {
+	if ( ! apply_filters( 'pediment_form_warn_no_destination', true ) ) {
+		return '';
+	}
+	if ( '' !== pediment_form_resolve_destination_id( '' ) ) {
+		return '';
+	}
+	$count = pediment_form_undelivered_count();
+	if ( $count < 1 ) {
+		return '';
+	}
+	return sprintf(
+		/* translators: %d: number of form submissions. */
+		_n(
+			'%d form submission was stored, but nobody was notified: the site has no default form destination.',
+			'%d form submissions were stored, but nobody was notified: the site has no default form destination.',
+			$count,
+			'pediment'
+		),
+		$count
+	);
+}
+
+add_action(
+	'admin_notices',
+	function () {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			return;
+		}
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only result count of a bulk action that checked its own nonce.
+		if ( isset( $_GET['pediment_retried'] ) ) {
+			$sent = absint( wp_unslash( $_GET['pediment_retried'] ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+			printf(
+				'<div class="notice notice-info is-dismissible"><p>%s</p></div>',
+				esc_html(
+					sprintf(
+						/* translators: %d: number of submissions delivered. */
+						_n( '%d submission delivered.', '%d submissions delivered.', $sent, 'pediment' ),
+						$sent
+					)
+				)
+			);
+		}
+		$text = pediment_form_no_destination_notice();
+		if ( '' === $text ) {
+			return;
+		}
+		printf(
+			'<div class="notice notice-warning"><p>%1$s <a href="%2$s">%3$s</a> · <a href="%4$s">%5$s</a></p></div>',
+			esc_html( $text ),
+			esc_url( pediment_settings_page_url( 'general' ) ),
+			esc_html__( 'Set a default destination', 'pediment' ),
+			esc_url( admin_url( 'edit.php?post_type=' . PEDIMENT_FORM_CPT ) ),
+			esc_html__( 'Show submissions', 'pediment' )
+		);
+	}
+);
