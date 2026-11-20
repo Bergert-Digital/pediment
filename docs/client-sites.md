@@ -333,8 +333,7 @@ anything else — carries no `_pediment_seed_key` on any of its content, and
 [docs/seeding.md](seeding.md)). Running `wp pediment seed` against such a
 site with no prior step sees no existing rows at all and plans a `CREATE`
 for every manifest entry — duplicating the whole site rather than adopting
-it. The order (`docs/superpowers/specs/2026-08-05-migration-step6-design.md`
-§3.3):
+it. The order:
 
 1. Install `pediment-plugin.zip` and activate it (wp-admin).
 2. Upload and activate the standalone client theme (wp-admin).

@@ -412,7 +412,7 @@ final class NavSeeder {
 	 * row changed. Same mechanism Applier::linkTranslationGroups() documents
 	 * for entries (there: an ORPHAN plan item excluded from $ids), reached
 	 * here by a different route (an empty-language bucket, not a plan
-	 * action). See docs/BACKLOG.md (Medium, step-4 Task 10 review).
+	 * action).
 	 *
 	 * @param array<string,int> $ids     navKey|language => post ID
 	 * @param string[]          $touched navKey|language map keys this run created or tagged.
@@ -645,7 +645,7 @@ final class NavSeeder {
 	 * legacy nav is the case that must work. It matches how entries have always
 	 * behaved — `StateReader::languageOf()` resolves an untagged post to the
 	 * default language and `Applier::repairLanguage()` tags it — so navs stop
-	 * being the outlier. See docs/BACKLOG.md.
+	 * being the outlier.
 	 */
 	private function languageOf( int $postId ): string {
 		foreach ( $this->lang->languages() as $candidate ) {

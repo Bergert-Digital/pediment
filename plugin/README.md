@@ -47,9 +47,9 @@ no standalone wp-env for the plugin. Run everything below from the **repo root**
 ### First-time setup
 
 ```bash
-npm install
+npm ci
 composer install -d plugin
-( cd plugin && npm install && npm run build )
+( cd plugin && npm ci && npm run build )
 ```
 
 ### Start wp-env
@@ -97,3 +97,8 @@ cd plugin && npm run e2e
 composer lint
 composer lint:fix
 ```
+
+## License
+
+GPL-2.0-or-later. See [LICENSING.md](../LICENSING.md). Contributions are welcome; see
+[CONTRIBUTING.md](../CONTRIBUTING.md).

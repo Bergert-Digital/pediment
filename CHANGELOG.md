@@ -5,39 +5,39 @@
 
 ### Features
 
-* **forms:** add e-mail destination type ([f2a8994](https://github.com/Bergert-Digital/pediment/commit/f2a899420590df191aa2e4cbeb6e8239b17f8f67))
-* **forms:** add e-mail form destinations ([#159](https://github.com/Bergert-Digital/pediment/issues/159)) ([7fb1ec5](https://github.com/Bergert-Digital/pediment/commit/7fb1ec5fc70067f1bc3dde9eec0bb3919387d8d1))
-* **seeder:** seed e-mail form destinations ([26968bf](https://github.com/Bergert-Digital/pediment/commit/26968bf512cf8c72abec553933b145364782db19))
+* **forms:** add e-mail destination type ([ae81b9c](https://github.com/Bergert-Digital/pediment/commit/ae81b9c28a5b899b2fe0d82482a8f55dfbba0d2c))
+* **forms:** add e-mail form destinations ([#159](https://github.com/Bergert-Digital/pediment/issues/159)) ([625b8fe](https://github.com/Bergert-Digital/pediment/commit/625b8fe2a906b7683b3414bf645905817f27183f))
+* **seeder:** seed e-mail form destinations ([f035afa](https://github.com/Bergert-Digital/pediment/commit/f035afaecfd5813f9bdd45b2acbbcd85c060716b))
 
 ## [6.2.0](https://github.com/Bergert-Digital/pediment/compare/v6.1.0...v6.2.0) (2026-10-30)
 
 
 ### Features
 
-* **mcp:** add an AI agents tab that connects an agent ([83bb6fe](https://github.com/Bergert-Digital/pediment/commit/83bb6fe4414407e86348599fdc6a2c70bf4d28b5))
-* **mcp:** collapse the connect form after a setup ([fc1d5f4](https://github.com/Bergert-Digital/pediment/commit/fc1d5f45d6c54cf032561a54380f33f4350c6644))
-* **mcp:** connect AI agents from the Pediment settings page ([#153](https://github.com/Bergert-Digital/pediment/issues/153)) ([c9de7ed](https://github.com/Bergert-Digital/pediment/commit/c9de7ed97f74138c7bd3ff969a40c6bf4c372058))
-* **mcp:** show agent setup in Claude and Codex tabs ([388e4f8](https://github.com/Bergert-Digital/pediment/commit/388e4f8bff3d02d5ff417ca653ed4c59c338b5ac))
-* **settings:** move the settings page to ?page=pediment ([4e9f851](https://github.com/Bergert-Digital/pediment/commit/4e9f8511553be6bed14dd1ecf684bbc062cd2e63))
-* **settings:** rename the settings entry to Pediment ([b8853bb](https://github.com/Bergert-Digital/pediment/commit/b8853bbca7f97dd4a75cdd92dfb24ec304e93c61))
+* **mcp:** add an AI agents tab that connects an agent ([25f8df8](https://github.com/Bergert-Digital/pediment/commit/25f8df831db2e7be9c9b21b3416d07708c25785c))
+* **mcp:** collapse the connect form after a setup ([c2b787e](https://github.com/Bergert-Digital/pediment/commit/c2b787e97956dc0c16725e702b7ccbc488e754b4))
+* **mcp:** connect AI agents from the Pediment settings page ([#153](https://github.com/Bergert-Digital/pediment/issues/153)) ([0aa6b42](https://github.com/Bergert-Digital/pediment/commit/0aa6b42ec1a65b345de181f3539c18b82eac56cf))
+* **mcp:** show agent setup in Claude and Codex tabs ([6d25a39](https://github.com/Bergert-Digital/pediment/commit/6d25a3925efb60fee1cbfe5da5962caa54634d84))
+* **settings:** move the settings page to ?page=pediment ([8096d23](https://github.com/Bergert-Digital/pediment/commit/8096d236fca9a42281ddbcdf18fd83006a603da3))
+* **settings:** rename the settings entry to Pediment ([f342c02](https://github.com/Bergert-Digital/pediment/commit/f342c0234dfcdcc1a06f6c4311161f18a95aac98))
 
 
 ### Bug Fixes
 
-* **blocks:** no empty href or open tags from hostile input ([e76fcbe](https://github.com/Bergert-Digital/pediment/commit/e76fcbed4c49d3b4833ac9a8c077b5a09b7200b1))
-* honest seed reports, safe empty blocks, multilingual CI leg ([#148](https://github.com/Bergert-Digital/pediment/issues/148)) ([d53ef60](https://github.com/Bergert-Digital/pediment/commit/d53ef608e96208e943c50130215a59399812c58c))
-* **seeder:** name an unconfigured language in adopt ([b6f1e76](https://github.com/Bergert-Digital/pediment/commit/b6f1e76e925e889b74970faa198ed2bf03cba143))
-* **seeder:** name planning problems as such, not verification ([1b647e2](https://github.com/Bergert-Digital/pediment/commit/1b647e204793458c6f932d3bbaf2659add0606e3))
-* **seeder:** stop calling a real run that wrote nothing a dry run ([abcd650](https://github.com/Bergert-Digital/pediment/commit/abcd6503f01b3a727b350bbbbf6f7d3a290193c5))
+* **blocks:** no empty href or open tags from hostile input ([6d7c13f](https://github.com/Bergert-Digital/pediment/commit/6d7c13f8c458bffbea1c16d6b6e27f2ed02df45e))
+* honest seed reports, safe empty blocks, multilingual CI leg ([#148](https://github.com/Bergert-Digital/pediment/issues/148)) ([bd64e55](https://github.com/Bergert-Digital/pediment/commit/bd64e5543fb0efb74497c7df00507eab5ad1ce93))
+* **seeder:** name an unconfigured language in adopt ([cbb2247](https://github.com/Bergert-Digital/pediment/commit/cbb2247d0ae47f6d925676f5c039a821283331ee))
+* **seeder:** name planning problems as such, not verification ([362a7aa](https://github.com/Bergert-Digital/pediment/commit/362a7aa64ef687c5def0fa37f061a21dd6d52943))
+* **seeder:** stop calling a real run that wrote nothing a dry run ([1e99ec7](https://github.com/Bergert-Digital/pediment/commit/1e99ec7bd31192aeaa78c9c93db77951f12e360c))
 
 ## [6.1.0](https://github.com/Bergert-Digital/pediment/compare/v6.0.0...v6.1.0) (2026-10-28)
 
 
 ### Features
 
-* **mcp:** serve posts and custom post types ([3ec23ec](https://github.com/Bergert-Digital/pediment/commit/3ec23ec3ef0ae760f55800a3aa4de27763565c88))
-* **mcp:** serve posts and custom post types ([#145](https://github.com/Bergert-Digital/pediment/issues/145)) ([fffff21](https://github.com/Bergert-Digital/pediment/commit/fffff211015ffc4b05839dee7164140bfcc19060))
-* **mcp:** write excerpt, menu order and featured image ([b571ccb](https://github.com/Bergert-Digital/pediment/commit/b571ccbf14ff2cc427f0a28d7269be0860560643))
+* **mcp:** serve posts and custom post types ([d38c8b2](https://github.com/Bergert-Digital/pediment/commit/d38c8b20a5e2090187d8b77c88c00a80a42b4aac))
+* **mcp:** serve posts and custom post types ([#145](https://github.com/Bergert-Digital/pediment/issues/145)) ([654005a](https://github.com/Bergert-Digital/pediment/commit/654005a611e35613ab7eea8a3c8d2767b9f57f83))
+* **mcp:** write excerpt, menu order and featured image ([fe7a9c1](https://github.com/Bergert-Digital/pediment/commit/fe7a9c18b51f53f5b6bf5a7ca247c9df5a497aee))
 
 ## [6.0.0](https://github.com/Bergert-Digital/pediment/compare/v5.0.0...v6.0.0) (2026-10-21)
 
@@ -49,13 +49,13 @@
 
 ### Features
 
-* Pediment 6 removes the legacy-block converter ([#139](https://github.com/Bergert-Digital/pediment/issues/139)) ([fca82ff](https://github.com/Bergert-Digital/pediment/commit/fca82ff8ffad47c5cf35083c6fe87d4687519130))
-* remove the legacy-block converter ([48cf13c](https://github.com/Bergert-Digital/pediment/commit/48cf13c6cf99f33c9089b039798d55c559e5dcee))
+* Pediment 6 removes the legacy-block converter ([#139](https://github.com/Bergert-Digital/pediment/issues/139)) ([c2f70af](https://github.com/Bergert-Digital/pediment/commit/c2f70af4ca2b2950f3f0186ad50d8f5fca7748d4))
+* remove the legacy-block converter ([b06ad56](https://github.com/Bergert-Digital/pediment/commit/b06ad56c24dae4f1bbef928429856b80f2ecec20))
 
 
 ### Refactors
 
-* **policy:** stop naming the converter ([4ba89ee](https://github.com/Bergert-Digital/pediment/commit/4ba89ee6a3e36670d1ef82cbbfe96a5100e2935a))
+* **policy:** stop naming the converter ([d5757f4](https://github.com/Bergert-Digital/pediment/commit/d5757f46f83335bb3e4d7194b552ea81ed37dc3a))
 
 ## [5.0.0](https://github.com/Bergert-Digital/pediment/compare/v4.4.0...v5.0.0) (2026-10-20)
 
@@ -67,76 +67,76 @@
 
 ### Features
 
-* Pediment 5 removes the 18 legacy blocks ([#132](https://github.com/Bergert-Digital/pediment/issues/132)) ([2fd4afe](https://github.com/Bergert-Digital/pediment/commit/2fd4afe8cbbc02f0417d0921d8859b09ccc89a12))
-* **policy:** reject legacy blocks in page writes ([83644e2](https://github.com/Bergert-Digital/pediment/commit/83644e2ab6b11cb637b73c364df4e240e98bde47))
-* remove the 18 legacy blocks ([93c600d](https://github.com/Bergert-Digital/pediment/commit/93c600d57dbb00f54e1dfa714804cfe935a6526a))
-* warn admins about leftover legacy content ([a462f07](https://github.com/Bergert-Digital/pediment/commit/a462f077d4e9d3e1eac81f5eb29301d8a6a87a58))
+* Pediment 5 removes the 18 legacy blocks ([#132](https://github.com/Bergert-Digital/pediment/issues/132)) ([983936b](https://github.com/Bergert-Digital/pediment/commit/983936b3406a1ff2b204fa4a6892ac026e354744))
+* **policy:** reject legacy blocks in page writes ([e55e7b7](https://github.com/Bergert-Digital/pediment/commit/e55e7b785149be33c4a75bc09dbf81bfa52a4044))
+* remove the 18 legacy blocks ([400f3b7](https://github.com/Bergert-Digital/pediment/commit/400f3b7ceacd5238933549f98522643f0fa72c79))
+* warn admins about leftover legacy content ([cd99ae7](https://github.com/Bergert-Digital/pediment/commit/cd99ae7793e751b6218f9e76a1d3bf6e504a5595))
 
 
 ### Refactors
 
-* **editor:** load the accent format for all blocks ([405ffbf](https://github.com/Bergert-Digital/pediment/commit/405ffbfc127e103217f12fb4cebb6c7b4043d49b))
-* keep hero variants for the converter only ([2c641ac](https://github.com/Bergert-Digital/pediment/commit/2c641ac08b43d4a5891ccfb46cf5eb60e6bd84f6))
+* **editor:** load the accent format for all blocks ([7d99485](https://github.com/Bergert-Digital/pediment/commit/7d994853c215ae8b0d9651501c16bb74125e1c26))
+* keep hero variants for the converter only ([b40d099](https://github.com/Bergert-Digital/pediment/commit/b40d0993f7ae9bf7e4cb036c09e4ca77c484b637))
 
 ## [4.4.0](https://github.com/Bergert-Digital/pediment/compare/v4.3.0...v4.4.0) (2026-10-19)
 
 
 ### Features
 
-* **kit:** validate blocks against WordPress 7.1 ([c6637e9](https://github.com/Bergert-Digital/pediment/commit/c6637e9adcb30972d70e738ca2b277f53eeaed9c))
-* **kit:** validate blocks against WordPress 7.1 ([#130](https://github.com/Bergert-Digital/pediment/issues/130)) ([c314809](https://github.com/Bergert-Digital/pediment/commit/c314809855bfef0eeb4f965944172408371e17d6))
+* **kit:** validate blocks against WordPress 7.1 ([7772e81](https://github.com/Bergert-Digital/pediment/commit/7772e8199918a90cccdffebdcdbf4b9e3c4916ca))
+* **kit:** validate blocks against WordPress 7.1 ([#130](https://github.com/Bergert-Digital/pediment/issues/130)) ([6b5adb8](https://github.com/Bergert-Digital/pediment/commit/6b5adb8c6d48f436b02b58fb1e799e382c7c930b))
 
 
 ### Bug Fixes
 
-* **convert:** note dropped testimonial initials ([dd135b7](https://github.com/Bergert-Digital/pediment/commit/dd135b7d73451f5792fa65a9712b6fbf6a7ded9b))
-* **kit:** pin WordPress 7.0 validator to element 6.40.1 ([686425e](https://github.com/Bergert-Digital/pediment/commit/686425e21f667507d86c296f951f0c3d7c53b358))
+* **convert:** note dropped testimonial initials ([9659a3e](https://github.com/Bergert-Digital/pediment/commit/9659a3e43bc8839cea19178e75f161fa804ceda0))
+* **kit:** pin WordPress 7.0 validator to element 6.40.1 ([f6ae641](https://github.com/Bergert-Digital/pediment/commit/f6ae641a50e8153ee8e9bd5da2601c8b0d59def2))
 
 ## [4.3.0](https://github.com/Bergert-Digital/pediment/compare/v4.2.0...v4.3.0) (2026-10-19)
 
 
 ### Features
 
-* add pediment/icon and convert feature icons to it ([d249f10](https://github.com/Bergert-Digital/pediment/commit/d249f1044a5c8a7761d7c369579d84934af654ea))
-* **convert:** mark converted card links with a class ([ed9f6cf](https://github.com/Bergert-Digital/pediment/commit/ed9f6cfdaf88413e7ac2042a681f46c03a560bf9))
-* pediment/icon block and centred cards for conversion ([#128](https://github.com/Bergert-Digital/pediment/issues/128)) ([6ab0acd](https://github.com/Bergert-Digital/pediment/commit/6ab0acdb44f2414e4d1c72519bb89427149a9bf7))
-* reveal converted cards, steps and FAQ on scroll ([8039a5e](https://github.com/Bergert-Digital/pediment/commit/8039a5e58f8cd561b386abe7299a167301a0e00f))
+* add pediment/icon and convert feature icons to it ([d4fdbee](https://github.com/Bergert-Digital/pediment/commit/d4fdbeebe704334058af728e7124c00a43652239))
+* **convert:** mark converted card links with a class ([a72b313](https://github.com/Bergert-Digital/pediment/commit/a72b3138333a3ed8b4a052b4f3a75f3298ce13c1))
+* pediment/icon block and centred cards for conversion ([#128](https://github.com/Bergert-Digital/pediment/issues/128)) ([bd5583e](https://github.com/Bergert-Digital/pediment/commit/bd5583e99d1964b6e1b7823e23d181d1c28fcb7e))
+* reveal converted cards, steps and FAQ on scroll ([bfb6757](https://github.com/Bergert-Digital/pediment/commit/bfb675736e55f5bebea704ed8b7ad079b06076e3))
 
 
 ### Bug Fixes
 
-* **convert:** keep hero stat metrics start-aligned ([dd33e9b](https://github.com/Bergert-Digital/pediment/commit/dd33e9b11e9ac283c4b9ef90a13fb9a46ce736df))
-* **styles:** centre the card through typography.textAlign ([8ccd9a7](https://github.com/Bergert-Digital/pediment/commit/8ccd9a798f6fa822f6596bf0b8ab1bce62ebc361))
+* **convert:** keep hero stat metrics start-aligned ([ce74d6e](https://github.com/Bergert-Digital/pediment/commit/ce74d6e667e1596cc2bc39256cd108f11ae5a2da))
+* **styles:** centre the card through typography.textAlign ([c1e194a](https://github.com/Bergert-Digital/pediment/commit/c1e194a720170c90a739ebf1e3b740373e2febe7))
 
 
 ### Refactors
 
-* **convert:** centre feature cards in the card style ([678d398](https://github.com/Bergert-Digital/pediment/commit/678d39833bd8aaa4543096658dbda66622d31733))
+* **convert:** centre feature cards in the card style ([ab431f4](https://github.com/Bergert-Digital/pediment/commit/ab431f41831d8c963eb870fbc67b1ecff1267000))
 
 ## [4.2.0](https://github.com/Bergert-Digital/pediment/compare/v4.1.0...v4.2.0) (2026-10-16)
 
 
 ### Features
 
-* **convert:** mark converted section heads with a class ([5a70f22](https://github.com/Bergert-Digital/pediment/commit/5a70f22f8cc478ae21b6b460d073787c3f957e99))
-* **convert:** mark converted section heads with a class ([#126](https://github.com/Bergert-Digital/pediment/issues/126)) ([88d6c4e](https://github.com/Bergert-Digital/pediment/commit/88d6c4ee5a47a87f4e7d389fab666ccccf44fe57))
+* **convert:** mark converted section heads with a class ([31e9911](https://github.com/Bergert-Digital/pediment/commit/31e991144940496fcb7d850ff32311c75276e537))
+* **convert:** mark converted section heads with a class ([#126](https://github.com/Bergert-Digital/pediment/issues/126)) ([5447cc6](https://github.com/Bergert-Digital/pediment/commit/5447cc62f3f13e499168d8c56b7109f6305eca82))
 
 ## [4.1.0](https://github.com/Bergert-Digital/pediment/compare/v4.0.0...v4.1.0) (2026-10-16)
 
 
 ### Features
 
-* **blocks:** accept a palette slug as slider panelColor ([2b7cd98](https://github.com/Bergert-Digital/pediment/commit/2b7cd98076e439076056293345ad190dc9f22b82))
-* claim seed media, slider palette slugs, raw pattern seeding ([#124](https://github.com/Bergert-Digital/pediment/issues/124)) ([1099203](https://github.com/Bergert-Digital/pediment/commit/10992034242736f89fd5ecf53c40b593130221ef))
-* **seeder:** claim media by file name ([359ce94](https://github.com/Bergert-Digital/pediment/commit/359ce94549deb8cc646707173e9c53419467f59b))
+* **blocks:** accept a palette slug as slider panelColor ([da9b753](https://github.com/Bergert-Digital/pediment/commit/da9b7537513b93790f341dc5c9094c6c9142667e))
+* claim seed media, slider palette slugs, raw pattern seeding ([#124](https://github.com/Bergert-Digital/pediment/issues/124)) ([75b54c9](https://github.com/Bergert-Digital/pediment/commit/75b54c9513598fd28118d424b38b0b54a0207950))
+* **seeder:** claim media by file name ([7db003c](https://github.com/Bergert-Digital/pediment/commit/7db003c900c000f6f6e8618e649f3751da7823e7))
 
 
 ### Bug Fixes
 
-* **blocks:** accept only hex or palette slug as panelColor ([89b68f2](https://github.com/Bergert-Digital/pediment/commit/89b68f232d997d777aee63a30409b0b7997b79cf))
-* **seeder:** keep claimed private media and safe advice ([42de73c](https://github.com/Bergert-Digital/pediment/commit/42de73cabf1a8b3bd193781208783c055cdaa0cb))
-* **seeder:** resolve pattern placeholders before block hooks ([cbc07ae](https://github.com/Bergert-Digital/pediment/commit/cbc07aee5ec95ecef8ee31f3397df3ba75590fa7))
-* **seeder:** stop when the raw pattern loader is missing ([6a9b937](https://github.com/Bergert-Digital/pediment/commit/6a9b937a88a1f0d9b040e5a107ecbb73c15e1dcb))
+* **blocks:** accept only hex or palette slug as panelColor ([99642ae](https://github.com/Bergert-Digital/pediment/commit/99642ae72093a959a2fccb6d4f074b1b5f3f9261))
+* **seeder:** keep claimed private media and safe advice ([a686221](https://github.com/Bergert-Digital/pediment/commit/a686221cc2e60b22ff4e39359153219b34dca45a))
+* **seeder:** resolve pattern placeholders before block hooks ([d46cb55](https://github.com/Bergert-Digital/pediment/commit/d46cb553acf46f16de31fac69d7d6ea06d443077))
+* **seeder:** stop when the raw pattern loader is missing ([cd15183](https://github.com/Bergert-Digital/pediment/commit/cd15183ffe6014d91cb1da2524eb7329e98720a8))
 
 ## [4.0.0](https://github.com/Bergert-Digital/pediment/compare/v3.10.0...v4.0.0) (2026-10-16)
 
@@ -152,315 +152,315 @@
 
 ### Features
 
-* **abilities:** add pediment/convert-legacy ([01fc29e](https://github.com/Bergert-Digital/pediment/commit/01fc29e247ce3d6428c71b229b1cd16fb4102912))
-* **abilities:** convert at most 25 posts per all call ([6a801e1](https://github.com/Bergert-Digital/pediment/commit/6a801e1d47d5375e00cf240c63a59dc13ea6104b))
-* **abilities:** read vocabulary and pages through abilities ([53f2b6e](https://github.com/Bergert-Digital/pediment/commit/53f2b6e8a2c5183092ca02bd22ed558ad638d248))
-* **abilities:** write pages and styles through abilities ([244b9f9](https://github.com/Bergert-Digital/pediment/commit/244b9f9a0477b0fb8f0974aca71964873d0eee16))
-* **blocks:** hide legacy blocks from the inserter ([701d263](https://github.com/Bergert-Digital/pediment/commit/701d263453f36400a5fabbdf8bbac3cb69fc600c))
-* **cli:** add wp pediment convert ([f210e1a](https://github.com/Bergert-Digital/pediment/commit/f210e1ae36c366d5706c341e16e03783a1176743))
-* **content:** add the content policy for page writes ([6559eb8](https://github.com/Bergert-Digital/pediment/commit/6559eb83a8257055ccd40665d037e442ca06efb1))
-* **content:** editor reports invalid blocks per page ([ab9b667](https://github.com/Bergert-Digital/pediment/commit/ab9b66709b64df59b914911c8e6ee6e20fe95f20))
-* **convert:** add the convert legacy blocks settings tab ([a88a072](https://github.com/Bergert-Digital/pediment/commit/a88a072b20a3164e9eea9151c3a1f6ecd2ca66a2))
-* **convert:** add the converter and the text mappers ([d62ef9c](https://github.com/Bergert-Digital/pediment/commit/d62ef9c37162f53267bd43e2f5dd43cdd7eb8ec1))
-* **convert:** convert stored posts with a revision first ([32182c5](https://github.com/Bergert-Digital/pediment/commit/32182c59b86127a280b3d0d1c3285370ad502d55))
-* **convert:** map faq, testimonials and logo cloud ([803c4f8](https://github.com/Bergert-Digital/pediment/commit/803c4f80704d90894eb4a4809e53a1aff45acb4c))
-* **convert:** map feature, stat and step grids ([ce3ee60](https://github.com/Bergert-Digital/pediment/commit/ce3ee60b4237cd7f35fcf5363e8ca70fce3c0871))
-* **convert:** map hero and call-to-action ([d8cd897](https://github.com/Bergert-Digital/pediment/commit/d8cd8979b6a9d011e7c373dc1a3392dfa164d37d))
-* **convert:** map media-text and image-caption ([6d89d7d](https://github.com/Bergert-Digital/pediment/commit/6d89d7d11a6cd3c7d7ad07fbf669f958397eb4f9))
-* **convert:** warn before production, link the restore ([9f2417b](https://github.com/Bergert-Digital/pediment/commit/9f2417b8803d2e9f4a03d2a19c90661ac3d0d677))
-* **design:** add revisioned site-layer style store ([b75136c](https://github.com/Bergert-Digital/pediment/commit/b75136c3399b31460721df527676589510eb33f0))
-* **design:** add the converter's default styles ([b416735](https://github.com/Bergert-Digital/pediment/commit/b4167352804ab3d2604e7fb47111de1af6631a25))
-* **design:** add token-rule style validator ([5ff08a7](https://github.com/Bergert-Digital/pediment/commit/5ff08a73d9c4ec8d54074dd53d2c9b2054675c8a))
-* **design:** apply site-layer styles over theme and plugin ([f03f34a](https://github.com/Bergert-Digital/pediment/commit/f03f34a7897d8e6bf26ff62e43523dfe39f01708))
-* **design:** export site styles to the client theme ([ec58fb7](https://github.com/Bergert-Digital/pediment/commit/ec58fb7bd1b9b3af8dd5953271f55006818a2e51))
-* **design:** list the merged design vocabulary ([32f89d8](https://github.com/Bergert-Digital/pediment/commit/32f89d8ba4ac34595aa0fa4329b2c18a92ca8647))
-* **design:** ship token-only default block styles ([17e829b](https://github.com/Bergert-Digital/pediment/commit/17e829b8c955964c6cc76f7639b7a4d2a19d0ef0))
-* drop retired AI chat data on upgrade and uninstall ([731d429](https://github.com/Bergert-Digital/pediment/commit/731d429a946ccf6fead96079ab3c16606938d0ad))
-* **kit:** validate block markup like the editor does ([b7e3132](https://github.com/Bergert-Digital/pediment/commit/b7e3132877b13edf9cecd987feb4ea551e9cc47d))
-* **language:** read a post's language through the seam ([0715905](https://github.com/Bergert-Digital/pediment/commit/07159054f17207868dc773dc5c9bcada40143e28))
-* **mcp:** expose Pediment abilities as an MCP server ([3006db0](https://github.com/Bergert-Digital/pediment/commit/3006db06f7efc0aae5e3296888e02a031d1c7322))
-* remove the AI chat editor UI, require WordPress 6.9 ([b79199a](https://github.com/Bergert-Digital/pediment/commit/b79199a9597a86decb7372c787f92d3544549176))
-* remove the AI chat server, REST API and settings ([ce4af32](https://github.com/Bergert-Digital/pediment/commit/ce4af32b42b28b360e2087734a85abbbd8d08f27))
-* replace AI chat with MCP tools and a site design layer ([#117](https://github.com/Bergert-Digital/pediment/issues/117)) ([ba6acb6](https://github.com/Bergert-Digital/pediment/commit/ba6acb62b4bd46ba94f9d4c8b24f686ca016d6ab))
-* **seeder:** create menus once, never rewrite them ([1338dd5](https://github.com/Bergert-Digital/pediment/commit/1338dd5a939a52d9de97f3727099de35ff231ac3))
-* **seeder:** never restore media or reset the logo ([644112c](https://github.com/Bergert-Digital/pediment/commit/644112cb092b3ce189025e0a3e96552cc8edecdb))
-* **seeder:** seed creates missing entries only ([2174ab5](https://github.com/Bergert-Digital/pediment/commit/2174ab5c8b435493e352ce99fa6dbad492ba92dc))
-* **upgrade:** drop the 3.x seed hash meta once per site ([da275be](https://github.com/Bergert-Digital/pediment/commit/da275be952ae6e2241cb0071bd940969f1ffd5f8))
+* **abilities:** add pediment/convert-legacy ([db4fc24](https://github.com/Bergert-Digital/pediment/commit/db4fc24eda27ff0785e52be6f073c57471e676b9))
+* **abilities:** convert at most 25 posts per all call ([a78a87a](https://github.com/Bergert-Digital/pediment/commit/a78a87a1171dd392bb3d5feeb5e335c4912c7d3f))
+* **abilities:** read vocabulary and pages through abilities ([eaf8424](https://github.com/Bergert-Digital/pediment/commit/eaf84243f9610aa5c53e96b99bbd82eb967da4c7))
+* **abilities:** write pages and styles through abilities ([ec0a8a0](https://github.com/Bergert-Digital/pediment/commit/ec0a8a054bf0f845642ebc34972359b75cb26adb))
+* **blocks:** hide legacy blocks from the inserter ([3900dce](https://github.com/Bergert-Digital/pediment/commit/3900dcecea7a310e47a47c566d90d8614c1c9c4f))
+* **cli:** add wp pediment convert ([e61ae8b](https://github.com/Bergert-Digital/pediment/commit/e61ae8b6c3716e41b05913c54e79a333c3a45527))
+* **content:** add the content policy for page writes ([baf2a91](https://github.com/Bergert-Digital/pediment/commit/baf2a91174c3ffe03588b5f46e097f9842f5720e))
+* **content:** editor reports invalid blocks per page ([b89d845](https://github.com/Bergert-Digital/pediment/commit/b89d8456ffe73a00dd23560c8ad4954d6a112121))
+* **convert:** add the convert legacy blocks settings tab ([7e93e73](https://github.com/Bergert-Digital/pediment/commit/7e93e7316b91f807e45c365fcb0f0d0e4f2411cf))
+* **convert:** add the converter and the text mappers ([173c3f9](https://github.com/Bergert-Digital/pediment/commit/173c3f9e83baccdfefc040693bd6f4304402f452))
+* **convert:** convert stored posts with a revision first ([50a8d18](https://github.com/Bergert-Digital/pediment/commit/50a8d18c954f1ca6b51ffc6ace47722564bef5ff))
+* **convert:** map faq, testimonials and logo cloud ([570027a](https://github.com/Bergert-Digital/pediment/commit/570027abfed27533e708329c112241569fc3dbd5))
+* **convert:** map feature, stat and step grids ([c1dce67](https://github.com/Bergert-Digital/pediment/commit/c1dce67de49a256cd7773fbfef9c6390fc30647a))
+* **convert:** map hero and call-to-action ([912948b](https://github.com/Bergert-Digital/pediment/commit/912948bde94c02c7b04d376f67e0ba689ed44766))
+* **convert:** map media-text and image-caption ([92397a6](https://github.com/Bergert-Digital/pediment/commit/92397a6287c8c896bf3d536e1fa86caad88a5291))
+* **convert:** warn before production, link the restore ([c29b2aa](https://github.com/Bergert-Digital/pediment/commit/c29b2aa774093379fbc66a61c0f9566f47cc4dac))
+* **design:** add revisioned site-layer style store ([fb0fcf5](https://github.com/Bergert-Digital/pediment/commit/fb0fcf578d6bdf6e61c74393de7a4fc9db7a7931))
+* **design:** add the converter's default styles ([b6f887e](https://github.com/Bergert-Digital/pediment/commit/b6f887e96cf7b4cb5317e4cc2891e8fafa026d6c))
+* **design:** add token-rule style validator ([e1b6976](https://github.com/Bergert-Digital/pediment/commit/e1b69769fa59c21870f1e8bdfe055fc82d0bcdec))
+* **design:** apply site-layer styles over theme and plugin ([819be41](https://github.com/Bergert-Digital/pediment/commit/819be412a0ae9a536754c349318a301ad11c2f20))
+* **design:** export site styles to the client theme ([26759cc](https://github.com/Bergert-Digital/pediment/commit/26759cc9b7ce61f9b02b230b174f85950aaa52d3))
+* **design:** list the merged design vocabulary ([63b67fc](https://github.com/Bergert-Digital/pediment/commit/63b67fc07e2a204d0a0dc1dee401aa2703071209))
+* **design:** ship token-only default block styles ([da2d43a](https://github.com/Bergert-Digital/pediment/commit/da2d43a5742011e3ff40b360d6750d3224b7ba34))
+* drop retired AI chat data on upgrade and uninstall ([2c6fa60](https://github.com/Bergert-Digital/pediment/commit/2c6fa60a11891589d2164273f21e26e97b49aed5))
+* **kit:** validate block markup like the editor does ([fec8f0c](https://github.com/Bergert-Digital/pediment/commit/fec8f0c0c8916d6721dd75a6aebc2f25cf82adc5))
+* **language:** read a post's language through the seam ([d8a14b4](https://github.com/Bergert-Digital/pediment/commit/d8a14b4e6b51b012e7ebf5756da004ad562efe6b))
+* **mcp:** expose Pediment abilities as an MCP server ([a2aee79](https://github.com/Bergert-Digital/pediment/commit/a2aee7972bc99a80dc86ca9621d299d20bf958f2))
+* remove the AI chat editor UI, require WordPress 6.9 ([45c0e9a](https://github.com/Bergert-Digital/pediment/commit/45c0e9a30f80b0c5ee31ff81002c572e26b64b16))
+* remove the AI chat server, REST API and settings ([60a8e84](https://github.com/Bergert-Digital/pediment/commit/60a8e8440cac4b575e029b21f03d0b24f2bc7b47))
+* replace AI chat with MCP tools and a site design layer ([#117](https://github.com/Bergert-Digital/pediment/issues/117)) ([7d8fac7](https://github.com/Bergert-Digital/pediment/commit/7d8fac7087f9389f125e01c150a311b31c222b9c))
+* **seeder:** create menus once, never rewrite them ([30e6bad](https://github.com/Bergert-Digital/pediment/commit/30e6badda6930dc8cea73b1a2e73e6ba79d6280e))
+* **seeder:** never restore media or reset the logo ([29043ba](https://github.com/Bergert-Digital/pediment/commit/29043baab81da07ebfc360a1c852748f597ca748))
+* **seeder:** seed creates missing entries only ([8479eb5](https://github.com/Bergert-Digital/pediment/commit/8479eb58bf84b5b39391dd4bb2a20b0b7ba76b4a))
+* **upgrade:** drop the 3.x seed hash meta once per site ([3f81b00](https://github.com/Bergert-Digital/pediment/commit/3f81b005db4740355675adaa0b87915727e60cd7))
 
 
 ### Bug Fixes
 
-* **abilities:** empty translations as object, scope list-pages ([aedfcc5](https://github.com/Bergert-Digital/pediment/commit/aedfcc56d9c88db9986cea86019e7a86f5cc1c82))
-* **abilities:** filter list-pages by language before the cap ([5e3a19d](https://github.com/Bergert-Digital/pediment/commit/5e3a19dbb4ac8f765d2360aa5e4e43d6689edd5f))
-* **abilities:** guard translation_of and parent in write-page ([5ca719e](https://github.com/Bergert-Digital/pediment/commit/5ca719e196fe4b9b86d5af47a75de43e3dc4ca1a))
-* **abilities:** never return an autosave as the revision ([e5bf37e](https://github.com/Bergert-Digital/pediment/commit/e5bf37e7a970451d572f15990d3025f6c2aec838))
-* **abilities:** reject markup in write-page titles ([d88e0ea](https://github.com/Bergert-Digital/pediment/commit/d88e0ea0c829644372f438891b317df710146fbd))
-* **admin:** say what the seed adds and what it keeps ([a461a8d](https://github.com/Bergert-Digital/pediment/commit/a461a8d9e0af9d4a3fa0be297814cfdfb0703755))
-* **cli:** harden pattern file conversion ([18921d9](https://github.com/Bergert-Digital/pediment/commit/18921d905ed74ec19944e223c30386bcc84d9b67))
-* **content:** check block markup as raw text ([33e2713](https://github.com/Bergert-Digital/pediment/commit/33e27135e189e2d66bc2c73dfb32685b5202396e))
-* **content:** scan block markup and every style leaf ([9d4b72c](https://github.com/Bergert-Digital/pediment/commit/9d4b72c95d40d66de81569c45cd53480ca878938))
-* **content:** scan rendered markup across blocks ([81b38cb](https://github.com/Bergert-Digital/pediment/commit/81b38cb922e54b25f5a297624e8bce785c883a18))
-* **content:** scan shortcode attributes after decoding ([e786946](https://github.com/Bergert-Digital/pediment/commit/e7869469051e43ca7b710976f7c69948310fb7de))
-* **content:** scan the markup core renders, not stripped text ([12d0f54](https://github.com/Bergert-Digital/pediment/commit/12d0f5435bfbd907243aabd57814d8a65774d854))
-* **content:** tell agents about the markup scan in rules ([9906463](https://github.com/Bergert-Digital/pediment/commit/990646392eafcbf06cdc8eef879db8051935d286))
-* **convert:** add a cursor so stuck posts cannot stall batches ([516916a](https://github.com/Bergert-Digital/pediment/commit/516916ae3090af312d0593c55593fe17ea693566))
-* **convert:** batch the convert tab and bind the nonce ([1e7366a](https://github.com/Bergert-Digital/pediment/commit/1e7366a117054ebb82eb09113a46c158c94274ed))
-* **convert:** build stat paragraphs only when set ([cbf51f4](https://github.com/Bergert-Digital/pediment/commit/cbf51f420b53678974796e78df68b8cb5e3d60db))
-* **convert:** guard backups, kses and candidate scan ([42cbb2f](https://github.com/Bergert-Digital/pediment/commit/42cbb2f3115ae99ec331339810bd4ed92292dcab))
-* **convert:** keep legacy block metadata on the new block ([7f4b6b8](https://github.com/Bergert-Digital/pediment/commit/7f4b6b8d396712ba1c94847375c9c3cc62178757))
-* **convert:** make grids collapse and left heads align ([f55c0b0](https://github.com/Bergert-Digital/pediment/commit/f55c0b004779f392ee568041d1259d3f8cffa476))
-* **convert:** refuse markup that cannot convert safely ([6e0d0b1](https://github.com/Bergert-Digital/pediment/commit/6e0d0b15961a542e16a0c2b21453d63f66381a28))
-* **convert:** split paragraph answers, refuse block HTML ([1e37bad](https://github.com/Bergert-Digital/pediment/commit/1e37badce7a8d4e5069d9e16c70d5642480a5a70))
-* **convert:** trusted backup, canonical kses check ([452b966](https://github.com/Bergert-Digital/pediment/commit/452b96658b36dd44d9112e91b9b8ce6742136547))
-* **design:** apply site layer through theme data so the editor sees it ([5315d98](https://github.com/Bergert-Digital/pediment/commit/5315d98fda974003d059e59ed02163833b2d5f89))
-* **design:** close style validator bypasses ([0003309](https://github.com/Bergert-Digital/pediment/commit/0003309d0ceae6e8c9a2825767e3fc35a852cfc7))
-* **design:** fail clearly when export has nothing to write ([9e505bd](https://github.com/Bergert-Digital/pediment/commit/9e505bdbfe83531a93b33b099f92e57b54a0c4c4))
-* **design:** keep site overrides and theme values on export ([5392f78](https://github.com/Bergert-Digital/pediment/commit/5392f78d420218878d40606075e6693edb98b190))
-* **design:** readable pill text, report bad style files ([4356f12](https://github.com/Bergert-Digital/pediment/commit/4356f12a3c2692c93eb76e846c28c80fff0e49ea))
-* **design:** refuse to store styles that fail to encode ([e860546](https://github.com/Bergert-Digital/pediment/commit/e860546858eb7006eacd4c455f0c0ea657b1a681))
-* **design:** register site style names when injecting ([38be240](https://github.com/Bergert-Digital/pediment/commit/38be240cc61c251facbd082a5aa58a3bb671a6f6))
-* **design:** save a first revision when a style is created ([72cb46d](https://github.com/Bergert-Digital/pediment/commit/72cb46d8801581bc5bdef451f5bdd257c3434c6f))
-* **design:** stop dotted keys hiding style values from checks ([928b1ea](https://github.com/Bergert-Digital/pediment/commit/928b1eaa704c6e1185050481fb22aca7205e9ad6))
-* **design:** validate css by core grammar and block "&lt;" ([6022631](https://github.com/Bergert-Digital/pediment/commit/602263165432a6287551b460a503faa89dcb8967))
-* **kit:** make validator install race-safe, flag core typos ([35ca0d2](https://github.com/Bergert-Digital/pediment/commit/35ca0d2a194218c0507dfc20f2c706677a57f369))
-* **kit:** resolve media placeholders in validated patterns ([814375a](https://github.com/Bergert-Digital/pediment/commit/814375a78901f4f86602108049c7903d70e770da))
-* **patterns:** reconvert landing, stat contrast on navy ([ae12b87](https://github.com/Bergert-Digital/pediment/commit/ae12b8743462f16b1f9a8e1dd2da2fe3633b4a69))
-* **seeder:** find seeded menus in every status ([461e8d7](https://github.com/Bergert-Digital/pediment/commit/461e8d74f1bddf62f2cef2abdf322844b0862e47))
-* **seeder:** keep a trashed page out of reading settings ([9b5725b](https://github.com/Bergert-Digital/pediment/commit/9b5725b6cae0df4c22db8c88e1f057a6d29e0911))
-* **seeder:** keep reading settings and logo a person chose ([8609cae](https://github.com/Bergert-Digital/pediment/commit/8609cae20844d08efdfa5644712532af5bf9809f))
-* **seeder:** keep trashed pages out of new menus and groups ([cf2fba1](https://github.com/Bergert-Digital/pediment/commit/cf2fba115a3cc750b00ed71bdfd6e9acb1429539))
-* **seeder:** link translation groups only when a run adds ([3cd8d53](https://github.com/Bergert-Digital/pediment/commit/3cd8d5374c904dc5d731df149ac3e93b26207bfc))
-* **seeder:** name the language in MENUS notices ([c4ff3db](https://github.com/Bergert-Digital/pediment/commit/c4ff3dbc5ebf34627ca3bb3a278237cf3afb72fb))
-* **seeder:** never make a trashed attachment the logo ([d002220](https://github.com/Bergert-Digital/pediment/commit/d0022206be4e6ec48507abb967b945ed40af1cc4))
-* **upgrade:** stop chat cleanup checks once done ([e56e08a](https://github.com/Bergert-Digital/pediment/commit/e56e08aa519fe326df46c6d91c11e2bb667b1775))
+* **abilities:** empty translations as object, scope list-pages ([8ec82d1](https://github.com/Bergert-Digital/pediment/commit/8ec82d114b24dd8aedecb3a4cf2399dc1e80ee96))
+* **abilities:** filter list-pages by language before the cap ([2a58c67](https://github.com/Bergert-Digital/pediment/commit/2a58c6769ee0204d5639adb96359d6db3c3ab322))
+* **abilities:** guard translation_of and parent in write-page ([f8b438a](https://github.com/Bergert-Digital/pediment/commit/f8b438af8089043369f0559834603fdc4ce66e96))
+* **abilities:** never return an autosave as the revision ([d07a80e](https://github.com/Bergert-Digital/pediment/commit/d07a80eba5f5bc03995ff439350bdbe184b53f96))
+* **abilities:** reject markup in write-page titles ([14abce5](https://github.com/Bergert-Digital/pediment/commit/14abce5b29a094ad45fbabfd618149b41b15e5c8))
+* **admin:** say what the seed adds and what it keeps ([4d9e953](https://github.com/Bergert-Digital/pediment/commit/4d9e953a35d2544ad083e20566c6a76836571707))
+* **cli:** harden pattern file conversion ([1835beb](https://github.com/Bergert-Digital/pediment/commit/1835beba4b316ee89d7b616fbf91857c272ff314))
+* **content:** check block markup as raw text ([adaf9df](https://github.com/Bergert-Digital/pediment/commit/adaf9dfa785dd25ee2f4e4735647e3d7bdafbcc6))
+* **content:** scan block markup and every style leaf ([9240866](https://github.com/Bergert-Digital/pediment/commit/92408668626c8eb16cc62ca137886dc7bb8a840c))
+* **content:** scan rendered markup across blocks ([14a0fbe](https://github.com/Bergert-Digital/pediment/commit/14a0fbe807ab9ac35e7fd8affcf6f835cdcce828))
+* **content:** scan shortcode attributes after decoding ([9bbca2d](https://github.com/Bergert-Digital/pediment/commit/9bbca2debabef71edc679dcd31b79b66ed6377c2))
+* **content:** scan the markup core renders, not stripped text ([fddd6b8](https://github.com/Bergert-Digital/pediment/commit/fddd6b86019c7f77a0789bb8d1fb22b676b67767))
+* **content:** tell agents about the markup scan in rules ([f755fc5](https://github.com/Bergert-Digital/pediment/commit/f755fc5fddbd97ce475dcd0f747c26628918f550))
+* **convert:** add a cursor so stuck posts cannot stall batches ([72f426d](https://github.com/Bergert-Digital/pediment/commit/72f426d88971f54bff885d57e999dd7d7694262c))
+* **convert:** batch the convert tab and bind the nonce ([9c9df88](https://github.com/Bergert-Digital/pediment/commit/9c9df88930651992cc746cd1852c004b7edcfd46))
+* **convert:** build stat paragraphs only when set ([6ed468b](https://github.com/Bergert-Digital/pediment/commit/6ed468bd4d2e52d360843d8f4d71e9f35583133d))
+* **convert:** guard backups, kses and candidate scan ([95cd806](https://github.com/Bergert-Digital/pediment/commit/95cd806ef4568bd98c8148614b7ea29986c735ff))
+* **convert:** keep legacy block metadata on the new block ([95a2a4c](https://github.com/Bergert-Digital/pediment/commit/95a2a4c9409aab7c2d4771de71018ba7987071de))
+* **convert:** make grids collapse and left heads align ([5459a7a](https://github.com/Bergert-Digital/pediment/commit/5459a7ab84b542083090e141ce9bee7f474fc7e9))
+* **convert:** refuse markup that cannot convert safely ([30243fa](https://github.com/Bergert-Digital/pediment/commit/30243faec36357bcbfadab35c9fad15146e4a37b))
+* **convert:** split paragraph answers, refuse block HTML ([cb9e93c](https://github.com/Bergert-Digital/pediment/commit/cb9e93c48c63c8c8c1506cedf32a5d68edadde29))
+* **convert:** trusted backup, canonical kses check ([fcdce28](https://github.com/Bergert-Digital/pediment/commit/fcdce2888d3f50a309cf52ed58271f37555faa47))
+* **design:** apply site layer through theme data so the editor sees it ([850dd79](https://github.com/Bergert-Digital/pediment/commit/850dd79d390d2476acb18980b9ee78905aeb7fa0))
+* **design:** close style validator bypasses ([c01bb40](https://github.com/Bergert-Digital/pediment/commit/c01bb4057b7ca6b61236fa991de5ee6f4786ef90))
+* **design:** fail clearly when export has nothing to write ([ee610f3](https://github.com/Bergert-Digital/pediment/commit/ee610f3d9814fa8c08e638481b253720f856ef58))
+* **design:** keep site overrides and theme values on export ([c9f6cde](https://github.com/Bergert-Digital/pediment/commit/c9f6cdee43fa4b91d3d1c6b1e03242c5772afe7f))
+* **design:** readable pill text, report bad style files ([fb11d54](https://github.com/Bergert-Digital/pediment/commit/fb11d548bc298d48ab083288090d010c1504b294))
+* **design:** refuse to store styles that fail to encode ([9225c26](https://github.com/Bergert-Digital/pediment/commit/9225c266b821da3494bdbee26db806470c49e9e2))
+* **design:** register site style names when injecting ([f089778](https://github.com/Bergert-Digital/pediment/commit/f08977878f56fac451fb55570b7e68fe5a364d9a))
+* **design:** save a first revision when a style is created ([b7d1bf0](https://github.com/Bergert-Digital/pediment/commit/b7d1bf01b869588e0982c60ac4aaba709ef495a2))
+* **design:** stop dotted keys hiding style values from checks ([2532018](https://github.com/Bergert-Digital/pediment/commit/2532018aed50636607e8e51b435d6fc9e3d118c5))
+* **design:** validate css by core grammar and block "&lt;" ([bb9529f](https://github.com/Bergert-Digital/pediment/commit/bb9529f68169fd184e8dee146f3b6a4d9c07f6d8))
+* **kit:** make validator install race-safe, flag core typos ([b9d78ee](https://github.com/Bergert-Digital/pediment/commit/b9d78ee39e23ee7d2e2f19ad59225a4a4d26bd44))
+* **kit:** resolve media placeholders in validated patterns ([106925b](https://github.com/Bergert-Digital/pediment/commit/106925bf858f5389e06feb8c4921aeb6200e9a74))
+* **patterns:** reconvert landing, stat contrast on navy ([b63636c](https://github.com/Bergert-Digital/pediment/commit/b63636c10cb8a0456c86f876edba80f36a47b1aa))
+* **seeder:** find seeded menus in every status ([2f8c5e8](https://github.com/Bergert-Digital/pediment/commit/2f8c5e82f3546d2eb9980fee22860a92bb8788e7))
+* **seeder:** keep a trashed page out of reading settings ([4814540](https://github.com/Bergert-Digital/pediment/commit/4814540b10382d997fabd645f307e4b043cf1dac))
+* **seeder:** keep reading settings and logo a person chose ([cda098b](https://github.com/Bergert-Digital/pediment/commit/cda098b42c855e8e451f3c96bcef7f9c634efbad))
+* **seeder:** keep trashed pages out of new menus and groups ([3c3efa9](https://github.com/Bergert-Digital/pediment/commit/3c3efa9ae834cd851ea3a3ca901d641cbdfe3133))
+* **seeder:** link translation groups only when a run adds ([495a31a](https://github.com/Bergert-Digital/pediment/commit/495a31a8c64f81dc13bb1b4797b4faf907a04f3b))
+* **seeder:** name the language in MENUS notices ([a12d32e](https://github.com/Bergert-Digital/pediment/commit/a12d32efb05ad643e82a6f8e3c58d43d083c6497))
+* **seeder:** never make a trashed attachment the logo ([f7bcacc](https://github.com/Bergert-Digital/pediment/commit/f7bcacce5411a9ddc63275c5e8f9b26492a207d4))
+* **upgrade:** stop chat cleanup checks once done ([e742174](https://github.com/Bergert-Digital/pediment/commit/e74217452f00af6d932129c4bd040e6a341a5b67))
 
 
 ### Refactors
 
-* **patterns:** convert shipped patterns to core blocks ([b4657f7](https://github.com/Bergert-Digital/pediment/commit/b4657f70403ca882ff9b50763d91283a3bc457c1))
-* **seeder:** remove the content-arbitration hashes ([4a498bb](https://github.com/Bergert-Digital/pediment/commit/4a498bbabeaa00a233c931e1ebb40958ac7f2842))
+* **patterns:** convert shipped patterns to core blocks ([2a4323c](https://github.com/Bergert-Digital/pediment/commit/2a4323cba75d7cc76452b0ffade7da6ff7f7a74f))
+* **seeder:** remove the content-arbitration hashes ([679bcda](https://github.com/Bergert-Digital/pediment/commit/679bcda006def63fbdc8de04537c81a2e44a684a))
 
 ## [3.10.0](https://github.com/Bergert-Digital/pediment/compare/v3.9.0...v3.10.0) (2026-10-07)
 
 
 ### Features
 
-* **forms:** show submission details on the edit screen ([4cf9ebb](https://github.com/Bergert-Digital/pediment/commit/4cf9ebb6c9fbb57ece3331f98d1910123f6c1826))
-* **forms:** show submission details; keep stored fields intact ([#110](https://github.com/Bergert-Digital/pediment/issues/110)) ([a1e35c3](https://github.com/Bergert-Digital/pediment/commit/a1e35c34aa970c2e22c3eb08bd1b5f064aaab985))
+* **forms:** show submission details on the edit screen ([1531fa6](https://github.com/Bergert-Digital/pediment/commit/1531fa63b00a5feabe50964201ad1c2a4431aaf5))
+* **forms:** show submission details; keep stored fields intact ([#110](https://github.com/Bergert-Digital/pediment/issues/110)) ([088f3ca](https://github.com/Bergert-Digital/pediment/commit/088f3ca5f685fbbd022a2e1aa22b9a244bef6148))
 
 
 ### Bug Fixes
 
-* **forms:** keep umlauts, quotes and line breaks in fields ([598a831](https://github.com/Bergert-Digital/pediment/commit/598a8310b6431086171324a347dd6a0156a03533))
+* **forms:** keep umlauts, quotes and line breaks in fields ([74a38d2](https://github.com/Bergert-Digital/pediment/commit/74a38d2f61793d29cf21e018bd200e2ed976736b))
 
 ## [3.9.0](https://github.com/Bergert-Digital/pediment/compare/v3.8.0...v3.9.0) (2026-08-28)
 
 
 ### Features
 
-* **wpml:** declare wp_navigation translatable, template parts shared ([0f90e0e](https://github.com/Bergert-Digital/pediment/commit/0f90e0e2b99876d6df3e20cb582e071934b57e57))
-* **wpml:** detect WpmlProvider in the registry (Polylang &gt; WPML &gt; Null) ([9825c6a](https://github.com/Bergert-Digital/pediment/commit/9825c6ae37d1cebbe658096519184700ba3f102d))
-* **wpml:** dropdown lists all languages + roomy menu card ([05afc49](https://github.com/Bergert-Digital/pediment/commit/05afc494e3675f43a835fc3aae66755d27007552))
-* **wpml:** emit native wpml/language-switcher block ([63c3d0b](https://github.com/Bergert-Digital/pediment/commit/63c3d0bec8eed4b1705f1942ad4c93c4d6a8cfad))
-* **wpml:** hover-to-reveal dropdown language switcher ([24f0287](https://github.com/Bergert-Digital/pediment/commit/24f0287cd75df1552363223b7aa89b955c902999))
-* **wpml:** WpmlProvider read methods (detection, languages, translationOf) ([5736a37](https://github.com/Bergert-Digital/pediment/commit/5736a37acf909fccc0f3850deced9c0e51b7d446))
-* **wpml:** WpmlProvider write methods via trid management ([1cd35ef](https://github.com/Bergert-Digital/pediment/commit/1cd35ef9c63110a61fa87eccd7a808578be3a8db))
-* **wpml:** WpmlSetup configures WPML languages from the manifest ([5822e0a](https://github.com/Bergert-Digital/pediment/commit/5822e0a79d20bda89ea0c55ca55485e51728c1a1))
+* **wpml:** declare wp_navigation translatable, template parts shared ([ecf62ee](https://github.com/Bergert-Digital/pediment/commit/ecf62eedc05d31eae048890d18488fa7c658477a))
+* **wpml:** detect WpmlProvider in the registry (Polylang &gt; WPML &gt; Null) ([85bc29d](https://github.com/Bergert-Digital/pediment/commit/85bc29da18f1de7f13eca5cb6f201293cce3001a))
+* **wpml:** dropdown lists all languages + roomy menu card ([f075740](https://github.com/Bergert-Digital/pediment/commit/f075740b3bd3a447bb9838cc6f0bca8cdf1e1113))
+* **wpml:** emit native wpml/language-switcher block ([0be5c30](https://github.com/Bergert-Digital/pediment/commit/0be5c30f73b253ef8482c3597ce4ecaf8dd69c07))
+* **wpml:** hover-to-reveal dropdown language switcher ([ac091d8](https://github.com/Bergert-Digital/pediment/commit/ac091d8a31a49dd5c61c7226b47fd35441104057))
+* **wpml:** WpmlProvider read methods (detection, languages, translationOf) ([c4e0e1f](https://github.com/Bergert-Digital/pediment/commit/c4e0e1ff54e901ce8d91a1d64d088e30e29994fd))
+* **wpml:** WpmlProvider write methods via trid management ([eebe366](https://github.com/Bergert-Digital/pediment/commit/eebe366f1850a2083e9ee4330139ac891603aa1d))
+* **wpml:** WpmlSetup configures WPML languages from the manifest ([b93be06](https://github.com/Bergert-Digital/pediment/commit/b93be0608f687e8100040b9a55e70771db6a1bc3))
 
 
 ### Bug Fixes
 
-* **editor:** stop the AI normalizer from corrupting full-bleed section pages ([719a993](https://github.com/Bergert-Digital/pediment/commit/719a9938fdbf42527c8e983fd793778b351b23b1))
-* **wpml:** bind per-language nav through the provider seam, not query scoping ([e1093dd](https://github.com/Bergert-Digital/pediment/commit/e1093dd16bc6ecd73bf3ffe17e27800aa47c8b23))
-* **wpml:** emit a renderable language-switcher block ([fb3b76a](https://github.com/Bergert-Digital/pediment/commit/fb3b76acdc0116c22ffe7d86a74300afabf80315))
-* **wpml:** resolve nav link permalinks in the target language ([d84b349](https://github.com/Bergert-Digital/pediment/commit/d84b349a706ee4c4401cb220973b8f3971e5516e))
-* **wpml:** restore WPML language on every path in permalinkInLanguage ([a70db63](https://github.com/Bergert-Digital/pediment/commit/a70db63764b2b4da37cc4f1481a90a04359f419d))
-* **wpml:** setup() gates the WPML branch on isLoaded(), not isActive() ([5e41f01](https://github.com/Bergert-Digital/pediment/commit/5e41f0115252c0843616afde42c8d79c0893e74d))
-* **wpml:** switcher dropdown opens below as a compact toggle + panel; stop nav wrap ([783eeca](https://github.com/Bergert-Digital/pediment/commit/783eeca68c9ce585232a9ea63a950aead314fbc6))
-* **wpml:** WpmlSetup triggers WPML config parse so headless deploys translate navigation ([6b984b9](https://github.com/Bergert-Digital/pediment/commit/6b984b9b6dd619aa8b7b1776dc559fcee4a5e4e5))
+* **editor:** stop the AI normalizer from corrupting full-bleed section pages ([f5fc1b5](https://github.com/Bergert-Digital/pediment/commit/f5fc1b5dc0a75bb13f77f51a6b07f68a6965df30))
+* **wpml:** bind per-language nav through the provider seam, not query scoping ([959a3ff](https://github.com/Bergert-Digital/pediment/commit/959a3ffd3ab8cccb9701cb273619682bac919381))
+* **wpml:** emit a renderable language-switcher block ([86897d1](https://github.com/Bergert-Digital/pediment/commit/86897d1138594401f2c792b40b74d96696fae58f))
+* **wpml:** resolve nav link permalinks in the target language ([ee44ea6](https://github.com/Bergert-Digital/pediment/commit/ee44ea68e6e85b953c131e32ce71ac9598b101a4))
+* **wpml:** restore WPML language on every path in permalinkInLanguage ([a4cfe95](https://github.com/Bergert-Digital/pediment/commit/a4cfe95a6f4001782290052167cc8c86d6aab7f1))
+* **wpml:** setup() gates the WPML branch on isLoaded(), not isActive() ([67af88f](https://github.com/Bergert-Digital/pediment/commit/67af88fd9d7e174f4b326e1cca59658bfc4389e7))
+* **wpml:** switcher dropdown opens below as a compact toggle + panel; stop nav wrap ([d642524](https://github.com/Bergert-Digital/pediment/commit/d642524b705595fe60c9a885ab6cc17af32dd7a5))
+* **wpml:** WpmlSetup triggers WPML config parse so headless deploys translate navigation ([0432ae4](https://github.com/Bergert-Digital/pediment/commit/0432ae4e0c4d33bec53d6bf8460608de526364c9))
 
 
 ### Refactors
 
-* **language:** extract LanguageSetup interface + registry resolver ([9f28273](https://github.com/Bergert-Digital/pediment/commit/9f2827357b12b6bac88db3be24b1b00e8bd40aea))
-* **language:** route current-language + switcher block through the provider seam ([eeba67f](https://github.com/Bergert-Digital/pediment/commit/eeba67f5c7fa1f4062803f4916864e4cc2816d50))
+* **language:** extract LanguageSetup interface + registry resolver ([a0a62a2](https://github.com/Bergert-Digital/pediment/commit/a0a62a2859f97b7456065a371f6f2da4b9d39b48))
+* **language:** route current-language + switcher block through the provider seam ([2d4314d](https://github.com/Bergert-Digital/pediment/commit/2d4314df58d2c8a4b85d8c9abf1be121aa436487))
 
 ## [3.8.0](https://github.com/Bergert-Digital/pediment/compare/v3.7.0...v3.8.0) (2026-08-25)
 
 
 ### Features
 
-* **blocks:** allow an image in place of the icon on feature cards ([8e6aca5](https://github.com/Bergert-Digital/pediment/commit/8e6aca5461499cf1f9e9942594eab0ab3661eda0))
+* **blocks:** allow an image in place of the icon on feature cards ([e671b46](https://github.com/Bergert-Digital/pediment/commit/e671b46ae1018293eebf313f93b62e81c8f10952))
 
 ## [3.7.0](https://github.com/Bergert-Digital/pediment/compare/v3.6.0...v3.7.0) (2026-08-25)
 
 
 ### Features
 
-* **chat:** advertise block attribute keys and surface AI provider status ([#95](https://github.com/Bergert-Digital/pediment/issues/95)) ([fac87ec](https://github.com/Bergert-Digital/pediment/commit/fac87ec946b2d4d9110040935a3d1ff9202efdad))
-* **chat:** advertise each block's attribute keys to the AI ([5978764](https://github.com/Bergert-Digital/pediment/commit/5978764d9270f0f10095f1fde2df83129e586819))
-* **chat:** surface mock mode and a missing API key in the sidebar ([d7d029d](https://github.com/Bergert-Digital/pediment/commit/d7d029d57d9d12c9c799b270e3f10869079f85d1))
+* **chat:** advertise block attribute keys and surface AI provider status ([#95](https://github.com/Bergert-Digital/pediment/issues/95)) ([696b2e7](https://github.com/Bergert-Digital/pediment/commit/696b2e7d71501d3f4def0391938eabc48a090cc7))
+* **chat:** advertise each block's attribute keys to the AI ([f3e4d60](https://github.com/Bergert-Digital/pediment/commit/f3e4d6067bcdd1962bca5dcbe33036624d6e9e1c))
+* **chat:** surface mock mode and a missing API key in the sidebar ([248b8db](https://github.com/Bergert-Digital/pediment/commit/248b8db9497fdf79282b1db9d86f7d43b27e9288))
 
 
 ### Bug Fixes
 
-* **chat:** deep-link the AI-status notice to the settings hub AI tab ([bd9724f](https://github.com/Bergert-Digital/pediment/commit/bd9724fea52ea68f447f610053fee0e0c1c1d940))
+* **chat:** deep-link the AI-status notice to the settings hub AI tab ([f9592c8](https://github.com/Bergert-Digital/pediment/commit/f9592c81801daa4f19216675d8343bd479f27241))
 
 ## [3.6.0](https://github.com/Bergert-Digital/pediment/compare/v3.5.0...v3.6.0) (2026-08-18)
 
 
 ### Features
 
-* **chat:** let the AI set page excerpt and title for SEO ([f3ee61e](https://github.com/Bergert-Digital/pediment/commit/f3ee61e232cb289e2bbd6b26bdaa2fd2678270b1))
+* **chat:** let the AI set page excerpt and title for SEO ([0e338fd](https://github.com/Bergert-Digital/pediment/commit/0e338fd0d7e4cfbf583d8e4a95dc09c8bff89d85))
 
 ## [3.5.0](https://github.com/Bergert-Digital/pediment/compare/v3.4.0...v3.5.0) (2026-08-16)
 
 
 ### Features
 
-* **chat:** visible "Delete history" button with confirmation ([5803bb4](https://github.com/Bergert-Digital/pediment/commit/5803bb450884e9c1d1486b2bc933a811ee34889d))
+* **chat:** visible "Delete history" button with confirmation ([ce94660](https://github.com/Bergert-Digital/pediment/commit/ce94660465eb0bdef4946908a9ed6ce396c039d1))
 
 
 ### Bug Fixes
 
-* **mega-menu:** full-height mobile overlay, caret affordance, robust touch ([a4097f4](https://github.com/Bergert-Digital/pediment/commit/a4097f47bec3e3beb6a043c77299bcdc4c36bf7f))
+* **mega-menu:** full-height mobile overlay, caret affordance, robust touch ([69bf4cd](https://github.com/Bergert-Digital/pediment/commit/69bf4cd70a4d5f230010b2bc1952508b720bfa52))
 
 ## [3.4.0](https://github.com/Bergert-Digital/pediment/compare/v3.3.0...v3.4.0) (2026-08-15)
 
 
 ### Features
 
-* **dev:** auto-activate + seed the fixture theme on local env start ([6e35ef8](https://github.com/Bergert-Digital/pediment/commit/6e35ef8496818d29a9c3d9a3038b8130b7d2aef2))
-* **mega-menu:** fade the dropdown panel in and out ([4712df5](https://github.com/Bergert-Digital/pediment/commit/4712df53b5fd492bbda8dca5b2fb40bfe97ecd26))
-* **mega-menu:** manifest-seeded mega menus, editable in the WP backend ([#90](https://github.com/Bergert-Digital/pediment/issues/90)) ([26d8333](https://github.com/Bergert-Digital/pediment/commit/26d83330709e84eae59884561a8f786c4c7574ec))
-* **seeder:** hash-arbitrated splice keeps editor-owned mega content ([3140fdb](https://github.com/Bergert-Digital/pediment/commit/3140fdb6fb9da10230e784579880c5f7f7a7dd97))
-* **seeder:** MegaBlocks extraction and per-position hash arbitration ([40148fc](https://github.com/Bergert-Digital/pediment/commit/40148fc3b7ef1f2e8161248ef72fc261de83ee20))
-* **seeder:** record and carry forward mega ownership hashes on apply ([4c7f8a9](https://github.com/Bergert-Digital/pediment/commit/4c7f8a9cbf82149a28ff93a5e005151c1ab17749))
-* **seeder:** serialize manifest mega items as pediment/mega-menu blocks ([256e364](https://github.com/Bergert-Digital/pediment/commit/256e36441ec1f3652e7c1f3e83c4d1c24ea3af15))
-* **seeder:** validate the mega nav-item grammar in the manifest ([1534073](https://github.com/Bergert-Digital/pediment/commit/15340733f592e763922f092a6a3d2f29673f2ae5))
+* **dev:** auto-activate + seed the fixture theme on local env start ([b32d096](https://github.com/Bergert-Digital/pediment/commit/b32d0967ee77e11a1db4988a3d1837e35bcacbc9))
+* **mega-menu:** fade the dropdown panel in and out ([621c06b](https://github.com/Bergert-Digital/pediment/commit/621c06b2ca2dbf8a44872ea01d6362845485240a))
+* **mega-menu:** manifest-seeded mega menus, editable in the WP backend ([#90](https://github.com/Bergert-Digital/pediment/issues/90)) ([82bbc01](https://github.com/Bergert-Digital/pediment/commit/82bbc01a8275fe15fd4e0986c1e0a3b8995703f6))
+* **seeder:** hash-arbitrated splice keeps editor-owned mega content ([fa112e9](https://github.com/Bergert-Digital/pediment/commit/fa112e934907ef59fd8d3319b801592dd6040ad9))
+* **seeder:** MegaBlocks extraction and per-position hash arbitration ([bbf2992](https://github.com/Bergert-Digital/pediment/commit/bbf2992f331a512c82fe9848caa7be5cd734af95))
+* **seeder:** record and carry forward mega ownership hashes on apply ([0887c7c](https://github.com/Bergert-Digital/pediment/commit/0887c7c08191b75b3373f0c02bab4461ee7d428b))
+* **seeder:** serialize manifest mega items as pediment/mega-menu blocks ([23168a9](https://github.com/Bergert-Digital/pediment/commit/23168a9533d44a2cd0118e20d10675a6341bba32))
+* **seeder:** validate the mega nav-item grammar in the manifest ([09cd6e6](https://github.com/Bergert-Digital/pediment/commit/09cd6e60ad1969e88b60cfe928bb364dbf512706))
 
 
 ### Bug Fixes
 
-* **build:** stop the editor watch from wiping the blocks build ([6096938](https://github.com/Bergert-Digital/pediment/commit/60969382e7fd95f3423a7d5d7709f6f145b0656f))
-* **dev:** add root `start` script so Conductor's run command works ([c6d5033](https://github.com/Bergert-Digital/pediment/commit/c6d5033ed888895aa0157d949f078da85bf3fbdd))
-* **env:** reliable wp-env start + correct client scaffold plugin/theme slugs ([#87](https://github.com/Bergert-Digital/pediment/issues/87)) ([1459bdc](https://github.com/Bergert-Digital/pediment/commit/1459bdc7eb95812a7a5e6d9f371a1da3af1dfd81))
-* **mega-menu:** anchor editor preview panel to trigger left edge ([6e52acf](https://github.com/Bergert-Digital/pediment/commit/6e52acf7599c9226eb8036cb491cf8b60fc579d8))
-* **mega-menu:** mark block with contentRole so it inserts in the nav editor ([20ac9f6](https://github.com/Bergert-Digital/pediment/commit/20ac9f68a1038933a59e07eb2eb1c41673f8408f))
-* **seeder:** hash persisted nav row for mega ownership ([2801412](https://github.com/Bergert-Digital/pediment/commit/2801412c32366712368ee24064ecc0fcf02831c7))
-* **seeder:** match Gutenberg attribute serialization for mega blocks ([d30271d](https://github.com/Bergert-Digital/pediment/commit/d30271d2c8275b676595cedefaf746f45f382be3))
-* **seeder:** verifier honors editor-owned mega content ([5a32966](https://github.com/Bergert-Digital/pediment/commit/5a32966ebbd13a6b9a436a2e65837b202cbf943f))
+* **build:** stop the editor watch from wiping the blocks build ([95907fc](https://github.com/Bergert-Digital/pediment/commit/95907fcb844dfa49c22b37d5b0344d15dafd9843))
+* **dev:** add root `start` script so Conductor's run command works ([dfbb723](https://github.com/Bergert-Digital/pediment/commit/dfbb723c7c3b5fbc8fb39e4462cf6b341b6ffb58))
+* **env:** reliable wp-env start + correct client scaffold plugin/theme slugs ([#87](https://github.com/Bergert-Digital/pediment/issues/87)) ([22f9a73](https://github.com/Bergert-Digital/pediment/commit/22f9a73844398fde5c2c3a48a6d3b57ccf270a4c))
+* **mega-menu:** anchor editor preview panel to trigger left edge ([000b119](https://github.com/Bergert-Digital/pediment/commit/000b11967505547febd5a24a8f2edf0f9fed3952))
+* **mega-menu:** mark block with contentRole so it inserts in the nav editor ([88f0dd1](https://github.com/Bergert-Digital/pediment/commit/88f0dd1446b10de36e6347b2d6bf1ec03ad0886e))
+* **seeder:** hash persisted nav row for mega ownership ([078c12b](https://github.com/Bergert-Digital/pediment/commit/078c12bec0c4274ff9e2f2b3185a6a634f0849b6))
+* **seeder:** match Gutenberg attribute serialization for mega blocks ([dd53cc5](https://github.com/Bergert-Digital/pediment/commit/dd53cc5659b4f228f457cdf6681bd0da18df5a2b))
+* **seeder:** verifier honors editor-owned mega content ([db67e56](https://github.com/Bergert-Digital/pediment/commit/db67e5618c41777ee95351e4cf09bea2bea8b31f))
 
 ## [3.3.0](https://github.com/Bergert-Digital/pediment/compare/v3.2.2...v3.3.0) (2026-08-08)
 
 
 ### Features
 
-* **seeder:** a language_switcher nav item seeds the Polylang switcher block ([#85](https://github.com/Bergert-Digital/pediment/issues/85)) ([9390a34](https://github.com/Bergert-Digital/pediment/commit/9390a34b479bff27ab7a89f9a7eca9f0cb3569bf))
+* **seeder:** a language_switcher nav item seeds the Polylang switcher block ([#85](https://github.com/Bergert-Digital/pediment/issues/85)) ([e394ceb](https://github.com/Bergert-Digital/pediment/commit/e394cebf77f980517fb56b2036e50ce79361ca72))
 
 ## [3.2.2](https://github.com/Bergert-Digital/pediment/compare/v3.2.1...v3.2.2) (2026-08-07)
 
 
 ### Bug Fixes
 
-* keep template parts out of Polylang so the shared header renders under Pro ([#83](https://github.com/Bergert-Digital/pediment/issues/83)) ([2c5e4fb](https://github.com/Bergert-Digital/pediment/commit/2c5e4fbca3c4a927e1249a8142888d4c893e12ee))
+* keep template parts out of Polylang so the shared header renders under Pro ([#83](https://github.com/Bergert-Digital/pediment/issues/83)) ([6ad8732](https://github.com/Bergert-Digital/pediment/commit/6ad873217db793a1bd8a796fefe4ce0a58d110c2))
 
 ## [3.2.1](https://github.com/Bergert-Digital/pediment/compare/v3.2.0...v3.2.1) (2026-08-07)
 
 
 ### Bug Fixes
 
-* **seeder:** re-assert a translation's shared slug once its language is set ([#81](https://github.com/Bergert-Digital/pediment/issues/81)) ([b99dd70](https://github.com/Bergert-Digital/pediment/commit/b99dd7087b3d36e829c9c34d9a87e0c00a5a5e63))
+* **seeder:** re-assert a translation's shared slug once its language is set ([#81](https://github.com/Bergert-Digital/pediment/issues/81)) ([163a158](https://github.com/Bergert-Digital/pediment/commit/163a158d79a17e1c94e0b59040e98b8e07e201aa))
 
 ## [3.2.0](https://github.com/Bergert-Digital/pediment/compare/v3.1.0...v3.2.0) (2026-08-06)
 
 
 ### Features
 
-* **seeder:** accept one level of nav children ([6593724](https://github.com/Bergert-Digital/pediment/commit/6593724f9f0d8bced787b531ebd8918e9c7b66f8))
-* **seeder:** claim existing content, own the header, ship client blocks ([#78](https://github.com/Bergert-Digital/pediment/issues/78)) ([5b8d360](https://github.com/Bergert-Digital/pediment/commit/5b8d3607fe189e71017a6f126dc3638d2a3f5f59))
-* **seeder:** nav submenus, plus the step 6b migration design and plans ([#80](https://github.com/Bergert-Digital/pediment/issues/80)) ([5ea26f2](https://github.com/Bergert-Digital/pediment/commit/5ea26f200436fd60817e3e6e5fc5849ffe80d9bb))
-* **seeder:** serialize nav children as submenus ([51d2966](https://github.com/Bergert-Digital/pediment/commit/51d296639a69df82037ebd4d82e2f5661f9bd2ca))
+* **seeder:** accept one level of nav children ([4c5169a](https://github.com/Bergert-Digital/pediment/commit/4c5169af38ea6d20421fe65b3b0e880874161fff))
+* **seeder:** claim existing content, own the header, ship client blocks ([#78](https://github.com/Bergert-Digital/pediment/issues/78)) ([0e77d9d](https://github.com/Bergert-Digital/pediment/commit/0e77d9d29b28769535c9773db0ac1245d46cae93))
+* **seeder:** nav submenus, plus the step 6b migration design and plans ([#80](https://github.com/Bergert-Digital/pediment/issues/80)) ([89e24c7](https://github.com/Bergert-Digital/pediment/commit/89e24c7db8a1b6859924bcfc3996cc9701129935))
+* **seeder:** serialize nav children as submenus ([2b9cac6](https://github.com/Bergert-Digital/pediment/commit/2b9cac67067420c8294633019837c6c725cb54d7))
 
 
 ### Bug Fixes
 
-* **seeder:** block writes on unresolved nav children ([ddb9bb3](https://github.com/Bergert-Digital/pediment/commit/ddb9bb38752807e0def56b87eda41f3b22e06e53))
+* **seeder:** block writes on unresolved nav children ([b873b6a](https://github.com/Bergert-Digital/pediment/commit/b873b6abf317b3b95842e307d628a9ee36530782))
 
 ## [3.1.0](https://github.com/Bergert-Digital/pediment/compare/v3.0.0...v3.1.0) (2026-08-04)
 
 
 ### Features
 
-* **i18n:** generate wpml-config.xml from block.json ([f00311d](https://github.com/Bergert-Digital/pediment/commit/f00311da809386b5b1950e3259bb2954f5bc374c))
-* **language:** add LanguageProvider seam with a null implementation ([f665c5c](https://github.com/Bergert-Digital/pediment/commit/f665c5c9dbd00011fc88015e0e72405f6bb4004b))
-* **language:** add the Polylang adapter and per-language seeding (migration step 4) ([#69](https://github.com/Bergert-Digital/pediment/issues/69)) ([16b9cdb](https://github.com/Bergert-Digital/pediment/commit/16b9cdb299385c0be8e5579318b8c51e1d26fb09))
-* **language:** add the Polylang provider ([4592d49](https://github.com/Bergert-Digital/pediment/commit/4592d49f50752850307588da8dc8460cce034c32))
-* **language:** configure Polylang from the manifest ([1418556](https://github.com/Bergert-Digital/pediment/commit/1418556aefc7a689c6e91f953b6e468dfd338e10))
-* **language:** detect Polylang in the registry ([f0202d6](https://github.com/Bergert-Digital/pediment/commit/f0202d676c8366f9dd67dd680292b7679643a78c))
-* **language:** give every language its own navigation menu ([0569ccf](https://github.com/Bergert-Digital/pediment/commit/0569ccf850cd82e327073336890cbaf7109d77f9))
-* **seeder:** add seed meta keys and versioned content hash ([a9515dc](https://github.com/Bergert-Digital/pediment/commit/a9515dc9dff3d9ba99741f1910b23cdb9264a34b))
-* **seeder:** add the declarative seeding engine (migration step 3) ([#67](https://github.com/Bergert-Digital/pediment/issues/67)) ([2d2a2f0](https://github.com/Bergert-Digital/pediment/commit/2d2a2f0db5e6be11378c1a44b72ce60217301062))
-* **seeder:** add the wp-admin seeding tab with lifted PHP limits ([31c1d8e](https://github.com/Bergert-Digital/pediment/commit/31c1d8e2cc2572c7f4b583234c4a74936f8268d3))
-* **seeder:** add wp pediment adopt to export live pages ([406970e](https://github.com/Bergert-Digital/pediment/commit/406970eb3a809f1af9db12231a00e540df3bd79f))
-* **seeder:** add wp pediment seed with a readable dry-run plan ([e7ea6ce](https://github.com/Bergert-Digital/pediment/commit/e7ea6cec56f1ec2cecb219b59e16eb65b799a20a))
-* **seeder:** apply plan with slash-safe writes, hashing ([7d4f188](https://github.com/Bergert-Digital/pediment/commit/7d4f18854c4628ab45b5da97d8d96a193fe33a88))
-* **seeder:** declare per-language titles, slugs and patterns ([6062c93](https://github.com/Bergert-Digital/pediment/commit/6062c93bb2f59712c9879846b1cc00f9a9a2e7a9))
-* **seeder:** declare site languages in the manifest ([4c42634](https://github.com/Bergert-Digital/pediment/commit/4c42634909f62f18732e56457a35231261bfae4b))
-* **seeder:** diff desired against actual state into a plan ([14e8393](https://github.com/Bergert-Digital/pediment/commit/14e8393127659c71d8038af97a3794be829e8d92))
-* **seeder:** link entry translation groups after the write loop ([9f05409](https://github.com/Bergert-Digital/pediment/commit/9f05409d4cb38be6c023f99371d94275f5b27b30))
-* **seeder:** load and validate the declarative seed manifest ([b36cac9](https://github.com/Bergert-Digital/pediment/commit/b36cac9906b591ad1ee316c63cba6e07338c6dad))
-* **seeder:** refuse to seed into a mismatched language set ([af8e017](https://github.com/Bergert-Digital/pediment/commit/af8e017bac67eb9d509f9490942f43165ec30643))
-* **seeder:** register manifest post types on init ([7f28c58](https://github.com/Bergert-Digital/pediment/commit/7f28c58508b25bea9e3c2761e656ae271d96d970))
-* **seeder:** resolve content, titles and slugs per language ([0821a25](https://github.com/Bergert-Digital/pediment/commit/0821a257cc2f43f909794cfbd1eccc2387edad2c))
-* **seeder:** resolve desired and actual state by seed key ([810b89e](https://github.com/Bergert-Digital/pediment/commit/810b89e7947f0ebf72691b3d42ba5b3d0e4bad24))
-* **seeder:** resolve entry content and media keys ([a70e0d0](https://github.com/Bergert-Digital/pediment/commit/a70e0d0a39642051288f4f7be0cb73a3e4e88a8c))
-* **seeder:** resolve navigation entities by seed key ([bbe8131](https://github.com/Bergert-Digital/pediment/commit/bbe8131e74fcd246e8aa88ea0b2f85da566332b4))
-* **seeder:** run the five seeding phases with post-condition checks ([d733a2c](https://github.com/Bergert-Digital/pediment/commit/d733a2c8a5d7155f24b49395518ae57a4e6a7707))
-* **seeder:** seed media attachments and site logo ([329c606](https://github.com/Bergert-Digital/pediment/commit/329c6062845df6f21ae72da9734d282b661c4ee2))
+* **i18n:** generate wpml-config.xml from block.json ([c04c321](https://github.com/Bergert-Digital/pediment/commit/c04c32101688560dcc15643a2459038b0eaac306))
+* **language:** add LanguageProvider seam with a null implementation ([230241d](https://github.com/Bergert-Digital/pediment/commit/230241d9585799bcdd1e20fd399f15a004194567))
+* **language:** add the Polylang adapter and per-language seeding (migration step 4) ([#69](https://github.com/Bergert-Digital/pediment/issues/69)) ([4cf7c87](https://github.com/Bergert-Digital/pediment/commit/4cf7c870f1f47cd11faea8e827df5a6daa4bd509))
+* **language:** add the Polylang provider ([bcf5257](https://github.com/Bergert-Digital/pediment/commit/bcf52570e153ca4291294724b5c5c435dfa378de))
+* **language:** configure Polylang from the manifest ([4e00993](https://github.com/Bergert-Digital/pediment/commit/4e009931e36d61be24a6f086d9b5901eeaedf2d2))
+* **language:** detect Polylang in the registry ([002c5ce](https://github.com/Bergert-Digital/pediment/commit/002c5ceff1243e66de93d07fe5707fa9590c3741))
+* **language:** give every language its own navigation menu ([245b676](https://github.com/Bergert-Digital/pediment/commit/245b676a0b8b109b789c11a8e5bffb6fd1ca388a))
+* **seeder:** add seed meta keys and versioned content hash ([802e7e4](https://github.com/Bergert-Digital/pediment/commit/802e7e44b2a11076e3be3c7625792d964e338c46))
+* **seeder:** add the declarative seeding engine (migration step 3) ([#67](https://github.com/Bergert-Digital/pediment/issues/67)) ([b97f932](https://github.com/Bergert-Digital/pediment/commit/b97f932a7501cfe83a5a596b1285c33ec6a2faad))
+* **seeder:** add the wp-admin seeding tab with lifted PHP limits ([972f55a](https://github.com/Bergert-Digital/pediment/commit/972f55ae7373f280a2661473a7e956dc2760b1b6))
+* **seeder:** add wp pediment adopt to export live pages ([1087785](https://github.com/Bergert-Digital/pediment/commit/1087785db48ebc561735020b9d8c47b8176513f4))
+* **seeder:** add wp pediment seed with a readable dry-run plan ([25ad178](https://github.com/Bergert-Digital/pediment/commit/25ad178af88701ef4fcf5f137fc891cc298ca289))
+* **seeder:** apply plan with slash-safe writes, hashing ([639c209](https://github.com/Bergert-Digital/pediment/commit/639c2091c05f28c2adeb15d05b7238dff622d4a7))
+* **seeder:** declare per-language titles, slugs and patterns ([5c19c8b](https://github.com/Bergert-Digital/pediment/commit/5c19c8bbbdf35c074348bc15c56db0572c83d835))
+* **seeder:** declare site languages in the manifest ([40f626f](https://github.com/Bergert-Digital/pediment/commit/40f626f4f1ee4a7313efb09dea33f0fe5681288c))
+* **seeder:** diff desired against actual state into a plan ([4c79613](https://github.com/Bergert-Digital/pediment/commit/4c796133410d6bb062f40d49d4be4a4864d7f20c))
+* **seeder:** link entry translation groups after the write loop ([01e3634](https://github.com/Bergert-Digital/pediment/commit/01e3634bf832a4bd54474b89e55122d835306ebc))
+* **seeder:** load and validate the declarative seed manifest ([81a02f0](https://github.com/Bergert-Digital/pediment/commit/81a02f0367f7c3c9701dfc2ba4705a28a1906a61))
+* **seeder:** refuse to seed into a mismatched language set ([9169445](https://github.com/Bergert-Digital/pediment/commit/916944557414bd14d18778db361d78405756d972))
+* **seeder:** register manifest post types on init ([4a31356](https://github.com/Bergert-Digital/pediment/commit/4a313569e8065ae5e63c4ca6b259c5d4a0bd0bff))
+* **seeder:** resolve content, titles and slugs per language ([44051e5](https://github.com/Bergert-Digital/pediment/commit/44051e59b668d5fca626def18dc9b0d70dbeed42))
+* **seeder:** resolve desired and actual state by seed key ([49b4ffe](https://github.com/Bergert-Digital/pediment/commit/49b4ffeeacb018c68596b983e758a59e76906468))
+* **seeder:** resolve entry content and media keys ([6293ccc](https://github.com/Bergert-Digital/pediment/commit/6293cccdf098278eaca26acff6bb3f77403df644))
+* **seeder:** resolve navigation entities by seed key ([b326915](https://github.com/Bergert-Digital/pediment/commit/b326915eb4ba14934debf7c778440e675815bb7d))
+* **seeder:** run the five seeding phases with post-condition checks ([73cf43e](https://github.com/Bergert-Digital/pediment/commit/73cf43ef81e39b0035823b36d6aaf42c3fc68028))
+* **seeder:** seed media attachments and site logo ([f2cd00e](https://github.com/Bergert-Digital/pediment/commit/f2cd00e121a4ca47e4569e98ff6f11d6374b5e73))
 
 
 ### Bug Fixes
 
-* **docs:** correct drifted back-references in the languages docs ([3541d7d](https://github.com/Bergert-Digital/pediment/commit/3541d7d34c9a7ac6735f302c37be22c9afd98784))
-* **e2e:** add the decoy-nav test that actually catches a deleted binding ([7c061d7](https://github.com/Bergert-Digital/pediment/commit/7c061d706c412d25b97d58dcac4b3e26e0f44db1))
-* **e2e:** make multilingual.spec.ts self-discriminating and precise ([207f2c7](https://github.com/Bergert-Digital/pediment/commit/207f2c784c9587f8ad65ab35e9b9f6a7c7966cfe))
-* **language-tests:** share the language-reseed fix across the whole Polylang suite ([c2b823e](https://github.com/Bergert-Digital/pediment/commit/c2b823e9030a65ae598bc032592aa2d1ab6323c4))
-* **nav:** actually untag the legacy-nav fixture in the unscoped-fallback test ([6bc8cdd](https://github.com/Bergert-Digital/pediment/commit/6bc8cdd3e01c8587d4bf20f33aecf80acc6a02dc))
-* **nav:** bind the header's navigation to the current language ([2898291](https://github.com/Bergert-Digital/pediment/commit/289829123ede83beabfb50c27fe2dd3e3d63b4a8))
-* **nav:** don't override inner blocks, gate the default language, make primary filterable ([fc2bec5](https://github.com/Bergert-Digital/pediment/commit/fc2bec5c13083cbee7a7e886b6001f7af8febadb))
-* **nav:** set lang explicitly for the unscoped candidate; clean up added language in tests ([7bd866c](https://github.com/Bergert-Digital/pediment/commit/7bd866c3f2a2b67c65d53db95bd12930ca5dfa72))
-* **polylang:** drop unsupported active_plugins rationale from bootstrap ([26a0d87](https://github.com/Bergert-Digital/pediment/commit/26a0d87dd68115baac0e992ee817fd1426dd6307))
-* **seeder:** adopt into the language's own pattern file ([3d93746](https://github.com/Bergert-Digital/pediment/commit/3d937460adfcad7e87723ea8a79a912700ebc102))
-* **seeder:** anchor media id rewrites and roll back ([0832693](https://github.com/Bergert-Digital/pediment/commit/08326937954a28c5eb09355d76938d3358a2fe1e))
-* **seeder:** gate writes on a clean plan, verify navs ([9cc7fe1](https://github.com/Bergert-Digital/pediment/commit/9cc7fe1a3a8fd356eb6b87c93b1b4e2857327b05))
-* **seeder:** hash adopt's source the way the seeder will ([42ceae2](https://github.com/Bergert-Digital/pediment/commit/42ceae28233ae58ad68cca6025e40f884980171b))
-* **seeder:** keep Adopter's filename in sync with its Slug header ([5882d45](https://github.com/Bergert-Digital/pediment/commit/5882d45366df6ccfc002c0b445d11d4aaffc05bb))
-* **seeder:** let phase 2 see non-public post types ([5f095b4](https://github.com/Bergert-Digital/pediment/commit/5f095b4d455c5275dabd5e1a14a78f5a907af843))
-* **seeder:** make `wp pediment seed --json` reachable ([b8b1a8a](https://github.com/Bergert-Digital/pediment/commit/b8b1a8a6ee6d528418bd6a5eb480ba66b1f3434b))
-* **seeder:** make adopt round-trip and keep placeholders ([7509fc7](https://github.com/Bergert-Digital/pediment/commit/7509fc710e7c3c3b81fa5890f2a90ff711f3b8d8))
-* **seeder:** make the verifier's parent check able to fail ([8e6d6d0](https://github.com/Bergert-Digital/pediment/commit/8e6d6d04dd967bec70eb8c7d7c57678cfac1e712))
-* **seeder:** name the create parent change parent_key ([5b9dc42](https://github.com/Bergert-Digital/pediment/commit/5b9dc427d27af10e3bb34fb76075d52579c50edd))
-* **seeder:** name the language in nav verification problems ([8b0b30d](https://github.com/Bergert-Digital/pediment/commit/8b0b30d9ca479cf95f400cb3024ed53718e8f3f1))
-* **seeder:** never write a nav with an unresolved link ([936d0e4](https://github.com/Bergert-Digital/pediment/commit/936d0e4cd92dd5dd2fad462813235fdc1f36fc95))
-* **seeder:** reject silent no-ops in per-language entry overrides ([737074a](https://github.com/Bergert-Digital/pediment/commit/737074a4f39ef26e8ccfc9b44d5a6a2e6a73d5ee))
-* **seeder:** reject unknown manifest keys and empty slugs ([08bf9a7](https://github.com/Bergert-Digital/pediment/commit/08bf9a7e4232d50439bcb16997db0e1991dcc303))
-* **seeder:** report media failures and restore trashed ([7ad6fb5](https://github.com/Bergert-Digital/pediment/commit/7ad6fb59ab873a65d2a85027d14047f1d208d56f))
-* **seeder:** report media keys the manifest never declares ([e12b7eb](https://github.com/Bergert-Digital/pediment/commit/e12b7eb5d72943f5bb4fff099d434e1181529fc6))
-* **seeder:** report missing nav links on every run ([88aa9f0](https://github.com/Bergert-Digital/pediment/commit/88aa9f00d93b9c48e81261e69fd6734acc8a5a71))
-* **seeder:** report partial applies and protected items ([cd055f0](https://github.com/Bergert-Digital/pediment/commit/cd055f02a84413b6e1e7a77c1d7e96ef948c4364))
-* **seeder:** report slug collisions, protect client terms ([f6a2a31](https://github.com/Bergert-Digital/pediment/commit/f6a2a31eb3686f77466d01b2ff08da9d68222c12))
-* **seeder:** report unresolved media ids, not just urls ([a6aa5db](https://github.com/Bergert-Digital/pediment/commit/a6aa5db5f5fa9210a72f615cfd24e8b90920e880))
-* **seeder:** restore a trashed nav instead of re-creating it ([e183002](https://github.com/Bergert-Digital/pediment/commit/e18300292c571cfab4d5c893cd6b8d9fdc9aad0a))
-* **seeder:** sharpen plan records and restore semantics ([4e01096](https://github.com/Bergert-Digital/pediment/commit/4e01096a15a62bf2afdc59b230655a8c8926eee5))
-* **seeder:** stop the translation notice mis-firing on real slugs and defaults ([24c522f](https://github.com/Bergert-Digital/pediment/commit/24c522f98d8519fd24fa23c7cd7eea4e2c20626c))
-* **seeder:** tag untagged posts on re-seed, verify language, guard partial groups ([c8fd84f](https://github.com/Bergert-Digital/pediment/commit/c8fd84f66126540e969eaf735502d10217fd8acf))
-* **seeder:** tell the operator when a seed is rejected ([fd775dd](https://github.com/Bergert-Digital/pediment/commit/fd775dd1b85fe998d130f910da02427399c2b0f5))
+* **docs:** correct drifted back-references in the languages docs ([ebfddbb](https://github.com/Bergert-Digital/pediment/commit/ebfddbb57bcae64962e1a1275850b7a5588d5959))
+* **e2e:** add the decoy-nav test that actually catches a deleted binding ([08dac8e](https://github.com/Bergert-Digital/pediment/commit/08dac8ec524ecbe10dcfcb92d10cd2971148cf11))
+* **e2e:** make multilingual.spec.ts self-discriminating and precise ([dc91a07](https://github.com/Bergert-Digital/pediment/commit/dc91a075806391754d3aacd75fdf500587678539))
+* **language-tests:** share the language-reseed fix across the whole Polylang suite ([893bedc](https://github.com/Bergert-Digital/pediment/commit/893bedcb1199e87de0d34c8967506d11367de044))
+* **nav:** actually untag the legacy-nav fixture in the unscoped-fallback test ([b87942f](https://github.com/Bergert-Digital/pediment/commit/b87942fef9c0f05a2ca9fb62260de2bfeec5c154))
+* **nav:** bind the header's navigation to the current language ([1069ee6](https://github.com/Bergert-Digital/pediment/commit/1069ee62ba8637050bf04fed3fc0d9e3b133987f))
+* **nav:** don't override inner blocks, gate the default language, make primary filterable ([10b2e95](https://github.com/Bergert-Digital/pediment/commit/10b2e955a056ab04a2b2ff060ef758acc69c2efd))
+* **nav:** set lang explicitly for the unscoped candidate; clean up added language in tests ([69a1a84](https://github.com/Bergert-Digital/pediment/commit/69a1a84318e4dfbd8a7d3a04c593dbadfa3e71e4))
+* **polylang:** drop unsupported active_plugins rationale from bootstrap ([66dce0b](https://github.com/Bergert-Digital/pediment/commit/66dce0bb60464b1d55e44472249fb33c852bc84d))
+* **seeder:** adopt into the language's own pattern file ([2974fc7](https://github.com/Bergert-Digital/pediment/commit/2974fc70e4d765783865d4ff42adc8855dabda11))
+* **seeder:** anchor media id rewrites and roll back ([d01130c](https://github.com/Bergert-Digital/pediment/commit/d01130cdb53dfce1bc6881a040005b99569380c5))
+* **seeder:** gate writes on a clean plan, verify navs ([aa58044](https://github.com/Bergert-Digital/pediment/commit/aa580447cfe2cb63fa460075051a2a26cfcb05ba))
+* **seeder:** hash adopt's source the way the seeder will ([d49f0dc](https://github.com/Bergert-Digital/pediment/commit/d49f0dcc536712cee047dc007efcac659c733043))
+* **seeder:** keep Adopter's filename in sync with its Slug header ([b67408a](https://github.com/Bergert-Digital/pediment/commit/b67408aa70bae7ffab92c174f142f03a0360d9c3))
+* **seeder:** let phase 2 see non-public post types ([f09d77f](https://github.com/Bergert-Digital/pediment/commit/f09d77fb61538ef349e31a37416c0c671f0eb1d7))
+* **seeder:** make `wp pediment seed --json` reachable ([6e699a2](https://github.com/Bergert-Digital/pediment/commit/6e699a2bfc14550fe6751df737af02801ff1e011))
+* **seeder:** make adopt round-trip and keep placeholders ([c2fa4e7](https://github.com/Bergert-Digital/pediment/commit/c2fa4e7a19dd581734d6836422e8c3efcdee40a0))
+* **seeder:** make the verifier's parent check able to fail ([4097b52](https://github.com/Bergert-Digital/pediment/commit/4097b52040e420b12a7148a958f99959fa8161ab))
+* **seeder:** name the create parent change parent_key ([f769508](https://github.com/Bergert-Digital/pediment/commit/f769508010297ff71313bc5e87f1793eee815803))
+* **seeder:** name the language in nav verification problems ([e1735c6](https://github.com/Bergert-Digital/pediment/commit/e1735c6da9c883bd00ae22b3228adf0069075350))
+* **seeder:** never write a nav with an unresolved link ([46acc0e](https://github.com/Bergert-Digital/pediment/commit/46acc0e37583af380cb90372b334a054e41b4d9e))
+* **seeder:** reject silent no-ops in per-language entry overrides ([e5f139a](https://github.com/Bergert-Digital/pediment/commit/e5f139aa4c83eda2cf3dfea840f09440cf58cae9))
+* **seeder:** reject unknown manifest keys and empty slugs ([708c87f](https://github.com/Bergert-Digital/pediment/commit/708c87fcffcc436697d3f32a86e087a864be218f))
+* **seeder:** report media failures and restore trashed ([a339d64](https://github.com/Bergert-Digital/pediment/commit/a339d6464df72c92451417ee9ed21b391fcefee7))
+* **seeder:** report media keys the manifest never declares ([c64cf43](https://github.com/Bergert-Digital/pediment/commit/c64cf43f9663900421f7d03f960cf6eefd01b1ed))
+* **seeder:** report missing nav links on every run ([90fda31](https://github.com/Bergert-Digital/pediment/commit/90fda31126aca8402d50876454a227573d5c6351))
+* **seeder:** report partial applies and protected items ([b2c489e](https://github.com/Bergert-Digital/pediment/commit/b2c489ef23821a2a608e7cccbf5af98b60c6fb21))
+* **seeder:** report slug collisions, protect client terms ([71cd2bb](https://github.com/Bergert-Digital/pediment/commit/71cd2bbb7cb8dc356607ed2eb5b69f2d038a4e3e))
+* **seeder:** report unresolved media ids, not just urls ([4a67300](https://github.com/Bergert-Digital/pediment/commit/4a67300f6e4d60ea83054b7c95f6b739b7d82f72))
+* **seeder:** restore a trashed nav instead of re-creating it ([9768ce2](https://github.com/Bergert-Digital/pediment/commit/9768ce2bf0fdf7a2cb98c82d2c166576ef937b68))
+* **seeder:** sharpen plan records and restore semantics ([ffe97be](https://github.com/Bergert-Digital/pediment/commit/ffe97be45c8f84e5fd99461a37dede5d5359f9c0))
+* **seeder:** stop the translation notice mis-firing on real slugs and defaults ([19050c6](https://github.com/Bergert-Digital/pediment/commit/19050c6ef21bad557d8ef28f049c78539df6f802))
+* **seeder:** tag untagged posts on re-seed, verify language, guard partial groups ([f39ff60](https://github.com/Bergert-Digital/pediment/commit/f39ff60e249d0f293eda04bbcb2579675d7cbfe0))
+* **seeder:** tell the operator when a seed is rejected ([51d8176](https://github.com/Bergert-Digital/pediment/commit/51d817602756ce9b513cee89435b5010ed6f5b09))
 
 
 ### Performance
 
-* **seeder:** cache the manifest per request ([1c80f8e](https://github.com/Bergert-Digital/pediment/commit/1c80f8e06c608a752afa427b82a787874e15a38e))
+* **seeder:** cache the manifest per request ([7a13d87](https://github.com/Bergert-Digital/pediment/commit/7a13d8750290fd37fc572e66aa1d7ed66b287939))
 
 ## [3.0.0](https://github.com/Bergert-Digital/pediment/compare/v2.4.1...v3.0.0) (2026-07-30)
 
@@ -477,122 +477,122 @@
 
 ### Features
 
-* blocks and block build move into the plugin ([4573b73](https://github.com/Bergert-Digital/pediment/commit/4573b73ed206bb61b71d840eb25a369b778fb413))
-* fixture client theme; e2e runs against the plugin-served site ([408f6dc](https://github.com/Bergert-Digital/pediment/commit/408f6dc89b9194321c7b000c3b34fd14216273a3))
-* move the forms engine and settings hub into the plugin ([914d002](https://github.com/Bergert-Digital/pediment/commit/914d002c90cc583c069fb139407595e8f5565e20))
-* **release:** one artifact — pediment-plugin.zip, installs as plugins/pediment ([092ce7f](https://github.com/Bergert-Digital/pediment/commit/092ce7f1e1d62bd0f6c11a7c3ea0f4ba529d90e1))
-* remove the contact-form stack in favor of the forms engine ([609defd](https://github.com/Bergert-Digital/pediment/commit/609defd43e5746277bf2f3f613f705b06cdf99d8))
-* rename the plugin to Pediment (namespace, slug, asset) ([e8be77d](https://github.com/Bergert-Digital/pediment/commit/e8be77d006a3a7daa071470f5232873114cd906a))
-* retire the parent theme; the plugin is the product ([531feed](https://github.com/Bergert-Digital/pediment/commit/531feedc24b69e375376dc24f5dddc8ec2adb872))
-* templates, patterns, tokens and assets ship from the plugin ([cafdd2c](https://github.com/Bergert-Digital/pediment/commit/cafdd2c8df84a4a5fae95e3c93240df2f2175aeb))
+* blocks and block build move into the plugin ([7cfcc4f](https://github.com/Bergert-Digital/pediment/commit/7cfcc4fbc9782239081f0aee8fd0ae073cd87e31))
+* fixture client theme; e2e runs against the plugin-served site ([06b7e03](https://github.com/Bergert-Digital/pediment/commit/06b7e03181cbd97b34e4612531e4c832ee8bbbd1))
+* move the forms engine and settings hub into the plugin ([09cfec6](https://github.com/Bergert-Digital/pediment/commit/09cfec6d12440e34e4ff67e73f4ae5b301a50aac))
+* **release:** one artifact — pediment-plugin.zip, installs as plugins/pediment ([aeae73e](https://github.com/Bergert-Digital/pediment/commit/aeae73e765f195b8a59e44001871102d3fc6e896))
+* remove the contact-form stack in favor of the forms engine ([1fdf789](https://github.com/Bergert-Digital/pediment/commit/1fdf7891be73f26499dd8810e1ef8b52b017d1da))
+* rename the plugin to Pediment (namespace, slug, asset) ([dfc0044](https://github.com/Bergert-Digital/pediment/commit/dfc00447be60e8adeebb2d7fa79fe0a5bbb66e76))
+* retire the parent theme; the plugin is the product ([bf76ffa](https://github.com/Bergert-Digital/pediment/commit/bf76ffabd5a76d858b4dc12aea0b42dfd4448979))
+* templates, patterns, tokens and assets ship from the plugin ([a3d74b8](https://github.com/Bergert-Digital/pediment/commit/a3d74b80ff9a9f1149fb66caded55a4d05f9c268))
 
 
 ### Bug Fixes
 
-* **ci:** regenerate the plugin lockfile with npm 10 so npm ci passes on CI ([78fb2f3](https://github.com/Bergert-Digital/pediment/commit/78fb2f30860445233a96c220b35a43ee6d8a32da))
-* **editor:** gate the chat composer until the conversation loads; translate quick-action labels ([e314151](https://github.com/Bergert-Digital/pediment/commit/e3141519d5c8d8e6b9a2d2e13577f01f65459ba3))
+* **ci:** regenerate the plugin lockfile with npm 10 so npm ci passes on CI ([f5a915b](https://github.com/Bergert-Digital/pediment/commit/f5a915b6757a0457d5200b975f67f5e5be108ccc))
+* **editor:** gate the chat composer until the conversation loads; translate quick-action labels ([a42f4b6](https://github.com/Bergert-Digital/pediment/commit/a42f4b6a5d8fea2640e384c68fad426d22a23464))
 
 ## [2.4.1](https://github.com/Bergert-Digital/pediment/compare/v2.4.0...v2.4.1) (2026-07-30)
 
 
 ### Bug Fixes
 
-* **plugin:** point at the live monorepo, drop stale changelog from zip ([b03ef2d](https://github.com/Bergert-Digital/pediment/commit/b03ef2d86552d213b3264b79f07d26419b1b2c19))
+* **plugin:** point at the live monorepo, drop stale changelog from zip ([a1aea24](https://github.com/Bergert-Digital/pediment/commit/a1aea242d51742a7530b16c9ece63e12e111d1c5))
 
 ## [2.4.0](https://github.com/Bergert-Digital/pediment/compare/v2.3.0...v2.4.0) (2026-07-30)
 
 
 ### Features
 
-* **ci:** one workflow for theme and plugin ([949ff5a](https://github.com/Bergert-Digital/pediment/commit/949ff5a67e5e2d54ca0099a85ef53c9d78581630))
-* **env:** one wp-env for theme and plugin with pinned mount names ([24671d4](https://github.com/Bergert-Digital/pediment/commit/24671d48ca9964fd729760d660488cfcc04a5f8c))
-* merge pediment-ai into a monorepo with one release line ([#63](https://github.com/Bergert-Digital/pediment/issues/63)) ([78608cf](https://github.com/Bergert-Digital/pediment/commit/78608cf0695f6a8624058acb0f12b0e39821d69d))
-* merge pediment-ai into the monorepo as plugin/ ([1c1de3b](https://github.com/Bergert-Digital/pediment/commit/1c1de3b7df066538a3ae1878573a8a065d32db41))
-* **release:** one version line, two artifacts per tag ([8ecb77a](https://github.com/Bergert-Digital/pediment/commit/8ecb77ac27c3061ce9820f04f77ac271a176e7b3))
-* **updates:** plugin updater follows monorepo releases ([8a721ad](https://github.com/Bergert-Digital/pediment/commit/8a721adea93b731853db3750b0b492212da0a1c6))
+* **ci:** one workflow for theme and plugin ([dca6f38](https://github.com/Bergert-Digital/pediment/commit/dca6f381274d06707dc6621a72965c6a5b01dea2))
+* **env:** one wp-env for theme and plugin with pinned mount names ([416c339](https://github.com/Bergert-Digital/pediment/commit/416c339b4249ef19801f32463762cf311c7da266))
+* merge pediment-ai into a monorepo with one release line ([#63](https://github.com/Bergert-Digital/pediment/issues/63)) ([92c4460](https://github.com/Bergert-Digital/pediment/commit/92c4460ab7ec7c04e6be160a50bc6392d2b7d933))
+* merge pediment-ai into the monorepo as plugin/ ([fe0f706](https://github.com/Bergert-Digital/pediment/commit/fe0f706c2927f7b0a9a5cd2124c28f244aa1bac5))
+* **release:** one version line, two artifacts per tag ([64bf1f8](https://github.com/Bergert-Digital/pediment/commit/64bf1f86d0e40704ab6099fb3a8982b821a18028))
+* **updates:** plugin updater follows monorepo releases ([7c07a76](https://github.com/Bergert-Digital/pediment/commit/7c07a76fb695485bceefcf5f5a925385348df695))
 
 ## [2.3.0](https://github.com/Bergert-Digital/pediment/compare/v2.2.0...v2.3.0) (2026-07-24)
 
 
 ### Features
 
-* **forms:** destination dropdown in the Form block inspector ([a62b403](https://github.com/Bergert-Digital/pediment/commit/a62b403f08323a1cbb136dc6061d723fcaf0a3fe))
-* **forms:** destination dropdown in the Form block inspector ([#60](https://github.com/Bergert-Digital/pediment/issues/60)) ([51d426c](https://github.com/Bergert-Digital/pediment/commit/51d426ccb7cbf16839179619b5482dee72e2ee07))
-* **forms:** destination dropdown in the Form block inspector ([#61](https://github.com/Bergert-Digital/pediment/issues/61)) ([781da95](https://github.com/Bergert-Digital/pediment/commit/781da954ae287a9a85cf3edc5efa1984295c6479))
+* **forms:** destination dropdown in the Form block inspector ([359826c](https://github.com/Bergert-Digital/pediment/commit/359826cd8fa808e176fc6578ced848022ce331ce))
+* **forms:** destination dropdown in the Form block inspector ([#60](https://github.com/Bergert-Digital/pediment/issues/60)) ([adc721d](https://github.com/Bergert-Digital/pediment/commit/adc721d05e94834f9cf72ce8cc24806e0c579fd3))
+* **forms:** destination dropdown in the Form block inspector ([#61](https://github.com/Bergert-Digital/pediment/issues/61)) ([4fbeeb8](https://github.com/Bergert-Digital/pediment/commit/4fbeeb8f88299cc8fccbd9d363b78e9de53a549e))
 
 ## [2.2.0](https://github.com/Bergert-Digital/pediment/compare/v2.1.0...v2.2.0) (2026-07-07)
 
 
 ### Features
 
-* **forms:** auto-assign destination ids + keep form input on error ([38dda2f](https://github.com/Bergert-Digital/pediment/commit/38dda2f50ae2931686ff201e967484f3dd97f446))
-* **forms:** auto-assign destination ids + keep form input on error ([fdb7597](https://github.com/Bergert-Digital/pediment/commit/fdb7597c54301f74308e1facc41ee5672792512e))
-* **forms:** move forms settings to Settings → Pediment Theme tabs ([78a2452](https://github.com/Bergert-Digital/pediment/commit/78a245230f82da3058f0062c6707eb725a7e7e04))
-* **forms:** settings tabs, destination editing, form block fixes ([#58](https://github.com/Bergert-Digital/pediment/issues/58)) ([7130b5f](https://github.com/Bergert-Digital/pediment/commit/7130b5f19b61b2fc1114858ab1264143dbe7d652))
-* Settings → Pediment Theme tabbed settings with destination editing ([#56](https://github.com/Bergert-Digital/pediment/issues/56)) ([9bf0e0a](https://github.com/Bergert-Digital/pediment/commit/9bf0e0aa6dd24f4adfa440d5f47ec509d1171b47))
-* **settings:** reusable tabbed Pediment Theme options page framework ([460d873](https://github.com/Bergert-Digital/pediment/commit/460d873b345f96218a0fbcdf83ada0ed481dfc15))
+* **forms:** auto-assign destination ids + keep form input on error ([b6dc47a](https://github.com/Bergert-Digital/pediment/commit/b6dc47a69de8916350b9eadf19e38efa33507964))
+* **forms:** auto-assign destination ids + keep form input on error ([6e0ca26](https://github.com/Bergert-Digital/pediment/commit/6e0ca26e1a52ca1cf3e6e42e72f8d4fcb504a00a))
+* **forms:** move forms settings to Settings → Pediment Theme tabs ([4da98e2](https://github.com/Bergert-Digital/pediment/commit/4da98e23714f8339254f15b52a74bd74419e2855))
+* **forms:** settings tabs, destination editing, form block fixes ([#58](https://github.com/Bergert-Digital/pediment/issues/58)) ([eb6423c](https://github.com/Bergert-Digital/pediment/commit/eb6423ccd31c9c3039bc651431452575e8fbe24c))
+* Settings → Pediment Theme tabbed settings with destination editing ([#56](https://github.com/Bergert-Digital/pediment/issues/56)) ([42066a3](https://github.com/Bergert-Digital/pediment/commit/42066a3c786f85d188c3529464697a7110cde961))
+* **settings:** reusable tabbed Pediment Theme options page framework ([a9d884e](https://github.com/Bergert-Digital/pediment/commit/a9d884e70e9a26a651f0d6569279df906204984b))
 
 
 ### Bug Fixes
 
-* **forms:** apply block gap between fields, roomier default ([a4463b5](https://github.com/Bergert-Digital/pediment/commit/a4463b510e368392bb7b5a72d22a09f65ccdd031))
-* **forms:** checkbox inline layout + field block-spacing; add dev commands ([#57](https://github.com/Bergert-Digital/pediment/issues/57)) ([1cdda48](https://github.com/Bergert-Digital/pediment/commit/1cdda48e484f03b2d1926c89127aa0ac0d963843))
-* **forms:** give form fields room and honor Block Spacing ([5da5555](https://github.com/Bergert-Digital/pediment/commit/5da55551a62a0897babb9314be2789f0a245fe3d))
-* **forms:** keep edit context on destination save error/test redirect ([e009b7d](https://github.com/Bergert-Digital/pediment/commit/e009b7d7dbef0d0f481ea7f563f45b073fd4bc28))
-* **forms:** lay out checkbox field inline with its label ([e409539](https://github.com/Bergert-Digital/pediment/commit/e40953971b92141e3d74afded84f93c468640511))
-* restore in-sync package-lock.json to unblock npm ci in CI ([703e10e](https://github.com/Bergert-Digital/pediment/commit/703e10ec094b96f2b5f06028aa0c1b062ecd249d))
+* **forms:** apply block gap between fields, roomier default ([66fb378](https://github.com/Bergert-Digital/pediment/commit/66fb378b65e253b1afbe2e9a0ea5a07ff793d1de))
+* **forms:** checkbox inline layout + field block-spacing; add dev commands ([#57](https://github.com/Bergert-Digital/pediment/issues/57)) ([a72f43e](https://github.com/Bergert-Digital/pediment/commit/a72f43e702dcfbc76b6e834b2580abb7780d4d2c))
+* **forms:** give form fields room and honor Block Spacing ([c74dbf6](https://github.com/Bergert-Digital/pediment/commit/c74dbf6b6e6b029c5226a4358231d56b20172de2))
+* **forms:** keep edit context on destination save error/test redirect ([f191f5e](https://github.com/Bergert-Digital/pediment/commit/f191f5e3c353aa5c22d8d5006af1daa3713f497a))
+* **forms:** lay out checkbox field inline with its label ([133db55](https://github.com/Bergert-Digital/pediment/commit/133db55bc7b82bad921fc2c067fc5c51e1229e0f))
+* restore in-sync package-lock.json to unblock npm ci in CI ([e38056a](https://github.com/Bergert-Digital/pediment/commit/e38056a164692d315de46f784a16dc12dd37cf45))
 
 ## [2.1.0](https://github.com/Bergert-Digital/pediment/compare/v2.0.0...v2.1.0) (2026-07-06)
 
 
 ### Features
 
-* **404:** center page-not-found content vertically ([140d76b](https://github.com/Bergert-Digital/pediment/commit/140d76b5905422ad2cfc04beff3422e0b33fe637))
-* **404:** center page-not-found content vertically ([#53](https://github.com/Bergert-Digital/pediment/issues/53)) ([b3e68ae](https://github.com/Bergert-Digital/pediment/commit/b3e68aee98ed714f38b1035b7f192e15dc8a2ec9))
-* AI-generatable forms — Plan 1 (capture) ([#49](https://github.com/Bergert-Digital/pediment/issues/49)) ([c57ed2c](https://github.com/Bergert-Digital/pediment/commit/c57ed2cdb9f559a3f59bda0b1c16af8eda5aadd9))
-* AI-generatable forms with delivery, plus Brand Settings removal ([#54](https://github.com/Bergert-Digital/pediment/issues/54)) ([e872399](https://github.com/Bergert-Digital/pediment/commit/e872399366c88957811afdcf8a8edbb5168d892a))
-* encrypted secret store for form destinations ([3ba302f](https://github.com/Bergert-Digital/pediment/commit/3ba302f0e3554d2964f6bf6c203b72ec1a9350ec))
-* form delivery engine wired to submission storage ([8cada5f](https://github.com/Bergert-Digital/pediment/commit/8cada5f2d2dfea74cfdc8a1e588a7cce2e0a5837))
-* form destinations registry and validation gate ([4960345](https://github.com/Bergert-Digital/pediment/commit/4960345e4b15c2452b9b2111f74da840385e5092))
-* form field-collection and validation helpers ([2d4f107](https://github.com/Bergert-Digital/pediment/commit/2d4f107008aea4e830391b609dfc51f715cf2e2e))
-* form submission delivery — destinations, templated HTTP, secrets (Plan 2) ([#52](https://github.com/Bergert-Digital/pediment/issues/52)) ([2407052](https://github.com/Bergert-Digital/pediment/commit/2407052d6cf530950a5982fa53063aa6aa6adef5))
-* form submission retention cron ([0de31ef](https://github.com/Bergert-Digital/pediment/commit/0de31ef29f9a24b5b7505a3f31ef71d5257367c0))
-* form_submission CPT, persistence, and admin columns ([d22bff9](https://github.com/Bergert-Digital/pediment/commit/d22bff980c9a8e4e0322aa92c93f83d797d84c6b))
-* **forms-settings:** send-test dry-run for destinations ([61f7a8f](https://github.com/Bergert-Digital/pediment/commit/61f7a8f8d7dc9e10b9239692e22d9da1662703df))
-* generic form submission REST endpoint with server-authoritative validation ([7f96147](https://github.com/Bergert-Digital/pediment/commit/7f961474bb05ff4f3836fa19a0abf6abf561bd92))
-* HTTPS + SSRF guard for form delivery URLs ([6a6fe10](https://github.com/Bergert-Digital/pediment/commit/6a6fe104c7c4fb92d2a43312790893082e9cec8f))
-* pediment/form block with server-authoritative submission wiring ([a1d040b](https://github.com/Bergert-Digital/pediment/commit/a1d040b8991d751268cba92af5b8dd43a4a61c42))
-* pediment/form-field block ([1825c19](https://github.com/Bergert-Digital/pediment/commit/1825c19b560c38094227c9e7c9ca7208a146e5c0))
-* provider presets for form destinations ([fd57f04](https://github.com/Bergert-Digital/pediment/commit/fd57f0455e6d9bb788526fec3e0030182f3923b9))
-* retention setting + delivery status column and retry ([7eec194](https://github.com/Bergert-Digital/pediment/commit/7eec194b8b91a2cdc6287e0a74c89b0c288e36e8))
-* Settings → Forms admin UI for destinations and secrets ([dbba3ce](https://github.com/Bergert-Digital/pediment/commit/dbba3cea7028afc905d448cb5282bcb3c460cf0e))
-* structural token templating for form delivery ([64465b5](https://github.com/Bergert-Digital/pediment/commit/64465b51537652606b9115e0df30d6282b8051d6))
+* **404:** center page-not-found content vertically ([f9a232d](https://github.com/Bergert-Digital/pediment/commit/f9a232dd870aa8b08a4ef85e4ab3efe937e51edc))
+* **404:** center page-not-found content vertically ([#53](https://github.com/Bergert-Digital/pediment/issues/53)) ([99101ab](https://github.com/Bergert-Digital/pediment/commit/99101ab69899bf9f1bbfa7f805d1f3e046889ab2))
+* AI-generatable forms — Plan 1 (capture) ([#49](https://github.com/Bergert-Digital/pediment/issues/49)) ([76b4505](https://github.com/Bergert-Digital/pediment/commit/76b4505489f3ab0bca260ff24d7dd7fc4bcfab81))
+* AI-generatable forms with delivery, plus Brand Settings removal ([#54](https://github.com/Bergert-Digital/pediment/issues/54)) ([aa1ca41](https://github.com/Bergert-Digital/pediment/commit/aa1ca4113ec1e516d5faf83c2770ee11c13a487f))
+* encrypted secret store for form destinations ([575d7b9](https://github.com/Bergert-Digital/pediment/commit/575d7b9960ed1c2bff1050f232b67fcfdd6cb7b8))
+* form delivery engine wired to submission storage ([4df3eb4](https://github.com/Bergert-Digital/pediment/commit/4df3eb40e333f396dfdb1dda08d00136ac1481d2))
+* form destinations registry and validation gate ([d19d825](https://github.com/Bergert-Digital/pediment/commit/d19d825df6343e20fd121e251408a8fef2c028ea))
+* form field-collection and validation helpers ([922daed](https://github.com/Bergert-Digital/pediment/commit/922daed112de7c4e247f6bdbabbfc807bb18ec44))
+* form submission delivery — destinations, templated HTTP, secrets (Plan 2) ([#52](https://github.com/Bergert-Digital/pediment/issues/52)) ([0ca0b95](https://github.com/Bergert-Digital/pediment/commit/0ca0b95d36fb33e31a9f968670f5d880159fe20f))
+* form submission retention cron ([a649398](https://github.com/Bergert-Digital/pediment/commit/a64939842f1b76ad9a4131d3e043e9e17f7226d4))
+* form_submission CPT, persistence, and admin columns ([2d3950b](https://github.com/Bergert-Digital/pediment/commit/2d3950bd2b22c1776f2405400907bc3e5e734608))
+* **forms-settings:** send-test dry-run for destinations ([613b032](https://github.com/Bergert-Digital/pediment/commit/613b03255bfa9253377bb3de7ea4c521887ded5c))
+* generic form submission REST endpoint with server-authoritative validation ([3c43246](https://github.com/Bergert-Digital/pediment/commit/3c432469b50540708543983945294996275a7be0))
+* HTTPS + SSRF guard for form delivery URLs ([0fe96ad](https://github.com/Bergert-Digital/pediment/commit/0fe96ad49b62db2de640766bb60a6061200c7005))
+* pediment/form block with server-authoritative submission wiring ([3a9abe9](https://github.com/Bergert-Digital/pediment/commit/3a9abe98a4fb4c7072065874caa9070c5cd01ae5))
+* pediment/form-field block ([dceb595](https://github.com/Bergert-Digital/pediment/commit/dceb5952deb4e718883ce7843ae98bf9d6be51a1))
+* provider presets for form destinations ([d3b044d](https://github.com/Bergert-Digital/pediment/commit/d3b044ddc926f3a300762a19ad5e69155a01805c))
+* retention setting + delivery status column and retry ([df337e0](https://github.com/Bergert-Digital/pediment/commit/df337e028c40de5bf5210f902d4764af9b8874b3))
+* Settings → Forms admin UI for destinations and secrets ([2146ff1](https://github.com/Bergert-Digital/pediment/commit/2146ff1f166ae5f73c78e928436641b5a8393872))
+* structural token templating for form delivery ([4976391](https://github.com/Bergert-Digital/pediment/commit/497639166823f4019bf014a6aa9cfcbb9574ee4f))
 
 
 ### Bug Fixes
 
-* add novalidate to form so server-side validation is authoritative ([18c3ffa](https://github.com/Bergert-Digital/pediment/commit/18c3ffa234030c197b1aee6416326bbb4836b2da))
-* explicit esc_attr on data-success, harden honeypot hiding, null-guard submit button ([0d4bcf5](https://github.com/Bergert-Digital/pediment/commit/0d4bcf54fa0f5cf7387abe47fa596e33bac90483))
-* **form-field:** allow editing blank lines in the Options textarea ([a0f64b2](https://github.com/Bergert-Digital/pediment/commit/a0f64b298853a4877584d53fe40c7a2f2ef7ee63))
-* **form-field:** harden options handling against malformed AI input ([dbc9169](https://github.com/Bergert-Digital/pediment/commit/dbc91699822200ea1882cc7490204c5eda2536c3))
-* **form:** editor preview structure + field/button theming ([faba02b](https://github.com/Bergert-Digital/pediment/commit/faba02b6165b703fa7fd0efce75bb7173663f702))
-* **forms-destinations:** use json_last_error for body validity (accept JSON null) ([6f55255](https://github.com/Bergert-Digital/pediment/commit/6f55255b79316237eb439935074491b24730da81))
-* **forms-secrets:** consistent name normalization in set/get + guards ([1e3f093](https://github.com/Bergert-Digital/pediment/commit/1e3f093577e1f2f4793c6c4e201876f0486f2bc0))
-* **forms-template:** single-pass token resolution to block field-value token injection ([fed52d1](https://github.com/Bergert-Digital/pediment/commit/fed52d1aa17f48958448c661df310f331b06453b))
-* **form:** serialize inner field blocks on save (InnerBlocks.Content) ([498c52d](https://github.com/Bergert-Digital/pediment/commit/498c52ddd21defbb5b5eff402be8bb889f4641f3))
-* **forms:** precise validator error keys, scan header keys, preset+style nits ([b82f874](https://github.com/Bergert-Digital/pediment/commit/b82f874b29c632e972a8119c1600af077f2e22c2))
-* guard retention cron against strtotime false (mass-delete blast radius) ([6368f25](https://github.com/Bergert-Digital/pediment/commit/6368f2590932652508cb2abf2241b4ed5e92dd11))
-* move form-field help text out of label (a11y) + add name-fallback test ([479ef2d](https://github.com/Bergert-Digital/pediment/commit/479ef2da1385c6bce0651b73aacaa148e3acf564))
-* stop forcing pretty permalinks on activation ([#47](https://github.com/Bergert-Digital/pediment/issues/47)) ([bec0b1a](https://github.com/Bergert-Digital/pediment/commit/bec0b1aa45c2d20ea39f1cf80745ba1097812a56))
-* stop forcing pretty permalinks on activation ([#47](https://github.com/Bergert-Digital/pediment/issues/47)) ([#48](https://github.com/Bergert-Digital/pediment/issues/48)) ([250c20a](https://github.com/Bergert-Digital/pediment/commit/250c20a47fd9db13d9f8ff558771be30a112b1df))
-* store pending delivery status + sanitize fields at storage time ([c692376](https://github.com/Bergert-Digital/pediment/commit/c692376539b868fac1aa89b404b958456afb0c44))
-* surface submission field values in form_submission admin list ([1ca9ada](https://github.com/Bergert-Digital/pediment/commit/1ca9ada544e92ea6a09f687596ebbb1165e9399d))
-* surface submission field values in form_submission admin list (fixes e2e) ([#50](https://github.com/Bergert-Digital/pediment/issues/50)) ([fe8d7c3](https://github.com/Bergert-Digital/pediment/commit/fe8d7c349a08d31d4960d13e1ee0374d737b2c53))
+* add novalidate to form so server-side validation is authoritative ([1f5eca7](https://github.com/Bergert-Digital/pediment/commit/1f5eca71e980ad3c6848292a452b6cf4157046b3))
+* explicit esc_attr on data-success, harden honeypot hiding, null-guard submit button ([c2c8526](https://github.com/Bergert-Digital/pediment/commit/c2c85267f96521149269d8c5f6d7a2fe63390e07))
+* **form-field:** allow editing blank lines in the Options textarea ([4d1e32d](https://github.com/Bergert-Digital/pediment/commit/4d1e32ddf69439fe65b12135015f5f974243aeea))
+* **form-field:** harden options handling against malformed AI input ([b0f4420](https://github.com/Bergert-Digital/pediment/commit/b0f4420d43ee2eac73b1e4a94ba2740cd7bbcc29))
+* **form:** editor preview structure + field/button theming ([1b56f47](https://github.com/Bergert-Digital/pediment/commit/1b56f4751cd00abdc4f176db440f2757f13cd7ee))
+* **forms-destinations:** use json_last_error for body validity (accept JSON null) ([e1b5c22](https://github.com/Bergert-Digital/pediment/commit/e1b5c22e8f257dcff93a535ea66dc28763b5fa71))
+* **forms-secrets:** consistent name normalization in set/get + guards ([5c4ce0c](https://github.com/Bergert-Digital/pediment/commit/5c4ce0cd5c8a69796b254306c824a0a4518340c6))
+* **forms-template:** single-pass token resolution to block field-value token injection ([129aeef](https://github.com/Bergert-Digital/pediment/commit/129aeeff48710f035641c4929a4865502f09a1a3))
+* **form:** serialize inner field blocks on save (InnerBlocks.Content) ([4f6a696](https://github.com/Bergert-Digital/pediment/commit/4f6a6965f2887bbf6c3bcb1421e5f3072ada6f8d))
+* **forms:** precise validator error keys, scan header keys, preset+style nits ([72b2353](https://github.com/Bergert-Digital/pediment/commit/72b23531bad53fc44ff45782b000ef766ebf6f94))
+* guard retention cron against strtotime false (mass-delete blast radius) ([8fcf47a](https://github.com/Bergert-Digital/pediment/commit/8fcf47a40beec33ad73e7980e3578dc6c3d6faae))
+* move form-field help text out of label (a11y) + add name-fallback test ([f840a22](https://github.com/Bergert-Digital/pediment/commit/f840a22f99eb592eb84502496ca8d2673180967f))
+* stop forcing pretty permalinks on activation ([#47](https://github.com/Bergert-Digital/pediment/issues/47)) ([a33effd](https://github.com/Bergert-Digital/pediment/commit/a33effda7bc3b3dd84af9ac9b385b48117ae94ed))
+* stop forcing pretty permalinks on activation ([#47](https://github.com/Bergert-Digital/pediment/issues/47)) ([#48](https://github.com/Bergert-Digital/pediment/issues/48)) ([e0d99e4](https://github.com/Bergert-Digital/pediment/commit/e0d99e4647b10ddc8a5f26801066d9707e90a140))
+* store pending delivery status + sanitize fields at storage time ([5cbc8d8](https://github.com/Bergert-Digital/pediment/commit/5cbc8d8654f49814334c9621f77aba99882e3c4f))
+* surface submission field values in form_submission admin list ([bcc2e21](https://github.com/Bergert-Digital/pediment/commit/bcc2e2151bdfb88e37ade817b4ef081a35684146))
+* surface submission field values in form_submission admin list (fixes e2e) ([#50](https://github.com/Bergert-Digital/pediment/issues/50)) ([de0b8e7](https://github.com/Bergert-Digital/pediment/commit/de0b8e7124baa97686551698e76541a6ea1462be))
 
 
 ### Refactors
 
-* remove Brand Settings, make social-links block self-contained ([58932ed](https://github.com/Bergert-Digital/pediment/commit/58932edd3c4689b3f18b5745843c6d28beaa1313))
+* remove Brand Settings, make social-links block self-contained ([1bfe695](https://github.com/Bergert-Digital/pediment/commit/1bfe695d74e14da0f3564588b0221287bf71fcf3))
 
 ## [2.0.0](https://github.com/Bergert-Digital/pediment/compare/v1.0.0...v2.0.0) (2026-06-29)
 
@@ -605,9 +605,9 @@
 
 ### Features
 
-* constrain post-content layout on page & front-page templates ([f9a7a7d](https://github.com/Bergert-Digital/pediment/commit/f9a7a7da9dd55c7b74808aaacfe9c76b695a9540))
-* constrain post-content layout on page & front-page templates ([#44](https://github.com/Bergert-Digital/pediment/issues/44)) ([c586661](https://github.com/Bergert-Digital/pediment/commit/c58666189c836562361fc2be71fd867edcff61b9))
-* constrain post-content layout on page & front-page templates ([#45](https://github.com/Bergert-Digital/pediment/issues/45)) ([91ea150](https://github.com/Bergert-Digital/pediment/commit/91ea150abb6267b48fc58f0a0d1182d6e396b837))
+* constrain post-content layout on page & front-page templates ([369d141](https://github.com/Bergert-Digital/pediment/commit/369d1418bfcf30a6119a75d17a5a7eac390482d9))
+* constrain post-content layout on page & front-page templates ([#44](https://github.com/Bergert-Digital/pediment/issues/44)) ([2668ed0](https://github.com/Bergert-Digital/pediment/commit/2668ed08e6fab5c0f32c4fbddefc7e4743bab8e2))
+* constrain post-content layout on page & front-page templates ([#45](https://github.com/Bergert-Digital/pediment/issues/45)) ([504629a](https://github.com/Bergert-Digital/pediment/commit/504629a492d2201f8601ec7554cd09a4ccb8a570))
 
 ## [1.0.0](https://github.com/Bergert-Digital/pediment/compare/v0.9.0...v1.0.0) (2026-06-26)
 
@@ -620,41 +620,41 @@
 
 ### Features
 
-* run framework bootstrap on activation (brand defaults, header part, permalinks) ([ceaeb4a](https://github.com/Bergert-Digital/pediment/commit/ceaeb4ab2448c3eb142679ea44eb90fca018afff))
+* run framework bootstrap on activation (brand defaults, header part, permalinks) ([4057a85](https://github.com/Bergert-Digital/pediment/commit/4057a858ad1e5e32b54cdf4b19ca0ef498728f22))
 
 
 ### Refactors
 
-* remove default-nav seeding (relocates to child theme) ([96ca091](https://github.com/Bergert-Digital/pediment/commit/96ca0911f03619101bc28c833d8da3b670fdb549))
-* remove wp pediment seed command, demo content, and demo tests ([c71b892](https://github.com/Bergert-Digital/pediment/commit/c71b892e1eb6bbb2ea21372dabdf714ef7d4f610))
-* untangle content-seeding into the child theme ([#42](https://github.com/Bergert-Digital/pediment/issues/42)) ([ed2d69d](https://github.com/Bergert-Digital/pediment/commit/ed2d69df631f0d906a1ecdd2194bb823b4fb42c8))
+* remove default-nav seeding (relocates to child theme) ([d949c45](https://github.com/Bergert-Digital/pediment/commit/d949c4545137b412be5d0919d034b4f31be2a2bb))
+* remove wp pediment seed command, demo content, and demo tests ([e84f24e](https://github.com/Bergert-Digital/pediment/commit/e84f24ee2741e0b8fb42e74581e7107b757dd77e))
+* untangle content-seeding into the child theme ([#42](https://github.com/Bergert-Digital/pediment/issues/42)) ([3e64871](https://github.com/Bergert-Digital/pediment/commit/3e648717cccb18bde71d6fe44dc9437700070899))
 
 ## [0.9.0](https://github.com/Bergert-Digital/pediment/compare/v0.8.1...v0.9.0) (2026-06-24)
 
 
 ### Features
 
-* add block translation config ([e1d5d67](https://github.com/Bergert-Digital/pediment/commit/e1d5d672ae24152cd8811a6185c2d8053bcbda18))
+* add block translation config ([89241c7](https://github.com/Bergert-Digital/pediment/commit/89241c7c5d41e948e88b2155f02b58a7515f5c6a))
 
 
 ### Bug Fixes
 
-* align lockfile with CI npm ([7dfaa69](https://github.com/Bergert-Digital/pediment/commit/7dfaa698cbc687aecdd17d8d4a3eed498af25e26))
-* sync package lock ([6e095b3](https://github.com/Bergert-Digital/pediment/commit/6e095b3f8ff6fa27e15958398972ad2a0fc4d3d9))
+* align lockfile with CI npm ([aeeb3a0](https://github.com/Bergert-Digital/pediment/commit/aeeb3a0f7283178a0edfcdca33e7f33f61be06b8))
+* sync package lock ([f0d760b](https://github.com/Bergert-Digital/pediment/commit/f0d760b55a68392e98a293585a50b291791a0215))
 
 ## [0.8.1](https://github.com/Bergert-Digital/pediment/compare/v0.8.0...v0.8.1) (2026-06-23)
 
 
 ### Bug Fixes
 
-* **single:** restore single-post masthead spacing & article polish ([#36](https://github.com/Bergert-Digital/pediment/issues/36)) ([1ec500a](https://github.com/Bergert-Digital/pediment/commit/1ec500af24de9188b81d7a1f6e63d8cd4ba687d1))
+* **single:** restore single-post masthead spacing & article polish ([#36](https://github.com/Bergert-Digital/pediment/issues/36)) ([c4a6ad4](https://github.com/Bergert-Digital/pediment/commit/c4a6ad43bc89f93f471c4321e99ed24ffac299c7))
 
 ## [0.8.0](https://github.com/Bergert-Digital/pediment/compare/v0.7.0...v0.8.0) (2026-06-22)
 
 
 ### Features
 
-* image/content slider block ([#33](https://github.com/Bergert-Digital/pediment/issues/33)) ([3d1c8ea](https://github.com/Bergert-Digital/pediment/commit/3d1c8eaa05b0fe59bb6f2ceb70a8df8ad4d6a572))
+* image/content slider block ([#33](https://github.com/Bergert-Digital/pediment/issues/33)) ([88bdb26](https://github.com/Bergert-Digital/pediment/commit/88bdb26790664934d27ecf246e0e6b5b1aa06a6a))
 
 ## [0.7.0](https://github.com/Bergert-Digital/Pediment/compare/v0.6.0...v0.7.0) (2026-06-19)
 

@@ -14,9 +14,9 @@ customizations. The release artifact is `pediment-plugin.zip`.
 ## Local development
 
 ```bash
-npm install
+npm ci
 composer install -d plugin
-( cd plugin && npm install && npm run build )
+( cd plugin && npm ci && npm run build )
 npm run env:start
 ```
 
@@ -71,8 +71,14 @@ Claude Code plugin's `/pediment:start` skill — see
 [docs/client-sites.md](docs/client-sites.md) for the full workflow, from installing the kit
 through day-two content edits to deploying a theme release.
 
+## Contributing
+
+Bug reports and pull requests are welcome. Read [CONTRIBUTING.md](CONTRIBUTING.md) before
+you open a pull request, and report security issues as described in
+[SECURITY.md](SECURITY.md). Everyone who takes part follows the
+[Code of Conduct](CODE_OF_CONDUCT.md).
+
 ## Licensing
 
-Three components, three licences: `plugin/` and `client-template/` are GPL-2.0-or-later,
-`client-kit/` is PolyForm Shield 1.0.0. See [LICENSING.md](LICENSING.md) for what each
-covers and why they differ.
+Pediment is free software, licensed under GPL-2.0-or-later. See [LICENSE](LICENSE) and
+[LICENSING.md](LICENSING.md), which also lists the licences of bundled fonts and icons.
