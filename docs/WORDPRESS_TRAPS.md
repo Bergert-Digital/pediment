@@ -498,8 +498,7 @@ once with the complete map, after every language has been written. See
 `plugin/src/Seeder/`) and `LanguageProvider::linkTranslations()` in
 `plugin/src/Language/PolylangProvider.php`.
 **Catch it early.** `PolylangProviderTest::test_link_translations_makes_each_side_findable_from_the_other`.
-Also see `docs/BACKLOG.md` (Medium) for the residual hazard this creates even when the
-full map is always passed: dropping a language from the manifest and Polylang's own
+A residual hazard remains even when the full map is always passed: dropping a language from the manifest and Polylang's own
 config in the same run still unlinks it from every group site-wide, because the map
 that run builds never contains that language for anyone.
 

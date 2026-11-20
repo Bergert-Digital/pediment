@@ -1006,7 +1006,7 @@ Two shapes:
   `navs.primary is carried by 2 navigation entities (IDs 5, 12). Identity
   must be unique — delete or re-key the extras.`
 
-  This is deliberate, not a regression (see docs/BACKLOG.md): a plan with
+  This is deliberate, not a regression: a plan with
   any error writes nothing at all — media, entries, and navs alike
   (`Runner::run()` returns before any of the three `apply()` calls run) — so
   the failure is loud rather than a silent loss of the menu's translation

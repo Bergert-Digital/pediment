@@ -217,7 +217,7 @@ final class Applier {
 	 * that language into an ORPHAN everywhere at once and drops it out of
 	 * every key's map here. For any key this run then links (it created or
 	 * tagged a row), pll_save_post_translations() unlinks the orphan from its
-	 * group, even though the plan reports those posts as left in place. See docs/BACKLOG.md (Medium, step-4 Task 10 review).
+	 * group, even though the plan reports those posts as left in place.
 	 *
 	 * @param array<string,int> $ids     mapKey => post ID
 	 * @param string[]          $touched mapKeys this run created or tagged.

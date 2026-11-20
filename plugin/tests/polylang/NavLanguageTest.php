@@ -218,9 +218,9 @@ class NavLanguageTest extends PolylangTestCase {
 	 * bucket, collides with the real default-language nav, and `duplicates()`
 	 * reports it. That is the safe outcome: an errored plan writes nothing
 	 * (`NavSeeder::apply()`'s first guard), so the operator is told to delete or
-	 * re-key the orphan instead of the seed silently unlinking it. Recorded in
-	 * docs/BACKLOG.md as a design question, because the previous behaviour was a
-	 * silent `key|''` bucket.
+	 * re-key the orphan instead of the seed silently unlinking it. This is an
+	 * open design question, because the previous behaviour was a silent
+	 * `key|''` bucket.
 	 */
 	public function test_a_nav_orphaned_by_a_dropped_language_is_reported_not_ignored() {
 		$fr                    = PLL()->model->add_language( [ 'slug' => 'fr', 'name' => 'Français', 'locale' => 'fr_FR', 'flag' => 'fr', 'rtl' => 0, 'term_group' => 2 ] );
