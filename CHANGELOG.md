@@ -1,5 +1,13 @@
 # Changelog
 
+## [6.5.0](https://github.com/Bergert-Digital/pediment/compare/v6.4.0...v6.5.0) (2026-11-21)
+
+
+### Features
+
+* **forms:** let a form name a destination by seed key ([a513082](https://github.com/Bergert-Digital/pediment/commit/a513082dce4c0ccb3ec6287552e9ca4542cdeb0b))
+* **forms:** let a form name a destination by seed key ([#164](https://github.com/Bergert-Digital/pediment/issues/164)) ([1bf765e](https://github.com/Bergert-Digital/pediment/commit/1bf765e8116c3d6269e6322d2ccf35557d961504))
+
 ## [6.4.0](https://github.com/Bergert-Digital/pediment/compare/v6.3.0...v6.4.0) (2026-11-21)
 
 
