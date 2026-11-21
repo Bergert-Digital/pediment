@@ -1,5 +1,16 @@
 # Changelog
 
+## [6.4.0](https://github.com/Bergert-Digital/pediment/compare/v6.3.0...v6.4.0) (2026-11-21)
+
+
+### Features
+
+* **forms:** add a file field type with private storage ([d0c6977](https://github.com/Bergert-Digital/pediment/commit/d0c69777401ced2416bad00354df2bb18f483ba6))
+* **forms:** add a file field type with private storage ([#163](https://github.com/Bergert-Digital/pediment/issues/163)) ([adb645a](https://github.com/Bergert-Digital/pediment/commit/adb645ae8482219b1d414d2f60b89ed716716f77))
+* **forms:** send an optional confirmation to the sender ([e938411](https://github.com/Bergert-Digital/pediment/commit/e938411db70feed9ad7a7f79fd6ea4491427d25a))
+* **license:** open-source Pediment under GPL-2.0-or-later ([#161](https://github.com/Bergert-Digital/pediment/issues/161)) ([de9a8bb](https://github.com/Bergert-Digital/pediment/commit/de9a8bb3310c8ec86491c65aeb656d7088c632d3))
+* **license:** relicense client-kit under GPL-2.0-or-later ([f48332d](https://github.com/Bergert-Digital/pediment/commit/f48332d7c3b3fdc348f0a5565c6df49af5201b32))
+
 ## [6.3.0](https://github.com/Bergert-Digital/pediment/compare/v6.2.0...v6.3.0) (2026-11-18)
 
 
