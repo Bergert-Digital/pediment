@@ -23,6 +23,9 @@ type Attrs = {
 	placeholder: string;
 	helpText: string;
 	options: Option[];
+	fileTypes: string;
+	maxSize: number;
+	multiple: boolean;
 };
 
 const TYPES = [
@@ -35,6 +38,7 @@ const TYPES = [
 	{ label: __( 'Radio', 'pediment' ), value: 'radio' },
 	{ label: __( 'Number', 'pediment' ), value: 'number' },
 	{ label: __( 'Date', 'pediment' ), value: 'date' },
+	{ label: __( 'File upload', 'pediment' ), value: 'file' },
 ];
 
 function slug( s: string ): string {
@@ -64,7 +68,11 @@ export default function Edit( {
 		placeholder,
 		helpText,
 		options,
+		fileTypes,
+		maxSize,
+		multiple,
 	} = attributes;
+	const isFile = fieldType === 'file';
 	const blockProps = useBlockProps( {
 		className:
 			'pediment-form__field' +
@@ -188,18 +196,69 @@ export default function Edit( {
 						checked={ required }
 						onChange={ ( v ) => setAttributes( { required: v } ) }
 					/>
-					<TextControl
-						label={ __( 'Placeholder', 'pediment' ) }
-						value={ placeholder }
-						onChange={ ( v ) =>
-							setAttributes( { placeholder: v } )
-						}
-					/>
+					{ ! isFile && (
+						<TextControl
+							label={ __( 'Placeholder', 'pediment' ) }
+							value={ placeholder }
+							onChange={ ( v ) =>
+								setAttributes( { placeholder: v } )
+							}
+						/>
+					) }
 					<TextControl
 						label={ __( 'Help text', 'pediment' ) }
 						value={ helpText }
 						onChange={ ( v ) => setAttributes( { helpText: v } ) }
 					/>
+					{ isFile && (
+						<>
+							<TextControl
+								label={ __(
+									'Accepted file types',
+									'pediment'
+								) }
+								help={ __(
+									'Extensions, separated by commas: pdf, doc, docx, odt, rtf, txt, jpg, png.',
+									'pediment'
+								) }
+								value={ fileTypes ?? 'pdf' }
+								onChange={ ( v ) =>
+									setAttributes( { fileTypes: v } )
+								}
+							/>
+							<TextControl
+								type="number"
+								min={ 1 }
+								label={ __(
+									'Maximum size per file (MB)',
+									'pediment'
+								) }
+								help={ __(
+									'The server limit applies when it is lower.',
+									'pediment'
+								) }
+								value={ String( maxSize ?? 10 ) }
+								onChange={ ( v ) =>
+									setAttributes( {
+										maxSize: Math.max(
+											1,
+											Number( v ) || 10
+										),
+									} )
+								}
+							/>
+							<ToggleControl
+								label={ __(
+									'Allow several files (up to 5)',
+									'pediment'
+								) }
+								checked={ !! multiple }
+								onChange={ ( v ) =>
+									setAttributes( { multiple: v } )
+								}
+							/>
+						</>
+					) }
 					{ needsOptions && (
 						<TextareaControl
 							label={ __(
@@ -247,6 +306,9 @@ function renderPreview( type: string, placeholder: string, options: Option[] ) {
 	}
 	if ( type === 'checkbox' ) {
 		return <input type="checkbox" disabled />;
+	}
+	if ( type === 'file' ) {
+		return <input type="file" disabled />;
 	}
 	if ( type === 'radio' ) {
 		return (

@@ -107,6 +107,10 @@ function pediment_form_persist_submission( array $submission, $request ): void {
 	update_post_meta( $new_id, '_destination', sanitize_text_field( $destination ) );
 	update_post_meta( $new_id, '_delivery_status', 'pending' );
 
+	if ( ! empty( $submission['files'] ) && is_array( $submission['files'] ) ) {
+		pediment_form_store_files( (int) $new_id, $submission['files'] );
+	}
+
 	/**
 	 * Fires after a submission is stored, carrying the stored post id so delivery
 	 * can record its result. Plan 2's delivery engine hooks this.
@@ -227,6 +231,27 @@ function pediment_form_format_value( string $value ): string {
 }
 
 /**
+ * Download links for a file field's stored files, one per line.
+ *
+ * @param int                                                    $submission_id form_submission post id.
+ * @param string                                                 $field         Field name.
+ * @param array<int,array{name:string,size:int,type:string}> $files         The field's stored files.
+ * @return string Escaped HTML.
+ */
+function pediment_form_format_files( int $submission_id, string $field, array $files ): string {
+	$links = array();
+	foreach ( array_values( $files ) as $index => $file ) {
+		$links[] = sprintf(
+			'<a href="%s">%s</a> (%s)',
+			esc_url( pediment_form_file_url( $submission_id, $field, $index ) ),
+			esc_html( $file['name'] ),
+			esc_html( pediment_form_file_size_label( (int) $file['size'] ) )
+		);
+	}
+	return array() !== $links ? implode( '<br />', $links ) : esc_html__( '—', 'pediment' );
+}
+
+/**
  * Read-only "Submission details" meta box: every stored field, then the
  * source page, destination, delivery status, and submission date.
  *
@@ -234,6 +259,7 @@ function pediment_form_format_value( string $value ): string {
  */
 function pediment_form_render_submission_box( WP_Post $post ): void {
 	$decoded = json_decode( (string) get_post_meta( $post->ID, '_fields', true ), true );
+	$files   = pediment_form_submission_files( $post->ID );
 
 	echo '<table class="widefat striped" style="margin-bottom:1em"><tbody>';
 	if ( is_array( $decoded ) ) {
@@ -242,10 +268,13 @@ function pediment_form_render_submission_box( WP_Post $post ): void {
 				continue;
 			}
 			$label = trim( (string) ( $row['label'] ?? '' ) );
+			$value = isset( $files[ (string) $key ] )
+				? pediment_form_format_files( $post->ID, (string) $key, $files[ (string) $key ] )
+				: pediment_form_format_value( (string) ( $row['value'] ?? '' ) );
 			printf(
 				'<tr><th scope="row" style="width:25%%">%s</th><td>%s</td></tr>',
 				esc_html( '' !== $label ? $label : (string) $key ),
-				pediment_form_format_value( (string) ( $row['value'] ?? '' ) ) // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escaped by pediment_form_format_value().
+				$value // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escaped by pediment_form_format_files() / pediment_form_format_value().
 			);
 		}
 	} else {
@@ -280,6 +309,10 @@ function pediment_form_render_submission_box( WP_Post $post ): void {
 		__( 'Delivery', 'pediment' )    => esc_html( pediment_form_delivery_label( $post->ID ) ),
 		__( 'Submitted', 'pediment' )   => esc_html( get_the_date( get_option( 'date_format' ) . ' ' . get_option( 'time_format' ), $post ) ),
 	);
+	$confirmation = pediment_form_confirmation_label( $post->ID );
+	if ( '' !== $confirmation ) {
+		$rows[ __( 'Confirmation', 'pediment' ) ] = esc_html( $confirmation );
+	}
 
 	echo '<table class="widefat striped"><tbody>';
 	foreach ( $rows as $label => $html ) {

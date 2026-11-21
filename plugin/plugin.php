@@ -34,12 +34,14 @@ require_once PEDIMENT_AI_PLUGIN_DIR . '/inc/settings-page.php';
 require_once PEDIMENT_AI_PLUGIN_DIR . '/inc/seeding-admin.php';
 require_once PEDIMENT_AI_PLUGIN_DIR . '/inc/forms.php';
 require_once PEDIMENT_AI_PLUGIN_DIR . '/inc/forms-storage.php';
+require_once PEDIMENT_AI_PLUGIN_DIR . '/inc/forms-files.php';
 require_once PEDIMENT_AI_PLUGIN_DIR . '/inc/forms-secrets.php';
 require_once PEDIMENT_AI_PLUGIN_DIR . '/inc/forms-ssrf.php';
 require_once PEDIMENT_AI_PLUGIN_DIR . '/inc/forms-template.php';
 require_once PEDIMENT_AI_PLUGIN_DIR . '/inc/forms-presets.php';
 require_once PEDIMENT_AI_PLUGIN_DIR . '/inc/forms-destinations.php';
 require_once PEDIMENT_AI_PLUGIN_DIR . '/inc/forms-email.php';
+require_once PEDIMENT_AI_PLUGIN_DIR . '/inc/forms-confirmation.php';
 require_once PEDIMENT_AI_PLUGIN_DIR . '/inc/forms-delivery.php';
 require_once PEDIMENT_AI_PLUGIN_DIR . '/inc/forms-settings.php';
 

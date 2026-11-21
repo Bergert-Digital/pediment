@@ -244,6 +244,7 @@ class EmailDestinationTest extends WP_UnitTestCase {
 				'subject'        => 'Anfrage: {{ field:name }}',
 				'reply_to_field' => 'email',
 				'body_template'  => '{{ all_fields }}',
+				'attach_files'   => true,
 			),
 			$result['dest']
 		);

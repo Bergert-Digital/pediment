@@ -192,7 +192,12 @@ function pediment_form_sanitize_destination( array $raw ): array {
 			'subject'        => sanitize_text_field( (string) ( $raw['subject'] ?? '' ) ),
 			'reply_to_field' => sanitize_text_field( trim( (string) ( $raw['reply_to_field'] ?? '' ) ) ),
 			'body_template'  => sanitize_textarea_field( (string) $mail_body ),
+			'attach_files'   => pediment_form_bool( $raw['attach_files'] ?? true ),
 		);
+		$confirmation = pediment_form_sanitize_confirmation( $raw['confirmation'] ?? array() );
+		if ( array() !== $confirmation ) {
+			$dest['confirmation'] = $confirmation;
+		}
 		return array(
 			'dest'   => $dest,
 			'errors' => pediment_form_validate_destination( $dest ),
@@ -374,7 +379,7 @@ function pediment_form_stash_destination( array $dest ): void {
  * Field defaults for the add/edit destination form.
  *
  * @param string $edit_id Destination id to edit, or '' for add mode.
- * @return array{id:string,type:string,label:string,method:string,url:string,content_type:string,headers:array<string,string>,body_template:string,to:string,subject:string,reply_to_field:string,mail_body_template:string,is_edit:bool}
+ * @return array{id:string,type:string,label:string,method:string,url:string,content_type:string,headers:array<string,string>,body_template:string,to:string,subject:string,reply_to_field:string,mail_body_template:string,attach_files:bool,confirmation:array<string,string>,is_edit:bool}
  */
 function pediment_form_destination_form_values( string $edit_id ): array {
 	$blank = array(
@@ -390,6 +395,8 @@ function pediment_form_destination_form_values( string $edit_id ): array {
 		'subject'            => '',
 		'reply_to_field'     => '',
 		'mail_body_template' => '',
+		'attach_files'       => true,
+		'confirmation'       => array(),
 		'is_edit'            => false,
 	);
 
@@ -435,6 +442,8 @@ function pediment_form_destination_values_from( array $d, array $blank, bool $is
 		$values['subject']            = (string) ( $d['subject'] ?? '' );
 		$values['reply_to_field']     = (string) ( $d['reply_to_field'] ?? '' );
 		$values['mail_body_template'] = (string) ( $d['body_template'] ?? '' );
+		$values['attach_files']       = pediment_form_bool( $d['attach_files'] ?? true );
+		$values['confirmation']       = is_array( $d['confirmation'] ?? null ) ? array_map( 'strval', $d['confirmation'] ) : array();
 		return $values;
 	}
 
@@ -619,6 +628,41 @@ function pediment_form_render_destinations_tab(): void {
 				<td>
 					<textarea id="pf-mail-body" name="mail_body_template" rows="6" class="large-text code"><?php echo esc_textarea( $values['mail_body_template'] ); ?></textarea>
 					<p class="description"><?php esc_html_e( 'Plain text. Empty sends one "Label: value" line per field, then the page, the time and a link to the submission. Tokens: {{ field:NAME }} {{ all_fields }} {{ meta:post_id|page_url|submitted_at|destination }}', 'pediment' ); ?></p>
+				</td>
+			</tr>
+			<tr class="pf-type-email">
+				<th scope="row"><?php esc_html_e( 'Uploaded files', 'pediment' ); ?></th>
+				<td>
+					<input type="hidden" name="attach_files" value="0" />
+					<label><input type="checkbox" name="attach_files" value="1" <?php checked( $values['attach_files'] ); ?> /> <?php esc_html_e( 'Attach files from file fields to the mail', 'pediment' ); ?></label>
+					<p class="description"><?php esc_html_e( 'Files larger than 10 MB together are never attached. The mail then links to the submission in wp-admin, where people with access can download them.', 'pediment' ); ?></p>
+				</td>
+			</tr>
+			<tr class="pf-type-email">
+				<th scope="row"><label for="pf-confirm-to"><?php esc_html_e( 'Confirmation to the sender', 'pediment' ); ?></label></th>
+				<td>
+					<input type="text" id="pf-confirm-to" name="confirmation[to_field]" class="regular-text code" placeholder="email" value="<?php echo esc_attr( $values['confirmation']['to_field'] ?? '' ); ?>" />
+					<p class="description"><?php esc_html_e( 'Name of the form field with the sender\'s e-mail address. Empty sends no confirmation. At most 3 confirmations per address and 10 per visitor in one hour.', 'pediment' ); ?></p>
+				</td>
+			</tr>
+			<tr class="pf-type-email">
+				<th scope="row"><label for="pf-confirm-reply"><?php esc_html_e( 'Confirmation Reply-To', 'pediment' ); ?></label></th>
+				<td>
+					<input type="email" id="pf-confirm-reply" name="confirmation[reply_to]" class="regular-text" placeholder="team@example.com" value="<?php echo esc_attr( $values['confirmation']['reply_to'] ?? '' ); ?>" />
+					<p class="description"><?php esc_html_e( 'A reply to the confirmation goes to this address.', 'pediment' ); ?></p>
+				</td>
+			</tr>
+			<tr class="pf-type-email">
+				<th scope="row"><label for="pf-confirm-subject"><?php esc_html_e( 'Confirmation subject', 'pediment' ); ?></label></th>
+				<td>
+					<input type="text" id="pf-confirm-subject" name="confirmation[subject]" class="large-text" value="<?php echo esc_attr( $values['confirmation']['subject'] ?? '' ); ?>" />
+				</td>
+			</tr>
+			<tr class="pf-type-email">
+				<th scope="row"><label for="pf-confirm-body"><?php esc_html_e( 'Confirmation message', 'pediment' ); ?></label></th>
+				<td>
+					<textarea id="pf-confirm-body" name="confirmation[body]" rows="6" class="large-text code"><?php echo esc_textarea( $values['confirmation']['body'] ?? '' ); ?></textarea>
+					<p class="description"><?php esc_html_e( 'Plain text. Tokens: {{ field:NAME }} (one line, at most 80 characters) and {{ meta:page_url|submitted_at }}. The confirmation never repeats the whole submission and never carries files.', 'pediment' ); ?></p>
 				</td>
 			</tr>
 		</table>

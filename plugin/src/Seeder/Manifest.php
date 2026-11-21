@@ -33,7 +33,7 @@ final class Manifest {
 	private const FORMS_KEYS = [ 'destinations', 'default_destination' ];
 
 	/** Keys a seeded form destination may declare. Only e-mail destinations seed. */
-	private const FORM_DESTINATION_KEYS = [ 'type', 'label', 'to', 'subject', 'reply_to_field', 'body_template' ];
+	private const FORM_DESTINATION_KEYS = [ 'type', 'label', 'to', 'subject', 'reply_to_field', 'body_template', 'attach_files', 'confirmation' ];
 
 	/** Keys an entry may declare. Same reasoning: `front-page` must not be a no-op. */
 	private const ENTRY_KEYS = [ 'title', 'slug', 'parent', 'pattern', 'content', 'post_type', 'front_page', 'posts_page', 'menu_order', 'terms', 'languages' ];

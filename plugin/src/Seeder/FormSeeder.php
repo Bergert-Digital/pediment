@@ -89,7 +89,11 @@ final class FormSeeder {
 				'subject'        => (string) ( $record['subject'] ?? '' ),
 				'reply_to_field' => (string) ( $record['reply_to_field'] ?? '' ),
 				'body_template'  => (string) ( $record['body_template'] ?? '' ),
+				'attach_files'   => $record['attach_files'] ?? true,
 			];
+			if ( is_array( $record['confirmation'] ?? null ) && array() !== pediment_form_sanitize_confirmation( $record['confirmation'] ) ) {
+				$dest['confirmation'] = pediment_form_sanitize_confirmation( $record['confirmation'] );
+			}
 			$problems = pediment_form_validate_destination( $dest );
 			if ( [] !== $problems ) {
 				$this->errors[] = sprintf( 'forms.destinations.%s: %s', $item->key, implode( ' ', $problems ) );

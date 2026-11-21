@@ -5,7 +5,7 @@
 	"title": "Form Field",
 	"category": "pediment",
 	"parent": [ "pediment/form" ],
-	"description": "A single field inside a Pediment form. Choose its type (text, email, phone, long text, dropdown, checkbox, radio, number, date), label, and whether it is required.",
+	"description": "A single field inside a Pediment form. Choose its type (text, email, phone, long text, dropdown, checkbox, radio, number, date, file upload), label, and whether it is required.",
 	"textdomain": "pediment",
 	"supports": { "html": false, "reusable": false },
 	"attributes": {
@@ -15,6 +15,9 @@
 		"required": { "type": "boolean", "default": false },
 		"placeholder": { "type": "string", "default": "" },
 		"helpText": { "type": "string", "default": "" },
+		"fileTypes": { "type": "string", "default": "pdf" },
+		"maxSize": { "type": "number", "default": 10 },
+		"multiple": { "type": "boolean", "default": false },
 		"options": {
 			"type": "array",
 			"default": [],

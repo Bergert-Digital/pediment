@@ -8,6 +8,8 @@
  *   subject        string           Template; same field/meta tokens as body_template.
  *   reply_to_field string           Form field whose value becomes Reply-To when it is an address.
  *   body_template  string           Plain-text template; empty = one "Label: value" line per field.
+ *   attach_files   bool             Attach files from file fields (default true). See pediment_form_mail_attachments().
+ *   confirmation   array            Optional mail to the sender. See inc/forms-confirmation.php.
  *
  * Mail transport (SMTP, API relay) is not Pediment's concern: the site picks
  * it with a mail plugin or `phpmailer_init`. Delivery only calls wp_mail().
@@ -152,7 +154,7 @@ function pediment_form_default_mail_subject(): string {
  * @param array<string,mixed> $dest          E-mail destination record.
  * @param array<string,mixed> $context       Render context.
  * @param int                 $submission_id form_submission post id (0 for a test send).
- * @return array{to:array<int,string>,subject:string,message:string,headers:array<int,string>}
+ * @return array{to:array<int,string>,subject:string,message:string,headers:array<int,string>,attachments:array<int,string>}
  */
 function pediment_form_mail_args( array $dest, array $context, int $submission_id ): array {
 	$to = array_values( array_filter( pediment_form_split_recipients( $dest['to'] ?? '' ), 'is_email' ) );
@@ -163,6 +165,11 @@ function pediment_form_mail_args( array $dest, array $context, int $submission_i
 
 	$body_template = trim( (string) ( $dest['body_template'] ?? '' ) );
 	$message       = '' !== $body_template ? pediment_form_render_text( $body_template, $context ) : pediment_form_default_mail_body( $context, $submission_id );
+
+	$files = pediment_form_mail_attachments( $submission_id, $dest );
+	if ( '' !== $files['note'] ) {
+		$message .= "\n\n" . $files['note'];
+	}
 
 	$headers  = array( 'Content-Type: text/plain; charset=UTF-8' );
 	$reply_to = (string) ( $dest['reply_to_field'] ?? '' );
@@ -176,17 +183,18 @@ function pediment_form_mail_args( array $dest, array $context, int $submission_i
 	}
 
 	return array(
-		'to'      => $to,
-		'subject' => $subject,
-		'message' => $message,
-		'headers' => $headers,
+		'to'          => $to,
+		'subject'     => $subject,
+		'message'     => $message,
+		'headers'     => $headers,
+		'attachments' => $files['paths'],
 	);
 }
 
 /**
  * Send mail and return the transport's error text, or '' on success.
  *
- * @param array{to:array<int,string>,subject:string,message:string,headers:array<int,string>} $args wp_mail() arguments.
+ * @param array{to:array<int,string>,subject:string,message:string,headers:array<int,string>,attachments?:array<int,string>} $args wp_mail() arguments.
  * @return string
  */
 function pediment_form_send_mail( array $args ): string {
@@ -197,7 +205,7 @@ function pediment_form_send_mail( array $args ): string {
 		}
 	};
 	add_action( 'wp_mail_failed', $capture );
-	$sent = wp_mail( $args['to'], $args['subject'], $args['message'], $args['headers'] );
+	$sent = wp_mail( $args['to'], $args['subject'], $args['message'], $args['headers'], (array) ( $args['attachments'] ?? array() ) );
 	remove_action( 'wp_mail_failed', $capture );
 
 	if ( $sent ) {
@@ -261,6 +269,11 @@ function pediment_form_validate_email_destination( array $dest ): array {
 	if ( '' !== $reply_to && ! preg_match( '/^[a-z0-9_]+$/i', $reply_to ) ) {
 		$errors['reply_to_field'] = __( 'Reply-To field must be a form field name (letters, digits, underscores).', 'pediment' );
 	}
+
+	if ( array_key_exists( 'attach_files', $dest ) && ! is_bool( $dest['attach_files'] ) ) {
+		$errors['attach_files'] = __( 'Attach files must be true or false.', 'pediment' );
+	}
+	$errors = array_merge( $errors, pediment_form_validate_confirmation( $dest['confirmation'] ?? null ) );
 
 	foreach ( array( 'subject', 'body_template' ) as $key ) {
 		foreach ( pediment_form_extract_tokens( (string) ( $dest[ $key ] ?? '' ) ) as $tok ) {
