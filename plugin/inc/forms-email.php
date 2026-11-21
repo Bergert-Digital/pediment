@@ -9,6 +9,7 @@
  *   reply_to_field string           Form field whose value becomes Reply-To when it is an address.
  *   body_template  string           Plain-text template; empty = one "Label: value" line per field.
  *   attach_files   bool             Attach files from file fields (default true). See pediment_form_mail_attachments().
+ *   confirmation   array            Optional mail to the sender. See inc/forms-confirmation.php.
  *
  * Mail transport (SMTP, API relay) is not Pediment's concern: the site picks
  * it with a mail plugin or `phpmailer_init`. Delivery only calls wp_mail().
@@ -272,6 +273,7 @@ function pediment_form_validate_email_destination( array $dest ): array {
 	if ( array_key_exists( 'attach_files', $dest ) && ! is_bool( $dest['attach_files'] ) ) {
 		$errors['attach_files'] = __( 'Attach files must be true or false.', 'pediment' );
 	}
+	$errors = array_merge( $errors, pediment_form_validate_confirmation( $dest['confirmation'] ?? null ) );
 
 	foreach ( array( 'subject', 'body_template' ) as $key ) {
 		foreach ( pediment_form_extract_tokens( (string) ( $dest[ $key ] ?? '' ) ) as $tok ) {

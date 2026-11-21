@@ -41,6 +41,7 @@ require_once PEDIMENT_AI_PLUGIN_DIR . '/inc/forms-template.php';
 require_once PEDIMENT_AI_PLUGIN_DIR . '/inc/forms-presets.php';
 require_once PEDIMENT_AI_PLUGIN_DIR . '/inc/forms-destinations.php';
 require_once PEDIMENT_AI_PLUGIN_DIR . '/inc/forms-email.php';
+require_once PEDIMENT_AI_PLUGIN_DIR . '/inc/forms-confirmation.php';
 require_once PEDIMENT_AI_PLUGIN_DIR . '/inc/forms-delivery.php';
 require_once PEDIMENT_AI_PLUGIN_DIR . '/inc/forms-settings.php';
 

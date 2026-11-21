@@ -309,6 +309,10 @@ function pediment_form_render_submission_box( WP_Post $post ): void {
 		__( 'Delivery', 'pediment' )    => esc_html( pediment_form_delivery_label( $post->ID ) ),
 		__( 'Submitted', 'pediment' )   => esc_html( get_the_date( get_option( 'date_format' ) . ' ' . get_option( 'time_format' ), $post ) ),
 	);
+	$confirmation = pediment_form_confirmation_label( $post->ID );
+	if ( '' !== $confirmation ) {
+		$rows[ __( 'Confirmation', 'pediment' ) ] = esc_html( $confirmation );
+	}
 
 	echo '<table class="widefat striped"><tbody>';
 	foreach ( $rows as $label => $html ) {

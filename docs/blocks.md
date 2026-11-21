@@ -164,6 +164,36 @@ the files are larger than 10 MB together (filter
 `pediment_form_mail_attachment_limit`), the mail links to the submission in
 wp-admin instead. HTTP destinations get the file names only.
 
+## Form confirmation mail
+
+An e-mail destination can also send a confirmation to the sender. Set it
+under Settings → Pediment → Form Destinations, or in the manifest:
+
+```php
+'confirmation' => array(
+	'to_field' => 'email',             // form field with the sender's address
+	'reply_to' => 'jobs@example.com',  // optional: a reply reaches the team
+	'subject'  => 'Your application',
+	'body'     => "Hello {{ field:name }},\n\nthank you. We reply within 5 days.",
+),
+```
+
+The confirmation goes out once, when the submission is stored; "Retry
+delivery" does not send it again. Its result is shown in the submission
+(`_confirmation_status`) and never changes the delivery status.
+
+A form that mails an address a visitor types must not become a spam relay:
+
+- The mail carries only the owner's text. A `{{ field:… }}` token renders on
+  one line, without tags, cut to 80 characters. `{{ all_fields }}` and
+  secrets are refused; files are never attached.
+- Every header except `To` comes from the settings. `To` must pass
+  `is_email()` and carry no line break.
+- At most 3 confirmations per address and 10 per IP address in one hour
+  (filters `pediment_form_confirmation_limit_recipient`,
+  `pediment_form_confirmation_limit_ip`; `pediment_form_client_ip` for a site
+  behind a proxy).
+
 ## Legacy blocks
 
 Pediment 5 removed the 18 presentation blocks in
