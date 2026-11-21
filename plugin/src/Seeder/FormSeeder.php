@@ -89,6 +89,7 @@ final class FormSeeder {
 				'subject'        => (string) ( $record['subject'] ?? '' ),
 				'reply_to_field' => (string) ( $record['reply_to_field'] ?? '' ),
 				'body_template'  => (string) ( $record['body_template'] ?? '' ),
+				'attach_files'   => $record['attach_files'] ?? true,
 			];
 			$problems = pediment_form_validate_destination( $dest );
 			if ( [] !== $problems ) {

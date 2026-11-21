@@ -52,13 +52,19 @@ function pediment_form_collect_fields( array $blocks ): array {
 			}
 		}
 
-		$fields[] = array(
+		$field = array(
 			'name'     => $name,
 			'type'     => isset( $attrs['fieldType'] ) ? (string) $attrs['fieldType'] : 'text',
 			'label'    => '' !== $label ? $label : $name,
 			'required' => ! empty( $attrs['required'] ),
 			'options'  => $options,
 		);
+		if ( 'file' === $field['type'] ) {
+			$field['file_types'] = pediment_form_file_extensions( $attrs['fileTypes'] ?? PEDIMENT_FORM_FILE_DEFAULT_TYPES );
+			$field['max_size']   = pediment_form_file_max_bytes( $attrs['maxSize'] ?? PEDIMENT_FORM_FILE_DEFAULT_MB );
+			$field['multiple']   = ! empty( $attrs['multiple'] );
+		}
+		$fields[] = $field;
 	}
 	return $fields;
 }
@@ -105,8 +111,11 @@ function pediment_form_find_forms( array $blocks ): array {
 function pediment_form_validate( array $fields, array $values ): array {
 	$errors = array();
 	foreach ( $fields as $field ) {
+		if ( 'file' === $field['type'] ) {
+			continue; // Uploads are checked by pediment_form_validate_files().
+		}
 		$name  = (string) $field['name'];
-		$value = isset( $values[ $name ] ) ? trim( (string) $values[ $name ] ) : '';
+		$value = isset( $values[ $name ] ) && is_scalar( $values[ $name ] ) ? trim( (string) $values[ $name ] ) : '';
 
 		if ( $field['required'] && '' === $value ) {
 			/* translators: %s: field label */
@@ -215,14 +224,22 @@ function pediment_form_handle_submission( WP_REST_Request $request ) {
 		return new WP_Error( 'pediment_unknown_form', __( 'Form not found.', 'pediment' ), array( 'status' => 400 ) );
 	}
 
-	$allowed = wp_list_pluck( $form['fields'], 'name' );
+	$allowed    = wp_list_pluck( $form['fields'], 'name' );
+	$file_names = wp_list_pluck( wp_list_filter( $form['fields'], array( 'type' => 'file' ) ), 'name' );
+	$uploads    = pediment_form_normalize_uploads( $request->get_file_params() );
 	foreach ( array_keys( $values ) as $key ) {
 		if ( ! in_array( $key, $allowed, true ) ) {
 			return new WP_Error( 'pediment_unknown_field', __( 'Unknown field.', 'pediment' ), array( 'status' => 400 ) );
 		}
 	}
+	foreach ( array_keys( $uploads ) as $key ) {
+		if ( ! in_array( $key, $file_names, true ) ) {
+			return new WP_Error( 'pediment_unknown_field', __( 'Unknown field.', 'pediment' ), array( 'status' => 400 ) );
+		}
+	}
 
-	$errors = pediment_form_validate( $form['fields'], $values );
+	$file_check = pediment_form_validate_files( $form['fields'], $uploads );
+	$errors     = array_merge( pediment_form_validate( $form['fields'], $values ), $file_check['errors'] );
 	if ( ! empty( $errors ) ) {
 		return new WP_Error(
 			'pediment_validation',
@@ -234,12 +251,23 @@ function pediment_form_handle_submission( WP_REST_Request $request ) {
 		);
 	}
 
+	$files = array_filter( $file_check['files'] );
+	if ( array() !== $files && '' === pediment_form_files_base_dir() ) {
+		return new WP_Error( 'pediment_file_storage', __( 'Files cannot be stored right now. Please try again later.', 'pediment' ), array( 'status' => 500 ) );
+	}
+
 	$collected = array();
 	foreach ( $form['fields'] as $field ) {
-		$name               = (string) $field['name'];
+		$name  = (string) $field['name'];
+		$value = isset( $values[ $name ] ) && is_scalar( $values[ $name ] ) ? sanitize_textarea_field( (string) $values[ $name ] ) : '';
+		if ( 'file' === $field['type'] ) {
+			// The value of a file field is the list of file names, so mails,
+			// HTTP destinations and the list column show what came in.
+			$value = implode( ', ', wp_list_pluck( $files[ $name ] ?? array(), 'name' ) );
+		}
 		$collected[ $name ] = array(
 			'label' => (string) $field['label'],
-			'value' => isset( $values[ $name ] ) ? sanitize_textarea_field( (string) $values[ $name ] ) : '',
+			'value' => $value,
 		);
 	}
 
@@ -248,6 +276,7 @@ function pediment_form_handle_submission( WP_REST_Request $request ) {
 		'form_key'    => $form_key,
 		'destination' => $form['destination'],
 		'fields'      => $collected,
+		'files'       => $files,
 	);
 
 	do_action( 'pediment_form_submitted', $submission, $request );

@@ -29,21 +29,49 @@
 				fields: collectFields( form ),
 			};
 
-			if ( submitBtn ) {
-				submitBtn.disabled = true;
-			}
 			clearErrors( form );
 			showStatus( statusEl, '', null );
 
-			fetch( restUrl, {
-				method: 'POST',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify( payload ),
-			} )
+			const fileInputs = form.querySelectorAll(
+				'input[type="file"][data-pediment-field]'
+			);
+			const request = { method: 'POST' };
+			if ( fileInputs.length ) {
+				const tooLarge = checkFiles( form, fileInputs );
+				if ( tooLarge ) {
+					showStatus( statusEl, tooLarge, 'error' );
+					return;
+				}
+				request.body = toFormData( payload, fileInputs );
+			} else {
+				request.headers = { 'Content-Type': 'application/json' };
+				request.body = JSON.stringify( payload );
+			}
+
+			if ( submitBtn ) {
+				submitBtn.disabled = true;
+			}
+
+			fetch( restUrl, request )
 				.then( function ( res ) {
-					return res.json().then( function ( body ) {
-						return { res, body };
-					} );
+					// A web server that refuses a large upload (HTTP 413)
+					// answers with HTML, not JSON.
+					return res
+						.json()
+						.catch( function () {
+							return null;
+						} )
+						.then( function ( body ) {
+							if ( ! body && res.status === 413 ) {
+								body = {
+									message:
+										form.getAttribute(
+											'data-upload-error'
+										) || 'The files are too large.',
+								};
+							}
+							return { res, body };
+						} );
 				} )
 				.then( function ( out ) {
 					if ( submitBtn ) {
@@ -82,12 +110,54 @@
 		} );
 	}
 
+	// Check each file against its field's limit and all files against the
+	// form's total limit. Field errors are shown in place; returns the status
+	// message, or '' when everything fits.
+	function checkFiles( form, fileInputs ) {
+		const errors = {};
+		let total = 0;
+		fileInputs.forEach( function ( el ) {
+			const max = parseInt( el.getAttribute( 'data-max-size' ), 10 );
+			Array.prototype.forEach.call( el.files || [], function ( file ) {
+				total += file.size;
+				if ( max && file.size > max ) {
+					errors[ el.name ] = el.getAttribute( 'data-size-error' );
+				}
+			} );
+		} );
+		if ( Object.keys( errors ).length ) {
+			applyErrors( form, errors );
+			return errors[ Object.keys( errors )[ 0 ] ];
+		}
+		const maxTotal = parseInt( form.getAttribute( 'data-max-upload' ), 10 );
+		if ( maxTotal && total > maxTotal ) {
+			return form.getAttribute( 'data-upload-error' );
+		}
+		return '';
+	}
+
+	function toFormData( payload, fileInputs ) {
+		const data = new FormData();
+		[ 'post_id', 'form_key', 'hp_field', '_t' ].forEach( function ( key ) {
+			data.append( key, String( payload[ key ] ) );
+		} );
+		Object.keys( payload.fields ).forEach( function ( name ) {
+			data.append( 'fields[' + name + ']', payload.fields[ name ] );
+		} );
+		fileInputs.forEach( function ( el ) {
+			Array.prototype.forEach.call( el.files || [], function ( file ) {
+				data.append( 'files[' + el.name + '][]', file, file.name );
+			} );
+		} );
+		return data;
+	}
+
 	function collectFields( form ) {
 		const out = {};
 		form.querySelectorAll( '[data-pediment-field]' ).forEach(
 			function ( el ) {
 				const name = el.getAttribute( 'name' );
-				if ( ! name ) {
+				if ( ! name || el.type === 'file' ) {
 					return;
 				}
 				if ( el.type === 'checkbox' ) {

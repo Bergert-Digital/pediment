@@ -116,6 +116,25 @@ class FormSeederTest extends WP_UnitTestCase {
 		$this->assertSame( [ 'admin@example.org' ], $this->stored()[0]['to'] );
 	}
 
+	public function test_attach_files_seeds_and_defaults_to_true() {
+		( new Runner() )->run();
+		$this->assertTrue( $this->stored()[0]['attach_files'] );
+
+		delete_option( PEDIMENT_FORM_DESTINATIONS_OPTION );
+		delete_option( PEDIMENT_FORM_DEFAULT_DEST_OPTION );
+		Manifest::resetCache();
+		$this->manifest['forms']['destinations']['contact-mail']['attach_files'] = false;
+		( new Runner() )->run();
+		$this->assertFalse( $this->stored()[0]['attach_files'] );
+	}
+
+	public function test_attach_files_must_be_a_boolean() {
+		$this->manifest['forms']['destinations']['contact-mail']['attach_files'] = 'no';
+		$this->expectException( ManifestError::class );
+		$this->expectExceptionMessage( 'attach_files' );
+		Manifest::fromArray( [ 'forms' => $this->manifest['forms'] ], '/tmp' );
+	}
+
 	public function test_a_deleted_destination_is_created_again() {
 		( new Runner() )->run();
 		pediment_form_delete_destination( $this->stored()[0]['id'] );

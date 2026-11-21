@@ -39,6 +39,17 @@ $pediment_wrapper_args = array(
 if ( '' !== $pediment_gap ) {
 	$pediment_wrapper_args['style'] = '--pediment-form-gap:' . $pediment_gap . ';';
 }
+if ( in_array( 'file', wp_list_pluck( $pediment_fields, 'type' ), true ) ) {
+	// The browser checks the total upload against PHP's limit before it sends,
+	// so a too-large request gets a clear message instead of an empty body.
+	$pediment_max_upload                        = (int) wp_max_upload_size();
+	$pediment_wrapper_args['data-max-upload']   = (string) $pediment_max_upload;
+	$pediment_wrapper_args['data-upload-error'] = sprintf(
+		/* translators: %s: size limit, e.g. "10 MB" */
+		__( 'The files are too large together. The limit is %s.', 'pediment' ),
+		pediment_form_file_size_label( $pediment_max_upload )
+	);
+}
 
 $pediment_wrapper = get_block_wrapper_attributes( $pediment_wrapper_args );
 

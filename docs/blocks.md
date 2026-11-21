@@ -128,6 +128,42 @@ is about 1.5em in the text colour. The plugin's `tile` style puts it on a
 for `pediment/icon` in its `styles/blocks/` that targets
 `&>.wp-block-pediment-icon__glyph`.
 
+## Form file fields
+
+A `pediment/form-field` with `"fieldType":"file"` lets a visitor attach
+documents, for example a CV:
+
+```html
+<!-- wp:pediment/form-field {"fieldType":"file","label":"CV","fieldName":"cv","required":true,"fileTypes":"pdf, docx","maxSize":10} /-->
+```
+
+- `fileTypes`: extensions, comma-separated. Default `pdf`. Only `pdf`, `doc`,
+  `docx`, `odt`, `rtf`, `txt`, `jpg`, `jpeg` and `png` are possible (filter
+  `pediment_form_file_extensions`); other values drop out.
+- `maxSize`: limit per file in MB. Default 10. PHP's own limit
+  (`upload_max_filesize`, `post_max_size`) applies when it is lower. A web
+  server limit (nginx `client_max_body_size`, default 1 MB) must allow the
+  size too; the form then shows "too large" instead of a result.
+- `multiple`: up to 5 files in one field. Default false.
+
+A form with a file field posts `multipart/form-data`. The server checks the
+count, the size, the real file type (`wp_check_filetype_and_ext()`) and the
+extension, and cleans the file name. The field's value in the submission, in
+mails and in HTTP destinations is the list of file names.
+
+Files are private. They go to `uploads/pediment-forms-<random>/<submission>-<random>/`
+with a deny-all `.htaccess`; on nginx the random names keep the URL secret.
+The filter `pediment_form_files_dir` moves the folder, for example outside the
+web root. People open the files only from the submission in wp-admin, through
+a download that checks `edit_post` on the submission. Deleting a submission
+deletes its files; the retention setting (Settings → Pediment → General,
+default 90 days, filter `pediment_form_retention_days`) deletes both.
+
+An e-mail destination attaches the files. With `attach_files` off, or when
+the files are larger than 10 MB together (filter
+`pediment_form_mail_attachment_limit`), the mail links to the submission in
+wp-admin instead. HTTP destinations get the file names only.
+
 ## Legacy blocks
 
 Pediment 5 removed the 18 presentation blocks in

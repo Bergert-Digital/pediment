@@ -295,8 +295,10 @@ mailbox from the first submission:
 ),
 ```
 
-A destination may declare `label`, `to`, `subject`, `reply_to_field` and
-`body_template` (and `type`, which must be `email`). Only e-mail destinations
+A destination may declare `label`, `to`, `subject`, `reply_to_field`,
+`body_template` and `attach_files` (a boolean, default `true`: attach files
+from file fields, see [blocks.md](blocks.md#form-file-fields)), and `type`,
+which must be `email`. Only e-mail destinations
 seed: an HTTP destination needs secrets, which never go into a theme. Without
 `to`, the destination mails the site's admin e-mail until the owner sets the
 real recipients. The manifest is validated like a destination saved in

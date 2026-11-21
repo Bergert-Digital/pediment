@@ -60,3 +60,66 @@ test( 'required validation blocks an empty submit', async ( { page } ) => {
 
 	deletePageBySlug( slug );
 } );
+
+const FILE_FORM = `<!-- wp:pediment/form {"successMessage":"Application received."} -->
+<!-- wp:pediment/form-field {"label":"Name","fieldName":"name","required":true} /-->
+<!-- wp:pediment/form-field {"fieldType":"file","label":"CV","fieldName":"cv","required":true,"maxSize":1} /-->
+<!-- /wp:pediment/form -->`;
+
+const PDF = Buffer.from(
+	'%PDF-1.4\n1 0 obj\n<< /Type /Catalog >>\nendobj\ntrailer\n<< /Root 1 0 R >>\n%%EOF\n'
+);
+
+test( 'file field uploads a PDF that wp-admin can download', async ( {
+	page,
+} ) => {
+	test.slow();
+	const slug = 'e2e-form-file';
+	deletePageBySlug( slug );
+	const url = createPageWithContent( slug, 'Form file test', FILE_FORM );
+
+	await page.goto( url );
+	await page.fill( 'input[name="name"]', 'Carol File E2E' );
+
+	// Too large for the field: the browser refuses before it sends.
+	await page.setInputFiles( 'input[name="cv"]', {
+		name: 'big.pdf',
+		mimeType: 'application/pdf',
+		buffer: Buffer.alloc( 2 * 1024 * 1024 ),
+	} );
+	await page.waitForTimeout( 4000 );
+	await page.click( 'button.pediment-form__submit' );
+	await expect( page.locator( '.pediment-form__field-error' ) ).toContainText(
+		/too large/i
+	);
+
+	await page.setInputFiles( 'input[name="cv"]', {
+		name: 'Carol CV.pdf',
+		mimeType: 'application/pdf',
+		buffer: PDF,
+	} );
+	await page.click( 'button.pediment-form__submit' );
+	await expect( page.locator( '.pediment-form__status' ) ).toContainText(
+		/application received/i,
+		{ timeout: 10_000 }
+	);
+
+	await login( page );
+	await page.goto( '/wp-admin/edit.php?post_type=form_submission' );
+	await page
+		.locator( 'tr', { hasText: 'Carol File E2E' } )
+		.first()
+		.locator( 'a.row-title' )
+		.click();
+	const link = page.locator( 'a', { hasText: 'Carol-CV.pdf' } );
+	await expect( link ).toBeVisible();
+	const download = await page.request.get(
+		( await link.getAttribute( 'href' ) ) as string
+	);
+	expect( download.status() ).toBe( 200 );
+	expect( ( await download.body() ).subarray( 0, 5 ).toString() ).toBe(
+		'%PDF-'
+	);
+
+	deletePageBySlug( slug );
+} );
