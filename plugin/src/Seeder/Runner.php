@@ -126,7 +126,8 @@ final class Runner {
 		$problems = array_merge(
 			( new Verifier( $this->lang, $navSeeder ) )->verify( $manifest, $desired, $applied->ids, $mediaMap, $navIds, $applied->created, $navSeeder->created() ),
 			$formSeeder->verify( $manifest ),
-			$this->undeclaredMediaProblems( $state )
+			$this->undeclaredMediaProblems( $state ),
+			$this->unknownFormDestinationProblems( $applied->created, $applied->ids )
 		);
 		$errors   = array_values( array_unique( array_merge( $mediaErrors, $applied->errors, $navSeeder->errors(), $formSeeder->errors() ) ) );
 
@@ -151,6 +152,37 @@ final class Runner {
 					$mapKey,
 					$key
 				);
+			}
+		}
+		return $problems;
+	}
+
+	/**
+	 * A form in a page this run created names a destination (by id or seed
+	 * key) that no destination answers to: its submissions would silently go
+	 * to the default destination. Reported once, when the page is created —
+	 * after that, the page and its forms belong to the site owner.
+	 *
+	 * @param string[]          $created Map keys of the entries created in this run.
+	 * @param array<string,int> $ids     Map key => post ID.
+	 * @return string[]
+	 */
+	private function unknownFormDestinationProblems( array $created, array $ids ): array {
+		$problems = [];
+		foreach ( $created as $mapKey ) {
+			$post = get_post( (int) ( $ids[ $mapKey ] ?? 0 ) );
+			if ( ! $post instanceof \WP_Post || ! has_block( 'pediment/form', $post ) ) {
+				continue;
+			}
+			foreach ( pediment_form_find_forms( parse_blocks( (string) $post->post_content ) ) as $form ) {
+				$ref = (string) ( $form['attrs']['destination'] ?? '' );
+				if ( '' !== $ref && '' === pediment_form_find_destination_id( $ref ) ) {
+					$problems[] = sprintf(
+						'%s: a form names destination "%s", which is neither a destination id nor a seed key — its submissions go to the default destination. Declare it under forms.destinations.',
+						$mapKey,
+						$ref
+					);
+				}
 			}
 		}
 		return $problems;

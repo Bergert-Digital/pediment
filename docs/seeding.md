@@ -313,6 +313,13 @@ created again by the next seed. `default_destination` is filled only while
 the site has no default destination that resolves; a default a person chose
 stays.
 
+A pattern names a seeded destination by its seed key, because the id differs
+per site: `<!-- wp:pediment/form {"destination":"contact-mail"} -->`. The
+lookup takes an id first, then a `seed_key`, so the owner's edits to that
+destination still apply. A form in a page the run creates that names neither
+an id nor a seed key is reported as a problem: its submissions would go to the
+default destination.
+
 ## Languages
 
 A monolingual manifest declares no `languages` section and nothing below
