@@ -66,6 +66,30 @@ class DestinationsTest extends WP_UnitTestCase {
 		$this->assertArrayHasKey( 'codeonly', $all );
 	}
 
+	public function test_a_seed_key_finds_its_destination_and_an_id_wins() {
+		update_option(
+			PEDIMENT_FORM_DESTINATIONS_OPTION,
+			array(
+				array( 'id' => '1', 'type' => 'email', 'label' => 'Contact', 'seed_key' => 'contact-mail', 'to' => array( 'a@example.com' ) ),
+				array( 'id' => '2', 'type' => 'email', 'label' => 'Jobs', 'seed_key' => 'application-mail', 'to' => array( 'b@example.com' ) ),
+				array( 'id' => 'contact-mail', 'type' => 'email', 'label' => 'Literal id', 'to' => array( 'c@example.com' ) ),
+			)
+		);
+
+		$this->assertSame( '2', pediment_form_resolve_destination_id( 'application-mail' ) );
+		$this->assertSame( 'Jobs', pediment_form_get_destination( 'application-mail' )['label'] );
+		$this->assertSame( '2', pediment_form_resolve_destination_id( '2' ) );
+		$this->assertSame( 'contact-mail', pediment_form_resolve_destination_id( 'contact-mail' ) );
+		$this->assertSame( '', pediment_form_find_destination_id( 'nope' ) );
+		$this->assertSame( 'application-mail', wp_list_pluck( pediment_form_destination_choices(), 'seedKey' )[1] );
+	}
+
+	public function test_a_default_named_by_seed_key_resolves() {
+		update_option( PEDIMENT_FORM_DESTINATIONS_OPTION, array( array( 'id' => '4', 'type' => 'email', 'seed_key' => 'contact-mail', 'to' => array( 'a@example.com' ) ) ) );
+		update_option( PEDIMENT_FORM_DEFAULT_DEST_OPTION, 'contact-mail' );
+		$this->assertSame( '4', pediment_form_resolve_destination_id( 'unknown' ) );
+	}
+
 	public function test_resolve_falls_back_to_default() {
 		update_option( PEDIMENT_FORM_DESTINATIONS_OPTION, array( $this->valid_dest() ) );
 		update_option( PEDIMENT_FORM_DEFAULT_DEST_OPTION, 'brevo_main' );

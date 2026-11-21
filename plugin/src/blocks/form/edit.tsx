@@ -11,7 +11,7 @@ import {
 	TextareaControl,
 } from '@wordpress/components';
 
-type Destination = { id: string; label: string };
+type Destination = { id: string; label: string; seedKey?: string };
 
 // Destinations are injected by the plugin's inc/forms-destinations.php via an
 // inline script on `enqueue_block_editor_assets`.
@@ -67,16 +67,23 @@ export default function Edit( {
 	setAttributes: ( a: Partial< Attrs > ) => void;
 } ) {
 	const destinations = window.pedimentFormDestinations ?? [];
+	// A pattern may name a seeded destination by its seed key (the server
+	// resolves an id first, then a seed key). Keep that reference as the
+	// option's value, so the dropdown shows it selected and saves it as is.
+	const saved = attributes.destination;
+	const byId = destinations.some( ( d ) => d.id === saved );
+	const bySeedKey =
+		! byId && destinations.find( ( d ) => saved && d.seedKey === saved );
 	const destinationOptions = [
 		{ label: __( 'Save to submissions only', 'pediment' ), value: '' },
-		...destinations.map( ( d ) => ( { label: d.label, value: d.id } ) ),
+		...destinations.map( ( d ) => ( {
+			label: d.label,
+			value: bySeedKey && d === bySeedKey ? saved : d.id,
+		} ) ),
 	];
 	// Preserve a saved id that no longer matches a configured destination so it
 	// is not silently dropped to the default.
-	if (
-		attributes.destination &&
-		! destinations.some( ( d ) => d.id === attributes.destination )
-	) {
+	if ( saved && ! byId && ! bySeedKey ) {
 		destinationOptions.push( {
 			label: sprintf(
 				/* translators: %s: destination id */

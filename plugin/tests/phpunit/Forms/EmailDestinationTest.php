@@ -180,8 +180,9 @@ class EmailDestinationTest extends WP_UnitTestCase {
 	public function test_email_destination_is_offered_in_the_editor_dropdown() {
 		$this->assertContains(
 			array(
-				'id'    => 'mail',
-				'label' => 'Sales mailbox',
+				'id'      => 'mail',
+				'label'   => 'Sales mailbox',
+				'seedKey' => '',
 			),
 			pediment_form_destination_choices()
 		);

@@ -151,6 +151,23 @@ class FormSeederTest extends WP_UnitTestCase {
 		Manifest::fromArray( [ 'forms' => $this->manifest['forms'] ], '/tmp' );
 	}
 
+	public function test_a_pattern_names_a_seeded_destination_by_its_seed_key() {
+		$this->manifest['pages']['contact']['content'] = '<!-- wp:pediment/form {"destination":"contact-mail"} --><!-- wp:pediment/form-field {"label":"Name"} /--><!-- /wp:pediment/form -->';
+
+		$result = ( new Runner() )->run();
+
+		$this->assertTrue( $result->ok(), implode( "\n", array_merge( $result->errors, $result->problems ) ) );
+		$this->assertSame( $this->stored()[0]['id'], pediment_form_resolve_destination_id( 'contact-mail' ) );
+	}
+
+	public function test_a_form_naming_an_unknown_destination_is_a_problem() {
+		$this->manifest['pages']['contact']['content'] = '<!-- wp:pediment/form {"destination":"application-mail"} --><!-- wp:pediment/form-field {"label":"Name"} /--><!-- /wp:pediment/form -->';
+
+		$result = ( new Runner() )->run();
+
+		$this->assertStringContainsString( 'destination "application-mail"', implode( "\n", $result->problems ) );
+	}
+
 	public function test_a_deleted_destination_is_created_again() {
 		( new Runner() )->run();
 		pediment_form_delete_destination( $this->stored()[0]['id'] );

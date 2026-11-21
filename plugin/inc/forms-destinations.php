@@ -2,7 +2,9 @@
 /**
  * Destinations registry + validation gate.
  *
- * A destination is referenced by id and has a type: `http` (a templated
+ * A destination is referenced by id, or by the seed key the seeder gave it
+ * (so a pattern can name a seeded destination without knowing the site's
+ * id), and has a type: `http` (a templated
  * outbound HTTP request; the default for a record without a type) or `email`
  * (see forms-email.php). Admin destinations live in an option; code can
  * register more via filter.
@@ -46,28 +48,52 @@ function pediment_form_destinations(): array {
 }
 
 /**
- * Look up one destination by id.
+ * The id of the destination a reference names: the reference itself when a
+ * destination has that id, else the id of the first destination whose
+ * `seed_key` equals it, else ''.
  *
- * @param string $id Destination id.
+ * @param string $ref Destination id or seed key.
+ * @return string
+ */
+function pediment_form_find_destination_id( string $ref ): string {
+	if ( '' === $ref ) {
+		return '';
+	}
+	$all = pediment_form_destinations();
+	if ( isset( $all[ $ref ] ) ) {
+		return $ref;
+	}
+	foreach ( $all as $id => $dest ) {
+		if ( $ref === (string) ( $dest['seed_key'] ?? '' ) ) {
+			return (string) $id;
+		}
+	}
+	return '';
+}
+
+/**
+ * Look up one destination by id or seed key.
+ *
+ * @param string $id Destination id or seed key.
  * @return array<string,mixed>|null
  */
 function pediment_form_get_destination( string $id ): ?array {
-	$all = pediment_form_destinations();
-	return $all[ $id ] ?? null;
+	$found = pediment_form_find_destination_id( $id );
+	return '' !== $found ? pediment_form_destinations()[ $found ] : null;
 }
 
 /**
  * Resolve the effective destination id for a submission, with default fallback.
  *
- * @param string $id The submission's stored destination id (may be empty).
+ * @param string $id The submission's stored destination id or seed key (may be empty).
  * @return string Resolved destination id, or empty string when nothing resolves.
  */
 function pediment_form_resolve_destination_id( string $id ): string {
-	if ( '' !== $id && null !== pediment_form_get_destination( $id ) ) {
-		return $id;
+	$found = pediment_form_find_destination_id( $id );
+	if ( '' !== $found ) {
+		return $found;
 	}
-	$default = (string) get_option( PEDIMENT_FORM_DEFAULT_DEST_OPTION, '' );
-	return ( '' !== $default && null !== pediment_form_get_destination( $default ) ) ? $default : '';
+	return pediment_form_find_destination_id( (string) get_option( PEDIMENT_FORM_DEFAULT_DEST_OPTION, '' ) );
 }
 
 /**
@@ -87,17 +113,18 @@ function pediment_form_next_destination_id(): string {
 }
 
 /**
- * Destinations reduced to { id, label } pairs for the block editor dropdown.
+ * Destinations reduced to { id, label, seedKey } for the block editor dropdown.
  *
- * @return array<int,array{id:string,label:string}>
+ * @return array<int,array{id:string,label:string,seedKey:string}>
  */
 function pediment_form_destination_choices(): array {
 	$choices = array();
 	foreach ( pediment_form_destinations() as $id => $dest ) {
 		$label     = trim( (string) ( $dest['label'] ?? '' ) );
 		$choices[] = array(
-			'id'    => (string) $id,
-			'label' => '' !== $label ? $label : (string) $id,
+			'id'      => (string) $id,
+			'label'   => '' !== $label ? $label : (string) $id,
+			'seedKey' => (string) ( $dest['seed_key'] ?? '' ),
 		);
 	}
 	return $choices;
