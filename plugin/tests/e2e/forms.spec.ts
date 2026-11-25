@@ -24,14 +24,31 @@ test( 'generic form submits, shows success, and stores a submission', async ( {
 
 	// Beat the time-trap (PEDIMENT_FORM_MIN_AGE seconds).
 	await page.waitForTimeout( 4000 );
+	const form = page.locator( 'form.pediment-form' );
+	const before = await form.boundingBox();
 	await page.click( 'button.pediment-form__submit' );
 
-	await expect( page.locator( '.pediment-form__status' ) ).toContainText(
-		/thanks/i,
-		{
-			timeout: 10_000,
-		}
-	);
+	// The fields give way to a confirmation panel that holds the focus.
+	const panel = page.locator( '.pediment-form__success' );
+	await expect( panel ).toBeVisible( { timeout: 10_000 } );
+	await expect( panel ).toContainText( 'Message sent' );
+	await expect( panel ).toContainText( /thanks, got it/i );
+	await expect( page.locator( 'input[name="name"]' ) ).toBeHidden();
+	await expect(
+		page.locator( '.pediment-form__success-heading' )
+	).toBeFocused();
+
+	// No layout shift: the form keeps its height.
+	const after = await form.boundingBox();
+	expect(
+		Math.abs( ( after?.height ?? 0 ) - ( before?.height ?? 0 ) )
+	).toBeLessThan( 1 );
+
+	// "Send another message" brings back an empty form.
+	await page.click( 'button.pediment-form__reset' );
+	await expect( panel ).toBeHidden();
+	await expect( page.locator( 'input[name="name"]' ) ).toHaveValue( '' );
+	await expect( page.locator( 'input[name="name"]' ) ).toBeFocused();
 
 	await login( page );
 	await page.goto( '/wp-admin/edit.php?post_type=form_submission' );
@@ -99,7 +116,7 @@ test( 'file field uploads a PDF that wp-admin can download', async ( {
 		buffer: PDF,
 	} );
 	await page.click( 'button.pediment-form__submit' );
-	await expect( page.locator( '.pediment-form__status' ) ).toContainText(
+	await expect( page.locator( '.pediment-form__success' ) ).toContainText(
 		/application received/i,
 		{ timeout: 10_000 }
 	);

@@ -44,6 +44,7 @@ const TEMPLATE: Array< [ string, Record< string, unknown > ] > = [
 
 type Attrs = {
 	destination: string;
+	successHeading: string;
 	successMessage: string;
 	submitLabel: string;
 	style?: { spacing?: { blockGap?: string } };
@@ -128,6 +129,17 @@ export default function Edit( {
 						value={ attributes.submitLabel }
 						onChange={ ( v ) =>
 							setAttributes( { submitLabel: v } )
+						}
+					/>
+					<TextControl
+						label={ __( 'Success heading', 'pediment' ) }
+						help={ __(
+							'Shown in place of the form after a visitor sends it. Empty uses “Message sent”.',
+							'pediment'
+						) }
+						value={ attributes.successHeading }
+						onChange={ ( v ) =>
+							setAttributes( { successHeading: v } )
 						}
 					/>
 					<TextareaControl

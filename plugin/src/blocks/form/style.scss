@@ -40,3 +40,105 @@
 .pediment-form__status[ data-state='error' ] {
 	font-weight: 600;
 }
+
+// Success: the fields give way to a confirmation panel. view.js keeps the
+// form's height (min-height), so nothing below the form moves.
+.pediment-form[data-state="success"] {
+	box-sizing: border-box;
+	align-content: center;
+
+	> :not( .pediment-form__success ) {
+		display: none;
+	}
+}
+
+.pediment-form__success {
+	display: grid;
+	justify-items: center;
+	gap: var( --wp--preset--spacing--20, 0.5rem );
+	padding: var( --wp--preset--spacing--40, 1.5rem );
+	text-align: center;
+	color: var( --wp--preset--color--foreground );
+
+	&[ hidden ] {
+		display: none;
+	}
+}
+
+.pediment-form[data-state="success"] .pediment-form__success {
+	animation: pediment-form-success-in 0.25s ease-out;
+}
+
+@media ( prefers-reduced-motion: reduce ) {
+	.pediment-form[data-state="success"] .pediment-form__success {
+		animation: none;
+	}
+}
+
+@keyframes pediment-form-success-in {
+	from {
+		opacity: 0;
+		transform: translateY( 0.5rem );
+	}
+
+	to {
+		opacity: 1;
+		transform: none;
+	}
+}
+
+.pediment-form__success-icon {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 3rem;
+	height: 3rem;
+	margin-bottom: var( --wp--preset--spacing--10, 0.25rem );
+	color: var( --wp--preset--color--accent );
+	background-color: var( --wp--preset--color--accent-tint );
+	border-radius: 50%;
+
+	svg {
+		width: 1.5rem;
+		height: 1.5rem;
+	}
+}
+
+.pediment-form__success-heading {
+	margin: 0;
+	font-size: var( --wp--preset--font-size--xl, 1.5rem );
+	font-weight: 700;
+	line-height: 1.2;
+
+	&:focus {
+		outline: none;
+	}
+
+	&:focus-visible {
+		outline: 2px solid var( --wp--preset--color--accent );
+		outline-offset: 4px;
+	}
+}
+
+.pediment-form__success-message {
+	max-width: 36em;
+	margin: 0;
+	color: var( --wp--preset--color--foreground-muted );
+}
+
+.pediment-form__reset {
+	margin-top: var( --wp--preset--spacing--20, 0.5rem );
+	padding: 0;
+	color: var( --wp--preset--color--accent );
+	font: inherit;
+	text-decoration: underline;
+	text-underline-offset: 0.2em;
+	background: none;
+	border: 0;
+	cursor: pointer;
+}
+
+.pediment-form__reset:hover,
+.pediment-form__reset:focus-visible {
+	color: var( --wp--preset--color--accent-hover );
+}

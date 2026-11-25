@@ -128,6 +128,20 @@ is about 1.5em in the text colour. The plugin's `tile` style puts it on a
 for `pediment/icon` in its `styles/blocks/` that targets
 `&>.wp-block-pediment-icon__glyph`.
 
+## Form success state
+
+After a successful send, `pediment/form` swaps its fields for a confirmation
+panel: a check icon, a heading and the `successMessage`. The heading comes from
+the `successHeading` attribute; empty means "Message sent" (translatable). The
+form keeps its height, so the content below it does not move, and the panel is
+centred in that box. Focus moves to the heading, and the page scrolls only when
+the panel is off-screen. "Send another message" empties the form and restores
+the fields. Errors stay inline under the submit button, with the fields kept.
+
+A client theme restyles the panel through `.pediment-form__success`,
+`__success-icon`, `__success-heading`, `__success-message` and `__reset`, or
+targets `.pediment-form[data-state='success']`.
+
 ## Form file fields
 
 A `pediment/form-field` with `"fieldType":"file"` lets a visitor attach
