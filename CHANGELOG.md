@@ -1,5 +1,18 @@
 # Changelog
 
+## [6.6.0](https://github.com/Bergert-Digital/pediment/compare/v6.5.0...v6.6.0) (2026-11-25)
+
+
+### Features
+
+* **forms:** replace a sent form with a success panel ([681b9d5](https://github.com/Bergert-Digital/pediment/commit/681b9d502b54f8836648451ccd35681814a71bfa))
+* **forms:** replace a sent form with a success panel ([#166](https://github.com/Bergert-Digital/pediment/issues/166)) ([8234197](https://github.com/Bergert-Digital/pediment/commit/82341973a61d141541f95fca443e9cb98e919904))
+
+
+### Bug Fixes
+
+* **forms:** add successHeading to the WPML config ([bbef0d9](https://github.com/Bergert-Digital/pediment/commit/bbef0d9c3bcbaebeb2b2cba2e4e8cdc242df269d))
+
 ## [6.5.0](https://github.com/Bergert-Digital/pediment/compare/v6.4.0...v6.5.0) (2026-11-21)
 
 
