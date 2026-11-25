@@ -53,6 +53,9 @@ Use the one root wp-env at `localhost:8888`. It mounts the fixture client theme
 at `wp-content/themes/pediment-fixture` and the plugin locally at
 `wp-content/plugins/pediment-ai`.
 
+In T3 Code, click **Dev** (`scripts/dev-worktree.sh`). Each worktree gets its
+own port (9800–10699, site + tests site); set `PORT=<n>` to override.
+
 ```bash
 composer lint -d plugin
 npm run lint:js

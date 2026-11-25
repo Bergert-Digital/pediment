@@ -269,7 +269,46 @@ function pediment_form_delete_destination( string $id ): void {
 			$next[] = $existing;
 		}
 	}
+	// Resolve before the delete: the option may hold the seed key, not the id.
+	$was_default = '' !== $id && pediment_form_default_destination_id() === $id;
 	update_option( PEDIMENT_FORM_DESTINATIONS_OPTION, $next );
+	// A stale default would silently match the next destination that gets
+	// this id (ids are max + 1), so the default goes with its destination.
+	if ( $was_default ) {
+		update_option( PEDIMENT_FORM_DEFAULT_DEST_OPTION, '' );
+	}
+}
+
+/**
+ * Id of the current default destination, or '' when none resolves. The
+ * option may hold an id or a seed key (the seeder writes the id).
+ *
+ * @return string
+ */
+function pediment_form_default_destination_id(): string {
+	return pediment_form_find_destination_id( (string) get_option( PEDIMENT_FORM_DEFAULT_DEST_OPTION, '' ) );
+}
+
+/**
+ * Apply the "Use as default destination" checkbox of the destination form.
+ * Checked makes the destination the default. Unchecked on the current
+ * default clears the default, so the box always shows the real state.
+ * Unchecked on any other destination changes nothing.
+ *
+ * @param string $id           Saved destination id.
+ * @param bool   $make_default Whether the box was checked.
+ */
+function pediment_form_apply_default_choice( string $id, bool $make_default ): void {
+	if ( '' === $id ) {
+		return;
+	}
+	if ( $make_default ) {
+		update_option( PEDIMENT_FORM_DEFAULT_DEST_OPTION, $id );
+		return;
+	}
+	if ( pediment_form_default_destination_id() === $id ) {
+		update_option( PEDIMENT_FORM_DEFAULT_DEST_OPTION, '' );
+	}
 }
 
 add_action(
@@ -282,15 +321,14 @@ add_action(
 );
 
 /**
- * General tab: retention days + default destination.
+ * General tab: retention days. The default destination is set on the
+ * Form Destinations tab.
  */
 function pediment_form_render_general_tab(): void {
 	if ( ! current_user_can( 'manage_options' ) ) {
 		return;
 	}
-	$destinations = pediment_form_destinations();
-	$retention    = (int) get_option( PEDIMENT_FORM_RETENTION_OPTION, 90 );
-	$default_dest = (string) get_option( PEDIMENT_FORM_DEFAULT_DEST_OPTION, '' );
+	$retention = (int) get_option( PEDIMENT_FORM_RETENTION_OPTION, 90 );
 	?>
 	<h2><?php esc_html_e( 'General', 'pediment' ); ?></h2>
 	<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
@@ -302,17 +340,6 @@ function pediment_form_render_general_tab(): void {
 				<td>
 					<input type="number" min="0" id="pf-retention" name="retention_days" value="<?php echo esc_attr( (string) $retention ); ?>" class="small-text" />
 					<p class="description"><?php esc_html_e( '0 keeps submissions forever.', 'pediment' ); ?></p>
-				</td>
-			</tr>
-			<tr>
-				<th scope="row"><label for="pf-default"><?php esc_html_e( 'Default destination', 'pediment' ); ?></label></th>
-				<td>
-					<select id="pf-default" name="default_destination">
-						<option value=""><?php esc_html_e( '— none —', 'pediment' ); ?></option>
-						<?php foreach ( $destinations as $id => $d ) : ?>
-							<option value="<?php echo esc_attr( $id ); ?>" <?php selected( $default_dest, $id ); ?>><?php echo esc_html( (string) ( $d['label'] ?? $id ) ); ?></option>
-						<?php endforeach; ?>
-					</select>
 				</td>
 			</tr>
 		</table>
@@ -379,7 +406,7 @@ function pediment_form_stash_destination( array $dest ): void {
  * Field defaults for the add/edit destination form.
  *
  * @param string $edit_id Destination id to edit, or '' for add mode.
- * @return array{id:string,type:string,label:string,method:string,url:string,content_type:string,headers:array<string,string>,body_template:string,to:string,subject:string,reply_to_field:string,mail_body_template:string,attach_files:bool,confirmation:array<string,string>,is_edit:bool}
+ * @return array{id:string,type:string,label:string,method:string,url:string,content_type:string,headers:array<string,string>,body_template:string,to:string,subject:string,reply_to_field:string,mail_body_template:string,attach_files:bool,confirmation:array<string,string>,is_edit:bool,make_default:bool}
  */
 function pediment_form_destination_form_values( string $edit_id ): array {
 	$blank = array(
@@ -398,6 +425,8 @@ function pediment_form_destination_form_values( string $edit_id ): array {
 		'attach_files'       => true,
 		'confirmation'       => array(),
 		'is_edit'            => false,
+		// A new destination on a site without a default starts as the default.
+		'make_default'       => '' === pediment_form_default_destination_id(),
 	);
 
 	// Repopulate after a rejected save or a test send: show the admin's own
@@ -405,8 +434,12 @@ function pediment_form_destination_form_values( string $edit_id ): array {
 	$stash = get_transient( pediment_form_repopulate_key() );
 	if ( is_array( $stash ) ) {
 		delete_transient( pediment_form_repopulate_key() );
-		$sid = (string) ( $stash['id'] ?? '' );
-		return pediment_form_destination_values_from( $stash, $blank, '' !== $sid && null !== pediment_form_get_destination( $sid ) );
+		$sid    = (string) ( $stash['id'] ?? '' );
+		$values = pediment_form_destination_values_from( $stash, $blank, '' !== $sid && null !== pediment_form_get_destination( $sid ) );
+		if ( array_key_exists( 'make_default', $stash ) ) {
+			$values['make_default'] = (bool) $stash['make_default'];
+		}
+		return $values;
 	}
 
 	if ( '' === $edit_id ) {
@@ -416,9 +449,11 @@ function pediment_form_destination_form_values( string $edit_id ): array {
 	if ( ! isset( $destinations[ $edit_id ] ) ) {
 		return $blank;
 	}
-	$d       = $destinations[ $edit_id ];
-	$d['id'] = (string) ( $d['id'] ?? $edit_id );
-	return pediment_form_destination_values_from( $d, $blank, true );
+	$d                      = $destinations[ $edit_id ];
+	$d['id']                = (string) ( $d['id'] ?? $edit_id );
+	$values                 = pediment_form_destination_values_from( $d, $blank, true );
+	$values['make_default'] = pediment_form_default_destination_id() === $values['id'];
+	return $values;
 }
 
 /**
@@ -468,14 +503,19 @@ function pediment_form_render_destinations_tab(): void {
 	$edit_id = isset( $_GET['edit'] ) ? sanitize_key( wp_unslash( $_GET['edit'] ) ) : '';
 	$values  = pediment_form_destination_form_values( $edit_id );
 	$rows    = ! empty( $values['headers'] ) ? $values['headers'] : array( '' => '' );
+	$default = pediment_form_default_destination_id();
 	?>
 	<h2><?php esc_html_e( 'Destinations', 'pediment' ); ?></h2>
+	<p class="description"><?php esc_html_e( 'A form without its own destination sends its submissions to the default destination.', 'pediment' ); ?></p>
+	<?php // Both states share one grid cell, so the label and the button take the same space. ?>
+	<style>.pf-default-slot{display:inline-grid}.pf-default-slot>*{grid-area:1/1;justify-self:start}</style>
 	<table class="widefat striped">
 		<thead><tr>
 			<th><?php esc_html_e( 'ID', 'pediment' ); ?></th>
 			<th><?php esc_html_e( 'Label', 'pediment' ); ?></th>
 			<th><?php esc_html_e( 'Type', 'pediment' ); ?></th>
 			<th><?php esc_html_e( 'Target', 'pediment' ); ?></th>
+			<th><?php esc_html_e( 'Default', 'pediment' ); ?></th>
 			<th></th>
 		</tr></thead>
 		<tbody>
@@ -490,6 +530,18 @@ function pediment_form_render_destinations_tab(): void {
 						<td><?php esc_html_e( 'HTTP', 'pediment' ); ?></td>
 						<td><?php echo esc_html( trim( (string) ( $d['method'] ?? '' ) . ' ' . (string) ( $d['url'] ?? '' ) ) ); ?></td>
 					<?php endif; ?>
+					<td>
+						<?php $is_default = ( (string) $id === $default ); ?>
+						<span class="pf-default-slot">
+							<strong<?php echo $is_default ? '' : ' style="visibility:hidden" aria-hidden="true"'; ?>><?php esc_html_e( 'Default', 'pediment' ); ?></strong>
+							<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>"<?php echo $is_default ? ' style="visibility:hidden" aria-hidden="true"' : ''; ?>>
+								<input type="hidden" name="action" value="pediment_form_make_default_destination" />
+								<input type="hidden" name="id" value="<?php echo esc_attr( $id ); ?>" />
+								<?php wp_nonce_field( 'pediment_form_make_default_destination_' . $id ); ?>
+								<button type="submit" class="button button-small"<?php echo $is_default ? ' disabled tabindex="-1"' : ''; ?>><?php esc_html_e( 'Make default', 'pediment' ); ?></button>
+							</form>
+						</span>
+					</td>
 					<td>
 						<a href="<?php echo esc_url( add_query_arg( 'edit', $id, pediment_settings_page_url( 'destinations' ) ) ); ?>" class="button-link"><?php esc_html_e( 'Edit', 'pediment' ); ?></a>
 						<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" style="display:inline">
@@ -556,6 +608,14 @@ function pediment_form_render_destinations_tab(): void {
 			<tr>
 				<th scope="row"><label for="pf-label"><?php esc_html_e( 'Label', 'pediment' ); ?></label></th>
 				<td><input type="text" id="pf-label" name="label" class="regular-text" value="<?php echo esc_attr( $values['label'] ); ?>" /></td>
+			</tr>
+			<tr>
+				<th scope="row"><?php esc_html_e( 'Default destination', 'pediment' ); ?></th>
+				<td>
+					<input type="hidden" name="make_default" value="0" />
+					<label><input type="checkbox" name="make_default" value="1" <?php checked( $values['make_default'] ); ?> /> <?php esc_html_e( 'Use as default destination', 'pediment' ); ?></label>
+					<p class="description"><?php esc_html_e( 'A form without its own destination sends its submissions here.', 'pediment' ); ?></p>
+				</td>
 			</tr>
 			<tr class="pf-type-http">
 				<th scope="row"><label for="pf-method"><?php esc_html_e( 'Method', 'pediment' ); ?></label></th>
@@ -679,6 +739,7 @@ add_action( 'admin_post_pediment_form_save_secret', 'pediment_form_handle_save_s
 add_action( 'admin_post_pediment_form_delete_secret', 'pediment_form_handle_delete_secret' );
 add_action( 'admin_post_pediment_form_save_destination', 'pediment_form_handle_save_destination' );
 add_action( 'admin_post_pediment_form_delete_destination', 'pediment_form_handle_delete_destination' );
+add_action( 'admin_post_pediment_form_make_default_destination', 'pediment_form_handle_make_default_destination' );
 
 /**
  * Redirect back to the settings page with a notice.
@@ -722,7 +783,7 @@ add_action(
 );
 
 /**
- * Handle saving general settings (retention days + default destination).
+ * Handle saving general settings (retention days).
  */
 function pediment_form_handle_save_general(): void {
 	if ( ! current_user_can( 'manage_options' ) ) {
@@ -730,8 +791,6 @@ function pediment_form_handle_save_general(): void {
 	}
 	check_admin_referer( 'pediment_form_save_general' );
 	update_option( PEDIMENT_FORM_RETENTION_OPTION, isset( $_POST['retention_days'] ) ? absint( wp_unslash( $_POST['retention_days'] ) ) : 90 );
-	$default = isset( $_POST['default_destination'] ) ? sanitize_key( wp_unslash( $_POST['default_destination'] ) ) : '';
-	update_option( PEDIMENT_FORM_DEFAULT_DEST_OPTION, $default );
 	pediment_form_settings_redirect( 'updated', __( 'Settings saved.', 'pediment' ), 'general' );
 }
 
@@ -775,20 +834,21 @@ function pediment_form_handle_save_destination(): void {
 		wp_die( esc_html__( 'Not allowed.', 'pediment' ) );
 	}
 	check_admin_referer( 'pediment_form_save_destination' );
-	$result = pediment_form_sanitize_destination( wp_unslash( $_POST ) );
-	$dest   = $result['dest'];
+	$result       = pediment_form_sanitize_destination( wp_unslash( $_POST ) );
+	$dest         = $result['dest'];
+	$make_default = isset( $_POST['make_default'] ) && pediment_form_bool( sanitize_text_field( wp_unslash( $_POST['make_default'] ) ) );
 	// Editing keeps the (readonly) id; a new destination posts an empty id.
 	$edit = ( '' !== (string) $dest['id'] ) ? array( 'edit' => (string) $dest['id'] ) : array();
 
 	if ( ! empty( $result['errors'] ) ) {
-		pediment_form_stash_destination( $dest );
+		pediment_form_stash_destination( array_merge( $dest, array( 'make_default' => $make_default ) ) );
 		pediment_form_settings_redirect( 'error', implode( ' ', $result['errors'] ), 'destinations', $edit );
 		return;
 	}
 	// phpcs:ignore WordPress.Security.NonceVerification.Missing -- nonce already verified by check_admin_referer above.
 	if ( isset( $_POST['pediment_form_test'] ) ) {
 		$test = pediment_form_test_destination( $dest );
-		pediment_form_stash_destination( $dest );
+		pediment_form_stash_destination( array_merge( $dest, array( 'make_default' => $make_default ) ) );
 		pediment_form_settings_redirect( $test['ok'] ? 'updated' : 'error', $test['message'], 'destinations', $edit );
 		return;
 	}
@@ -796,6 +856,7 @@ function pediment_form_handle_save_destination(): void {
 		$dest['id'] = pediment_form_next_destination_id();
 	}
 	pediment_form_save_destination( $dest );
+	pediment_form_apply_default_choice( (string) $dest['id'], $make_default );
 	pediment_form_settings_redirect( 'updated', __( 'Destination saved.', 'pediment' ), 'destinations' );
 }
 
@@ -810,6 +871,24 @@ function pediment_form_handle_delete_destination(): void {
 	check_admin_referer( 'pediment_form_delete_destination_' . $id );
 	pediment_form_delete_destination( $id );
 	pediment_form_settings_redirect( 'updated', __( 'Destination deleted.', 'pediment' ), 'destinations' );
+}
+
+/**
+ * Handle the "Make default" button of a destination row.
+ */
+function pediment_form_handle_make_default_destination(): void {
+	if ( ! current_user_can( 'manage_options' ) ) {
+		wp_die( esc_html__( 'Not allowed.', 'pediment' ) );
+	}
+	$id = isset( $_POST['id'] ) ? sanitize_key( wp_unslash( $_POST['id'] ) ) : '';
+	check_admin_referer( 'pediment_form_make_default_destination_' . $id );
+	$found = pediment_form_find_destination_id( $id );
+	if ( '' === $found ) {
+		pediment_form_settings_redirect( 'error', __( 'This destination does not exist.', 'pediment' ), 'destinations' );
+		return;
+	}
+	pediment_form_apply_default_choice( $found, true );
+	pediment_form_settings_redirect( 'updated', __( 'Default destination saved.', 'pediment' ), 'destinations' );
 }
 
 add_action(

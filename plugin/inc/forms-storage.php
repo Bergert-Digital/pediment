@@ -536,7 +536,7 @@ add_action(
 		printf(
 			'<div class="notice notice-warning"><p>%1$s <a href="%2$s">%3$s</a> · <a href="%4$s">%5$s</a></p></div>',
 			esc_html( $text ),
-			esc_url( pediment_settings_page_url( 'general' ) ),
+			esc_url( pediment_settings_page_url( 'destinations' ) ),
 			esc_html__( 'Set a default destination', 'pediment' ),
 			esc_url( admin_url( 'edit.php?post_type=' . PEDIMENT_FORM_CPT ) ),
 			esc_html__( 'Show submissions', 'pediment' )
