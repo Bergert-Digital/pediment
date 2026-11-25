@@ -36,13 +36,16 @@ final class Manifest {
 	private const FORM_DESTINATION_KEYS = [ 'type', 'label', 'to', 'subject', 'reply_to_field', 'body_template', 'attach_files', 'confirmation' ];
 
 	/** Keys an entry may declare. Same reasoning: `front-page` must not be a no-op. */
-	private const ENTRY_KEYS = [ 'title', 'slug', 'parent', 'pattern', 'content', 'post_type', 'front_page', 'posts_page', 'menu_order', 'terms', 'languages' ];
+	private const ENTRY_KEYS = [ 'title', 'slug', 'parent', 'pattern', 'content', 'post_type', 'front_page', 'posts_page', 'menu_order', 'terms', 'excerpt', 'languages' ];
+
+	/** Keys the `site` section may declare. */
+	private const SITE_KEYS = [ 'logo', 'share_image' ];
 
 	/** Keys a language may declare. */
 	private const LANGUAGE_KEYS = [ 'name', 'locale', 'flag', 'default' ];
 
 	/** Keys a per-language entry override may declare. */
-	private const TRANSLATION_KEYS = [ 'title', 'slug', 'pattern' ];
+	private const TRANSLATION_KEYS = [ 'title', 'slug', 'pattern', 'excerpt' ];
 
 	/** @var self|null */
 	private static ?self $cache = null;
@@ -69,7 +72,8 @@ final class Manifest {
 		private array $languages,
 		private string $defaultLanguage,
 		private array $formDestinations = [],
-		private string $formDefault = ''
+		private string $formDefault = '',
+		private string $shareImage = ''
 	) {}
 
 	/**
@@ -196,14 +200,25 @@ final class Manifest {
 			);
 		}
 
+		foreach ( array_keys( (array) ( $raw['site'] ?? [] ) ) as $siteKey ) {
+			if ( ! in_array( (string) $siteKey, self::SITE_KEYS, true ) ) {
+				throw new ManifestError( "site: unknown key '{$siteKey}'. Allowed: " . implode( ', ', self::SITE_KEYS ) . '.' ); // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- exception message for the operator, not echoed output.
+			}
+		}
+
 		$siteLogo = (string) ( $raw['site']['logo'] ?? '' );
 		if ( '' !== $siteLogo && ! isset( $media[ $siteLogo ] ) ) {
 			throw new ManifestError( "site.logo: '{$siteLogo}' is not a declared media key." ); // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- exception message for the operator, not echoed output.
 		}
 
+		$shareImage = (string) ( $raw['site']['share_image'] ?? '' );
+		if ( '' !== $shareImage && ! isset( $media[ $shareImage ] ) ) {
+			throw new ManifestError( "site.share_image: '{$shareImage}' is not a declared media key." ); // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- exception message for the operator, not echoed output.
+		}
+
 		[ $formDestinations, $formDefault ] = self::parseForms( (array) ( $raw['forms'] ?? [] ) );
 
-		return new self( $path, $baseDir, $entries, $media, $navs, $postTypes, $siteLogo, $languages, $defaultLanguage, $formDestinations, $formDefault );
+		return new self( $path, $baseDir, $entries, $media, $navs, $postTypes, $siteLogo, $languages, $defaultLanguage, $formDestinations, $formDefault, $shareImage );
 	}
 
 	/**
@@ -513,6 +528,9 @@ final class Manifest {
 			throw new ManifestError( "{$section}.{$key}: slug '{$slug}' is not a valid post slug." ); // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- exception message for the operator, not echoed output.
 		}
 
+		$excerpt = trim( (string) ( $declared['excerpt'] ?? '' ) );
+		self::assertPlainExcerpt( $excerpt, "{$section}.{$key}" );
+
 		$terms = [];
 		foreach ( (array) ( $declared['terms'] ?? [] ) as $taxonomy => $slugs ) {
 			$terms[ (string) $taxonomy ] = array_values( array_map( 'strval', (array) $slugs ) );
@@ -554,6 +572,11 @@ final class Manifest {
 				throw new ManifestError( "{$section}.{$key}.languages.{$language}: 'pattern' cannot be overridden — this entry declares literal 'content', which has no pattern to translate." ); // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- exception message for the operator, not echoed output.
 			}
 
+			if ( isset( $override['excerpt'] ) ) {
+				$override['excerpt'] = trim( (string) $override['excerpt'] );
+				self::assertPlainExcerpt( $override['excerpt'], "{$section}.{$key}.languages.{$language}" );
+			}
+
 			$translations[ $language ] = array_intersect_key( $override, array_flip( self::TRANSLATION_KEYS ) );
 		}
 
@@ -569,8 +592,21 @@ final class Manifest {
 			! empty( $declared['posts_page'] ),
 			(int) ( $declared['menu_order'] ?? 0 ),
 			$terms,
-			$translations
+			$translations,
+			$excerpt
 		);
+	}
+
+	/**
+	 * Themes print excerpts unescaped, and the excerpt becomes the page's
+	 * meta description, so it must be plain text.
+	 *
+	 * @throws ManifestError When the excerpt carries markup.
+	 */
+	private static function assertPlainExcerpt( string $excerpt, string $where ): void {
+		if ( wp_strip_all_tags( $excerpt ) !== $excerpt ) {
+			throw new ManifestError( "{$where}: 'excerpt' must be plain text — markup is not allowed." ); // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- exception message for the operator, not echoed output.
+		}
 	}
 
 	/**
@@ -643,6 +679,11 @@ final class Manifest {
 
 	public function siteLogo(): string {
 		return $this->siteLogo;
+	}
+
+	/** Media key of the site's default share image, or ''. */
+	public function shareImage(): string {
+		return $this->shareImage;
 	}
 
 	/** @return array<string,array<string,mixed>> Seeded form destinations by seed key; a record without `to` mails the admin e-mail. */

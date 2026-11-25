@@ -5,6 +5,7 @@ use Pediment\Seeder\Manifest;
 use Pediment\Seeder\MediaSeeder;
 use Pediment\Seeder\Meta;
 use Pediment\Seeder\PlanItem;
+use Pediment\Seo\HeadTags;
 
 class MediaSeederTest extends WP_UnitTestCase {
 
@@ -29,6 +30,36 @@ class MediaSeederTest extends WP_UnitTestCase {
 			],
 			$this->dir
 		);
+	}
+
+	private function withShareImage(): Manifest {
+		return Manifest::fromArray(
+			[
+				'media' => [ 'hero' => [ 'file' => 'seed/media/hero.jpg', 'title' => 'Hero' ] ],
+				'site'  => [ 'share_image' => 'hero' ],
+			],
+			$this->dir
+		);
+	}
+
+	public function test_apply_sets_an_unset_share_image() {
+		$seeder = new MediaSeeder();
+		$m      = $this->withShareImage();
+
+		$map = $seeder->apply( $seeder->plan( $m ), $m );
+
+		$this->assertSame( $map->id( 'hero' ), (int) get_option( HeadTags::SHARE_IMAGE_OPTION ) );
+	}
+
+	public function test_a_share_image_a_person_chose_is_kept() {
+		$chosen = self::factory()->attachment->create_upload_object( DIR_TESTDATA . '/images/canola.jpg' );
+		update_option( HeadTags::SHARE_IMAGE_OPTION, $chosen );
+		$seeder = new MediaSeeder();
+		$m      = $this->withShareImage();
+
+		$seeder->apply( $seeder->plan( $m ), $m );
+
+		$this->assertSame( $chosen, (int) get_option( HeadTags::SHARE_IMAGE_OPTION ) );
 	}
 
 	public function test_plan_lists_every_missing_file_as_a_create() {

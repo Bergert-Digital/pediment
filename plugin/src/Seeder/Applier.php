@@ -98,6 +98,7 @@ final class Applier {
 					'post_content' => $entry->content,
 					'post_parent'  => $this->parentId( $entry, $ids ),
 					'menu_order'   => $entry->menuOrder,
+					'post_excerpt' => $entry->excerpt,
 				]
 			),
 			true

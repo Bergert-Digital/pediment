@@ -102,6 +102,7 @@ Per-entry keys:
 | `posts_page` | no | `false` | At most one entry site-wide may set this. |
 | `menu_order` | no | `0` | Used when the entry is created. |
 | `terms` | no | `[]` | `taxonomy => [slug, …]`. Create-only — see Limitations. |
+| `excerpt` | no | `''` | Plain text; markup is a validation error. Pediment prints it as the page's meta description and share text ([seo.md](seo.md)). Used when the entry is created; a later change on the site stays. |
 
 ### `media`
 
@@ -276,6 +277,19 @@ the site's custom logo (`theme_mod: custom_logo`) while the site has no logo
 (`0`, or a file that no longer exists or is in the trash). A logo a person
 chose later stays, even when the seeder uploads the seeded logo again.
 
+### `site.share_image`
+
+```php
+'site' => array( 'logo' => 'logo', 'share_image' => 'share' ),
+```
+
+Names a `media` key (a 1200 × 630 JPEG or PNG; SVG is not shown by the share
+previews). That attachment becomes the site's default share image (option
+`pediment_share_image`) under the same rule as the logo: only while the
+option is `0` or names a file that is gone or in the trash. A page with a
+featured image shares that image instead — see [seo.md](seo.md). `site`
+accepts only `logo` and `share_image`; any other key is a `ManifestError`.
+
 ### `forms`
 
 Declares e-mail form destinations, so a new site sends its form requests to a
@@ -354,18 +368,22 @@ and why," below).
 ### Per-entry overrides
 
 Any `pages`/`posts`/`entries` item may declare a `languages` sub-section
-keyed by language code, overriding `title`, `slug`, and/or `pattern` for that
-one language:
+keyed by language code, overriding `title`, `slug`, `pattern` and/or `excerpt`
+for that one language:
 
 ```php
 'about' => array(
 	'title'     => 'About',
 	'pattern'   => 'pediment-fixture/about',
 	'languages' => array(
-		'de' => array( 'title' => 'Über uns', 'slug' => 'ueber-uns' ),
+		'de' => array( 'title' => 'Über uns', 'slug' => 'ueber-uns', 'excerpt' => 'Wer wir sind.' ),
 	),
 ),
 ```
+
+The excerpt does not fall back to the default language: a page in a language
+without its own `excerpt` gets none, because a description in the wrong
+language is worse than none. The run reports each such page as a notice.
 
 Two shapes are rejected outright, both because they would otherwise fail
 silently:
@@ -548,9 +566,9 @@ they are identity, not content:
   through `pediment-write-page` with `translation_of`) stays linked. A row in
   the trash is never linked into a group, and a group short of one configured
   language is left as it is. Menus follow the same rule.
-- **Empty settings.** The front page, the posts page and the site logo are set
-  only while the site has none: `page_on_front`, `page_for_posts` or
-  `custom_logo` is `0`, or names a post or file that no longer exists or is in
+- **Empty settings.** The front page, the posts page, the site logo and the
+  default share image are set only while the site has none: `page_on_front`,
+  `page_for_posts`, `custom_logo` or `pediment_share_image` is `0`, or names a post or file that no longer exists or is in
   the trash. A choice a person made stays, even when they deleted the seeded
   page or logo for good and the next seed creates it again. A page in the
   trash is never made the front page or the posts page, and an attachment in

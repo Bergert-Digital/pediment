@@ -12,6 +12,8 @@ declare(strict_types=1);
 
 namespace Pediment\Seeder;
 
+use Pediment\Seo\HeadTags;
+
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
@@ -123,6 +125,13 @@ final class MediaSeeder {
 		$logoId  = '' === $logoKey ? 0 : $map->id( $logoKey );
 		if ( $logoId > 0 && 'trash' !== get_post_status( $logoId ) && SiteSetting::isUnset( (int) get_theme_mod( 'custom_logo' ) ) ) {
 			set_theme_mod( 'custom_logo', $logoId );
+		}
+
+		// The default share image follows the same rule.
+		$shareKey = $manifest->shareImage();
+		$shareId  = '' === $shareKey ? 0 : $map->id( $shareKey );
+		if ( $shareId > 0 && 'trash' !== get_post_status( $shareId ) && SiteSetting::isUnset( (int) get_option( HeadTags::SHARE_IMAGE_OPTION, 0 ) ) ) {
+			update_option( HeadTags::SHARE_IMAGE_OPTION, $shareId );
 		}
 
 		return $map;

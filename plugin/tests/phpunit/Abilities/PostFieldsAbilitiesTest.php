@@ -94,11 +94,21 @@ class PostFieldsAbilitiesTest extends AbilityTestCase {
 		$this->assertSame( 0, $this->activities() );
 	}
 
+	public function test_a_page_takes_an_excerpt_for_its_meta_description(): void {
+		$this->assertTrue( post_type_supports( 'page', 'excerpt' ) );
+
+		$page = $this->run_as( $this->user( 'editor' ), 'pediment/write-page', array( 'title' => 'P', 'markup' => self::GOOD, 'excerpt' => '  Lake tours for families.  ' ) );
+		$this->assertIsArray( $page );
+		$this->assertSame( 'Lake tours for families.', get_post_field( 'post_excerpt', $page['id'] ) );
+	}
+
 	public function test_fields_the_type_does_not_support_are_refused_together(): void {
-		$page = $this->run_as( $this->user( 'editor' ), 'pediment/write-page', array( 'title' => 'P', 'markup' => self::GOOD, 'excerpt' => 'x' ) );
-		$this->assertWPError( $page );
-		$this->assertSame( 'pediment_field_unsupported', $page->get_error_code() );
-		$this->assertStringContainsString( 'excerpt: post_type "page" does not support excerpt', $page->get_error_message() );
+		register_post_type( 'memo', array( 'public' => true, 'show_in_rest' => true, 'supports' => array( 'title', 'editor' ) ) );
+		$memo = $this->run_as( $this->user( 'editor' ), 'pediment/write-page', array( 'post_type' => 'memo', 'title' => 'P', 'markup' => self::GOOD, 'excerpt' => 'x' ) );
+		unregister_post_type( 'memo' );
+		$this->assertWPError( $memo );
+		$this->assertSame( 'pediment_field_unsupported', $memo->get_error_code() );
+		$this->assertStringContainsString( 'excerpt: post_type "memo" does not support excerpt', $memo->get_error_message() );
 
 		$post = $this->run_as( $this->user( 'editor' ), 'pediment/write-page', array( 'post_type' => 'post', 'title' => 'P', 'markup' => self::GOOD, 'menu_order' => 3 ) );
 		$this->assertWPError( $post );
