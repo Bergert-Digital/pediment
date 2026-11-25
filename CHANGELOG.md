@@ -1,5 +1,13 @@
 # Changelog
 
+## [6.7.0](https://github.com/Bergert-Digital/pediment/compare/v6.6.0...v6.7.0) (2026-11-25)
+
+
+### Features
+
+* **forms:** set the default destination on its tab ([76f81fa](https://github.com/Bergert-Digital/pediment/commit/76f81faf9f6116e00490a1a595f44519cc7baea0))
+* **forms:** set the default destination on its tab ([#168](https://github.com/Bergert-Digital/pediment/issues/168)) ([46878ef](https://github.com/Bergert-Digital/pediment/commit/46878ef91a5e46773de47ad80e9037606a876ca0))
+
 ## [6.6.0](https://github.com/Bergert-Digital/pediment/compare/v6.5.0...v6.6.0) (2026-11-25)
 
 
