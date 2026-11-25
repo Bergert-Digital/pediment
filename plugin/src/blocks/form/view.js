@@ -9,11 +9,15 @@
 		const restUrl = form.getAttribute( 'data-rest-url' );
 		const postId = form.getAttribute( 'data-post-id' );
 		const formKey = form.getAttribute( 'data-form-key' );
-		const successMsg =
-			form.getAttribute( 'data-success' ) ||
-			'Thanks — we will be in touch.';
 		const statusEl = form.querySelector( '.pediment-form__status' );
 		const submitBtn = form.querySelector( '.pediment-form__submit' );
+		const resetBtn = form.querySelector( '.pediment-form__reset' );
+
+		if ( resetBtn ) {
+			resetBtn.addEventListener( 'click', function () {
+				hideSuccess( form );
+			} );
+		}
 
 		form.addEventListener( 'submit', function ( e ) {
 			e.preventDefault();
@@ -78,12 +82,7 @@
 						submitBtn.disabled = false;
 					}
 					if ( out.res.ok && out.body && out.body.ok ) {
-						form.querySelectorAll(
-							'input,textarea,select,button'
-						).forEach( function ( el ) {
-							el.disabled = true;
-						} );
-						showStatus( statusEl, successMsg, 'success' );
+						showSuccess( form );
 						return;
 					}
 					const data =
@@ -108,6 +107,54 @@
 					);
 				} );
 		} );
+	}
+
+	// Swap the fields for the success panel. The form keeps its height, so
+	// the content below it does not move; the panel is centred in that box.
+	function showSuccess( form ) {
+		const panel = form.querySelector( '.pediment-form__success' );
+		if ( ! panel ) {
+			return;
+		}
+		form.style.minHeight = form.getBoundingClientRect().height + 'px';
+		form.setAttribute( 'data-state', 'success' );
+		panel.hidden = false;
+
+		const heading = panel.querySelector(
+			'.pediment-form__success-heading'
+		);
+		if ( heading ) {
+			heading.focus( { preventScroll: true } );
+		}
+		const rect = panel.getBoundingClientRect();
+		const viewport =
+			window.innerHeight || document.documentElement.clientHeight;
+		if ( rect.top < 0 || rect.bottom > viewport ) {
+			const reduce =
+				window.matchMedia &&
+				window.matchMedia( '(prefers-reduced-motion: reduce)' ).matches;
+			panel.scrollIntoView( {
+				block: 'center',
+				behavior: reduce ? 'auto' : 'smooth',
+			} );
+		}
+	}
+
+	// "Send another message": an empty form again, focus on its first field.
+	function hideSuccess( form ) {
+		const panel = form.querySelector( '.pediment-form__success' );
+		form.reset();
+		clearErrors( form );
+		showStatus( form.querySelector( '.pediment-form__status' ), '', null );
+		if ( panel ) {
+			panel.hidden = true;
+		}
+		form.removeAttribute( 'data-state' );
+		form.style.minHeight = '';
+		const first = form.querySelector( '[data-pediment-field]' );
+		if ( first ) {
+			first.focus();
+		}
 	}
 
 	// Check each file against its field's limit and all files against the
