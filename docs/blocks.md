@@ -128,6 +128,28 @@ is about 1.5em in the text colour. The plugin's `tile` style puts it on a
 for `pediment/icon` in its `styles/blocks/` that targets
 `&>.wp-block-pediment-icon__glyph`.
 
+## Legal links
+
+`pediment/legal-links` links the pages whose seed keys are in its `keys`
+attribute, in that order (default: `legal-notice`, `privacy`, the Impressum
+and the privacy policy every scaffold seeds). Each link shows the page's own
+title. The block finds each page by `_pediment_seed_key` in the visitor's
+language (`Pediment\Seeder\SeededPage`): the current language, else the
+default language, else the oldest page with that key. So one footer part
+serves every language, and the links work in every environment, whatever
+the post IDs are. A draft or missing page is left out; with no page at all,
+the block renders nothing.
+
+```html
+<nav class="wp-block-pediment-legal-links" aria-label="Legal">
+  <ul class="wp-block-pediment-legal-links__list"><li><a href="…/impressum/">Impressum</a></li>…</ul>
+</nav>
+```
+
+The default footer (`pediment/footer-default`) carries it. The editor's
+sidebar takes other seed keys, comma-separated, for example `terms` for an
+AGB page.
+
 ## Form success state
 
 After a successful send, `pediment/form` swaps its fields for a confirmation

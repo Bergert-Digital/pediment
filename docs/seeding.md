@@ -25,8 +25,10 @@ seeded, it creates only what is missing — a page or a language the manifest
 added, a menu or a media file that does not exist yet — and never changes a
 row that exists: not its title, content, slug, parent, order or status, not a
 menu's links, not a translation, reading setting or logo a person chose. (It
-does tag a row that has no language yet, and fills a reading setting or logo
-that is empty — see "On a site that is already seeded".) A live site
+does tag a row that has no language yet, fills a reading setting or logo
+that is empty, and moves WordPress's unedited draft "Privacy Policy" page to
+the trash when a page it creates needs that page's slug — see "On a site that
+is already seeded".) A live site
 belongs to the people and the AI agent who edit it: pages change in the block
 editor or through the Pediment MCP tools ([mcp.md](mcp.md)), never through a
 re-seed. Pattern files stay in the theme for one job: building the same pages
@@ -574,9 +576,22 @@ they are identity, not content:
   trash is never made the front page or the posts page, and an attachment in
   the trash is never made the logo.
 
-The header template part is not part of the seeder: plugin activation and a
-theme switch create it once (`plugin/inc/bootstrap.php`), and `wp pediment
-seed` never touches it.
+One row the seeder did not create can move: **WordPress's draft privacy
+page.** Every new install has a draft page "Privacy Policy" with the slug
+`privacy-policy`, named in Settings → Privacy (`wp_page_for_privacy_policy`).
+When a page the run creates wants that slug (the English scaffold's
+`privacy` page does), the run first moves the draft to the trash, which frees
+the slug, and then makes the new page the site's privacy policy page if that
+setting still names the draft. It does this only while the draft is exactly
+what WordPress made: a draft, never edited (`post_modified` equals
+`post_date`), without a seed key, and named in that setting
+(`Pediment\Seeder\CorePrivacyDraft`). A draft someone edited or published
+stays, and the new page gets `privacy-policy-2` with an error, as with any
+other slug collision. A dry run shows it as a note on the `create` line.
+
+The header and footer template parts are not part of the seeder: plugin activation and a
+theme switch create them once (`plugin/inc/bootstrap.php`), and `wp pediment
+seed` never touches them.
 
 Patterns are read only for rows the run creates. A theme may delete the
 pattern file of a page that now lives only on the site; the next seed does not

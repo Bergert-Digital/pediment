@@ -20,7 +20,7 @@ const PLACEHOLDERS = [
   { label: 'Lorem ipsum', pattern: /lorem ipsum/i },
   { label: 'example.com', pattern: /\bexample\.(?:com|org|net)\b/i },
   { label: '[TODO', pattern: /\[TODO/ },
-  { label: "Pediment's default footer copy", pattern: /Senior-led work for leaders navigating change|\+44 20 7946 0000/ },
+  { label: "Pediment's old demo footer copy", pattern: /Senior-led work for leaders navigating change|\+44 20 7946 0000/ },
   { label: "WordPress's sample page or first post", pattern: /This is an example page\.|Welcome to WordPress\. This is your first post\./ },
 ];
 

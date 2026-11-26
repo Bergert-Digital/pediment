@@ -1,7 +1,7 @@
 <?php
 /**
  * Framework bootstrap: make a freshly-activated Pediment site functional
- * (an editable header template part).
+ * (editable header and footer template parts).
  * Runs on theme activation. Carries NO demo content.
  *
  * @package Pediment
@@ -60,6 +60,7 @@ function pediment_bootstrap_header_markup(): string {
 
 function pediment_bootstrap(): void {
 	pediment_bootstrap_header_template_part();
+	pediment_bootstrap_footer_template_part();
 
 	// Intentionally leave the permalink structure untouched. Forcing pretty
 	// permalinks here breaks REST in containerized installs (wp-env, the official
@@ -134,6 +135,84 @@ add_action( 'init', 'pediment_bootstrap_maybe_seed_header', 100 );
  * active theme.
  */
 function pediment_bootstrap_header_template_part(): void {
+	pediment_bootstrap_template_part( 'header', 'Header', 'pediment_bootstrap_header_markup' );
+}
+
+/**
+ * Whether footer markup only points back at the footer part (the
+ * `pediment/footer` pattern, or a template-part block). Seeding the part from
+ * it would make the part include itself.
+ *
+ * @param string $markup Block markup.
+ */
+function pediment_footer_markup_is_reference( string $markup ): bool {
+	return 1 === preg_match( '/<!--\s+wp:(?:template-part\s+\{[^}]*"slug":"footer"|pattern\s+\{[^}]*"slug":"pediment\/footer")/', $markup );
+}
+
+/**
+ * The markup a freshly created `footer` part starts life with, read once at
+ * creation like the header's:
+ *
+ * 1. the active theme's own `<stylesheet>/footer` pattern;
+ * 2. else a theme pattern that takes the `pediment/footer` slug (the way a
+ *    client theme replaced the footer before Pediment seeded it as a part),
+ *    so a site keeps the footer it already shows;
+ * 3. else Pediment's default footer, `pediment/footer-default`.
+ */
+function pediment_bootstrap_footer_markup(): string {
+	$registry = \WP_Block_Patterns_Registry::get_instance();
+
+	foreach ( array( get_stylesheet() . '/footer', 'pediment/footer', 'pediment/footer-default' ) as $slug ) {
+		$pattern = $registry->get_registered( $slug );
+		$content = is_array( $pattern ) && isset( $pattern['content'] ) && is_string( $pattern['content'] ) ? $pattern['content'] : '';
+		if ( '' !== trim( $content ) && ! pediment_footer_markup_is_reference( $content ) ) {
+			return $content;
+		}
+	}
+
+	// The plugin's patterns register on `init`; read the file directly when
+	// this runs before that.
+	ob_start();
+	include PEDIMENT_AI_PLUGIN_DIR . '/patterns/footer-default.php';
+	return (string) ob_get_clean();
+}
+
+/** Option: the stylesheet whose footer part the plugin has already seeded. */
+const PEDIMENT_FOOTER_SEEDED_OPTION = 'pediment_footer_part_theme';
+
+/**
+ * Seed an editable, DB-backed `footer` wp_template_part, like the header.
+ * Idempotent: skips when a footer part already exists for the active theme.
+ */
+function pediment_bootstrap_footer_template_part(): void {
+	pediment_bootstrap_template_part( 'footer', 'Footer', 'pediment_bootstrap_footer_markup' );
+	update_option( PEDIMENT_FOOTER_SEEDED_OPTION, get_stylesheet(), true );
+}
+
+/**
+ * Seeds the footer part once per active theme, on `init` at priority 100
+ * (after core and the plugin registered their patterns). This covers a site
+ * that ran Pediment before the footer became a part (the update), and every
+ * later theme switch. The option is autoloaded, so a request that has nothing
+ * to do costs no query.
+ */
+function pediment_bootstrap_maybe_seed_footer(): void {
+	if ( get_option( PEDIMENT_FOOTER_SEEDED_OPTION ) === get_stylesheet() ) {
+		return;
+	}
+	pediment_bootstrap_footer_template_part();
+}
+add_action( 'init', 'pediment_bootstrap_maybe_seed_footer', 100 );
+
+/**
+ * Create the DB-backed wp_template_part `$slug` for the active theme, unless
+ * one exists. The markup callback runs only when the part is created.
+ *
+ * @param string   $slug   Part slug and area (`header`, `footer`).
+ * @param string   $title  Part title.
+ * @param callable $markup Returns the initial markup.
+ */
+function pediment_bootstrap_template_part( string $slug, string $title, callable $markup ): void {
 	$theme = get_stylesheet();
 
 	$existing = get_posts(
@@ -142,10 +221,10 @@ function pediment_bootstrap_header_template_part(): void {
 			// the query singular (WP_Query::parse_query() sets is_single), and
 			// WP_Query::get_posts() applies tax_query only when ! $this->is_singular -- so
 			// the theme filter below was silently inert, on every site, not just fresh
-			// ones. That made this check match ANY existing "header" part regardless of
-			// theme and skip seeding for a newly-activated theme. post_name__in keeps the
-			// query non-singular, so the tax_query is actually applied.
-			'post_name__in' => array( 'header' ),
+			// ones. That made this check match ANY existing part of that slug regardless
+			// of theme and skip seeding for a newly-activated theme. post_name__in keeps
+			// the query non-singular, so the tax_query is actually applied.
+			'post_name__in' => array( $slug ),
 			'post_type'     => 'wp_template_part',
 			'post_status'   => 'publish',
 			'numberposts'   => 1,
@@ -164,15 +243,13 @@ function pediment_bootstrap_header_template_part(): void {
 		return;
 	}
 
-	$markup = pediment_bootstrap_header_markup();
-
 	$id = wp_insert_post(
 		array(
 			'post_type'    => 'wp_template_part',
 			'post_status'  => 'publish',
-			'post_name'    => 'header',
-			'post_title'   => 'Header',
-			'post_content' => $markup,
+			'post_name'    => $slug,
+			'post_title'   => $title,
+			'post_content' => (string) call_user_func( $markup ),
 		),
 		true
 	);
@@ -180,5 +257,5 @@ function pediment_bootstrap_header_template_part(): void {
 		return;
 	}
 	wp_set_object_terms( (int) $id, $theme, 'wp_theme' );
-	wp_set_object_terms( (int) $id, 'header', 'wp_template_part_area' );
+	wp_set_object_terms( (int) $id, $slug, 'wp_template_part_area' );
 }

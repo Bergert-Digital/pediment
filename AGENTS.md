@@ -30,7 +30,9 @@ skills and the scaffolder). See [docs/client-sites.md](docs/client-sites.md).
   declare and the site lacks. It never changes an existing page's content,
   title or slug, never rewrites a menu, and keeps reading settings and a logo
   a person chose; it only fills empty settings, missing language tags and the
-  translation links of pages it creates. Never write pages with `wp post create` / `wp post update` — the
+  translation links of pages it creates, and it moves WordPress's unedited
+  draft "Privacy Policy" page to the trash when a page it creates needs that
+  slug. Never write pages with `wp post create` / `wp post update` — the
   seeder owns identity (`_pediment_seed_key`), a hand-written post has none,
   and the next seed creates a duplicate. Change an existing page through the
   Pediment MCP tools.

@@ -192,8 +192,8 @@ final class Reporter {
 				? sprintf( '%s=%s', $field, self::truncate( self::scalar( $change['to'] ) ) )
 				: self::change( $field, $change['from'], $change['to'] );
 		}
-		if ( [] === $parts && '' !== $item->note ) {
-			return $item->note;
+		if ( '' !== $item->note ) {
+			$parts[] = $item->note;
 		}
 		return implode( '; ', $parts );
 	}

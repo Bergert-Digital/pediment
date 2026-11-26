@@ -35,7 +35,9 @@ on every block change, not just new blocks.
 - **Seeding:** a manifest-format, applier, differ, or verifier change needs a test in
   `plugin/tests/phpunit/Seeder/` (see `docs/seeding.md`). The seeder is bootstrap-only:
   it creates missing rows and never writes to a row that exists — a change that makes it
-  write to one is a regression. `wp pediment seed --dry-run` must plan zero writes
+  write to one is a regression. The one exception is WordPress's own unedited draft
+  "Privacy Policy" page, which goes to the trash when a created page needs its slug
+  ([seeding.md](seeding.md#on-a-site-that-is-already-seeded)). `wp pediment seed --dry-run` must plan zero writes
   (`0 to write`) once everything the manifest declares exists.
 - **Languages:** a manifest declaring `languages` makes a site multilingual; see
   [docs/seeding.md#languages](seeding.md#languages) for the manifest shape, the derived

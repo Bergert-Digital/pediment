@@ -48,6 +48,7 @@ final class Policy {
 		'pediment/mega-menu',
 		'pediment/blog-index',
 		'pediment/social-links',
+		'pediment/legal-links',
 		'pediment/icon',
 	);
 

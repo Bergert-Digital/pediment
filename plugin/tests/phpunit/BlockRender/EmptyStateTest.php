@@ -23,7 +23,7 @@ class EmptyStateTest extends WP_UnitTestCase {
 	}
 
 	public function test_every_block_is_covered(): void {
-		$this->assertCount( 7, glob( dirname( __DIR__, 3 ) . '/src/blocks/*/block.json' ), 'A block was added or removed; check that this sweep still fits it.' );
+		$this->assertCount( 8, glob( dirname( __DIR__, 3 ) . '/src/blocks/*/block.json' ), 'A block was added or removed; check that this sweep still fits it.' );
 	}
 
 	/**
