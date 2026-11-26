@@ -1,5 +1,13 @@
 # Changelog
 
+## [6.10.0](https://github.com/Bergert-Digital/pediment/compare/v6.9.0...v6.10.0) (2026-11-26)
+
+
+### Features
+
+* **seo:** add an SEO title per page ([b73e4e7](https://github.com/Bergert-Digital/pediment/commit/b73e4e73c41cb8d047bbbbd0e6acac777237fefe))
+* **seo:** add an SEO title per page ([#176](https://github.com/Bergert-Digital/pediment/issues/176)) ([13d706f](https://github.com/Bergert-Digital/pediment/commit/13d706ffe27c09d5cc882b4abd6fe94e11278f23))
+
 ## [6.9.0](https://github.com/Bergert-Digital/pediment/compare/v6.8.0...v6.9.0) (2026-11-26)
 
 
