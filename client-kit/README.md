@@ -2,7 +2,7 @@
 
 Pediment itself is a WordPress plugin installed in WordPress from `pediment-plugin.zip`. This
 directory is a separate Claude Code developer kit: it provides `/pediment:start`,
-`/pediment:port-page`, and the deterministic scaffolder that creates standalone client-theme
+`/pediment:port-page`, `/pediment:launch`, and the deterministic scaffolder that creates standalone client-theme
 repositories. The kit is installed once in Claude Code and is not copied into client repos.
 
 ## Install
@@ -28,6 +28,11 @@ In the empty directory where the client project should be created:
 The skill reads the installed kit version, asks the greenfield or porting questionnaire, downloads
 the matching `pediment-client-template.zip`, scaffolds a standalone theme repo, boots wp-env with
 the matching `pediment-plugin.zip`, seeds it, and reports the local URL.
+
+Before a site goes live, run `/pediment:launch` in its repo. It runs
+`scripts/launch-check.mjs` against the site's URL, asks about the items a person must decide, and
+records the result in the repo's `docs/launch.md`, which the scaffolder copies from
+`shared/launch-checklist.md`.
 
 The v3.0.0 release predates both the seeding engine and the client-template release asset. The
 complete external flow begins with the first later release that contains this distribution work.

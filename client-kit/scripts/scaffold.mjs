@@ -17,6 +17,7 @@ import { existsSync, readdirSync, statSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { themeJsonSettings } from './brand.mjs';
 import { renderManifest } from './manifest.mjs';
 
@@ -26,7 +27,13 @@ export const TOKENS = Object.freeze([
   '__PEDIMENT_DESCRIPTION__',
   '__PEDIMENT_PLUGIN_VERSION__',
   '__PEDIMENT_TEMPLATE_VERSION__',
+  // Per page, not per site: copyTemplate() fills it in patterns/<key>.php only, with that
+  // page's title from the answers file. Anywhere else it survives and assertNoTokens() refuses.
+  '__PEDIMENT_PAGE_TITLE__',
 ]);
+
+/** The kit's launch checklist; every scaffolded repo gets its own copy as docs/launch.md. */
+export const LAUNCH_CHECKLIST = fileURLToPath(new URL('../shared/launch-checklist.md', import.meta.url));
 
 const RELEASE_BASE = 'https://github.com/Bergert-Digital/pediment/releases';
 /** Files copied verbatim — token replacement would corrupt them. */
@@ -106,15 +113,21 @@ async function walk(dir, base = dir) {
   return out;
 }
 
+function escapeHtml(text) {
+  return String(text).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
 export async function copyTemplate(srcDir, destDir, values, opts = {}) {
   const keepPages = opts.keepPages || null;
+  const pageTitles = opts.pageTitles || {};
   const written = [];
 
   for (const rel of await walk(srcDir)) {
-    if (keepPages) {
-      const match = rel.match(/^patterns[/\\]([^/\\.]+)\.php$/);
-      if (match && !keepPages.includes(match[1])) continue;
-    }
+    const match = rel.match(/^patterns[/\\]([^/\\.]+)\.php$/);
+    if (keepPages && match && !keepPages.includes(match[1])) continue;
+    const fileValues = match && Object.hasOwn(pageTitles, match[1])
+      ? { ...values, __PEDIMENT_PAGE_TITLE__: escapeHtml(pageTitles[match[1]]) }
+      : values;
 
     const src = path.join(srcDir, rel);
     const destRel = replaceTokens(rel, values);
@@ -130,7 +143,7 @@ export async function copyTemplate(srcDir, destDir, values, opts = {}) {
     if (BINARY.test(rel)) {
       await cp(src, dest);
     } else {
-      await writeFile(dest, replaceTokens(await readFile(src, 'utf8'), values));
+      await writeFile(dest, replaceTokens(await readFile(src, 'utf8'), fileValues));
     }
     written.push(destRel);
   }
@@ -294,6 +307,7 @@ export async function scaffold(answers, opts) {
 
   const files = await copyTemplate(srcDir, target, values, {
     keepPages: answers.pages.filter((p) => !p.postsPage).map((p) => p.key),
+    pageTitles: Object.fromEntries(answers.pages.map((p) => [p.key, p.title])),
   });
 
   await writeFile(
@@ -336,6 +350,10 @@ export async function scaffold(answers, opts) {
 
   await mkdir(path.join(target, 'docs'), { recursive: true });
   await writeFile(path.join(target, 'docs', 'brief.md'), briefMarkdown(answers));
+  await writeFile(
+    path.join(target, 'docs', 'launch.md'),
+    replaceTokens(await readFile(LAUNCH_CHECKLIST, 'utf8'), values),
+  );
 
   await assertNoTokens(target);
 

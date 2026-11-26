@@ -10,7 +10,7 @@ two plugins have different runtimes: WordPress installs `pediment-plugin.zip`; d
 - **The Pediment WordPress plugin** — the product. It supplies blocks, templates, tokens, forms,
   and seeding to WordPress and ships as `pediment-plugin.zip`.
 - **The Pediment client kit** — the Claude Code tooling under `client-kit/`. It carries
-  `/pediment:start`, `/pediment:port-page`, and `scripts/scaffold.mjs`. It is installed globally in
+  `/pediment:start`, `/pediment:port-page`, `/pediment:launch`, and `scripts/scaffold.mjs`. It is installed globally in
   Claude Code and is never copied into a client theme.
 - **`pediment-client-template.zip`** — the tokenised standalone theme template. The scaffolder
   downloads the release asset and rewrites it into a client-owned repo.
@@ -41,7 +41,7 @@ question per message. It branches immediately on:
 **Starting fresh** asks six questions: business name (derives the repo slug), what the business
 does and for whom (with tone, in the same message — this is written into `docs/brief.md`, see
 below), languages (defaults to one), a pre-checked sitemap (Home / About / Services / Contact,
-plus optional Blog), an accent colour (the rest of the palette derives from it), and an optional
+plus optional Blog; the Impressum and privacy policy pages are always added), an accent colour (the rest of the palette derives from it), and an optional
 logo file path. The skill states this plainly when it asks: `docs/brief.md` is for you and future
 agents to read; **nothing in the plugin reads it programmatically**. Typing a considered tone
 into that question does not change the plugin's behaviour — see "What a scaffolded repo contains"
@@ -86,6 +86,8 @@ It reports the local URL (`http://localhost:8888`) and the wp-admin URL when don
   docs/brief.md           What the business does, for whom, in what tone —
                           read by humans and agents; nothing in the
                           plugin reads it programmatically
+  docs/launch.md          The launch checklist for this site, filled in by
+                          /pediment:launch (see "Launching" below)
   AGENTS.md               The client repo's own hard rules for working here
                           (never `wp post create`/`update`, `seed:plan` before
                           `seed`, `adopt -- <key>` to capture editor edits)
@@ -197,6 +199,50 @@ attaches `<slug>.zip` to the GitHub release. From there:
 through wp-admin, a new theme release only reaches production when someone uploads the zip by
 hand. This is a deliberate step-5 decision, not an oversight — revisit only if it turns out to
 hurt in practice.
+
+## Launching
+
+Every scaffolded repo carries `docs/launch.md`, a copy of the kit's
+[`client-kit/shared/launch-checklist.md`](../client-kit/shared/launch-checklist.md). It lists what
+a site needs before it goes live, for a German business under German and EU law: Impressum and
+privacy policy, consent and third-party requests, forms, SEO, domain and operations, content
+quality and handover. Each item has an ID and is `[auto]` or `[manual]`.
+
+Run `/pediment:launch` in the client repo before the first production deploy or a domain
+switch. It runs `client-kit/scripts/launch-check.mjs` against the URL that goes live, which tests
+the `[auto]` items over plain HTTP (no browser, no WordPress access), walks the user through the
+`[manual]` items, and writes every result into `docs/launch.md`. The site is ready when no item is
+`[ ]`. You can also run the script alone:
+
+```bash
+node <kit>/scripts/launch-check.mjs --url https://staging.example.org
+```
+
+It exits with 1 when an item fails. On a staging site that is hidden from search engines, the
+noindex and `robots.txt` items fail on purpose; check them again on the production domain right
+after the switch.
+
+Three things make sure nobody forgets it:
+
+- The client repo's `AGENTS.md` tells every agent to run `/pediment:launch` before the first
+  production deploy and to remind the user while items are open.
+- `/pediment:start` asks for the planned launch date and, when the user's own instructions name a
+  task board, creates a reminder card there.
+- The scaffold seeds an Impressum (`legal-notice`) and a privacy policy (`privacy`) page. Their
+  text is a `[TODO: …]` note, which the launch check reports until the real text is in.
+
+Pediment's default footer (`pediment/footer`) is placeholder copy and does not link the legal
+pages. A client theme replaces it with its own `patterns/footer.php` that declares
+`Slug: pediment/footer`: core registers the active theme's patterns on `init` before the plugin
+registers its own, and the plugin skips a slug that is already registered. Core caches the list of
+a theme's pattern files until the theme's `Version:` changes (unless `WP_DEVELOPMENT_MODE` is
+`theme`), so a new pattern file appears with the next theme release. In a local environment, clear
+the cache with `npx wp-env run cli wp eval 'wp_get_theme()->delete_pattern_cache();'`.
+
+When you add an item to the checklist, give it the next ID in its section. An `[auto]` item needs
+a check in `launch-check.mjs` with the same ID; `client-kit/tests/launch-check.test.mjs` fails
+when the two lists differ. A site scaffolded earlier gets new items the next time
+`/pediment:launch` runs.
 
 ## Upgrade to 4.0
 

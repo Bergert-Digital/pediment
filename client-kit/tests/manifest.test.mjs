@@ -113,3 +113,17 @@ test('renderManifest neutralises comment terminators in client.name and slug', (
   assert.match(out, /return array\(/);
   assert.match(out, /'version'\s*=>\s*1,/);
 });
+
+test('renderManifest writes an optional page slug and refuses an invalid one', () => {
+  const out = renderManifest({
+    ...base,
+    pages: [...base.pages, { key: 'legal-notice', title: 'Impressum', slug: 'impressum' }],
+  });
+  assert.match(out, /'legal-notice' => array\( 'title' => 'Impressum', 'slug' => 'impressum', 'pattern' => 'acme-roofing\/legal-notice' \),/);
+  assert.match(out, /'about' => array\( 'title' => 'About', 'pattern'/, 'no slug key without a slug');
+
+  assert.throws(
+    () => renderManifest({ ...base, pages: [...base.pages, { key: 'privacy', title: 'Datenschutz', slug: 'Daten schutz' }] }),
+    /privacy.*lowercase/,
+  );
+});

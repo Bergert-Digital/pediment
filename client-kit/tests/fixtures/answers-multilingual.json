@@ -27,7 +27,9 @@
     { "key": "home", "title": "Home", "frontPage": true },
     { "key": "about", "title": "About" },
     { "key": "services", "title": "Services" },
-    { "key": "contact", "title": "Contact" }
+    { "key": "contact", "title": "Contact" },
+    { "key": "legal-notice", "title": "Impressum", "slug": "impressum" },
+    { "key": "privacy", "title": "Datenschutz", "slug": "datenschutz" }
   ],
   "nav": ["about", "services", "contact"],
   "logo": null,

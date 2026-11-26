@@ -34,7 +34,27 @@ test('replaceTokens leaves unknown tokens alone so assertNoTokens can catch them
 });
 
 test('TOKENS lists every token the templates may use', () => {
-  assert.deepEqual([...TOKENS].sort(), Object.keys(values).sort());
+  // __PEDIMENT_PAGE_TITLE__ is per page, so it is not in the site-wide values.
+  assert.deepEqual([...TOKENS].sort(), [...Object.keys(values), '__PEDIMENT_PAGE_TITLE__'].sort());
+});
+
+const pageTitles = { 'legal-notice': 'Impressum', privacy: 'Datenschutz & <Cookies>' };
+
+test('copyTemplate fills __PEDIMENT_PAGE_TITLE__ in each page pattern with that page\'s title, escaped', async () => {
+  const dir = await temp();
+  const dest = path.join(dir, 'out');
+  await copyTemplate(MINI, dest, values, { pageTitles });
+  assert.match(await readFile(path.join(dest, 'patterns', 'legal-notice.php'), 'utf8'), /<h1 class="wp-block-heading">Impressum<\/h1>/);
+  assert.match(await readFile(path.join(dest, 'patterns', 'privacy.php'), 'utf8'), />Datenschutz &amp; &lt;Cookies&gt;<\/h1>/);
+  await rm(dir, { recursive: true, force: true });
+});
+
+test('a page pattern without a page title keeps __PEDIMENT_PAGE_TITLE__, and assertNoTokens refuses it', async () => {
+  const dir = await temp();
+  const dest = path.join(dir, 'out');
+  await copyTemplate(MINI, dest, values);
+  await assert.rejects(assertNoTokens(dest), /patterns\/legal-notice\.php: __PEDIMENT_PAGE_TITLE__/);
+  await rm(dir, { recursive: true, force: true });
 });
 
 test('validateSlug accepts lowercase-hyphenated slugs and rejects everything else', () => {
@@ -153,7 +173,7 @@ test('copyTemplate refuses a token value that would write outside destDir', asyn
 test('assertNoTokens passes on a fully-replaced tree', async () => {
   const dir = await temp();
   const dest = path.join(dir, 'out');
-  await copyTemplate(MINI, dest, values);
+  await copyTemplate(MINI, dest, values, { pageTitles });
   await assertNoTokens(dest);
   await rm(dir, { recursive: true, force: true });
 });
@@ -349,6 +369,20 @@ test('scaffold writes docs/brief.md carrying the positioning answers', async () 
   await rm(dir, { recursive: true, force: true });
 });
 
+test('scaffold writes docs/launch.md from the kit checklist, with the client name', async () => {
+  const dir = await temp();
+  const target = path.join(dir, 'acme-roofing');
+  await scaffold(greenfield, { target, template: MINI, git: false });
+
+  const launch = await readFile(path.join(target, 'docs', 'launch.md'), 'utf8');
+  assert.match(launch, /^# Launch checklist — Acme Roofing$/m);
+  assert.match(launch, /\/pediment:launch/);
+  assert.match(launch, /- \[ \] \*\*LEGAL-1\*\*/);
+  assert.match(launch, /^Planned launch date: _not set_$/m);
+
+  await rm(dir, { recursive: true, force: true });
+});
+
 test('scaffold initialises a git repo without a configured identity', async () => {
   const dir = await temp();
   const target = path.join(dir, 'acme-roofing');
@@ -469,6 +503,27 @@ test('the real client-template scaffolds cleanly and prunes unchosen patterns', 
 
   const home = await readFile(path.join(target, 'patterns', 'home.php'), 'utf8');
   assert.match(home, /Slug: acme-roofing\/home/);
+
+  await rm(dir, { recursive: true, force: true });
+});
+
+test('the real client-template seeds both legal pages with their title and a [TODO placeholder', async () => {
+  const dir = await temp();
+  const target = path.join(dir, 'acme-roofing');
+  const pages = greenfield.pages.map((p) => (p.key === 'legal-notice' ? { ...p, title: 'Impressum' } : p));
+  await scaffold({ ...greenfield, pages }, { target, template: REAL_TEMPLATE, git: false });
+
+  const manifest = await readFile(path.join(target, 'seed', 'manifest.php'), 'utf8');
+  assert.match(manifest, /'legal-notice' => array\( 'title' => 'Impressum', 'pattern' => 'acme-roofing\/legal-notice' \)/);
+  assert.match(manifest, /'privacy' => array\( 'title' => 'Privacy policy', 'slug' => 'privacy-policy', 'pattern' => 'acme-roofing\/privacy' \)/);
+
+  const legal = await readFile(path.join(target, 'patterns', 'legal-notice.php'), 'utf8');
+  assert.match(legal, /Slug: acme-roofing\/legal-notice/);
+  assert.match(legal, /<h1 class="wp-block-heading">Impressum<\/h1>/);
+  assert.match(legal, /\[TODO: Paste the Impressum \(§ 5 DDG\) of Acme Roofing/);
+  const privacy = await readFile(path.join(target, 'patterns', 'privacy.php'), 'utf8');
+  assert.match(privacy, /<h1 class="wp-block-heading">Privacy policy<\/h1>/);
+  assert.match(privacy, /\[TODO: Paste the privacy policy/);
 
   await rm(dir, { recursive: true, force: true });
 });

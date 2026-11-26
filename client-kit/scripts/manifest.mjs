@@ -42,6 +42,8 @@ function renderPages(pages, slug) {
   const lines = [`${INDENT}'pages' => array(`];
   for (const page of pages) {
     const parts = [`'title' => ${phpString(page.title)}`];
+    // Optional: without it the seeder uses the key as the URL slug.
+    if (page.slug) parts.push(`'slug' => ${phpString(page.slug)}`);
     parts.push(page.postsPage
       ? "'content' => ''"
       : `'pattern' => ${phpString(`${slug}/${page.key}`)}`);
@@ -79,6 +81,11 @@ export function renderManifest(answers) {
   }
   if (pages.filter((p) => p.postsPage).length > 1) {
     throw new Error('At most one page may be the posts page.');
+  }
+  for (const page of pages) {
+    if (page.slug !== undefined && !/^[a-z0-9]+(-[a-z0-9]+)*$/.test(String(page.slug))) {
+      throw new Error(`Page "${page.key}": slug "${page.slug}" must be lowercase letters, digits and single hyphens.`);
+    }
   }
   const keys = new Set(pages.map((p) => p.key));
   for (const item of nav) {
