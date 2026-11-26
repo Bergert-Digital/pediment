@@ -17,6 +17,11 @@ A standalone Pediment client theme. The engine lives in the Pediment plugin, not
 - Colours come from `theme.json` presets. Use `var(--wp--preset--color--…)`, never literals.
 - Languages are declared in the manifest and configured with `npm run languages` **before**
   seeding, never after.
+- **Before launch, run `/pediment:launch`.** Launch means the first production deploy (the
+  first `v*` tag that goes to the live site), a domain switch, or "go live". Its checklist is
+  `docs/launch.md`: legal pages, consent, forms, SEO, operations and handover. Do not tag a
+  first release or switch the domain while an item in `docs/launch.md` is `[ ]`. Remind the
+  user when they ask for one of these steps and items are open.
 
 ## Verification
 

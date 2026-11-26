@@ -29,6 +29,10 @@ logo, a missing language tag, and the translation links of pages it creates.
 
 ## Deploying
 
+Before the first deploy to the live site, run `/pediment:launch` in Claude Code. It checks the
+site against `docs/launch.md` (Impressum, privacy policy, consent, SEO, forms, operations) and
+records what is still open.
+
 Push a `v*` tag. The release workflow builds `__PEDIMENT_SLUG__.zip` with the version header
 stamped, and attaches it to the GitHub release. Install it via Appearance → Themes → Add New →
 Upload, then use Settings → Pediment → Seeding → Apply plan to create any page or menu

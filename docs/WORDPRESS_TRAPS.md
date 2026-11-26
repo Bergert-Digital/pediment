@@ -800,3 +800,17 @@ Playwright test that opens the editor times out on `wp.data`. Front-end tests pa
 **Fix.** Run `npx wp-env destroy --force`, then `npm run env:start`. If the data must stay,
 run `npx wp-env run cli wp core update-db`.
 **Catch it early.** Open `wp-admin` once after a core change, before you read e2e failures.
+
+---
+
+## A new theme pattern file is invisible until the theme version changes
+
+**Symptom.** A client theme adds `patterns/footer.php` (or any new pattern file), but the site
+still renders the old pattern. `wp_get_theme()->get_block_patterns()` does not list the file.
+**Cause.** Since 6.6, `WP_Theme::get_block_patterns()` caches the list of pattern files in a
+site transient, keyed on the theme's `Version:` header, in every environment. A new file in an
+unchanged version is never scanned. Only `WP_DEVELOPMENT_MODE` set to `theme` skips the cache.
+**Fix.** Release the theme: the stamped `Version:` changes and the cache refreshes. Locally,
+run `npx wp-env run cli wp eval 'wp_get_theme()->delete_pattern_cache();'`.
+**Catch it early.** After you add a pattern file, check that
+`WP_Block_Patterns_Registry::get_instance()->get_registered( '<slug>' )` has a `filePath`.

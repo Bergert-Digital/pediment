@@ -11,8 +11,8 @@ theme exists only for wp-env and integration tests.
 
 The repo also ships `client-template/` (the tokenised client theme template a
 new site is scaffolded from) and `client-kit/` (the Claude Code plugin
-carrying the `/pediment:start` and `/pediment:port-page` skills and the
-scaffolder). See [docs/client-sites.md](docs/client-sites.md).
+carrying the `/pediment:start`, `/pediment:port-page` and `/pediment:launch`
+skills and the scaffolder). See [docs/client-sites.md](docs/client-sites.md).
 
 ## Hard rules
 

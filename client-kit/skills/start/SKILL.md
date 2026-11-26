@@ -60,10 +60,12 @@ asking. Open with the branching question:
    the user to name colours they already have.
 3. **Pages.** Fetch `/sitemap.xml` (fall back to `/sitemap_index.xml`, then to the nav links on the
    homepage). Present the list **pre-checked** and ask which to drop. The client template ships
-   pattern files for exactly four keys — `home`, `about`, `services`, `contact` — so only pages
-   using those keys can be seeded on the first run. Tell the user which sitemap pages fall outside
-   that set (e.g. `/team/`, `/pricing/`); do not add them to this answers file. Seed the four first,
-   then add each remaining page afterward with `/pediment:port-page`, one at a time.
+   pattern files for `home`, `about`, `services`, `contact`, and the two legal pages
+   `legal-notice` and `privacy` — so only pages using those keys can be seeded on the first run.
+   The old site's Impressum and privacy policy map to `legal-notice` and `privacy` (see "Legal
+   pages" below). Tell the user which sitemap pages fall outside that set (e.g. `/team/`,
+   `/pricing/`); do not add them to this answers file. Seed these first, then add each remaining
+   page afterward with `/pediment:port-page`, one at a time.
 4. **Languages.** Read `<link rel="alternate" hreflang="…">` from the homepage. Present pre-filled
    and ask only for confirmation.
 5. **Client name and repo slug.** Derive the slug from the name (lowercase, hyphens); show both.
@@ -72,6 +74,15 @@ asking. Open with the branching question:
    with `--with-blocks` on a fresh scaffold, or by hand.)"* Answering yes adds an `npm run build`
    step the client repo must run before every release.
 
+### Legal pages (both paths)
+
+Every site gets an Impressum and a privacy policy page; do not offer to drop them. Add them to
+`pages` with the keys `legal-notice` and `privacy`, titled and slugged in the default language —
+German: `Impressum` / `impressum` and `Datenschutz` / `datenschutz`; English: `Legal notice` /
+`legal-notice` and `Privacy policy` / `privacy-policy`; any other language: its usual term. When
+porting, use the old site's slugs instead, so the old URLs keep working. Keep them out of `nav`: the footer links to them. Their pattern files hold a
+`[TODO: …]` placeholder that `/pediment:launch` reports until the real text is in.
+
 ### If starting fresh
 
 1. **Business name.** Derive the repo slug and theme name; show for confirmation.
@@ -79,7 +90,8 @@ asking. Open with the branching question:
    *"This goes into `docs/brief.md` for you and future agents to read. Nothing in the plugin reads
    it programmatically yet."*
 3. **Languages.** Default first. Most sites are one language — offer that as the default answer.
-4. **Sitemap.** Offer Home / About / Services / Contact pre-checked, plus an optional Blog.
+4. **Sitemap.** Offer Home / About / Services / Contact pre-checked, plus an optional Blog. Say
+   that the two legal pages are always added (see "Legal pages" above).
 5. **Accent colour.** A single hex. Everything else in the palette derives from it.
 6. **Logo** — a file path, optional.
 7. **Bespoke blocks.** Ask last, before scaffolding: *"Does this site need any bespoke blocks —
@@ -111,7 +123,9 @@ Write `.context/start/answers.json`. This exact shape is what `scaffold.mjs` con
   "pages": [
     { "key": "home", "title": "Home", "frontPage": true },
     { "key": "about", "title": "About" },
-    { "key": "contact", "title": "Contact" }
+    { "key": "contact", "title": "Contact" },
+    { "key": "legal-notice", "title": "Legal notice", "slug": "legal-notice" },
+    { "key": "privacy", "title": "Privacy policy", "slug": "privacy-policy" }
   ],
   "nav": ["about", "contact"],
   "logo": null,
@@ -126,10 +140,13 @@ Rules:
   `brand.source` to `"extracted:<url>"`.
 - Page `key`s must be lowercase-hyphenated. A blog index page gets `"postsPage": true` and no
   pattern file.
-- Only `home`, `about`, `services`, `contact` have a pattern file in the client template out of
-  the box. A page with any other key makes `scaffold.mjs` refuse before writing anything — add
-  pages beyond those four with `/pediment:port-page` after the first seed, not by listing them
-  here.
+- Only `home`, `about`, `services`, `contact`, `legal-notice` and `privacy` have a pattern file
+  in the client template out of the box. A page with any other key makes `scaffold.mjs` refuse
+  before writing anything — add other pages with `/pediment:port-page` after the first seed, not
+  by listing them here.
+- `legal-notice` and `privacy` are always in `pages` and never in `nav`.
+- `slug` is optional on any page: lowercase letters, digits and single hyphens. Without it, the
+  page's URL slug is its `key`.
 - `logo` is `null`, or `{ "file": "logo.svg", "sourcePath": "<absolute path to the file>" }`.
   `file` is the name it will have inside `seed/media/`; `sourcePath` is where to copy it from.
 - `plugin.version` / `template.version`: Set both `plugin.version` and `template.version` to `V`,
@@ -194,6 +211,24 @@ Report the local URL (http://localhost:8888), the wp-admin URL, and what to do n
   writes a finished page back into its pattern file for new environments. Offer to build the
   first page with them.
 - **Port:** hand over the page list and run `/pediment:port-page <url>` per page, one at a time.
+
+### The launch reminder
+
+The scaffold wrote `docs/launch.md`: the checklist the site must pass before it goes live
+(Impressum, privacy policy, consent, forms, SEO, operations, handover). The client repo's
+`AGENTS.md` tells every later session to run `/pediment:launch` before the first production
+deploy. Tell the user both in two sentences.
+
+Then ask one question: *"When do you plan to launch? (A date, or skip.)"* Write the answer into
+the `Planned launch date:` line of `docs/launch.md` and commit it.
+
+If the user's own instructions (their `CLAUDE.md`) name a task board or a reminder tool, create
+a reminder there: title `Before launch: run /pediment:launch for <client name>`, the planned
+date as due date when there is one, and a description with the client repo's absolute path and
+the sentence to start a new session with: "Run /pediment:launch in <client repo path>." Read it
+back to confirm it landed. If no such tool is named, tell the user to keep a reminder.
+
+### GitHub remote
 
 Offer to create a GitHub remote **last**, and only with explicit confirmation:
 

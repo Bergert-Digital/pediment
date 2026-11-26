@@ -207,3 +207,18 @@ test('visual-qa no longer recommends the legacy cta block', async () => {
   assert.doesNotMatch(body, /A conversion band → `cta`/);
   assert.match(body, /`panel`/);
 });
+
+test('launch pre-authorizes its installed check script and is named in the client AGENTS.md', async () => {
+  const body = await readFile(path.join(kit, 'skills', 'launch', 'SKILL.md'), 'utf8');
+  const front = body.match(/^---\n([\s\S]*?)\n---\n/);
+  assert.ok(front, 'launch must have frontmatter');
+  assert.match(
+    front[1],
+    /^allowed-tools: Bash\(node \$\{CLAUDE_SKILL_DIR\}\/\.\.\/\.\.\/scripts\/launch-check\.mjs:\*\)$/m,
+  );
+  assert.match(body, /<skill-dir>\/\.\.\/\.\.\/shared\/launch-checklist\.md/);
+
+  const agents = await readFile(path.join(repo, 'client-template', 'AGENTS.md'), 'utf8');
+  assert.match(agents, /\/pediment:launch/);
+  assert.match(agents, /docs\/launch\.md/);
+});
