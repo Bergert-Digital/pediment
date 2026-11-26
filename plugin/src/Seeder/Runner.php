@@ -76,7 +76,7 @@ final class Runner {
 			return new RunResult( $mediaPlan, false, $manifest->path(), [ $e->getMessage() ], dryRun: $dryRun );
 		}
 
-		$entryPlan = ( new Differ() )->diff( $preview, $actual, $reader->duplicates() );
+		$entryPlan = ( new Differ() )->diff( $preview, $actual, $reader->duplicates(), CorePrivacyDraft::slug() );
 		$entryIds  = $this->resolvedIds( $entryPlan );
 		$plan      = Plan::merge( $mediaPlan, $entryPlan, $navSeeder->plan( $manifest ), $formPlan );
 
@@ -98,7 +98,7 @@ final class Runner {
 			return new RunResult( $plan, true, $manifest->path(), array_merge( $mediaErrors, [ $e->getMessage() ] ) );
 		}
 
-		$entryPlan = ( new Differ() )->diff( $desired, $actual, $reader->duplicates() );
+		$entryPlan = ( new Differ() )->diff( $desired, $actual, $reader->duplicates(), CorePrivacyDraft::slug() );
 		$applied   = ( new Applier( $this->lang ) )->apply( $entryPlan, $desired );
 
 		// A new menu links to the resolved page IDs, so navs are applied after entries.
