@@ -64,6 +64,12 @@ add_action(
 			true
 		);
 		wp_set_script_translations( 'pediment-editor-formats', 'pediment' );
+		// The SEO title panel shows only while Pediment prints the head tags.
+		wp_add_inline_script(
+			'pediment-editor-formats',
+			'window.pedimentSeo = ' . wp_json_encode( array( 'titleEnabled' => \Pediment\Seo\HeadTags::enabled() ) ) . ';',
+			'before'
+		);
 	}
 );
 

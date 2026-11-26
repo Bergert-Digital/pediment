@@ -183,7 +183,7 @@ final class HeadTags {
 	 *
 	 * @param mixed $queried Queried object.
 	 */
-	private static function post( $queried ): ?\WP_Post {
+	public static function post( $queried ): ?\WP_Post {
 		if ( ! $queried instanceof \WP_Post ) {
 			return null;
 		}
@@ -329,7 +329,7 @@ final class HeadTags {
 	 *
 	 * @param string $text Text.
 	 */
-	private static function plain( string $text ): string {
+	public static function plain( string $text ): string {
 		$text = html_entity_decode( wp_strip_all_tags( $text ), ENT_QUOTES | ENT_HTML5, 'UTF-8' );
 		return trim( (string) preg_replace( '/\s+/u', ' ', $text ) );
 	}

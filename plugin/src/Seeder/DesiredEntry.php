@@ -21,7 +21,8 @@ final class DesiredEntry {
 		public readonly bool $postsPage,
 		public readonly int $menuOrder,
 		public readonly array $terms,
-		public readonly string $excerpt = ''
+		public readonly string $excerpt = '',
+		public readonly string $seoTitle = ''
 	) {}
 
 	public function id(): string {

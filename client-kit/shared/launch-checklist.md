@@ -69,8 +69,8 @@ Last check: _never_
   search engines" is off, so no page has `noindex`.
 - [ ] **SEO-2** `[auto]` `robots.txt` does not block the site.
 - [ ] **SEO-3** `[auto]` The sitemap (`/wp-sitemap.xml`) loads and lists the real pages.
-- [ ] **SEO-4** `[auto]` Every page has its own `<title>` and a meta description (the page
-  excerpt; see Pediment's `docs/seo.md`).
+- [ ] **SEO-4** `[auto]` Every page has its own `<title>` (the page's SEO title, or "Page
+  title – Site name") and a meta description (the page excerpt; see Pediment's `docs/seo.md`).
 - [ ] **SEO-5** `[auto]` A share image exists (featured image, or the site default from the
   manifest's `site.share_image`, 1200 × 630).
 - [ ] **SEO-6** `[auto]` The site has a site icon (favicon): Site Editor → Styles, or

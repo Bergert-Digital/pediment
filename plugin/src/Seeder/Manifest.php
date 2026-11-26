@@ -14,6 +14,8 @@ declare(strict_types=1);
 
 namespace Pediment\Seeder;
 
+use Pediment\Seo\SeoTitle;
+
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
@@ -36,7 +38,7 @@ final class Manifest {
 	private const FORM_DESTINATION_KEYS = [ 'type', 'label', 'to', 'subject', 'reply_to_field', 'body_template', 'attach_files', 'confirmation' ];
 
 	/** Keys an entry may declare. Same reasoning: `front-page` must not be a no-op. */
-	private const ENTRY_KEYS = [ 'title', 'slug', 'parent', 'pattern', 'content', 'post_type', 'front_page', 'posts_page', 'menu_order', 'terms', 'excerpt', 'languages' ];
+	private const ENTRY_KEYS = [ 'title', 'slug', 'parent', 'pattern', 'content', 'post_type', 'front_page', 'posts_page', 'menu_order', 'terms', 'excerpt', 'seo_title', 'languages' ];
 
 	/** Keys the `site` section may declare. */
 	private const SITE_KEYS = [ 'logo', 'share_image' ];
@@ -45,7 +47,7 @@ final class Manifest {
 	private const LANGUAGE_KEYS = [ 'name', 'locale', 'flag', 'default' ];
 
 	/** Keys a per-language entry override may declare. */
-	private const TRANSLATION_KEYS = [ 'title', 'slug', 'pattern', 'excerpt' ];
+	private const TRANSLATION_KEYS = [ 'title', 'slug', 'pattern', 'excerpt', 'seo_title' ];
 
 	/** @var self|null */
 	private static ?self $cache = null;
@@ -529,7 +531,8 @@ final class Manifest {
 		}
 
 		$excerpt = trim( (string) ( $declared['excerpt'] ?? '' ) );
-		self::assertPlainExcerpt( $excerpt, "{$section}.{$key}" );
+		self::assertPlain( $excerpt, "{$section}.{$key}", 'excerpt' );
+		$seoTitle = self::seoTitle( $declared, "{$section}.{$key}" );
 
 		$terms = [];
 		foreach ( (array) ( $declared['terms'] ?? [] ) as $taxonomy => $slugs ) {
@@ -574,7 +577,11 @@ final class Manifest {
 
 			if ( isset( $override['excerpt'] ) ) {
 				$override['excerpt'] = trim( (string) $override['excerpt'] );
-				self::assertPlainExcerpt( $override['excerpt'], "{$section}.{$key}.languages.{$language}" );
+				self::assertPlain( $override['excerpt'], "{$section}.{$key}.languages.{$language}", 'excerpt' );
+			}
+
+			if ( isset( $override['seo_title'] ) ) {
+				$override['seo_title'] = self::seoTitle( $override, "{$section}.{$key}.languages.{$language}" );
 			}
 
 			$translations[ $language ] = array_intersect_key( $override, array_flip( self::TRANSLATION_KEYS ) );
@@ -593,20 +600,33 @@ final class Manifest {
 			(int) ( $declared['menu_order'] ?? 0 ),
 			$terms,
 			$translations,
-			$excerpt
+			$excerpt,
+			$seoTitle
 		);
 	}
 
 	/**
-	 * Themes print excerpts unescaped, and the excerpt becomes the page's
-	 * meta description, so it must be plain text.
+	 * Themes print excerpts unescaped, the excerpt becomes the page's meta
+	 * description and the SEO title its <title>, so both must be plain text.
 	 *
-	 * @throws ManifestError When the excerpt carries markup.
+	 * @throws ManifestError When the text carries markup.
 	 */
-	private static function assertPlainExcerpt( string $excerpt, string $where ): void {
-		if ( wp_strip_all_tags( $excerpt ) !== $excerpt ) {
-			throw new ManifestError( "{$where}: 'excerpt' must be plain text — markup is not allowed." ); // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- exception message for the operator, not echoed output.
+	private static function assertPlain( string $text, string $where, string $field ): void {
+		if ( wp_strip_all_tags( $text ) !== $text ) {
+			throw new ManifestError( "{$where}: '{$field}' must be plain text — markup is not allowed." ); // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- exception message for the operator, not echoed output.
 		}
+	}
+
+	/**
+	 * The declared `seo_title`: plain text on one line, '' when absent.
+	 *
+	 * @param array<string,mixed> $declared Entry or language override.
+	 * @throws ManifestError When the title carries markup.
+	 */
+	private static function seoTitle( array $declared, string $where ): string {
+		$title = trim( (string) ( $declared['seo_title'] ?? '' ) );
+		self::assertPlain( $title, $where, 'seo_title' );
+		return SeoTitle::sanitize( $title );
 	}
 
 	/**

@@ -19,7 +19,7 @@ final class DesiredState {
 	/** @var array<string,string[]> entry map key => media keys the manifest never declares */
 	private array $undeclaredMedia = [];
 
-	/** @var string[] Entries whose language has no declared title or excerpt. */
+	/** @var string[] Entries whose language has no declared title, excerpt or SEO title. */
 	private array $missingTitles = [];
 
 	public function __construct(
@@ -77,6 +77,13 @@ final class DesiredState {
 						$language
 					);
 				}
+				if ( ! $exists && $language !== $default && '' !== $language && '' !== $spec->seoTitle && ! isset( $spec->translations[ $language ]['seo_title'] ) ) {
+					$this->missingTitles[] = sprintf(
+						'%s (%s): no seo_title declared — the page\'s <title> is its title and the site name.',
+						$spec->key,
+						$language
+					);
+				}
 
 				$entry = new DesiredEntry(
 					$spec->key,
@@ -90,7 +97,8 @@ final class DesiredState {
 					$spec->postsPage,
 					$spec->menuOrder,
 					$spec->terms,
-					$spec->excerptFor( $language, $default )
+					$spec->excerptFor( $language, $default ),
+					$spec->seoTitleFor( $language, $default )
 				);
 
 				$desired[ $entry->id() ] = $entry;

@@ -57,9 +57,9 @@ two rules comes back as one tool error that names both.
 | --- | --- |
 | `pediment-get-vocabulary` | Tokens, named styles (with layer), allowed blocks, rules, WordPress version, languages, served post types. Call it first. |
 | `pediment-list-pages` | Pages (or posts of `post_type`) of every language. Filters: language, parent, status. At most 500; `truncated` is true when more matched. |
-| `pediment-read-page` | One page or post with raw block markup, translations, excerpt, menu order and featured image. |
+| `pediment-read-page` | One page or post with raw block markup, translations, excerpt, SEO title, menu order and featured image. |
 | `pediment-check-page` | Content-rule errors and warnings, blocks the editor reported invalid, legacy blocks still on the page (errors since Pediment 5). |
-| `pediment-write-page` | Create (draft by default) or update a page or post, with optional excerpt, menu order and featured image. Rejected with every violation listed if a rule fails. Keeps a revision. |
+| `pediment-write-page` | Create (draft by default) or update a page or post, with optional excerpt, SEO title, menu order and featured image. Rejected with every violation listed if a rule fails. Keeps a revision. |
 | `pediment-rollback-page` | Restore one of the page's or post's own revisions. |
 | `pediment-upsert-style` | Create or change a site-layer style (see [design-layer.md](design-layer.md)). |
 | `pediment-delete-style` | Delete a site-layer style. |
@@ -92,7 +92,12 @@ on pages, as before. `pediment-get-vocabulary` lists the served types under
   the excerpt is the page's meta description and share text
   ([seo.md](seo.md)); posts have no menu order. A field the type does not support is refused, with every such
   field listed in one error.
-- Meta fields and taxonomies are not exposed yet.
+- `seo_title` (plain text) works on every served type. It is the whole
+  `<title>` of the page, with nothing added; an empty string removes it, and
+  the page title and site name show again. A write without `seo_title` keeps
+  the stored one. `pediment-read-page` returns it (`''` when there is none).
+  See [seo.md](seo.md#the-seo-title).
+- Other meta fields and taxonomies are not exposed yet.
 
 ### Featured images
 

@@ -3,6 +3,7 @@
 require_once dirname( __DIR__ ) . '/phpunit/Abilities/AbilityRegistryReset.php';
 
 use Pediment\Language\LanguageRegistry;
+use Pediment\Seo\SeoTitle;
 
 /**
  * write-page with language and translation_of, against real Polylang.
@@ -16,6 +17,8 @@ class AbilitiesWriteLanguageTest extends PolylangTestCase {
 	public function set_up(): void {
 		parent::set_up();
 		$this->reset_registries();
+		// WP_UnitTestCase unregisters every meta key after each test.
+		SeoTitle::registerMeta();
 	}
 
 	public function tear_down(): void {
@@ -163,5 +166,18 @@ class AbilitiesWriteLanguageTest extends PolylangTestCase {
 		$this->assertSame( $de['id'], LanguageRegistry::provider()->translationOf( $en['id'], 'de' ) );
 		$this->assertStringContainsString( 'alt="A lake"', get_the_post_thumbnail( $en['id'] ) );
 		$this->assertStringContainsString( 'alt="Ein See"', get_the_post_thumbnail( $de['id'] ) );
+	}
+
+	public function test_each_translation_keeps_its_own_seo_title(): void {
+		$editor = self::factory()->user->create( array( 'role' => 'editor' ) );
+		$de     = $this->write( $editor, array( 'title' => 'Netzwerk', 'markup' => self::GOOD, 'language' => 'de', 'seo_title' => 'Netzwerkbetreuung in München | softbox' ) );
+		$en     = $this->write( $editor, array( 'title' => 'Network', 'markup' => self::GOOD, 'language' => 'en', 'translation_of' => $de['id'], 'seo_title' => 'Network support in Munich | softbox' ) );
+		$this->assertIsArray( $de );
+		$this->assertIsArray( $en );
+
+		$this->write( $editor, array( 'id' => $de['id'], 'title' => 'Netzwerk', 'markup' => self::GOOD, 'seo_title' => 'Netzwerk und Firewall | softbox' ) );
+
+		$this->assertSame( 'Netzwerk und Firewall | softbox', SeoTitle::of( $de['id'] ) );
+		$this->assertSame( 'Network support in Munich | softbox', SeoTitle::of( $en['id'] ) );
 	}
 }

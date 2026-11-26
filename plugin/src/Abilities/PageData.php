@@ -10,6 +10,7 @@ declare(strict_types=1);
 namespace Pediment\Abilities;
 
 use Pediment\Language\LanguageRegistry;
+use Pediment\Seo\SeoTitle;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -62,6 +63,7 @@ final class PageData {
 			'translations'   => (object) $translations,
 			'markup'         => $post->post_content,
 			'excerpt'        => $post->post_excerpt,
+			'seo_title'      => SeoTitle::of( $post->ID ),
 			'menu_order'     => (int) $post->menu_order,
 			'featured_image' => FeaturedImage::describe( $post->ID ),
 			'revisions'      => count( wp_get_post_revisions( $post->ID, array( 'fields' => 'ids' ) ) ),

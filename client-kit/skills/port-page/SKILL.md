@@ -165,7 +165,9 @@ not update a page that exists):
 3. Write it with `pediment-write-page` (`id`, `title`, `markup`). A rejected write lists every rule
    it broke; fix them all and write again. Pass `excerpt` too when the source page has a
    `<meta name="description">`: Pediment prints the excerpt as the page's description and share
-   text. Plain text, about 150 characters.
+   text. Plain text, about 150 characters. Pass `seo_title` when the source page's `<title>` is
+   more than "Page title – Site name": Pediment prints it as the whole `<title>`, with nothing
+   added. Plain text, about 50–60 characters.
 
 Re-screenshot and re-run the critic. Stop when it reports no material differences, or after four
 rounds — then report honestly what still differs and why.
@@ -183,8 +185,8 @@ page as it is now:
 npm run adopt -- <key>
 ```
 
-`adopt` exports the markup only: copy the page's excerpt into the manifest entry's `excerpt`, so
-a new environment gets the description too. Re-run the validator from step 5 on the adopted file. Read the diff before committing — `adopt`
+`adopt` exports the markup only: copy the page's excerpt and SEO title into the manifest entry's
+`excerpt` and `seo_title`, so a new environment gets the description and the title too. Re-run the validator from step 5 on the adopted file. Read the diff before committing — `adopt`
 does not convert sized image variants or `srcset` URLs to placeholders, so a page with responsive
 images can carry environment-specific URLs into git.
 

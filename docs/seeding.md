@@ -105,6 +105,7 @@ Per-entry keys:
 | `menu_order` | no | `0` | Used when the entry is created. |
 | `terms` | no | `[]` | `taxonomy => [slug, …]`. Create-only — see Limitations. |
 | `excerpt` | no | `''` | Plain text; markup is a validation error. Pediment prints it as the page's meta description and share text ([seo.md](seo.md)). Used when the entry is created; a later change on the site stays. |
+| `seo_title` | no | `''` | Plain text on one line; markup is a validation error. The whole `<title>` of the page ([seo.md](seo.md#the-seo-title)). Used when the entry is created; a later change on the site stays. |
 
 ### `media`
 
@@ -370,7 +371,7 @@ and why," below).
 ### Per-entry overrides
 
 Any `pages`/`posts`/`entries` item may declare a `languages` sub-section
-keyed by language code, overriding `title`, `slug`, `pattern` and/or `excerpt`
+keyed by language code, overriding `title`, `slug`, `pattern`, `excerpt` and/or `seo_title`
 for that one language:
 
 ```php
@@ -378,14 +379,21 @@ for that one language:
 	'title'     => 'About',
 	'pattern'   => 'pediment-fixture/about',
 	'languages' => array(
-		'de' => array( 'title' => 'Über uns', 'slug' => 'ueber-uns', 'excerpt' => 'Wer wir sind.' ),
+		'de' => array(
+			'title'     => 'Über uns',
+			'slug'      => 'ueber-uns',
+			'excerpt'   => 'Wer wir sind.',
+			'seo_title' => 'Über uns: das Team am See | Lakeside',
+		),
 	),
 ),
 ```
 
-The excerpt does not fall back to the default language: a page in a language
-without its own `excerpt` gets none, because a description in the wrong
-language is worse than none. The run reports each such page as a notice.
+The excerpt and the SEO title do not fall back to the default language: a
+page in a language without its own `excerpt` gets no description, and one
+without its own `seo_title` gets WordPress's title (its own page title and the
+site name), because text in the wrong language is worse. The run reports each
+such page as a notice.
 
 Two shapes are rejected outright, both because they would otherwise fail
 silently:

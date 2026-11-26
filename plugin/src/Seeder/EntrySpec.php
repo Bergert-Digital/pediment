@@ -10,7 +10,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 final class EntrySpec {
 	/**
 	 * @param array<string,string[]>                                          $terms
-	 * @param array<string,array{title?:string,slug?:string,pattern?:string,excerpt?:string}> $translations
+	 * @param array<string,array{title?:string,slug?:string,pattern?:string,excerpt?:string,seo_title?:string}> $translations
 	 */
 	public function __construct(
 		public readonly string $key,
@@ -25,7 +25,8 @@ final class EntrySpec {
 		public readonly int $menuOrder,
 		public readonly array $terms,
 		public readonly array $translations = [],
-		public readonly string $excerpt = ''
+		public readonly string $excerpt = '',
+		public readonly string $seoTitle = ''
 	) {}
 
 	/**
@@ -38,6 +39,18 @@ final class EntrySpec {
 			return (string) $this->translations[ $language ]['excerpt'];
 		}
 		return $language === $default || '' === $language ? $this->excerpt : '';
+	}
+
+	/**
+	 * The SEO title for a language. Like the excerpt, it never falls back to
+	 * the default language: without its own, the page's <title> is its own
+	 * post title and the site name, which is at least in the right language.
+	 */
+	public function seoTitleFor( string $language, string $default ): string {
+		if ( isset( $this->translations[ $language ]['seo_title'] ) ) {
+			return (string) $this->translations[ $language ]['seo_title'];
+		}
+		return $language === $default || '' === $language ? $this->seoTitle : '';
 	}
 
 	/**

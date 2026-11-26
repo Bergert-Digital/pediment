@@ -28,6 +28,7 @@ declare(strict_types=1);
 namespace Pediment\Seeder;
 
 use Pediment\Language\LanguageProvider;
+use Pediment\Seo\SeoTitle;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -94,21 +95,20 @@ final class Applier {
 
 	/** @param array<string,int> $ids @param string[] $errors */
 	private function create( DesiredEntry $entry, array $ids, array &$errors ): int {
-		$postId = wp_insert_post(
-			wp_slash(
-				[
-					'post_type'    => $entry->postType,
-					'post_status'  => 'publish',
-					'post_title'   => $entry->title,
-					'post_name'    => $entry->slug,
-					'post_content' => $entry->content,
-					'post_parent'  => $this->parentId( $entry, $ids ),
-					'menu_order'   => $entry->menuOrder,
-					'post_excerpt' => $entry->excerpt,
-				]
-			),
-			true
-		);
+		$postarr = [
+			'post_type'    => $entry->postType,
+			'post_status'  => 'publish',
+			'post_title'   => $entry->title,
+			'post_name'    => $entry->slug,
+			'post_content' => $entry->content,
+			'post_parent'  => $this->parentId( $entry, $ids ),
+			'menu_order'   => $entry->menuOrder,
+			'post_excerpt' => $entry->excerpt,
+		];
+		if ( '' !== $entry->seoTitle ) {
+			$postarr['meta_input'] = [ SeoTitle::META => $entry->seoTitle ];
+		}
+		$postId = wp_insert_post( wp_slash( $postarr ), true );
 
 		if ( is_wp_error( $postId ) ) {
 			$errors[] = sprintf( '%s: %s', $entry->key, $postId->get_error_message() );
