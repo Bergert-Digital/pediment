@@ -1,5 +1,22 @@
 # Changelog
 
+## [6.9.0](https://github.com/Bergert-Digital/pediment/compare/v6.8.0...v6.9.0) (2026-11-26)
+
+
+### Features
+
+* **client-kit:** add launch checklist and /pediment:launch ([021fce9](https://github.com/Bergert-Digital/pediment/commit/021fce9e505e01ca476031e96e96e9a3dcc91c13))
+* **client-kit:** add launch checklist and /pediment:launch ([#172](https://github.com/Bergert-Digital/pediment/issues/172)) ([15e7d74](https://github.com/Bergert-Digital/pediment/commit/15e7d74acda9261db52e92318106a82297381301))
+* editable footer with legal links, no emoji from s.w.org ([#173](https://github.com/Bergert-Digital/pediment/issues/173)) ([569ef37](https://github.com/Bergert-Digital/pediment/commit/569ef371247bb2af7ac26351b4dad8ba7689b616))
+* editable footer with legal links, no emoji from s.w.org ([#175](https://github.com/Bergert-Digital/pediment/issues/175)) ([71af84e](https://github.com/Bergert-Digital/pediment/commit/71af84ee9f3abbabcaa24037841714d36df062f4))
+* **privacy:** turn off WordPress emoji loading from s.w.org ([c583151](https://github.com/Bergert-Digital/pediment/commit/c583151c8b1558d6f6772458f1b4ca11b232f67c))
+* seed the footer as an editable template part ([687064b](https://github.com/Bergert-Digital/pediment/commit/687064b9e8da43e564f94a7a03abfde6cf211f51))
+
+
+### Bug Fixes
+
+* **seeder:** free the slug of WordPress's privacy draft ([918dab9](https://github.com/Bergert-Digital/pediment/commit/918dab9f9d9f8e13320fc58df3f29904c7db2c8a))
+
 ## [6.8.0](https://github.com/Bergert-Digital/pediment/compare/v6.7.0...v6.8.0) (2026-11-26)
 
 
