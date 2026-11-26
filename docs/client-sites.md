@@ -133,6 +133,31 @@ wrong content. In the ordinary wp-admin activation flow this window closes befor
 could hit it — activating a theme redirects to another admin page, and that redirect's own `init`
 is what completes the seed, before anyone loads the front end.
 
+### The footer
+
+The footer is a database-backed `footer` template part too, seeded by the same bootstrap
+(`pediment_bootstrap_footer_template_part()`). It is edited in the Site Editor (Patterns →
+Template parts → Footer). The part is created once, from the first of these that exists:
+
+1. the theme's own pattern `<theme-slug>/footer`;
+2. a theme pattern that takes the slug `pediment/footer` (how a client theme replaced the footer
+   before Pediment 6.9), so a site keeps the footer it already shows;
+3. Pediment's default footer, the pattern `pediment/footer-default`: the logo, the tagline from
+   Settings → General, the social links, the primary menu, "©" with the site title, and a
+   `pediment/legal-links` block that links the pages seeded as `legal-notice` and `privacy` in
+   the visitor's language (see [blocks.md](blocks.md#legal-links)). It holds no contact details:
+   add them in the Site Editor, or ship them in `<theme-slug>/footer`.
+
+Like the header, the pattern is read only when the part is created; later edits live in the
+database. Every template inserts the part with
+`<!-- wp:template-part {"slug":"footer","tagName":"footer"} /-->`. The `pediment/footer` pattern
+still exists for templates written before 6.9: it now holds only that template-part block.
+
+A site that ran Pediment before the footer became a part gets its part on the first request after
+the plugin update (`pediment_bootstrap_maybe_seed_footer()` on `init`, once per active theme; the
+autoloaded option `pediment_footer_part_theme` records it). Templates edited in the Site Editor
+before then hold their footer inline and keep it: the update does not touch them.
+
 ## The `pediment` block in `package.json`
 
 ```json
@@ -231,13 +256,10 @@ Three things make sure nobody forgets it:
 - The scaffold seeds an Impressum (`legal-notice`) and a privacy policy (`privacy`) page. Their
   text is a `[TODO: …]` note, which the launch check reports until the real text is in.
 
-Pediment's default footer (`pediment/footer`) is placeholder copy and does not link the legal
-pages. A client theme replaces it with its own `patterns/footer.php` that declares
-`Slug: pediment/footer`: core registers the active theme's patterns on `init` before the plugin
-registers its own, and the plugin skips a slug that is already registered. Core caches the list of
-a theme's pattern files until the theme's `Version:` changes (unless `WP_DEVELOPMENT_MODE` is
-`theme`), so a new pattern file appears with the next theme release. In a local environment, clear
-the cache with `npx wp-env run cli wp eval 'wp_get_theme()->delete_pattern_cache();'`.
+The default footer links both legal pages through its `pediment/legal-links` block (see "The
+footer", above), so the LEGAL checks find them on every page. It holds no contact details: put
+the client's address, phone and email into the footer in the Site Editor, or into the theme's
+`<theme-slug>/footer` pattern before the theme first runs on the site (checklist item QA-2).
 
 When you add an item to the checklist, give it the next ID in its section. An `[auto]` item needs
 a check in `launch-check.mjs` with the same ID; `client-kit/tests/launch-check.test.mjs` fails

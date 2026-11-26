@@ -74,8 +74,9 @@ Replace an earlier note on the same item; do not stack notes.
 
 First check what you can from the repo, and report what you found as evidence:
 
-- `QA-2`: does the repo have `patterns/footer.php` with `Slug: pediment/footer`? Without it,
-  the site shows Pediment's placeholder footer.
+- `QA-2`: does the repo have a `patterns/footer.php` with `Slug: <theme-slug>/footer`? If yes,
+  the footer part started from it; if no, from Pediment's default footer, which has no contact
+  details. Either way, ask the user to check the live footer: the Site Editor's edits win.
 - `FORM-1`: which patterns contain a `pediment/form` block, and does each link to the privacy
   policy near the submit button?
 - `PRIV-3`: do patterns contain `core/embed` blocks (YouTube, Vimeo, maps)?
