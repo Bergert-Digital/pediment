@@ -19,7 +19,7 @@ final class DesiredState {
 	/** @var array<string,string[]> entry map key => media keys the manifest never declares */
 	private array $undeclaredMedia = [];
 
-	/** @var string[] Entries whose language has no declared title. */
+	/** @var string[] Entries whose language has no declared title or excerpt. */
 	private array $missingTitles = [];
 
 	public function __construct(
@@ -67,6 +67,17 @@ final class DesiredState {
 					);
 				}
 
+				// The same for a description: the default language declares
+				// one, this language has none, so the new page has no meta
+				// description until someone writes it.
+				if ( ! $exists && $language !== $default && '' !== $language && '' !== $spec->excerpt && ! isset( $spec->translations[ $language ]['excerpt'] ) ) {
+					$this->missingTitles[] = sprintf(
+						'%s (%s): no excerpt declared — the page gets no meta description.',
+						$spec->key,
+						$language
+					);
+				}
+
 				$entry = new DesiredEntry(
 					$spec->key,
 					$language,
@@ -78,7 +89,8 @@ final class DesiredState {
 					$spec->frontPage,
 					$spec->postsPage,
 					$spec->menuOrder,
-					$spec->terms
+					$spec->terms,
+					$spec->excerptFor( $language, $default )
 				);
 
 				$desired[ $entry->id() ] = $entry;

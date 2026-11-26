@@ -1,7 +1,7 @@
 <?php
 /**
  * When the seeder may fill a site setting that names a post: the front page,
- * the posts page and the site logo.
+ * the posts page, the site logo and the default share image.
  *
  * @package Pediment
  */

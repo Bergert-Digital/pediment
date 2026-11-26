@@ -48,20 +48,24 @@ final class Differ {
 			$have = $actual[ $mapKey ] ?? null;
 
 			if ( null === $have ) {
+				$changes = [
+					'title'      => [ 'from' => null, 'to' => $want->title ],
+					'content'    => [ 'from' => null, 'to' => $want->content ],
+					'slug'       => [ 'from' => null, 'to' => $want->slug ],
+					'parent_key' => [ 'from' => null, 'to' => $want->parentKey ],
+					'status'     => [ 'from' => null, 'to' => 'publish' ],
+					'menu_order' => [ 'from' => null, 'to' => $want->menuOrder ],
+				];
+				if ( '' !== $want->excerpt ) {
+					$changes['excerpt'] = [ 'from' => null, 'to' => $want->excerpt ];
+				}
 				$items[] = new PlanItem(
 					PlanItem::CREATE,
 					PlanItem::KIND_ENTRY,
 					$want->key,
 					$want->language,
 					0,
-					[
-						'title'      => [ 'from' => null, 'to' => $want->title ],
-						'content'    => [ 'from' => null, 'to' => $want->content ],
-						'slug'       => [ 'from' => null, 'to' => $want->slug ],
-						'parent_key' => [ 'from' => null, 'to' => $want->parentKey ],
-						'status'     => [ 'from' => null, 'to' => 'publish' ],
-						'menu_order' => [ 'from' => null, 'to' => $want->menuOrder ],
-					]
+					$changes
 				);
 				continue;
 			}

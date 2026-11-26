@@ -62,6 +62,28 @@ class ApplierTest extends WP_UnitTestCase {
 		$this->assertSame( '', get_post_meta( $id, '_pediment_seed_source', true ) );
 	}
 
+	public function test_the_excerpt_is_written_on_create_and_never_again() {
+		$raw = $this->manifest( [ 'about' => [ 'title' => 'About', 'content' => '<p>a</p>', 'excerpt' => 'Who we are.' ] ] );
+		$id  = $this->seed( $raw )['about|'];
+		$this->assertSame( 'Who we are.', get_post_field( 'post_excerpt', $id ) );
+
+		wp_update_post( [ 'ID' => $id, 'post_excerpt' => 'Written by a person.' ] );
+		$raw['pages']['about']['excerpt'] = 'Changed in the manifest.';
+		$this->seed( $raw );
+		$this->assertSame( 'Written by a person.', get_post_field( 'post_excerpt', $id ) );
+	}
+
+	public function test_an_empty_excerpt_stays_out_of_the_plan() {
+		$plan  = $this->plan( $this->manifest( [ 'a' => [ 'title' => 'A', 'content' => '' ], 'b' => [ 'title' => 'B', 'content' => '', 'excerpt' => 'Bee.' ] ] ) );
+		$items = $plan->byAction( PlanItem::CREATE );
+		$by    = [];
+		foreach ( $items as $item ) {
+			$by[ $item->key ] = $item->changes;
+		}
+		$this->assertArrayNotHasKey( 'excerpt', $by['a'] );
+		$this->assertSame( 'Bee.', $by['b']['excerpt']['to'] );
+	}
+
 	public function test_block_attribute_json_survives_the_write() {
 		// wp_update_post un-slashes post_content; unslashed block JSON fatals the
 		// front end (docs/WORDPRESS_TRAPS.md). The applier must wp_slash().

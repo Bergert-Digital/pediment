@@ -208,6 +208,30 @@ class ManifestTest extends WP_UnitTestCase {
 		Manifest::fromArray( [ 'site' => [ 'logo' => 'nope' ] ], '/tmp/theme' );
 	}
 
+	public function test_site_share_image_must_reference_a_declared_media_key() {
+		$this->expectException( ManifestError::class );
+		$this->expectExceptionMessageMatches( '/site\.share_image/' );
+		Manifest::fromArray( [ 'site' => [ 'share_image' => 'nope' ] ], '/tmp/theme' );
+	}
+
+	public function test_an_unknown_site_key_is_a_validation_error() {
+		$this->expectException( ManifestError::class );
+		$this->expectExceptionMessageMatches( "/site: unknown key 'logos'/" );
+		Manifest::fromArray( [ 'site' => [ 'logos' => 'x' ] ], '/tmp/theme' );
+	}
+
+	public function test_an_excerpt_is_trimmed_and_markup_is_rejected() {
+		$raw                              = $this->raw();
+		$raw['pages']['guide']['excerpt'] = "  Lake tours for families.\n";
+		$this->assertSame( 'Lake tours for families.', Manifest::fromArray( $raw, '/tmp/theme' )->entries()['guide']->excerpt );
+		$this->assertSame( '', Manifest::fromArray( $this->raw(), '/tmp/theme' )->entries()['guide']->excerpt );
+
+		$raw['pages']['guide']['excerpt'] = 'Lake <b>tours</b>';
+		$this->expectException( ManifestError::class );
+		$this->expectExceptionMessageMatches( "/pages\.guide: 'excerpt' must be plain text/" );
+		Manifest::fromArray( $raw, '/tmp/theme' );
+	}
+
 	public function test_nav_items_must_reference_declared_entries() {
 		$raw         = $this->raw();
 		$raw['navs'] = [ 'primary' => [ 'title' => 'Primary', 'items' => [ [ 'entry' => 'ghost' ] ] ] ];
@@ -362,6 +386,23 @@ class ManifestTest extends WP_UnitTestCase {
 		$this->assertSame( 'ueber-uns', $spec->slugFor( 'de', 'en' ) );
 		$this->assertSame( 'About', $spec->titleFor( 'en', 'en' ) );
 		$this->assertSame( 'about', $spec->slugFor( 'en', 'en' ) );
+	}
+
+	public function test_an_excerpt_is_per_language_and_never_borrowed() {
+		$spec = $this->bilingual(
+			[ 'title' => 'About', 'pattern' => 'x/about', 'excerpt' => 'About us.', 'languages' => [ 'de' => [ 'excerpt' => 'Über uns.' ] ] ]
+		);
+		$this->assertSame( 'About us.', $spec->excerptFor( 'en', 'en' ) );
+		$this->assertSame( 'Über uns.', $spec->excerptFor( 'de', 'en' ) );
+
+		$untranslated = $this->bilingual( [ 'title' => 'About', 'pattern' => 'x/about', 'excerpt' => 'About us.' ] );
+		$this->assertSame( '', $untranslated->excerptFor( 'de', 'en' ), 'an English description on a German page is worse than none' );
+	}
+
+	public function test_an_excerpt_override_with_markup_is_rejected() {
+		$this->expectException( ManifestError::class );
+		$this->expectExceptionMessageMatches( "/pages\.about\.languages\.de: 'excerpt' must be plain text/" );
+		$this->bilingual( [ 'title' => 'About', 'pattern' => 'x/about', 'languages' => [ 'de' => [ 'excerpt' => '<i>x</i>' ] ] ] );
 	}
 
 	public function test_a_missing_title_falls_back_to_the_default_language() {

@@ -37,5 +37,6 @@ final class Bootstrap {
 		\Pediment\Abilities\Registrar::register();
 		\Pediment\Mcp\Server::register();
 		\Pediment\Mcp\AdminTab::register();
+		\Pediment\Seo\HeadTags::register();
 	}
 }

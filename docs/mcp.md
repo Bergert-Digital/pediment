@@ -88,8 +88,9 @@ on pages, as before. `pediment-get-vocabulary` lists the served types under
   `revision: 0` and a warning that it cannot be rolled back. The seeder's
   manifest `post_types` add `revisions` to `supports` by default.
 - `excerpt` (plain text) needs `excerpt` support, `menu_order` needs
-  `page-attributes` support. Pages have no excerpt by default; posts have no
-  menu order. A field the type does not support is refused, with every such
+  `page-attributes` support. Pediment turns on the excerpt for pages, because
+  the excerpt is the page's meta description and share text
+  ([seo.md](seo.md)); posts have no menu order. A field the type does not support is refused, with every such
   field listed in one error.
 - Meta fields and taxonomies are not exposed yet.
 

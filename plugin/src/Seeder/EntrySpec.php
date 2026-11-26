@@ -10,7 +10,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 final class EntrySpec {
 	/**
 	 * @param array<string,string[]>                                          $terms
-	 * @param array<string,array{title?:string,slug?:string,pattern?:string}> $translations
+	 * @param array<string,array{title?:string,slug?:string,pattern?:string,excerpt?:string}> $translations
 	 */
 	public function __construct(
 		public readonly string $key,
@@ -24,8 +24,21 @@ final class EntrySpec {
 		public readonly bool $postsPage,
 		public readonly int $menuOrder,
 		public readonly array $terms,
-		public readonly array $translations = []
+		public readonly array $translations = [],
+		public readonly string $excerpt = ''
 	) {}
+
+	/**
+	 * The excerpt for a language. A non-default language without its own
+	 * excerpt gets none: the excerpt is the page's meta description, and a
+	 * description in another language is worse than none.
+	 */
+	public function excerptFor( string $language, string $default ): string {
+		if ( isset( $this->translations[ $language ]['excerpt'] ) ) {
+			return (string) $this->translations[ $language ]['excerpt'];
+		}
+		return $language === $default || '' === $language ? $this->excerpt : '';
+	}
 
 	/**
 	 * The declared title for a language, falling back to the default language's.
