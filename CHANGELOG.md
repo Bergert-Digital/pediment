@@ -1,5 +1,13 @@
 # Changelog
 
+## [6.8.0](https://github.com/Bergert-Digital/pediment/compare/v6.7.0...v6.8.0) (2026-11-26)
+
+
+### Features
+
+* **seo:** print meta description and Open Graph tags ([74ab5b5](https://github.com/Bergert-Digital/pediment/commit/74ab5b5306e174dc18de7805c8fe7e048a9b1927))
+* **seo:** print meta description and Open Graph tags ([#170](https://github.com/Bergert-Digital/pediment/issues/170)) ([86bb027](https://github.com/Bergert-Digital/pediment/commit/86bb0270666927e3627c198e38acaa925a160397))
+
 ## [6.7.0](https://github.com/Bergert-Digital/pediment/compare/v6.6.0...v6.7.0) (2026-11-25)
 
 
