@@ -16,7 +16,9 @@
  *     never re-tags or moves a post that already carries one. That and the
  *     translation-group link (only for a key where this run created or
  *     tagged a row) are the only things the seeder does to a row it did not
- *     create in this run.
+ *     create in this run — plus one row WordPress made: its unedited draft
+ *     "Privacy Policy" page goes to the trash when an entry needs its slug
+ *     (releaseCorePrivacyDraft()).
  *
  * @package Pediment
  */
@@ -65,12 +67,16 @@ final class Applier {
 					continue;
 				}
 
-				$postId = $this->create( $entry, $ids, $errors );
+				$corePrivacy = $this->releaseCorePrivacyDraft( $entry );
+				$postId      = $this->create( $entry, $ids, $errors );
 				if ( $postId > 0 ) {
 					$ids[ $item->mapKey() ] = $postId;
 					$created[]              = $item->mapKey();
 					$this->applyTerms( $postId, $entry, $errors );
 					$this->assertSlug( $postId, $entry, $errors );
+					if ( $corePrivacy ) {
+						$this->fillPrivacyPolicySetting( $postId, $entry );
+					}
 				}
 			}
 		} finally {
@@ -131,6 +137,35 @@ final class Applier {
 		update_post_meta( $postId, Meta::KEY, $entry->key );
 
 		return $postId;
+	}
+
+	/**
+	 * WordPress's unedited draft "Privacy Policy" page holds `privacy-policy`
+	 * on every new install. When the entry wants that slug, the draft goes to
+	 * the trash (which frees the slug) before the entry is created. It is the
+	 * one row the seeder did not create that it moves, and only while it is
+	 * exactly what WordPress made (CorePrivacyDraft::id()). The trash keeps it.
+	 */
+	private function releaseCorePrivacyDraft( DesiredEntry $entry ): bool {
+		$draft = CorePrivacyDraft::id();
+		if ( $draft <= 0 || 'page' !== $entry->postType || (string) get_post_field( 'post_name', $draft ) !== $entry->slug ) {
+			return false;
+		}
+		return (bool) wp_trash_post( $draft );
+	}
+
+	/**
+	 * The page that took the draft's place becomes the site's privacy policy
+	 * page (Settings → Privacy), if the setting is still empty: it named the
+	 * draft, which is in the trash now.
+	 */
+	private function fillPrivacyPolicySetting( int $postId, DesiredEntry $entry ): void {
+		if ( $entry->language !== $this->lang->defaultLanguage() ) {
+			return;
+		}
+		if ( SiteSetting::isUnset( (int) get_option( CorePrivacyDraft::OPTION ) ) ) {
+			update_option( CorePrivacyDraft::OPTION, $postId );
+		}
 	}
 
 	/** @param array<string,int> $ids */

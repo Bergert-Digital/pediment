@@ -41,6 +41,7 @@ const isReference = ( name ) => /ids?$/i.test( name );
 const NON_PROSE = new Set( [
 	'pediment/blog-index.categorySlug', // taxonomy term slug used in a WP_Query, never shown to visitors
 	'pediment/icon.icon', // icon-library slug passed to pediment_icon(), not text
+	'pediment/legal-links.keys', // seed keys (_pediment_seed_key) of the pages to link; the same in every language
 	'pediment/form.destination', // id of a configured form destination (see inc/forms-destinations.php)
 	'pediment/form-field.fieldType', // closed set of field-kind tokens: text/email/tel/textarea/select/checkbox/radio/number/date/file
 	'pediment/form-field.fileTypes', // comma-separated file extensions (pdf, docx), filtered against a safe list in inc/forms-files.php

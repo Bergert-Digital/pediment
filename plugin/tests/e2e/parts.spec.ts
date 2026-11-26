@@ -13,12 +13,14 @@ test.describe( 'Pediment parts', () => {
 		).toBeVisible();
 	} );
 
-	test( 'footer renders columns and bottom bar', async ( { page } ) => {
+	test( 'footer renders the seeded footer part', async ( { page } ) => {
 		await page.goto( '/' );
-		const footer = page.locator( 'footer' ).first();
+		const footer = page.locator( 'footer.wp-block-template-part' ).last();
 		await expect( footer ).toBeVisible();
 		await expect(
-			footer.getByText( /All rights reserved\./ )
+			footer.locator( '.wp-block-site-logo' ).first()
 		).toBeVisible();
+		await expect( footer.locator( '.wp-block-site-title' ) ).toBeVisible();
+		await expect( footer ).not.toContainText( 'example.com' );
 	} );
 } );

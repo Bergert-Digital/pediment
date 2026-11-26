@@ -40,7 +40,9 @@ Last check: _never_
 
 - [ ] **PRIV-1** `[auto]` No request goes to a third party before the visitor consents. The
   check lists every external host in the HTML; you decide for each one. Confirm in a browser
-  with a fresh profile: DevTools → Network, load the page, accept nothing.
+  with a fresh profile: DevTools → Network, load the page, accept nothing. Pediment turns off
+  WordPress's emoji script, so `s.w.org` must not appear; if it does, a filter or plugin
+  turned it back on (see the plugin's `docs/privacy.md`).
 - [ ] **PRIV-2** `[auto]` Fonts load from the site itself, never from Google Fonts or another
   font CDN.
 - [ ] **PRIV-3** `[manual]` YouTube, Vimeo and map embeds load only after a click
@@ -97,14 +99,12 @@ Last check: _never_
 ## Content and quality
 
 - [ ] **QA-1** `[auto]` No placeholder text remains: "Lorem ipsum", `example.com`, `[TODO`,
-  the copy of Pediment's default footer, and WordPress's "Sample Page" and "Hello world!" post
-  (delete them).
-- [ ] **QA-2** `[manual]` The footer shows the client's real details. Pediment's default
-  footer (`pediment/footer`) is placeholder copy: replace it with a client
-  `patterns/footer.php` that has `Slug: pediment/footer` and links the legal pages. A theme
-  pattern registers before the plugin's, so it takes its place on every template. WordPress
-  caches the list of theme pattern files per theme version: the next theme release picks the
-  new file up; locally, run `npx wp-env run cli wp eval 'wp_get_theme()->delete_pattern_cache();'`.
+  the demo copy of Pediment's footer before 6.9, and WordPress's "Sample Page" and "Hello
+  world!" post (delete them).
+- [ ] **QA-2** `[manual]` The footer shows the client's real details: name, address, phone,
+  email, opening hours, whatever the client wants there. The footer is a template part: edit
+  it in the Site Editor (Patterns → Template parts → Footer). Pediment's default footer links
+  the Impressum and the privacy policy, but holds no contact details.
 - [ ] **QA-3** `[manual]` Every image has meaningful alt text, or empty alt text when it is
   decoration only.
 - [ ] **QA-4** `[manual]` Every page looks right at 375, 768 and 1440 px, and no link is

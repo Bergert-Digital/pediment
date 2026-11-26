@@ -49,16 +49,14 @@ class HomeTemplateTest extends WP_UnitTestCase {
 		return $out;
 	}
 
-	public function test_template_has_header_part_and_footer_pattern(): void {
+	public function test_template_has_header_and_footer_parts(): void {
 		$blocks = $this->template_blocks();
 
 		$parts = $this->find_all_blocks( $blocks, 'core/template-part' );
 		$slugs = array_map( static fn( $b ) => $b['attrs']['slug'] ?? '', $parts );
 		$this->assertContains( 'header', $slugs, 'header stays a DB-seeded template part' );
-
-		$patterns      = $this->find_all_blocks( $blocks, 'core/pattern' );
-		$pattern_slugs = array_map( static fn( $b ) => $b['attrs']['slug'] ?? '', $patterns );
-		$this->assertContains( 'pediment/footer', $pattern_slugs, 'footer is now the pediment/footer pattern' );
+		$this->assertContains( 'footer', $slugs, 'footer is a DB-seeded template part, like the header' );
+		$this->assertSame( array(), $this->find_all_blocks( $blocks, 'core/pattern' ), 'no template inserts the footer as a pattern any more' );
 	}
 
 	public function test_template_query_results_are_numerically_indexed(): void {

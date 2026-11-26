@@ -1,0 +1,27 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "pediment/legal-links",
+	"title": "Legal Links",
+	"category": "pediment",
+	"description": "Links the seeded Impressum and privacy policy pages in the visitor's language, titled with each page's own title. Hides itself when neither page exists.",
+	"keywords": [ "impressum", "privacy", "imprint", "datenschutz" ],
+	"textdomain": "pediment",
+	"supports": {
+		"html": false,
+		"color": { "text": true, "link": true, "background": false },
+		"typography": { "fontSize": true }
+	},
+	"attributes": {
+		"keys": {
+			"type": "array",
+			"default": [ "legal-notice", "privacy" ],
+			"items": { "type": "string" }
+		}
+	},
+	"example": {},
+	"editorScript": "file:./index.js",
+	"editorStyle": "file:./style-index.css",
+	"style": "file:./style-index.css",
+	"render": "file:./render.php"
+}

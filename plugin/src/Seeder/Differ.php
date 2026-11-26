@@ -28,8 +28,10 @@ final class Differ {
 	 * @param array<string,DesiredEntry> $desired
 	 * @param array<string,ActualEntry>  $actual
 	 * @param array<string,int[]>        $duplicates
+	 * @param string                     $corePrivacySlug The slug of WordPress's untouched draft
+	 *                                                    privacy page (CorePrivacyDraft), '' for none.
 	 */
-	public function diff( array $desired, array $actual, array $duplicates = [] ): Plan {
+	public function diff( array $desired, array $actual, array $duplicates = [], string $corePrivacySlug = '' ): Plan {
 		$items  = [];
 		$errors = [];
 
@@ -59,13 +61,19 @@ final class Differ {
 				if ( '' !== $want->excerpt ) {
 					$changes['excerpt'] = [ 'from' => null, 'to' => $want->excerpt ];
 				}
+				$note = '';
+				if ( '' !== $corePrivacySlug && 'page' === $want->postType && $want->slug === $corePrivacySlug ) {
+					$note            = sprintf( 'moves WordPress\'s unedited draft "Privacy Policy" page to the trash to free the slug "%s"', $corePrivacySlug );
+					$corePrivacySlug = '';
+				}
 				$items[] = new PlanItem(
 					PlanItem::CREATE,
 					PlanItem::KIND_ENTRY,
 					$want->key,
 					$want->language,
 					0,
-					$changes
+					$changes,
+					$note
 				);
 				continue;
 			}

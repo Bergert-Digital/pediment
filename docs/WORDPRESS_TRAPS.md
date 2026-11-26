@@ -805,8 +805,9 @@ run `npx wp-env run cli wp core update-db`.
 
 ## A new theme pattern file is invisible until the theme version changes
 
-**Symptom.** A client theme adds `patterns/footer.php` (or any new pattern file), but the site
-still renders the old pattern. `wp_get_theme()->get_block_patterns()` does not list the file.
+**Symptom.** A client theme adds a new pattern file, but the site still renders the old pattern,
+or seeds a template part from Pediment's default instead of the theme's `<slug>/footer`.
+`wp_get_theme()->get_block_patterns()` does not list the file.
 **Cause.** Since 6.6, `WP_Theme::get_block_patterns()` caches the list of pattern files in a
 site transient, keyed on the theme's `Version:` header, in every environment. A new file in an
 unchanged version is never scanned. Only `WP_DEVELOPMENT_MODE` set to `theme` skips the cache.
