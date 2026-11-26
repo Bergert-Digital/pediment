@@ -232,6 +232,18 @@ class ManifestTest extends WP_UnitTestCase {
 		Manifest::fromArray( $raw, '/tmp/theme' );
 	}
 
+	public function test_an_seo_title_is_trimmed_put_on_one_line_and_markup_is_rejected() {
+		$raw                                = $this->raw();
+		$raw['pages']['guide']['seo_title'] = "  Lake tours\nfor families | Lakeside  ";
+		$this->assertSame( 'Lake tours for families | Lakeside', Manifest::fromArray( $raw, '/tmp/theme' )->entries()['guide']->seoTitle );
+		$this->assertSame( '', Manifest::fromArray( $this->raw(), '/tmp/theme' )->entries()['guide']->seoTitle );
+
+		$raw['pages']['guide']['seo_title'] = 'Lake <b>tours</b>';
+		$this->expectException( ManifestError::class );
+		$this->expectExceptionMessageMatches( "/pages\.guide: 'seo_title' must be plain text/" );
+		Manifest::fromArray( $raw, '/tmp/theme' );
+	}
+
 	public function test_nav_items_must_reference_declared_entries() {
 		$raw         = $this->raw();
 		$raw['navs'] = [ 'primary' => [ 'title' => 'Primary', 'items' => [ [ 'entry' => 'ghost' ] ] ] ];
@@ -397,6 +409,23 @@ class ManifestTest extends WP_UnitTestCase {
 
 		$untranslated = $this->bilingual( [ 'title' => 'About', 'pattern' => 'x/about', 'excerpt' => 'About us.' ] );
 		$this->assertSame( '', $untranslated->excerptFor( 'de', 'en' ), 'an English description on a German page is worse than none' );
+	}
+
+	public function test_an_seo_title_is_per_language_and_never_borrowed() {
+		$spec = $this->bilingual(
+			[ 'title' => 'About', 'pattern' => 'x/about', 'seo_title' => 'About us | Lakeside', 'languages' => [ 'de' => [ 'seo_title' => ' Über uns | Lakeside ' ] ] ]
+		);
+		$this->assertSame( 'About us | Lakeside', $spec->seoTitleFor( 'en', 'en' ) );
+		$this->assertSame( 'Über uns | Lakeside', $spec->seoTitleFor( 'de', 'en' ) );
+
+		$untranslated = $this->bilingual( [ 'title' => 'About', 'pattern' => 'x/about', 'seo_title' => 'About us | Lakeside' ] );
+		$this->assertSame( '', $untranslated->seoTitleFor( 'de', 'en' ), 'an English <title> on a German page is worse than the German page title' );
+	}
+
+	public function test_an_seo_title_override_with_markup_is_rejected() {
+		$this->expectException( ManifestError::class );
+		$this->expectExceptionMessageMatches( "/pages\.about\.languages\.de: 'seo_title' must be plain text/" );
+		$this->bilingual( [ 'title' => 'About', 'pattern' => 'x/about', 'languages' => [ 'de' => [ 'seo_title' => '<i>x</i>' ] ] ] );
 	}
 
 	public function test_an_excerpt_override_with_markup_is_rejected() {

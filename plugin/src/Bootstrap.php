@@ -38,6 +38,7 @@ final class Bootstrap {
 		\Pediment\Mcp\Server::register();
 		\Pediment\Mcp\AdminTab::register();
 		\Pediment\Seo\HeadTags::register();
+		\Pediment\Seo\SeoTitle::register();
 		\Pediment\Privacy\Emoji::register();
 	}
 }

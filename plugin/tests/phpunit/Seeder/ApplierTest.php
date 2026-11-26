@@ -10,6 +10,7 @@ use Pediment\Seeder\MediaMap;
 use Pediment\Seeder\Meta;
 use Pediment\Seeder\PlanItem;
 use Pediment\Seeder\StateReader;
+use Pediment\Seo\SeoTitle;
 
 class ApplierTest extends WP_UnitTestCase {
 
@@ -71,6 +72,32 @@ class ApplierTest extends WP_UnitTestCase {
 		$raw['pages']['about']['excerpt'] = 'Changed in the manifest.';
 		$this->seed( $raw );
 		$this->assertSame( 'Written by a person.', get_post_field( 'post_excerpt', $id ) );
+	}
+
+	public function test_the_seo_title_is_written_on_create_and_never_again() {
+		$raw = $this->manifest( [ 'net' => [ 'title' => 'Netzwerk', 'content' => '<p>a</p>', 'seo_title' => 'Netzwerkbetreuung in München | softbox' ] ] );
+		$id  = $this->seed( $raw )['net|'];
+		$this->assertSame( 'Netzwerkbetreuung in München | softbox', get_post_meta( $id, SeoTitle::META, true ) );
+		$this->assertSame( 'Netzwerk', get_post_field( 'post_title', $id ) );
+
+		update_post_meta( $id, SeoTitle::META, 'Written by a person' );
+		$raw['pages']['net']['seo_title'] = 'Changed in the manifest';
+		$this->seed( $raw );
+		$this->assertSame( 'Written by a person', get_post_meta( $id, SeoTitle::META, true ) );
+	}
+
+	public function test_an_empty_seo_title_writes_no_meta_and_stays_out_of_the_plan() {
+		$raw   = $this->manifest( [ 'a' => [ 'title' => 'A', 'content' => '' ], 'b' => [ 'title' => 'B', 'content' => '', 'seo_title' => 'Bee | Site' ] ] );
+		$items = $this->plan( $raw )->byAction( PlanItem::CREATE );
+		$by    = [];
+		foreach ( $items as $item ) {
+			$by[ $item->key ] = $item->changes;
+		}
+		$this->assertArrayNotHasKey( 'seo_title', $by['a'] );
+		$this->assertSame( 'Bee | Site', $by['b']['seo_title']['to'] );
+
+		$ids = $this->seed( $raw );
+		$this->assertFalse( metadata_exists( 'post', $ids['a|'], SeoTitle::META ) );
 	}
 
 	public function test_an_empty_excerpt_stays_out_of_the_plan() {

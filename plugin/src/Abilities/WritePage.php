@@ -12,6 +12,7 @@ namespace Pediment\Abilities;
 use Pediment\Content\InvalidBlockLog;
 use Pediment\Content\Policy;
 use Pediment\Language\LanguageRegistry;
+use Pediment\Seo\SeoTitle;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -38,7 +39,7 @@ final class WritePage extends Ability {
 	}
 
 	protected function description(): string {
-		return __( 'Creates a page (status draft unless given) or updates the page with the given id. With post_type (default page; get-vocabulary lists the served types) it writes a post of that type instead, and an id must be of that type. The markup must pass the content rules (see get-vocabulary) or nothing is written and every violation is listed. Validate static blocks with the client-kit validate-blocks tool first. Every update keeps a revision (see rollback-page). Optional: slug, parent (hierarchical types only), excerpt (plain text; Pediment prints it as the meta description and share text, so write one or two sentences of about 150 characters), menu_order, featured_image ({url, alt} imports the image once per URL and reuses it later; {id, alt} uses a media library image; {id: 0} removes it; alt belongs to this post, so each translation keeps its own), status, language code and translation_of (id of the post of the same type this one translates; translated types only). Fields the post type does not support are refused.', 'pediment' );
+		return __( 'Creates a page (status draft unless given) or updates the page with the given id. With post_type (default page; get-vocabulary lists the served types) it writes a post of that type instead, and an id must be of that type. The markup must pass the content rules (see get-vocabulary) or nothing is written and every violation is listed. Validate static blocks with the client-kit validate-blocks tool first. Every update keeps a revision (see rollback-page). Optional: slug, parent (hierarchical types only), excerpt (plain text; Pediment prints it as the meta description and share text, so write one or two sentences of about 150 characters), seo_title (plain text; the whole <title> of the page, with nothing added — put the search terms first and the brand last, about 50–60 characters; an empty string removes it, and the page title and site name show again), menu_order, featured_image ({url, alt} imports the image once per URL and reuses it later; {id, alt} uses a media library image; {id: 0} removes it; alt belongs to this post, so each translation keeps its own), status, language code and translation_of (id of the post of the same type this one translates; translated types only). Fields the post type does not support are refused.', 'pediment' );
 	}
 
 	protected function inputSchema(): array {
@@ -55,6 +56,7 @@ final class WritePage extends Ability {
 				'translation_of' => array( 'type' => 'integer', 'minimum' => 1 ),
 				'markup'         => array( 'type' => 'string' ),
 				'excerpt'        => array( 'type' => 'string' ),
+				'seo_title'      => array( 'type' => 'string' ),
 				'menu_order'     => array( 'type' => 'integer' ),
 				'featured_image' => array(
 					'type'                 => 'object',
@@ -181,6 +183,10 @@ final class WritePage extends Ability {
 		if ( null !== $excerpt && wp_strip_all_tags( $excerpt ) !== trim( $excerpt ) ) {
 			array_unshift( $errors, 'excerpt: markup is not allowed in an excerpt — use plain text' );
 		}
+		$seo_title = isset( $input['seo_title'] ) ? (string) $input['seo_title'] : null;
+		if ( null !== $seo_title && SeoTitle::hasMarkup( $seo_title ) ) {
+			array_unshift( $errors, 'seo_title: markup is not allowed in an SEO title — use plain text' );
+		}
 		if ( array() !== $errors ) {
 			return self::errorList( 'pediment_content_invalid', __( 'The page breaks the content rules. Nothing was written.', 'pediment' ), $errors );
 		}
@@ -204,6 +210,10 @@ final class WritePage extends Ability {
 		}
 		if ( null !== $excerpt ) {
 			$postarr['post_excerpt'] = trim( $excerpt );
+		}
+		if ( null !== $seo_title ) {
+			// Through meta_input, so the revision this write saves holds it.
+			$postarr['meta_input'] = array( SeoTitle::META => SeoTitle::sanitize( $seo_title ) );
 		}
 		if ( isset( $input['menu_order'] ) ) {
 			$postarr['menu_order'] = (int) $input['menu_order'];

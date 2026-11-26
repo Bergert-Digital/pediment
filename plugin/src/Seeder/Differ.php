@@ -61,6 +61,9 @@ final class Differ {
 				if ( '' !== $want->excerpt ) {
 					$changes['excerpt'] = [ 'from' => null, 'to' => $want->excerpt ];
 				}
+				if ( '' !== $want->seoTitle ) {
+					$changes['seo_title'] = [ 'from' => null, 'to' => $want->seoTitle ];
+				}
 				$note = '';
 				if ( '' !== $corePrivacySlug && 'page' === $want->postType && $want->slug === $corePrivacySlug ) {
 					$note            = sprintf( 'moves WordPress\'s unedited draft "Privacy Policy" page to the trash to free the slug "%s"', $corePrivacySlug );
