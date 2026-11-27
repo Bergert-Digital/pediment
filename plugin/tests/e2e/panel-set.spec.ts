@@ -16,8 +16,10 @@ const p = ( text: string, className = '' ) =>
 const group = ( className: string, inner: string ) =>
 	`<!-- wp:group {"className":"${ className }"} --><div class="wp-block-group ${ className }">${ inner }</div><!-- /wp:group -->`;
 
+// The paragraph outside the set comes after it: the floating toolbar of a
+// selected block sits above that block, outside the canvas iframe, and would
+// catch a click on a paragraph just above the set.
 const CONTENT =
-	p( 'Before the set.' ) +
 	group(
 		'pediment-panels',
 		group(
@@ -30,7 +32,7 @@ const CONTENT =
 				group( 'pediment-panel', p( 'Voice one' ) ) +
 					group( 'pediment-panel', p( 'Voice two' ) )
 			)
-	);
+	) + p( 'After the set.' );
 
 // The kind of rule a client theme writes for its front end: one panel at a
 // time, chosen by data-state, the first one while there is none.
@@ -104,8 +106,29 @@ test( 'the editor shows the panel whose block or tab is selected', async ( {
 	await expect( voiceOne ).toBeVisible();
 
 	// A selection outside the set clears the state.
-	await canvas.getByText( 'Before the set.', { exact: true } ).click();
+	await canvas.getByText( 'After the set.', { exact: true } ).click();
 	await expect( set ).not.toHaveAttribute( 'data-state' );
+
+	// No selection at all clears it too. Tab 2 is selected through the store
+	// first: a click could hit the toolbar of the paragraph below the set.
+	const tabTwo = await canvas
+		.getByText( 'Tab two', { exact: true } )
+		.getAttribute( 'data-block' );
+	await page.evaluate(
+		( clientId ) =>
+			( window as any ).wp.data
+				.dispatch( 'core/block-editor' )
+				.selectBlock( clientId ),
+		tabTwo
+	);
+	await expect( set ).toHaveAttribute( 'data-state', '1' );
+	await page.evaluate( () =>
+		( window as any ).wp.data
+			.dispatch( 'core/block-editor' )
+			.clearSelectedBlock()
+	);
+	await expect( set ).not.toHaveAttribute( 'data-state' );
+	await expect( voiceOne ).toBeVisible();
 
 	// The attribute exists only in the editor; it is never saved.
 	const content: string = await page.evaluate( () =>
