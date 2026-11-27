@@ -108,6 +108,13 @@ use the legacy `pediment/*` presentation blocks (the ones `pediment-check-page` 
 legacy): Pediment 4.0 hides them from the inserter, 5.0 removes them, and 6.0 removes their
 converter.
 
+Every text on the page must be reachable by a click in the editor canvas. A part that shows one
+of several panels at a time (tabs, customer voices, slides) marks the set `pediment-panels`, each
+panel `pediment-panel` and each trigger `pediment-panel-tab`, and its front end keys on
+`data-state` (Pediment's `docs/blocks.md`, "Panel sets"). The editor then shows the panel whose
+block or trigger is selected. Never hide content behind a class that only a front-end script
+adds (for example `opacity: 0` until the script runs): the editor runs no front-end script.
+
 ---
 
 ## 5. Validate, then seed

@@ -73,6 +73,71 @@ Every block needs a test in `plugin/tests/phpunit/BlockRender/<Name>Test.php`. T
 - Render with valid attributes → output contains expected substrings.
 - Render with edge-case attributes (empty fields) → output handled gracefully (no PHP errors, no empty `<a href="">`).
 
+## Reachable in the editor
+
+Build every block and pattern for the person who edits it in the block editor,
+not only for the visitor. Every text a person may change must be reachable by
+a click in the editor canvas: on the text itself, or on the block whose
+settings sidebar holds it.
+
+### Content hidden by state
+
+Tabs, panels, slides, accordions, mega menus, and scroll or animation states
+hide content on the front end. In the editor, that content shows when it, or
+its trigger, is selected. Do not let front-end-only JavaScript decide what the
+canvas shows: the canvas runs no view script, so a rule such as "invisible
+until the script adds `is-in`" hides the content there for good.
+
+Pediment's own blocks follow the rule:
+
+- `pediment/slider` edits its slides in the sidebar. Opening a slide's panel,
+  or using the arrows and dots in the canvas, shows that slide.
+- `pediment/mega-menu` shows its panel open in the canvas (the "Show panel
+  preview" toggle) and edits it in the sidebar. It is editable only in
+  Site Editor → Navigation; elsewhere it is a read-only preview.
+- `pediment/form` edits its success heading and message in the sidebar; the
+  canvas shows the form.
+- The `accordion` style is core Details. In the editor, a click on its
+  summary opens it, and it stays open while a block inside it is selected.
+- The entry animation (`data-reveal`, `assets/js/reveal.js`) runs on the
+  front end only; the editor never hides content for it.
+
+A new block or pattern of this kind is tested in the editor before it ships:
+select the hidden content's text, and its trigger, and check that it shows.
+
+### Panel sets
+
+A pattern that shows one of several panels at a time (customer voices, tabs,
+before/after) marks its blocks with three plain classes. The shared editor
+script (`plugin/src/editor/panel-set.tsx`) then shows the right panel in the
+canvas, and the theme needs no editor CSS:
+
+| Class | On |
+| --- | --- |
+| `pediment-panels` | the block around the whole set |
+| `pediment-panel` | each panel, in order |
+| `pediment-panel-tab` | each trigger (tab, thumbnail, dot), in the panels' order; optional |
+
+Panels and tabs can sit at any depth inside the set; a nested set counts its
+own. While panel n, tab n, or a block inside one of them is selected, the
+editor sets `data-state="n"` (zero-based) on the set. With no such selection
+the set has no `data-state`.
+
+The front end uses the same contract. The theme's script sets
+`data-state="n"` on the set when a visitor picks panel n, and the theme's CSS
+shows panel n for `[data-state="n"]` and the first panel while there is no
+`data-state`:
+
+```css
+.pediment-panels .pediment-panel { display: none; }
+.pediment-panels:not([data-state]) .pediment-panel:nth-child(1),
+.pediment-panels[data-state="0"] .pediment-panel:nth-child(1),
+.pediment-panels[data-state="1"] .pediment-panel:nth-child(2) { display: block; }
+```
+
+The attribute exists only in the editor canvas; it is never saved.
+`plugin/tests/e2e/panel-set.spec.ts` covers it.
+
 ## Slider panel colour
 
 `pediment/slider` takes its panel background from `panelColor`, in one of

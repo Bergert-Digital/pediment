@@ -15,6 +15,14 @@ A standalone Pediment client theme. The engine lives in the Pediment plugin, not
 - Never edit plugin files to get client-specific behaviour. Use theme.json, patterns, template
   overrides in `templates/`, and the plugin's filters.
 - Colours come from `theme.json` presets. Use `var(--wp--preset--color--…)`, never literals.
+- Build every block and pattern for the person who edits it in the block editor. Every text a
+  person may change must be reachable by a click in the editor canvas. Content hidden by state
+  (tabs, panels, slides, accordions, mega menus, scroll or animation states) shows in the editor
+  when it, or its trigger, is selected. For one-of-several panels, use the classes
+  `pediment-panels`, `pediment-panel` and `pediment-panel-tab` and key the front end on
+  `data-state`: the plugin then shows the selected panel in the editor, with no editor CSS in the
+  theme (Pediment's `docs/blocks.md`, "Panel sets"). Test a new block or pattern of this kind in
+  the editor before it ships: select the hidden text, and its trigger, and check that it shows.
 - Languages are declared in the manifest and configured with `npm run languages` **before**
   seeding, never after.
 - **Before launch, run `/pediment:launch`.** Launch means the first production deploy (the
