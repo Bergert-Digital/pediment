@@ -1,5 +1,19 @@
 # Changelog
 
+## [6.11.0](https://github.com/Bergert-Digital/pediment/compare/v6.10.0...v6.11.0) (2026-11-27)
+
+
+### Features
+
+* **editor:** show the selected panel of a panel set ([8a9b135](https://github.com/Bergert-Digital/pediment/commit/8a9b135138fcb603b3e90490341881d4c8412920))
+* **editor:** show the selected panel of a panel set ([#179](https://github.com/Bergert-Digital/pediment/issues/179)) ([0ea0f80](https://github.com/Bergert-Digital/pediment/commit/0ea0f80af80d9e4c8a42c965f6cc88f210f72613))
+
+
+### Bug Fixes
+
+* **ci:** anchor client release excludes to theme root ([88e0c6e](https://github.com/Bergert-Digital/pediment/commit/88e0c6edd1ce00b7f740478127b3558b58b562bc))
+* **ci:** anchor client release excludes to theme root ([#180](https://github.com/Bergert-Digital/pediment/issues/180)) ([6809b96](https://github.com/Bergert-Digital/pediment/commit/6809b968bea0c49ea8ae222f6c5e6e65f4f13f36))
+
 ## [6.10.0](https://github.com/Bergert-Digital/pediment/compare/v6.9.0...v6.10.0) (2026-11-26)
 
 
