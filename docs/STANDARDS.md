@@ -27,6 +27,14 @@ Every block must render correctly with default/empty attributes and with partial
 broken markup (`<a href="">`), no PHP notices, no unsanitized output. This is a review gate
 on every block change, not just new blocks.
 
+## Reachable in the editor
+
+Every text a person may change is reachable by a click in the editor canvas, on the text or on
+the block whose sidebar holds it. Content hidden by state (tabs, panels, slides, accordions, mega
+menus, scroll or animation states) shows in the editor when it, or its trigger, is selected. A
+new block or pattern of this kind is tested in the editor before it ships. This is a review gate
+on every block and pattern change; see [blocks.md](blocks.md#reachable-in-the-editor).
+
 ## Tests
 
 - **PHPUnit:** every block has `plugin/tests/phpunit/BlockRender/<Name>Test.php` covering valid +
