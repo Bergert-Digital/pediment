@@ -101,25 +101,57 @@ jobs:
         # from build/blocks, and the sources are dead weight in a theme
         # directory that is web-servable. `build/` is gitignored, which is why
         # the build step above runs before this one.
+        #
+        # Every name in ROOT_EXCLUDES means the theme ROOT only: each becomes a
+        # leading-slash rsync pattern. An unanchored `--exclude 'docs'` matches
+        # a folder of that name at any depth, and until 2026-11-27 it silently
+        # dropped softbox's assets/docs/merkblatt-datenschutz.pdf. Only `.git`
+        # and `node_modules` stay unanchored: they are junk at every depth.
         run: |
           set -euo pipefail
+          ROOT_EXCLUDES=(
+            .github
+            .pediment-tools
+            stage
+            .wp-env.json
+            .wp-env.override.json
+            package.json
+            package-lock.json
+            docs
+            AGENTS.md
+            src
+          )
+          ARGS=(--exclude '.git' --exclude 'node_modules')
+          for name in "${ROOT_EXCLUDES[@]}"; do
+            ARGS+=(--exclude "/${name}")
+          done
           mkdir -p "stage/${SLUG}"
-          rsync -a \
-            --exclude '.git' \
-            --exclude '.github' \
-            --exclude '.pediment-tools' \
-            --exclude 'node_modules' \
-            --exclude 'stage' \
-            --exclude '.wp-env.json' \
-            --exclude '.wp-env.override.json' \
-            --exclude 'package.json' \
-            --exclude 'package-lock.json' \
-            --exclude 'docs' \
-            --exclude 'AGENTS.md' \
-            --exclude 'src' \
-            ./ "stage/${SLUG}/"
-          cd stage && zip -rq "../${SLUG}.zip" "${SLUG}"
-          unzip -l "../${SLUG}.zip" | tail -5
+          rsync -a "${ARGS[@]}" ./ "stage/${SLUG}/"
+          (cd stage && zip -rq "../${SLUG}.zip" "${SLUG}")
+          unzip -l "${SLUG}.zip" | tail -5
+
+          # Fail when a file git tracks outside ROOT_EXCLUDES is not in the
+          # staged tree that `zip -r` packed, so an exclude can never again
+          # drop a shipped file silently. Submodule entries (mode 160000) are
+          # directories, not files.
+          MISSING=$(
+            git -c core.quotePath=false ls-files -s \
+              | awk -F'\t' '$1 !~ /^160000 / { print $2 }' \
+              | while IFS= read -r path; do
+                  top="${path%%/*}"
+                  for name in "${ROOT_EXCLUDES[@]}"; do
+                    [ "$top" = "$name" ] && continue 2
+                  done
+                  case "/${path}/" in (*/.git/*|*/node_modules/*) continue ;; esac
+                  [ -e "stage/${SLUG}/${path}" ] || printf '%s\n' "$path"
+                done
+          )
+          if [ -n "$MISSING" ]; then
+            echo "::error::Tracked files are missing from ${SLUG}.zip:"
+            printf '%s\n' "$MISSING"
+            exit 1
+          fi
+          echo "Every tracked file outside the excluded roots is in ${SLUG}.zip."
 
       # `gh release upload` does NOT create a release — it fails with "release not
       # found". The documented client flow is a bare `git push --tags`, which

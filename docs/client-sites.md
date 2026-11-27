@@ -212,7 +212,10 @@ WP-CLI rejects it.
 
 Push a tag matching `v*`. The theme's own `.github/workflows/release.yml` calls this monorepo's
 reusable `client-release.yml`, which stamps the version into `style.css` and `package.json` and
-attaches `<slug>.zip` to the GitHub release. From there:
+attaches `<slug>.zip` to the GitHub release. The zip leaves out only these entries at the theme
+root: `docs/`, `src/`, `AGENTS.md`, `package.json`, `package-lock.json`, `.github/` and the
+wp-env files. A nested folder such as `assets/docs/` ships. The release fails if a file that git
+tracks outside those entries is missing from the zip. From there:
 
 1. Download the zip from the release.
 2. Appearance → Themes → Add New → Upload in wp-admin, and activate it.
